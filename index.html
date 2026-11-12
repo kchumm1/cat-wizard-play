@@ -606,6 +606,48 @@ table.prob th:first-child,table.prob td:first-child{text-align:left}
 #tabs button[aria-selected=true]{color:var(--gold);background:radial-gradient(60% 70% at 50% 100%,rgba(255,207,74,.22),transparent)}
 #tabs button[aria-selected=true] svg.ico{transform:translateY(-5px) scale(1.2);filter:drop-shadow(0 3px 2px rgba(0,0,0,.6)) drop-shadow(0 0 6px rgba(255,207,74,.55))}
 #tabs button[aria-selected=true]::after{content:'';position:absolute;left:28%;right:28%;bottom:0;height:3px;border-radius:3px;background:var(--gold)}
+/* ---------- battle: side shortcuts and skill presets ---------- */
+#quick{position:absolute;right:max(10px,env(safe-area-inset-right,0px));top:calc(150px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:7px;pointer-events:auto}
+#quick button{width:50px;display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 0 3px;border-radius:14px;background:rgba(12,13,22,.74);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.12),0 3px 0 rgba(0,0,0,.3)}
+#quick button:active{transform:translateY(2px)}
+#quick i{width:28px;height:28px;display:block}#quick i .ico{width:28px;height:28px}
+#quick span{font:700 10.5px var(--body);color:#fff;text-shadow:0 1px 2px #000}
+#qrow{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-width:0}
+#qrow #quest{min-width:0;flex:0 1 auto}
+#pre{display:flex;gap:4px;flex:none;pointer-events:auto}
+#pre button{width:30px;height:26px;border-radius:9px;background:rgba(12,13,22,.8);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.14);font:400 14px var(--display);color:var(--muted)}
+#pre button[aria-pressed=true]{background:var(--gold);color:var(--gold-ink);box-shadow:0 2px 0 #b07a0a}
+.dmg{font-size:21px}.dmg.crit{font-size:29px}
+/* ---------- menus: chunky game buttons, picture tiles, clear headers ---------- */
+.sheet-head b{display:flex;align-items:center;gap:8px;font-size:22px}
+.sheet-head b .ico{width:30px;height:30px;filter:drop-shadow(0 2px 1px rgba(0,0,0,.5))}
+#sheetClose{min-height:36px;padding:0 15px;background:rgba(255,255,255,.1);border:0;box-shadow:0 3px 0 rgba(0,0,0,.35)}
+#panel h3{display:flex;align-items:center;gap:8px;font:400 18px var(--display);margin:18px 0 10px}
+#panel h3::before{content:'';width:5px;height:18px;border-radius:3px;background:var(--gold);flex:none}
+#panel h3:first-child{margin-top:4px}
+.note{font-size:12px;line-height:1.5;color:var(--faint)}
+.subtabs{background:#0b0c14;border-radius:16px;padding:4px;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.07)}
+.subtabs button,.subtabs.n5 button{min-height:40px;border-radius:12px;font:700 14px var(--body)}
+.subtabs button[aria-selected="true"]{box-shadow:0 3px 0 rgba(0,0,0,.35)}
+.row{background:linear-gradient(180deg,#20233a,#181a28);border:0;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.07),0 3px 0 rgba(0,0,0,.25);border-radius:18px;padding:10px 10px 10px 10px;gap:11px}
+.row .name{font:700 15px var(--body)}.row .desc{font-size:12px;color:var(--muted)}
+.row>.ricon{background:radial-gradient(circle at 50% 30%,#34385a,#12131f);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.14),inset 0 -4px 0 rgba(0,0,0,.25)}
+.row.lockrow>.ricon{filter:grayscale(1) brightness(.6)}
+.buy{min-height:46px;border-radius:14px;border:0;background:linear-gradient(180deg,#ffe27a,#ffb92e);color:#3a2400;font:700 15px var(--body);box-shadow:0 4px 0 #a86f08,inset 0 2px 0 rgba(255,255,255,.5);transition:transform .06s}
+.buy:active{transform:translateY(3px);box-shadow:0 1px 0 #a86f08}
+.buy.gemb{background:linear-gradient(180deg,#9fe8ff,#4fb0ff);color:#06283f;box-shadow:0 4px 0 #1f6fb0,inset 0 2px 0 rgba(255,255,255,.5)}
+.buy.off,.buy.gemb.off{background:#2a2d44;color:#7d809e;box-shadow:0 4px 0 #17182a;border:0}
+.btn{border:0;background:#2c3050;box-shadow:0 3px 0 #17182a,inset 0 1.5px 0 rgba(255,255,255,.1);font:700 14px var(--body);transition:transform .06s}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 #17182a}
+.btn.pri{background:linear-gradient(180deg,#ffffff,#dfe2f0);color:#14151f;box-shadow:0 3px 0 #8d91ad}
+.btn.on{background:var(--gold);color:var(--gold-ink);box-shadow:0 3px 0 #b07a0a}
+.btn.off,.btn:disabled{opacity:.45}
+.pull{border-radius:18px;background:linear-gradient(160deg,#2f3460,#1a1c30);box-shadow:inset 0 0 0 1.5px rgba(143,228,255,.3),0 4px 0 #0e0f1a}
+.pull:active{transform:translateY(3px)}.pull.off{filter:grayscale(.6) brightness(.75)}
+.notice{border-radius:14px}
+.jump{position:sticky;top:-1px;z-index:3;display:flex;gap:6px;overflow-x:auto;padding:6px 0 8px;margin:0 0 4px;background:linear-gradient(180deg,var(--ink) 80%,transparent);scrollbar-width:none}
+.jump::-webkit-scrollbar{display:none}
+.jump button{flex:none;padding:7px 13px;border-radius:999px;background:#2c3050;box-shadow:0 3px 0 #17182a;font:700 13px var(--body);color:#fff}
 @media (prefers-reduced-motion:reduce){.ico .orb,.sk.now .ico,.rlines .flow,.rcore.lit,.isg,.gart .gimg,.gart .gstaff,.gshine::after{animation:none!important}}
 </style>
 
@@ -622,6 +664,7 @@ table.prob th:first-child,table.prob td:first-child{text-align:left}
       <div id="bossbox"><div class="boss-top"><span id="bossName">보스</span><span id="bossTime">30.0초</span></div><div class="bar"><i id="bossHp"></i></div></div>
       <button id="retry">보스 도전</button>
     </div>
+    <div id="quick" aria-label="바로가기"><button data-quick="map"><i></i><span>지도</span></button><button data-quick="alch"><i></i><span>물약</span></button><button data-quick="rune"><i></i><span>룬</span></button><button data-quick="sigil"><i></i><span>신성력</span></button></div>
     <div id="banner"></div>
     <div id="chainBanner"></div>
     <div id="dunHud"></div>
@@ -629,7 +672,7 @@ table.prob th:first-child,table.prob td:first-child{text-align:left}
     <div id="buffs" aria-label="켜진 물약"></div>
   </div>
   <div id="skillbar">
-    <div id="quest"><b>목표</b><span id="questTxt"></span></div>
+    <div id="qrow"><div id="quest"><b>목표</b><span id="questTxt"></span></div><div id="pre" role="group" aria-label="스킬 프리셋"></div></div>
     <div class="slots" id="slots"></div>
   </div>
   <section id="sheet" aria-label="메뉴"><div class="sheet-head"><b id="sheetTitle">강화</b><button id="sheetClose">닫기</button></div><main id="panel" aria-live="polite"></main></section>

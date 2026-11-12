@@ -68,7 +68,19 @@
     'pack:runeL': function () { return box('#7a5cd6', '#9a7cf0', sh('M26 22h12v12H26z', '#ffd24a', 2.2) + '<path d="M32 38v14M27 42l5 4 5-4" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'); },
     'pack:mixed': function () { return box('#ff7aa8', '#ff9ec7', sh('M28 16h8v40h-8z', '#ffe14a', 2.2) + sh('M32 16C26 4 14 6 18 14c2 3 8 3 14 2zM32 16C38 4 50 6 46 14c-2 3-8 3-14 2z', '#ffe14a', 2.2)); }
   };
-  var PACK_GRADE = { sigilA: 3, sigilB: 5, sigilC: 7, sigilD: 10 };
+  M['quick:map'] = function () { return sh('M6 14l16-6 20 6 16-6v42l-16 6-20-6-16 6z', '#f4e2b0') + hl('M22 8l20 6v42l-20-6z', '#e0c584') + '<path d="M12 40q8-10 14 0t14-4" fill="none" stroke="#b9824f" stroke-width="2.4" stroke-dasharray="3 4" stroke-linecap="round"/>' + sh('M44 14a9 9 0 0 1 9 9c0 7-9 16-9 16s-9-9-9-16a9 9 0 0 1 9-9z', '#ff5a6e', 2.4) + '<circle cx="44" cy="23" r="3.4" fill="#fff"/>'; };
+  // 성장 rows: one picture per stat; crit tiers share a star that gains points and changes colour
+  function tierStar(n, col, burst) { return (burst ? sh(star(32, 32, 30, 20, 12), K.lite(col, 0.35), 2) : '') + sh(star(32, 32, burst ? 19 : 27, burst ? 8 : 11, n), col) + hl(star(32, 32, burst ? 8 : 12, burst ? 3.4 : 5, n), '#ffffff', 0.7); }
+  var STAT = {
+    atk: function () { return M['tab:battle'](); }, speed: function () { return ln('M6 22h14M4 34h12M8 46h12', '#bfe6ff', 3) + sh('M42 3L18 35h13L25 61 54 26H40z', '#ffe84a') + hl('M40 9L24 31h8z', '#fffbd0'); },
+    crit: function () { return M['talent:tBoss'](); }, critDmg: function () { return M['talent:tCrit'](); }, gold: function () { return M['talent:tGold'](); }, mastery: function () { return M['tab:skill'](); },
+    superCrit: function () { return tierStar(4, '#ff7a3a'); }, ultraCrit: function () { return tierStar(5, '#c47bff'); }, hyperCrit: function () { return tierStar(6, '#5fd2ff'); },
+    megaCrit: function () { return tierStar(8, '#ff7ac8'); }, megaDmg: function () { return tierStar(8, '#ff7ac8', true); },
+    ultimateCrit: function () { return tierStar(8, '#f3f3f8'); }, ultimateDmg: function () { return tierStar(8, '#f3f3f8', true); },
+    alphaCrit: function () { return tierStar(10, '#6fe08a'); }, alphaDmg: function () { return tierStar(10, '#6fe08a', true); }
+  };
+  I.stat = function (k) { var f = STAT[k]; return I.svg((f || STAT.superCrit)(), 'imisc'); };
+  var PACK_GRADE ={ sigilA: 3, sigilB: 5, sigilC: 7, sigilD: 10 };
   I.misc = function (cat, id) {
     if (cat === 'pack' && PACK_GRADE[id] !== undefined) { var g = PACK_GRADE[id]; return I.sigil('megaRate', g, CW.DATA.hiGrades[g].color); }
     var f = M[cat + ':' + id]; return f ? I.svg(f(), 'imisc') : '';

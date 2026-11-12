@@ -302,6 +302,7 @@
     }
     function slots() {
       var s = G.state, now = G.castingSlot();
+      var pre = [0, 1, 2].map(function (i) { return '<button data-pre="' + i + '" aria-pressed="' + ((s.preset || 0) === i) + '" aria-label="스킬 프리셋 ' + (i + 1) + '">' + (i + 1) + '</button>'; }).join(''); if ($('pre').innerHTML !== pre) $('pre').innerHTML = pre;
       $('slots').innerHTML = s.slots.map(function (id, i) {
         var sk = id && CW.skillById(id);
         if (!sk) return '<button class="sk empty" data-bar="' + i + '" aria-label="' + (i + 1) + '번 칸 비어 있음"><b>' + (i + 1) + '</b></button>';
@@ -333,9 +334,9 @@
         var u = DATA.upgrades[k], lv = s.up[k] || 0, max = u.max !== null && lv >= u.max, one = CW.upgradeCost(k, lv), cost = upMul > 1 ? CW.upgradeCostN(s, k, upMul) : one;
         if (!CW.upgradeOpen(s, k)) {
           var nd = CW.upgradeNeed(k), why = u.tier && (s.tier || 1) < u.tier ? u.tier + '차 전직 후에 열려요' : DATA.upgrades[nd.key].name + ' Lv.' + nd.lv + ' 달성하면 열려요';
-          return '<div class="row lockrow"><div class="info"><div class="name">' + u.name + '</div><div class="desc need">' + why + '</div></div><span class="lockic">🔒</span></div>';
+          return '<div class="row lockrow"><div class="ricon">' + CW.ICO.stat(k) + '</div><div class="info"><div class="name">' + u.name + '</div><div class="desc need">' + why + '</div></div><span class="lockic">🔒</span></div>';
         }
-        return '<div class="row"><div class="info"><div class="name">' + u.name + '<span class="lv">Lv.' + lv + '</span></div><div class="desc">' + eff[k] + '</div></div>' +
+        return '<div class="row"><div class="ricon">' + CW.ICO.stat(k) + '</div><div class="info"><div class="name">' + u.name + '<span class="lv">Lv.' + lv + '</span></div><div class="desc">' + eff[k] + '</div></div>' +
           '<button class="buy ' + (max || s.gold < one ? 'off' : '') + '" data-up="' + k + '">' + (max ? '최대' : (upMul > 1 ? '<small>×' + upMul + '</small>' : '') + '<i class="coin"></i>' + fmt(cost)) + '</button></div>';
       }).join('') + '</div>';
     }
@@ -396,9 +397,9 @@
         return '<div class="prod">' + (first ? '<span class="tag">첫 구매 2배</span>' : '') + '<div class="amt"><i class="gem"></i>' + fmt(p.gems * (first ? 2 : 1)) + '</div><div class="note">' + p.name + '</div><button class="buy gemb" data-shop="' + i + '">' + p.won.toLocaleString('ko-KR') + '원</button></div>';
       }).join('') + '</div>' + '<h3>패키지</h3><div class="note" style="margin:-4px 0 8px">룬·신성력 패키지예요. 실제 결제 없이 연습용으로 바로 받아요.</div><div class="packs">' + DATA.packs.map(function (p) {
         var g = p.give, lines = [];
-        if (g.runeStone) lines.push('🔮 룬석 ' + fmt(g.runeStone));
+        if (g.runeStone) lines.push(CW.ICO.cur('rune') + ' 룬석 ' + fmt(g.runeStone));
         (g.sigils || []).forEach(function (x) { lines.push('<b style="color:' + hc(x.grade) + '">' + hn(x.grade) + '</b> 신성력 ' + x.n + '개'); });
-        if (g.sigilStone) lines.push('💠 신성석 ' + fmt(g.sigilStone));
+        if (g.sigilStone) lines.push(CW.ICO.cur('sigil') + ' 신성석 ' + fmt(g.sigilStone));
         return '<div class="pack"><div class="picon">' + mi('pack', p) + '</div><div class="info"><div class="name">' + p.name + (s.packs && s.packs[p.id] ? ' <span class="lv">' + s.packs[p.id] + '번 받음</span>' : '') + '</div><div class="desc">' + lines.join(' · ') + '</div></div><button class="buy gemb" data-pack="' + p.id + '">' + p.won.toLocaleString('ko-KR') + '원</button></div>';
       }).join('') + '</div>';
       var st = s.settings;
@@ -414,7 +415,8 @@
         var open = i <= (s.diffUnlocked || 0), now = i === (s.diff || 0);
         return '<div class="row" style="' + (open ? '' : 'opacity:.55') + '"><div class="info"><div class="name">' + df.name + (now ? '<span class="lv">지금</span>' : '') + '</div><div class="desc">보스 체력 ×' + fmt(df.bossMul) + ' · 몬스터 +' + df.extraMobs + '마리 · 다이아 ×' + df.gemMul + '</div></div>' + (now ? '' : '<button class="btn' + (open ? ' pri' : '') + '" data-diff="' + i + '">' + (open ? '도전' : '잠김') + '</button>') + '</div>';
       }).join('') + '</div>';
-      return diffs + tiers + regions + shop + settings;
+      var jump = '<div class="jump">' + ['난이도', '전직', '사냥터', '상점', '패키지', '설정'].map(function (t, i) { return '<button data-jump="' + i + '">' + t + '</button>'; }).join('') + '</div>';
+      return jump + diffs + tiers + regions + shop + settings;
     }
     function stagePanel() {
       var s = G.state, d = selDiff < 0 ? (s.diff || 0) : selDiff, R = selRegion < 0 ? CW.stageInfo(s.stage).region : selRegion;
@@ -470,6 +472,7 @@
       else if (d.act === 'rankup') { var rr2 = CW.rankReady(G.state); if (G.rankUp()) toast(DATA.rankConf.names[G.state.rank] + '(으)로 승급!'); else toast(rr2.why === 'marks' ? '모든 징표를 최대로 올려야 해요' : rr2.why === 'level' ? '계정 레벨 ' + rr2.need + '이 필요해요' : rr2.why === 'mana' ? '마력석이 부족해요' : '더 올릴 수 없어요'); renderPanel(true); }
       else if (d.dgo) { var r3 = G.dungeon(d.dgo); if (r3 === 'busy') toast('보스전이나 던전이 끝난 뒤에 들어갈 수 있어요'); else if (r3 === 'ticket') toast('오늘 입장권을 다 썼어요'); }
       else if (d.dsw) { var r4 = G.sweep(d.dsw); if (!r4) toast('입장권이 없거나 아직 기록이 없어요'); else toast('소탕! ' + (r4.gold ? '골드 +' + fmt(r4.gold) : r4.gems ? '다이아 +' + fmt(r4.gems) : r4.runeStone ? '룬석 +' + fmt(r4.runeStone) : '마력석 +' + fmt(r4.mana))); renderPanel(true); hud(); }
+      else if (d.jump !== undefined) { var jh = panel.querySelectorAll('h3')[+d.jump]; if (jh) panel.scrollTop += jh.getBoundingClientRect().top - panel.getBoundingClientRect().top - 46; }
       else if (d.gsub) { gearSub = d.gsub; panel.scrollTop = 0; renderPanel(true); }
       else if (d.relic) { var rr = G.summonRelics(+d.relic); if (!rr) toast('다이아가 부족해요'); else { showRelics(rr); renderPanel(true); hud(); } }
       else if (d.cbuy) { if (G.buyCostume(d.cbuy)) toast(CW.costumeById(d.cbuy).name + ' 획득!'); else toast('다이아가 부족해요'); renderPanel(true); hud(); }
@@ -531,11 +534,20 @@
     });
     CW.ICO.onTint = function () { if (tab === 'gear' || tab === 'gacha') renderPanel(true); };
     document.querySelectorAll('#tabs [data-tab]').forEach(function (b) { var x = CW.ICO.misc && CW.ICO.misc('tab', b.dataset.tab), sv = b.querySelector('svg'); if (x && sv) sv.outerHTML = x; });
+    var QI = { map: CW.ICO.misc('quick', 'map'), alch: CW.ICO.misc('potion', 'rage'), rune: CW.ICO.cur('rune'), sigil: CW.ICO.cur('sigil') };
+    document.querySelectorAll('#quick [data-quick]').forEach(function (b) { b.querySelector('i').innerHTML = QI[b.dataset.quick] || ''; });
+    $('quick').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-quick]'); if (!b) return; var q = b.dataset.quick; G.sound('click');
+      if (q === 'map') { selDiff = selRegion = -1; openTab(tab === 'stage' ? 'battle' : 'stage'); }
+      else if (q === 'alch') { trainSub = 'alch'; openTab('up'); }
+      else { gearSub = q; openTab('gear'); }
+    });
+    $('pre').addEventListener('click', function (e) { var b = e.target.closest('[data-pre]'); if (!b) return; G.switchPreset(+b.dataset.pre); G.sound('click'); toast((+b.dataset.pre + 1) + '번 프리셋으로 바꿨어요'); slots(); if (tab === 'skill') renderPanel(true); });
     function openTab(name) {
       tab = name; document.querySelectorAll('#tabs [data-tab]').forEach(function (x) { x.setAttribute('aria-selected', x.dataset.tab === name ? 'true' : 'false'); });
       var open = name !== 'battle';
       $('sheet').classList.toggle('on', open); $('sheet').classList.toggle('tall', name !== 'more' && name !== 'gacha'); G.setSheet(open);
-      if (open) { $('sheetTitle').textContent = TITLES[name]; panel.scrollTop = 0; renderPanel(true); }
+      if (open) { $('sheetTitle').innerHTML = ((CW.ICO.misc && CW.ICO.misc('tab', name)) || (name === 'stage' ? CW.ICO.misc('quick', 'map') : '')) + TITLES[name]; panel.scrollTop = 0; renderPanel(true); }
     }
     $('tabs').addEventListener('click', function (e) {
       var b = e.target.closest('[data-tab]'); if (!b) return;
