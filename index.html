@@ -648,6 +648,66 @@ table.prob th:first-child,table.prob td:first-child{text-align:left}
 .jump{position:sticky;top:-1px;z-index:3;display:flex;gap:6px;overflow-x:auto;padding:6px 0 8px;margin:0 0 4px;background:linear-gradient(180deg,var(--ink) 80%,transparent);scrollbar-width:none}
 .jump::-webkit-scrollbar{display:none}
 .jump button{flex:none;padding:7px 13px;border-radius:999px;background:#2c3050;box-shadow:0 3px 0 #17182a;font:700 13px var(--body);color:#fff}
+/* ---------- breathing room: wider gaps and bigger touch targets on a phone ---------- */
+:root{--tabh:72px}
+#hud{padding-top:12px;gap:10px}
+.prof{padding:5px 18px 5px 5px;gap:10px}
+.ava{width:52px;height:52px}
+.pi{gap:3px}
+#lvTxt{font-size:16px}
+#nick{font:400 15px var(--display);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tierTag{font:700 11px var(--body);color:var(--muted)}
+.prof .xpbar{width:124px;margin-top:2px}
+.wallet{gap:6px}
+.chip{min-width:104px;padding:5px 13px 5px 7px;font-size:15px}
+#hud .place.stg{width:min(336px,90%);padding:10px 14px 12px;gap:7px 10px;border-radius:18px}
+#hud .stg #placeName{font-size:19px}
+#hud .stg .pmap{padding:4px 9px 4px 11px;font-size:12px}
+#hud .stg #killBar{height:18px;border-radius:10px}
+#hud .stg #placeSub{margin-top:-25px;font:700 11.5px/18px var(--body)}
+#bossbox{width:min(336px,90%);padding:10px 14px 12px;gap:7px;border-radius:18px}#bossbox .bar{height:18px;border-radius:10px}
+#quick{top:calc(178px + env(safe-area-inset-top,0px));gap:10px;right:max(12px,env(safe-area-inset-right,0px))}
+#quick button{width:56px;padding:7px 0 5px;gap:2px;border-radius:16px}
+#quick i,#quick i .ico{width:30px;height:30px}
+#quick span{font-size:11px}
+#buffs{top:calc(82px + env(safe-area-inset-top,0px))}
+#skillbar{gap:12px;padding-top:34px;padding-bottom:14px}
+#quest{padding:4px 14px 4px 5px;font-size:12.5px}
+#pre{gap:6px}#pre button{width:34px;height:30px;border-radius:10px;font-size:15px}
+#slots{gap:14px}
+#slots .sk{width:66px;height:66px}
+#gainlog{bottom:calc(var(--tabh) + 158px + env(safe-area-inset-bottom,0px));gap:5px}
+#tabs{padding-top:7px;padding-bottom:calc(7px + env(safe-area-inset-bottom,0px))}
+#tabs button{min-height:58px;gap:3px;font-size:11.5px}
+#tabs svg.ico{width:36px;height:36px}
+.sheet-head{padding:20px max(18px,env(safe-area-inset-right,0px)) 12px max(18px,env(safe-area-inset-left,0px))}
+#panel{padding:8px max(18px,env(safe-area-inset-right,0px)) 30px max(18px,env(safe-area-inset-left,0px))}
+#panel h3{margin:26px 0 12px}
+.note{line-height:1.6;margin-top:2px}
+.subtabs{margin-bottom:16px;padding:5px;gap:5px}
+.subtabs button,.subtabs.n5 button{min-height:42px}
+.list,.packs,.slist{gap:12px}
+.row{padding:13px 12px;gap:13px;min-height:74px}
+.row>.ricon{width:54px;height:54px}
+.row .name{font-size:16px}.row .desc{font-size:12.5px;line-height:1.5;margin-top:3px}
+.row .buy{min-width:98px;min-height:48px}
+.btns{gap:10px}.mulpick{gap:8px;margin-bottom:4px}
+.pulls{gap:12px;margin-top:14px}.pull{padding:14px;min-height:94px}
+.shop{gap:12px;margin-top:12px}
+.slotgrid{gap:10px}.presets{gap:8px;margin-top:14px}
+.kindtabs{gap:8px;padding:4px 0 12px}
+.kindtabs button{min-height:38px;padding:0 16px}
+.bgrid{gap:9px}
+.bagtop{padding:14px;gap:14px;margin-bottom:4px}
+.bagbtns{gap:7px;margin:10px 0 14px}
+.sggrid{gap:8px;margin-bottom:14px}.sggrid.inv{row-gap:18px;column-gap:10px;padding:8px 2px}
+.sghead{margin-bottom:10px}.sglv,.sgeff,.sgsel{margin-bottom:14px}.sgsel{padding:14px;gap:10px}.sgbtns{gap:7px}
+.dung{padding:14px;gap:13px;margin-bottom:0}.dbtns{gap:7px}
+.srow{min-height:62px;padding:8px 10px;gap:8px}
+.manaline,.tpoints,.codexbar,.shards{padding:12px 14px;margin-bottom:12px}
+.jump{gap:8px;padding:8px 0 12px}.jump button{padding:9px 15px}
+.runering{margin:14px auto 18px}
+.skrow .skbtns{margin-top:8px;gap:7px}
 @media (prefers-reduced-motion:reduce){.ico .orb,.sk.now .ico,.rlines .flow,.rcore.lit,.isg,.gart .gimg,.gart .gstaff,.gshine::after{animation:none!important}}
 </style>
 
@@ -657,7 +717,7 @@ table.prob th:first-child,table.prob td:first-child{text-align:left}
     <div id="ov"></div>
     <div id="hud">
       <div class="hud-row">
-        <div class="prof"><i class="ava"></i><div class="pi"><span class="pl"><b id="lvTxt">Lv.1</b><span id="tierTag">견습 냥법사</span></span><span class="xpbar"><i id="xpBar"></i></span></div></div>
+        <div class="prof"><i class="ava"></i><div class="pi"><span class="pl"><b id="lvTxt">Lv.1</b><span id="nick">귤귤귤귤귤</span></span><span id="tierTag">견습 냥법사</span><span class="xpbar"><i id="xpBar"></i></span></div></div>
         <div class="wallet"><div class="chip"><i class="coin"></i><span id="goldTxt">0</span></div><div class="chip"><i class="gem"></i><span id="gemTxt">0</span></div></div>
       </div>
       <button class="place stg" id="placeBtn" aria-label="스테이지 선택 열기"><span id="placeName">꽃밭 1-1</span><span class="pmap">지도<svg viewBox="0 0 12 12" aria-hidden="true"><path d="m3 4.5 3 3 3-3"/></svg></span><span class="bar" id="killBar"><i></i></span><small id="placeSub">몬스터 0 / 10</small></button>
