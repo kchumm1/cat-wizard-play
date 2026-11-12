@@ -275,23 +275,27 @@
     function banner(text) { var b = $('banner'); b.textContent = text; b.classList.add('on'); setTimeout(function () { b.classList.remove('on'); }, 1300); }
 
     // ---------- HUD ----------
+    var lastPlace = '', lastSub = null;
     function hud() {
       var s = G.state, info = CW.stageInfo(s.stage), R = DATA.regions[info.region];
-      $('placeName').textContent = (s.diff ? CW.diffOf(s).name + ' · ' : '') + R.name + ' ' + CW.stageLabel(s.stage);
+      var pn = (s.diff ? '<u>' + CW.diffOf(s).name + '</u>' : '') + '<b data-t="' + R.name + '">' + R.name + '</b><i>' + CW.stageLabel(s.stage) + '</i>';
+      if (pn !== lastPlace) { lastPlace = pn; $('placeName').innerHTML = pn; }
       $('goldTxt').textContent = fmt(s.gold); $('gemTxt').textContent = fmt(s.gems);
       $('lvTxt').textContent = 'Lv.' + s.level; $('xpBar').style.width = (s.level >= DATA.balance.levelMax ? 100 : Math.min(100, s.xp / CW.xpNeed(s.level) * 100)) + '%';
-      var boss = G.boss();
+      var boss = G.boss(), sub = '', kp;
       $('bossbox').classList.toggle('on', !!boss);
       $('killBar').style.display = boss ? 'none' : '';
       if (boss) {
         $('bossName').textContent = (info.isRegionBoss ? '전직 시험 · ' : '') + boss.name;
         $('bossTime').textContent = Math.max(0, boss.time).toFixed(1) + '초';
         $('bossHp').style.width = Math.max(0, boss.mob.hp / boss.mob.maxHp * 100) + '%';
-        $('placeSub').textContent = info.isRegionBoss ? '이기면 ' + (Math.min(9, info.region + 2)) + '차 전직' : '보스를 쓰러뜨리세요';
       } else {
-        $('placeSub').textContent = s.farming ? '사냥 중' : '몬스터 ' + G.killProgress().n + ' / ' + G.killProgress().max;
-        $('killBar').firstChild.style.width = (s.farming ? 100 : G.killProgress().n / G.killProgress().max * 100) + '%';
+        kp = G.killProgress();
+        sub = s.farming ? '<b class="hunt">사냥 중</b>' : '<i class="mk"></i><b>' + kp.n + '</b><em>/ ' + kp.max + '</em>';
+        $('killBar').firstChild.style.width = (s.farming ? 100 : kp.n / kp.max * 100) + '%';
+        $('killBar').classList.toggle('loop', !!s.farming);
       }
+      if (sub !== lastSub) { lastSub = sub; $('placeSub').innerHTML = sub; $('placeSub').style.display = sub ? '' : 'none'; }
       $('retry').classList.toggle('on', s.farming && !boss && G.canRetry() && !G.dunState());
       dunHud(G.dunState());
       var now = Date.now(), bt = DATA.potions.map(function (p) { var l = CW.buffLeft(s, p.id, now); return l ? '<span>' + mi('potion', p) + mmss(l) + '</span>' : ''; }).join('');
@@ -590,9 +594,10 @@
       if (g.gold > 0) add.push('<i class="coin"></i>골드 +' + fmt(g.gold));
       if (g.xp > 0) add.push('<b class="xpdot"></b>경험치 +' + fmt(g.xp));
       if (g.gems > 0) add.push('<i class="gem"></i>다이아 +' + fmt(g.gems));
+      (g.more || []).forEach(function (m) { add.push('<b class="xpdot" style="background:' + m.c + '"></b>' + m.t); });
       if (!add.length) return;
-      logLines = add.concat(logLines).slice(0, 4);
-      $('gainlog').innerHTML = logLines.map(function (l, i) { return '<div style="opacity:' + (1 - i * 0.22) + '">' + l + '</div>'; }).join('');
+      logLines = add.concat(logLines).slice(0, Math.max(4, add.length));
+      $('gainlog').innerHTML = logLines.map(function (l, i) { return '<div style="opacity:' + Math.max(0.4, 1 - i * 0.15) + '">' + l + '</div>'; }).join('');
     }
     return { chain: chain, dunHud: dunHud, gainLog: gainLog, openTab: openTab, hud: hud, slots: slots, renderPanel: renderPanel, toast: toast, banner: banner, showOffline: showOffline, showTierUp: showTierUp, showGacha: showGacha, modal: modal, currentTab: function () { return tab; } };
   }

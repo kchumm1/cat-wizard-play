@@ -226,21 +226,21 @@
     // a* = anticipation (lean/crouch), r* = release kick, hb/hs = pose kept for a moment after release,
     // aR/rR = paw arm (+ up, - out toward the monsters), aL/rL = staff arm (- lifts the staff over the head).
     var POSES = {
-      thrust: { ab: -0.14, as: -0.06, ax: -0.05, rb: 3.4, rs: 2.4, rl: 0.4, rx: 1.9, hb: 0.07, hs: 0, aR: 0.55, rR: -1.05, aL: 0.12, rL: -0.25 },
-      raise: { ab: -0.03, as: -0.12, ax: 0, rb: 1.0, rs: 4.8, rl: 2.7, rx: 0, hb: 0, hs: 0.07, aR: -0.2, rR: 0.95, aL: 0.2, rL: -0.65 },
-      swipe: { ab: -0.17, as: -0.05, ax: -0.1, rb: 5.2, rs: 1.6, rl: 0.8, rx: 4.6, hb: 0.15, hs: 0, aR: 1.0, rR: -1.35, aL: 0.1, rL: -0.35 },
-      toss: { ab: -0.19, as: -0.09, ax: -0.04, rb: 4.2, rs: 3.2, rl: 0.9, rx: 1.0, hb: 0.08, hs: 0, aR: 1.15, rR: -0.95, aL: -0.15, rL: 0.15 },
-      spin: { ab: 0, as: -0.09, ax: 0, rb: 0.5, rs: 2.5, rl: 1.9, rx: 0, hb: 0, hs: 0, flip: 0.34, aR: 0.3, rR: -0.7, aL: 0.3, rL: -0.55 }
+      thrust: { ab: -0.14, as: -0.06, ax: -0.05, rb: 3.4, rs: 2.4, rl: 0.4, rx: 1.9, hb: 0.07, hs: 0, aR: 0.55, rR: -1.05, aL: 0.12, rL: -0.25, kick: 1.5 },
+      raise: { ab: -0.03, as: -0.12, ax: 0, rb: 1.0, rs: 4.8, rl: 2.7, rx: 0, hb: 0, hs: 0.07, aR: -0.2, rR: 0.95, aL: 0.2, rL: -0.65, kick: 0.5 },
+      swipe: { ab: -0.17, as: -0.05, ax: -0.1, rb: 5.2, rs: 1.6, rl: 0.8, rx: 4.6, hb: 0.15, hs: 0, aR: 1.0, rR: -1.35, aL: 0.1, rL: -0.35, kick: -1.9 },
+      toss: { ab: -0.19, as: -0.09, ax: -0.04, rb: 4.2, rs: 3.2, rl: 0.9, rx: 1.0, hb: 0.08, hs: 0, aR: 1.15, rR: -0.95, aL: -0.15, rL: 0.15, kick: 1.0 },
+      spin: { ab: 0, as: -0.12, ax: 0, rb: 0.5, rs: 3.4, rl: 2.2, rx: 0, hb: 0, hs: 0.05, hop: 3.1, aR: 0.3, rR: 0.9, aL: 0.3, rL: -0.75 }
     };
-    var pose = null, heroGlow = 0, heroGlowCol = new T.Color(), flipT = 1, flipDur = 0.34;
+    var pose = null, heroGlow = 0, heroGlowCol = new T.Color();
     function heroPose(type, antic, color) {
       pose = { P: POSES[type] || POSES.thrust, t: 0, a: Math.max(0.03, antic || 0.12), rel: false };
       if (color !== undefined) { heroGlowCol.setHex(color); }
-      HB.lock = Math.max(HB.lock, (antic || 0.12) + 0.45);
+      HB.lock = Math.max(HB.lock, (antic || 0.12) + 0.14);
     }
     function heroGlowPulse(color, amt) { heroGlowCol.setHex(color); heroGlow = Math.max(heroGlow, amt === undefined ? 1 : amt); }
     var ghosts = [];
-    function ghost(color) {
+    function ghost(color, still) {
       if (!hero) return;
       var gh = null; for (var i = 0; i < ghosts.length; i++) if (ghosts[i].t >= ghosts[i].life) { gh = ghosts[i]; break; }
       if (!gh) return;
@@ -248,15 +248,28 @@
       u.uBend.value = hu.uBend.value; u.uScale.value.copy(hu.uScale.value); u.uH.value = hu.uH.value;
       for (var b = 0; b < 8; b++) { u.uBP.value[b].copy(hu.uBP.value[b]); u.uBT.value[b].copy(hu.uBT.value[b]); u.uBA.value[b] = hu.uBA.value[b]; }
       u.uFlash.value = 0.55; u.uFlashCol.value.setHex(color); u.uOpacity.value = 0.55;
-      gh.mesh.position.copy(hero.position); gh.mesh.position.z -= 0.05; gh.mesh.visible = true; gh.t = 0; gh.vx = -0.9;
+      gh.wx = HB.x + hero.position.x; gh.wy = hero.position.y; gh.wz = HB.z - 0.05; gh.vx = still ? 0 : -0.9 * HB.faceT; gh.life = still ? 0.26 : 0.35;
+      gh.mesh.position.set(hero.position.x, gh.wy, -0.05); gh.mesh.visible = true; gh.t = 0;
     }
-    // hero wandering state: runs around its corner, hops, twirls, stands still while casting
-    var HB = { x: 0, z: 0, tx: 0, tz: 0, y: 0, vy: 0, st: 1.0, face: 1, faceT: 1, lock: 0, walk: 0, speed: 2.2 };
-    var HERO_ZONE = { x0: -0.9, x1: 0.9, z0: -0.7, z1: 0.6 };
-    function heroFaceTo(x) { if (Math.abs(x - HB.x) > 0.15) HB.faceT = x < HB.x ? -1 : 1; }
-    function heroDodge() {
-      if (HB.y > 0.05 || HB.lock > 0) return;
-      HB.vy = 4.2; HB.tx = Math.max(HERO_ZONE.x0, Math.min(HERO_ZONE.x1, HB.x + rr(-0.7, 0.7))); HB.tz = Math.max(HERO_ZONE.z0, Math.min(HERO_ZONE.z1, HB.z + rr(-0.5, 0.5))); HB.st = rr(0.6, 1.0);
+    // hero state: a battle mage that hunts on the move — runs to the nearest monster, keeps casting range,
+    // circles while it casts, steps back from the recoil and dashes out of the way of a claw
+    var HB = { x: 0, z: 0, vx: 0, vz: 0, y: 0, vy: 0, face: 1, faceT: 1, turnT: 0, aim: 0, lock: 0, walk: 0, sp: 0,
+      focus: null, focusT: 0, orbit: 1, orbitT: 3, px: 0, pz: 0, pt: 0, dash: 0, dvx: 0, dvz: 0, dashCd: 0, ghostT: 0, kx: 0, kz: 0, cheer: 0 };
+    var HERO_ZONE = { x0: -2.0, x1: 1.8, z0: -3.0, z1: 2.2 };
+    // turning is a quick snap with a little squash, and never more often than every third of a second
+    function heroTurn(dir) { if (dir === HB.faceT || HB.turnT > 0) return; HB.faceT = dir; HB.turnT = 0.45; if (hero) hero.userData.sq.v -= 0.8; }
+    function heroFaceTo(x) { HB.aim = 0.75; if (Math.abs(x - HB.x) > 0.3) heroTurn(x < HB.x ? -1 : 1); }
+    function heroCheer(sec) { HB.cheer = Math.max(HB.cheer, sec || 1.2); }
+    function heroDodge(from) {
+      if (!hero || HB.dash > 0 || HB.dashCd > 0 || HB.cheer > 0) return;
+      var ax = from ? HB.x - from.x : rr(-1, 1), az = from ? HB.z - from.z : rr(-1, 1), al = Math.sqrt(ax * ax + az * az) || 1, Z = HERO_ZONE;
+      ax /= al; az /= al;
+      // slip out sideways, toward whichever side has more room
+      var side = Math.random() < 0.5 ? 1 : -1, dx = ax * 0.5 - az * side * 0.87, dz = az * 0.5 + ax * side * 0.87, tx = HB.x + dx * 1.3, tz = HB.z + dz * 1.3;
+      if (tx < Z.x0 || tx > Z.x1 || tz < Z.z0 || tz > Z.z1) { dx = ax * 0.5 + az * side * 0.87; dz = az * 0.5 - ax * side * 0.87; }
+      HB.dash = 0.2; HB.dvx = dx * 6.4; HB.dvz = dz * 6.4; HB.dashCd = rr(1.2, 2.0); HB.ghostT = 0; HB.vy = Math.max(HB.vy, 2.4);
+      hero.userData.sq.v -= 2.4; hero.userData.bend.v += dx * 3;
+      if (hooks.land) hooks.land(new T.Vector3(HB.x, 0.03, HB.z), false);
     }
 
     // ---------- monsters ----------
@@ -269,14 +282,23 @@
       return clampField({ x: HB.x + Math.cos(a) * r, z: HB.z + Math.sin(a) * r * 1.15 });
     }
     var FLYERS = { B2: 1, B7: 1 };
+    // how each kind of monster gets about: slimes and bunnies hop, penguins and mushrooms waddle, golems and knights stomp,
+    // spiders dart and stop, ghosts and dragons glide. Pictures with arms and legs simply walk.
+    var GAITS = { M1: 'hop', M11: 'hop', M16: 'hop', M3: 'waddle', M5: 'waddle', M7: 'waddle', M13: 'stomp', M20: 'stomp', M17: 'skitter', M9: 'float' };
     function freeSpot(boss) {
-      var best = null, bestD = -1;
-      for (var k = 0; k < 14; k++) {
-        var p = boss ? ringSpot(1.7, 2.4, true) : ringSpot(1.3, 3.4), dmin = 9;
+      var best = null, bestS = -1e9;
+      for (var k = 0; k < 16; k++) {
+        var p;
+        if (boss) p = ringSpot(1.9, 2.6, true);
+        else { var z = rr(FIELD.z0 + 0.6, 2.7), hx = halfX(z) - 0.4; p = { x: rr(-hx, hx), z: z }; }
+        var dh = Math.hypot(p.x - HB.x, p.z - HB.z), dmin = 9;
+        if (!boss && dh < 1.3) continue;
         mobs.forEach(function (m) { var dd = Math.hypot(m.tx - p.x, m.tz - p.z); if (dd < dmin) dmin = dd; });
-        if (dmin > bestD) { bestD = dmin; best = p; }
+        // keep apart from each other, and do not hide too far from the wizard
+        var sc0 = Math.min(dmin, 1.5) * 2 - Math.max(0, dh - 3.4) * 0.8 + Math.random() * 0.3;
+        if (sc0 > bestS) { bestS = sc0; best = p; }
       }
-      return best;
+      return best || ringSpot(1.6, 3.0, boss);
     }
     // def.entry: 'run' (rush in from the right), 'leap' (jump in), 'drop' (fall from the sky)
     function spawnMob(def) {
@@ -286,7 +308,8 @@
         x: 0, z: 0, y: 0, vy: 0, tx: spot.x, tz: spot.z,
         state: 'enter', st: 0, speed: boss ? 1.5 : rr(2.6, 3.6), entry: entry, arrived: false, stun: 0, atk: 0, struck: false,
         flash: 0, frozen: 0, shocked: 0, freezeV: 0, phase: g.userData.seed, kx: spring(80, 9), face: 1, walk: 0, hurt: 0,
-        flyer: !!FLYERS[def.art.id], cheer: 0, vx: 0, vz: 0, sp: 0 };
+        flyer: !!FLYERS[def.art.id], cheer: 0, vx: 0, vz: 0, sp: 0,
+        gait: GAITS[def.art.id] || 'walk', hopCd: 0, pvx: 0, pvz: 0, tilt: spring(120, 9), dartT: 0, dartOn: true, orbDir: 1, orbR: 2.4 };
       // come in from the nearest screen edge: left, right, the far side or the near side
       var ang = Math.atan2((spot.z - HB.z) / 1.15, spot.x - HB.x), cx = Math.cos(ang), cz = Math.sin(ang);
       if (boss) { mob.x = spot.x * 0.4; mob.z = FIELD.z0 - 2.5; }
@@ -309,6 +332,12 @@
       mob.flash = Math.min(0.5, 0.28 + 0.12 * p);
       d.bend.v += 2.6 * p * heavy; d.sq.v -= 2.2 * p * heavy;
       mob.kx.v += 2.2 * p * heavy;
+      if (mob.pull === undefined && mob.arrived) {
+        var hx = mob.x - HB.x, hz = mob.z - HB.z, hl = Math.sqrt(hx * hx + hz * hz) || 1, push = 1.7 * p * heavy;
+        mob.pvx += hx / hl * push; mob.pvz += hz / hl * push * 0.8;
+        var pl = Math.sqrt(mob.pvx * mob.pvx + mob.pvz * mob.pvz); if (pl > 3.6) { mob.pvx *= 3.6 / pl; mob.pvz *= 3.6 / pl; }
+        mob.tilt.v -= (hx > 0 ? 1 : -1) * 2.6 * p * heavy;
+      }
       mob.hurt = Math.min(1, mob.hurt + 0.6 * p);
       if (!mob.boss || p > 1.4) mob.stun = Math.max(mob.stun, mob.boss ? 0.12 : 0.22 + 0.08 * p);
       if (!mob.boss && p >= 1.6 && mob.y <= 0.01) mob.vy = Math.max(mob.vy, 2 + p);
@@ -325,7 +354,7 @@
       if (hooks.die) hooks.die(mob, mobPos(mob), big);
     }
     function disposeGroup(g) { g.traverse(function (x) { if (x.geometry && !x.geometry.userData.cached) x.geometry.dispose(); if (x.material && x.material.dispose) x.material.dispose(); }); }
-    function clearMobs() { mobs.slice().forEach(function (m) { mobGroup.remove(m.group); disposeGroup(m.group); }); mobs.length = 0; dying.forEach(function (m) { mobGroup.remove(m.group); disposeGroup(m.group); }); dying.length = 0; }
+    function clearMobs() { HB.focus = null; mobs.slice().forEach(function (m) { m.alive = false; mobGroup.remove(m.group); disposeGroup(m.group); }); mobs.length = 0; dying.forEach(function (m) { mobGroup.remove(m.group); disposeGroup(m.group); }); dying.length = 0; }
     function mobPos(mob) { var g = mob.group, h = g.userData.h * 0.5; return new T.Vector3(g.position.x, h * COS_T + g.position.y, g.position.z - h * SIN_T + 0.15); }
     function mobTop(mob) { var g = mob.group, h = g.userData.h * 0.92; return new T.Vector3(g.position.x, h * COS_T + g.position.y, g.position.z - h * SIN_T + 0.15); }
 
@@ -401,7 +430,7 @@
     var flashA = 0, dimA = 0, dimTarget = 0, dimT = 0;
     function flash(color, amount) { flashEl.style.background = color; flashA = Math.max(flashA, Math.min(0.42, amount)); }
     function dim(amount, dur) { dimTarget = Math.max(dimTarget, Math.min(0.32, amount)); dimT = Math.max(dimT, dur || 0.5); }
-    var trauma = 0, punchV = 0, punch = 0, kick = new T.Vector3();
+    var trauma = 0, punchV = 0, punch = 0, kick = new T.Vector3(), pan = { x: 0, z: 0 };
     function shake(a) { trauma = Math.min(1, trauma + a * 1.8); }
     function camPunch(a, dir) { punchV += a * 14; if (dir) kick.add(dir.clone().multiplyScalar(a * 0.3)); }
 
@@ -442,23 +471,68 @@
 
     // ---------- hero brain ----------
     function heroBrain(dt) {
-      var hd = hero.userData;
-      HB.lock = Math.max(0, HB.lock - dt); HB.st -= dt;
-      if (HB.lock <= 0 && HB.st <= 0 && HB.y <= 0.01) {
-        var r = Math.random();
-        if (r < 0.6) { HB.tx = rr(HERO_ZONE.x0, HERO_ZONE.x1); HB.tz = rr(HERO_ZONE.z0, HERO_ZONE.z1); HB.speed = Math.random() < 0.7 ? rr(1.0, 1.4) : rr(1.9, 2.4); HB.st = rr(1.4, 3.0); if (Math.random() < 0.15) HB.vy = rr(3.6, 4.4); }
-        else if (r < 0.78) { HB.vy = 5.4; HB.st = rr(0.9, 1.5); flipT = 0; flipDur = 0.45; }
-        else HB.st = rr(0.5, 1.3);
+      var hd = hero.userData, Z = HERO_ZONE, i, m;
+      HB.lock = Math.max(0, HB.lock - dt); HB.turnT -= dt; HB.aim = Math.max(0, HB.aim - dt); HB.dashCd -= dt; HB.orbitT -= dt; HB.focusT -= dt; HB.cheer = Math.max(0, HB.cheer - dt);
+      // who to hunt: the nearest monster, kept for a moment so the wizard does not dither between two
+      var f = HB.focus;
+      if (!f || !f.alive || HB.focusT <= 0) {
+        var best = null, bd = 1e9;
+        for (i = 0; i < mobs.length; i++) {
+          // one still on its way in counts from the spot it is heading for, so the wizard goes to meet it there
+          m = mobs[i]; var ox = (m.arrived ? m.x : m.tx) - HB.x, oz = (m.arrived ? m.z : m.tz) - HB.z, od = ox * ox + oz * oz + (m.arrived ? 0 : 9) - (m === f ? 0.8 : 0);
+          if (od < bd) { bd = od; best = m; }
+        }
+        f = HB.focus = best; HB.focusT = rr(0.7, 1.2);
       }
-      var dx = HB.tx - HB.x, dz = HB.tz - HB.z, dist = Math.sqrt(dx * dx + dz * dz);
-      var want = HB.lock > 0 || dist < 0.04 ? 0 : Math.min(HB.speed, dist * 2.2);
-      var wx = dist > 1e-4 ? dx / dist * want : 0, wz = dist > 1e-4 ? dz / dist * want : 0, acc = Math.min(1, dt * (want > 0 ? 5 : 8));
-      HB.vx = (HB.vx || 0) + (wx - (HB.vx || 0)) * acc; HB.vz = (HB.vz || 0) + (wz - (HB.vz || 0)) * acc;
-      HB.x += HB.vx * dt; HB.z += HB.vz * dt;
+      var wx = 0, wz = 0, top = 1.4;
+      if (HB.cheer > 0) {
+        // a win: stop and bounce for joy
+        if (HB.y <= 0.01 && HB.vy === 0) HB.vy = 3.6;
+      } else if (f) {
+        var dx = (f.arrived ? f.x : f.tx) - HB.x, dz = (f.arrived ? f.z : f.tz) - HB.z, d = Math.sqrt(dx * dx + dz * dz) || 1, nx = dx / d, nz = dz / d;
+        var r0 = f.boss ? 2.1 : 1.45, r1 = f.boss ? 2.9 : 2.25;
+        if (d > r1) { var a = Math.min(2.9, (d - r1) * 2.4 + 0.9); wx += nx * a; wz += nz * a; top = 2.9; }
+        else if (d < r0) { var b = Math.min(2.4, (r0 - d) * 3 + 0.8); wx -= nx * b; wz -= nz * b; top = 2.4; }
+        // in range: keep circling, so the wizard is never planted on one spot
+        var ob = d > r1 + 0.8 ? 0.35 : 1;
+        wx += -nz * HB.orbit * 0.95 * ob; wz += nx * HB.orbit * 0.95 * ob;
+      } else {
+        // nobody to fight yet: stroll around the middle
+        HB.pt -= dt; var gx = HB.px - HB.x, gz = HB.pz - HB.z, gd = Math.sqrt(gx * gx + gz * gz);
+        if (HB.pt <= 0 || gd < 0.15) { HB.px = rr(Z.x0, Z.x1) * 0.6; HB.pz = rr(Z.z0, Z.z1) * 0.5; HB.pt = rr(1.6, 3.2); gx = HB.px - HB.x; gz = HB.pz - HB.z; gd = Math.sqrt(gx * gx + gz * gz); }
+        if (gd > 1e-3) { var gs = Math.min(1.25, gd * 2); wx = gx / gd * gs; wz = gz / gd * gs; }
+      }
+      // give way to anything that gets too close
+      for (i = 0; i < mobs.length; i++) {
+        m = mobs[i]; if (!m.arrived) continue;
+        var qx = HB.x - m.x, qz = HB.z - m.z, qd = Math.sqrt(qx * qx + qz * qz), need = m.boss ? 1.7 : 1.05;
+        if (qd < need && qd > 1e-3) { var pk = (need - qd) / need * 3.2; wx += qx / qd * pk; wz += qz / qd * pk; top = Math.max(top, 2.6); }
+      }
+      // stay on the hunting ground, and turn the circling around at its edges
+      var ex = 0, ez = 0;
+      if (HB.x < Z.x0 + 0.4) ex = (Z.x0 + 0.4 - HB.x) * 4; else if (HB.x > Z.x1 - 0.4) ex = (Z.x1 - 0.4 - HB.x) * 4;
+      if (HB.z < Z.z0 + 0.4) ez = (Z.z0 + 0.4 - HB.z) * 4; else if (HB.z > Z.z1 - 0.4) ez = (Z.z1 - 0.4 - HB.z) * 4;
+      if ((ex || ez) && HB.orbitT < 1.5) { HB.orbit = -HB.orbit; HB.orbitT = rr(2.5, 5); }
+      if (HB.orbitT <= 0) { HB.orbit = -HB.orbit; HB.orbitT = rr(2.5, 5.5); }
+      wx += ex; wz += ez;
+      var wl = Math.sqrt(wx * wx + wz * wz); if (wl > top) { wx *= top / wl; wz *= top / wl; }
+      // the wind-up of a spell slows the feet for a moment; they never stop for long
+      if (HB.lock > 0) { wx *= 0.3; wz *= 0.3; }
+      if (HB.dash > 0) {
+        HB.dash -= dt; HB.vx = HB.dvx; HB.vz = HB.dvz; HB.dvx *= Math.max(0, 1 - dt * 4); HB.dvz *= Math.max(0, 1 - dt * 4);
+        HB.ghostT -= dt; if (HB.ghostT <= 0) { HB.ghostT = 0.055; ghost(0xbfe9ff, true); }
+      } else {
+        var acc = Math.min(1, dt * 7);
+        HB.vx += (wx - HB.vx) * acc; HB.vz += (wz - HB.vz) * acc;
+      }
+      HB.x += (HB.vx + HB.kx) * dt; HB.z += (HB.vz + HB.kz) * dt;
+      var kd = Math.max(0, 1 - dt * 7); HB.kx *= kd; HB.kz *= kd;
+      HB.x = Math.max(Z.x0 - 0.25, Math.min(Z.x1 + 0.25, HB.x)); HB.z = Math.max(Z.z0 - 0.25, Math.min(Z.z1 + 0.25, HB.z));
       HB.sp = Math.sqrt(HB.vx * HB.vx + HB.vz * HB.vz); var moving = HB.sp > 0.12;
-      HB.walk = Math.min(1, HB.sp / 1.2);
-      if (moving && Math.abs(HB.vx) > 0.25 && HB.lock <= 0) HB.faceT = HB.vx < 0 ? -1 : 1;
-      HB.face += (HB.faceT - HB.face) * Math.min(1, dt * 11);
+      HB.walk = Math.min(1, HB.sp / 1.1);
+      // look where the spell goes; between spells, look where the feet go
+      if (HB.aim <= 0 && Math.abs(HB.vx) > 0.6) heroTurn(HB.vx < 0 ? -1 : 1);
+      HB.face = HB.faceT;   // a turn is one clean flip (with the little squash from heroTurn), never a slow spin
       HB.y += HB.vy * dt; HB.vy -= 17 * dt;
       if (HB.y <= 0) { if (HB.vy < -3.2) { hd.sq.v -= 2.4; if (hooks.land) hooks.land(new T.Vector3(HB.x, 0.03, HB.z), false); } HB.y = 0; HB.vy = 0; }
       heroGroup.position.set(HB.x, 0, HB.z);
@@ -467,17 +541,19 @@
 
     // ---------- monster brain ----------
     var KEEP = 0.78;
-    function chargers() { var n = 0; mobs.forEach(function (m) { if (m.state === 'charge' || m.state === 'swipe') n++; }); return n; }
+    function chargers() { var n = 0; mobs.forEach(function (m) { if (m.state === 'charge' || m.state === 'swipe' || m.state === 'windup') n++; }); return n; }
     function setGoal(m, x, z, speed, state) { var p = clampField({ x: x, z: z }); m.tx = p.x; m.tz = p.z; m.speed = speed; m.state = state; }
     function nearHero(m, dist) { var dx = m.x - HB.x, dz = (m.z - HB.z) / 1.15, d = Math.sqrt(dx * dx + dz * dz) || 1; return { x: HB.x + dx / d * dist, z: HB.z + dz / d * dist * 1.15 }; }
     function nextAction(m) {
       if (m.boss) return bossAction(m);
-      var r = Math.random();
-      if (r < 0.4) { var w = ringSpot(1.2, 3.4); setGoal(m, (m.x + w.x) / 2, (m.z + w.z) / 2, rr(0.8, 1.3), 'wander'); }
-      else if (r < 0.64 && chargers() < 3) { var c = nearHero(m, KEEP + 0.1); setGoal(m, c.x, c.z, rr(3.2, 4.0), 'charge'); }
-      else if (r < 0.78) { m.state = 'hop'; m.st = 0.05; m.jumped = false; }
-      else if (r < 0.9) { m.state = 'taunt'; m.st = rr(0.8, 1.3); }
-      else { m.state = 'idle'; m.st = rr(0.4, 1.0); }
+      var r = Math.random(), dH = Math.hypot(m.x - HB.x, m.z - HB.z), run = m.gait === 'skitter' ? 1.3 : m.gait === 'stomp' ? 0.75 : 1;
+      if (dH > 4.3) { var c0 = nearHero(m, rr(2.0, 3.1)); setGoal(m, c0.x, c0.z, rr(1.7, 2.3) * run, 'wander'); }   // the wizard ran off: go after it
+      else if (r < 0.28) { var w = freeSpot(false); setGoal(m, (m.x + w.x) / 2, (m.z + w.z) / 2, rr(0.9, 1.4) * run, 'wander'); }
+      else if (r < 0.55 && chargers() < 3) { m.state = 'windup'; m.st = rr(0.24, 0.34); m.face = HB.x < m.x ? 1 : -1; }
+      else if (r < 0.8) { m.state = 'orbit'; m.st = rr(1.2, 2.6); m.speed = rr(0.9, 1.4) * run; m.orbDir = Math.random() < 0.5 ? 1 : -1; m.orbR = Math.max(1.6, Math.min(3.2, dH)); }
+      else if (r < 0.9) { m.state = 'hop'; m.st = 0.05; m.jumped = false; }
+      else if (r < 0.96) { m.state = 'taunt'; m.st = rr(0.7, 1.2); }
+      else { m.state = 'idle'; m.st = rr(0.3, 0.7); }
     }
     function bossAction(m) {
       var r = Math.random();
@@ -487,54 +563,74 @@
       else { m.state = 'slam'; m.st = 0.3; m.jumped = false; }
     }
     function mobBrain(m, dt) {
-      var g = m.group, d = g.userData;
-      m.atk = Math.max(0, m.atk - dt * 3); m.cheer = 0;
+      var g = m.group, d = g.userData, gait = m.gait;
+      m.atk = Math.max(0, m.atk - dt * 3); m.cheer = 0; m.hopCd -= dt;
       if (m.frozen > 0 || m.pull !== undefined) { m.walk = 0; m.vx = m.vz = m.sp = 0; return; }
       if (m.stun > 0) { m.stun -= dt; m.walk *= 0.8; m.vx *= 0.8; m.vz *= 0.8; m.sp = 0; return; }
       m.st -= dt;
-      var st = m.state, moving = false;
-      if (st === 'enter' || st === 'wander' || st === 'charge' || st === 'back') {
+      var st = m.state, moving = false, grounded = m.y <= 0.01;
+      if (st === 'orbit') {
+        // circle the wizard at about the distance it already keeps: the goal is always one step ahead on the circle
+        var ox = HB.x - m.x, oz = HB.z - m.z, od = Math.sqrt(ox * ox + oz * oz) || 1, rad = (od - m.orbR) * 1.2;
+        var gx = m.x + (-oz / od * m.orbDir + ox / od * rad), gz = m.z + (ox / od * m.orbDir + oz / od * rad), cp = clampField({ x: gx, z: gz });
+        if (Math.abs(cp.x - gx) + Math.abs(cp.z - gz) > 0.02) m.orbDir = -m.orbDir;
+        m.tx = cp.x; m.tz = cp.z;
+        if (m.st <= 0) { nextAction(m); st = m.state; }
+      }
+      if (st === 'enter' || st === 'wander' || st === 'charge' || st === 'back' || st === 'orbit') {
         var dx = m.tx - m.x, dz = m.tz - m.z, dist = Math.sqrt(dx * dx + dz * dz);
         var want = m.speed > 0 && dist > 0.05 ? Math.min(m.speed, dist * (st === 'charge' ? 6 : 2.5) + 0.3) : 0;
-        var acc = Math.min(1, dt * (st === 'charge' ? 9 : 4.5));
+        var acc = Math.min(1, dt * (st === 'charge' ? 9 : gait === 'float' ? 2.6 : gait === 'skitter' ? 12 : 4.5));
         m.vx += ((dist > 1e-4 ? dx / dist * want : 0) - m.vx) * acc; m.vz += ((dist > 1e-4 ? dz / dist * want : 0) - m.vz) * acc;
         if (dist > 0.05 && m.speed > 0) {
-          m.x += m.vx * dt; m.z += m.vz * dt; moving = true;
-          if (Math.abs(m.vx) > 0.25) m.face = m.vx < 0 ? 1 : -1;
+          var mul = 1;
+          if (gait === 'hop') {
+            // hoppers only travel while they are in the air
+            if (grounded) { mul = 0; if (m.hopCd <= 0 && m.vy === 0) { m.vy = st === 'charge' ? 3.4 : rr(3.6, 4.6) * (m.boss ? 1.25 : 1); d.sq.v += 2.2; if (Math.abs(dx) > 0.2) m.face = dx < 0 ? 1 : -1; } }
+            else mul = 1.45;
+          } else if (gait === 'stomp') mul = 0.4 + 1.15 * Math.abs(Math.sin(d.anim.ph));
+          else if (gait === 'skitter') {
+            m.dartT -= dt; if (m.dartT <= 0) { m.dartOn = !m.dartOn; m.dartT = m.dartOn ? rr(0.22, 0.42) : rr(0.1, 0.28); }
+            mul = m.dartOn || st === 'charge' ? 1.7 : 0;
+          }
+          m.x += m.vx * mul * dt; m.z += m.vz * mul * dt; moving = mul > 0;
+          if (gait === 'skitter' && moving) { var zz = Math.sin(time * 13 + m.phase) * 0.9 * dt; m.x += -dz / dist * zz; m.z += dx / dist * zz; }
+          if (gait !== 'hop' && Math.abs(m.vx) > 0.25) m.face = m.vx < 0 ? 1 : -1;
           if (st === 'enter' && dist < 1.2 && m.boss) m.speed = Math.max(0.9, m.speed * 0.98);
-        } else if (m.y <= 0.01 || m.flyer) {
+        } else if (grounded || m.flyer || gait === 'float') {
           var fh = HB.x < m.x ? 1 : -1;
-          if (st === 'enter') { m.arrived = true; m.face = fh; m.state = 'idle'; m.st = rr(0.2, 0.9); if (m.boss && hooks.roar) { m.state = 'roar'; m.st = 1.3; m.roared = false; } }
+          if (st === 'enter') { m.arrived = true; m.face = fh; m.state = 'idle'; m.st = rr(0.15, 0.6); if (m.boss && hooks.roar) { m.state = 'roar'; m.st = 1.3; m.roared = false; } }
           else if (st === 'charge') { m.state = 'swipe'; m.st = m.boss ? 0.55 : 0.4; m.struck = false; m.face = fh; }
-          else { m.state = 'idle'; m.st = rr(0.4, 1.6); m.face = fh; }
+          else if (st !== 'orbit') { m.state = 'idle'; m.st = rr(0.2, 0.8); m.face = fh; }
         }
       } else if (st === 'idle') {
         if (m.st <= 0) nextAction(m);
       } else if (st === 'swipe') {
         m.atk = 1;
-        if (!m.struck && m.st < (m.boss ? 0.3 : 0.22)) { m.struck = true; d.bend.v -= m.boss ? 3 : 2.5; if (hooks.swipe) hooks.swipe(m); heroDodge(); if (m.boss) shake(0.2); }
-        if (m.st <= 0) { var bk = m.boss ? ringSpot(1.7, 2.5, true) : ringSpot(1.6, 3.3); setGoal(m, bk.x, bk.z, m.boss ? 2.2 : rr(2.0, 2.8), 'back'); }
+        if (!m.struck && m.st < (m.boss ? 0.3 : 0.22)) { m.struck = true; d.bend.v -= (m.boss ? 3 : 2.5) * (HB.x < m.x ? 1 : -1); if (hooks.swipe) hooks.swipe(m); heroDodge(m); if (m.boss) shake(0.2); }
+        if (m.st <= 0) { var bk = m.boss ? ringSpot(1.7, 2.5, true) : nearHero(m, rr(1.9, 3.0)); setGoal(m, bk.x, bk.z, m.boss ? 2.2 : rr(2.0, 2.8), 'back'); }
       } else if (st === 'hop') {
-        if (!m.jumped && m.y <= 0.01) { m.jumped = true; m.vy = rr(4.5, 6.2); d.sq.v += 2.5; }
-        else if (m.jumped && m.y <= 0.01 && m.vy === 0) { m.state = 'idle'; m.st = rr(0.3, 0.9); }
+        if (!m.jumped && grounded) { m.jumped = true; m.vy = rr(4.5, 6.2); d.sq.v += 2.5; }
+        else if (m.jumped && grounded && m.vy === 0) { m.state = 'idle'; m.st = rr(0.2, 0.6); }
       } else if (st === 'taunt') {
-        m.cheer = 1; if (m.y <= 0.01 && Math.random() < dt * 3) m.vy = 2.6;
-        if (m.st <= 0) { m.state = 'idle'; m.st = rr(0.3, 0.8); }
+        m.cheer = 1; if (grounded && Math.random() < dt * 3) m.vy = 2.6;
+        if (m.st <= 0) { m.state = 'idle'; m.st = rr(0.2, 0.5); }
       } else if (st === 'roar') {
         m.cheer = 0.6;
         if (!m.roared && m.st < 1.0) { m.roared = true; d.sq.v += 3.5; shake(0.35); if (hooks.roar) hooks.roar(m); }
         if (m.st <= 0) { m.state = 'idle'; m.st = rr(0.6, 1.2); }
       } else if (st === 'windup') {
-        d.sq.target = -0.15; m.atk = 0.4;
-        if (m.st <= 0) { var bc = nearHero(m, KEEP + 0.7); setGoal(m, bc.x, bc.z, 5.2, 'charge'); }
+        // crouch and lean back before the rush, so the attack can be seen coming
+        m.atk = 0.4; m.face = HB.x < m.x ? 1 : -1;
+        if (m.st <= 0) { var bc = nearHero(m, KEEP + (m.boss ? 0.7 : 0.1)); setGoal(m, bc.x, bc.z, m.boss ? 5.2 : rr(3.6, 4.4), 'charge'); }
       } else if (st === 'slam') {
         if (!m.jumped && m.st <= 0) { m.jumped = true; m.vy = m.flyer ? 6 : 7.5; d.sq.v += 3; }
-        else if (m.jumped && m.y <= 0.01 && m.vy === 0) { m.state = 'idle'; m.st = rr(0.6, 1.1); }
+        else if (m.jumped && grounded && m.vy === 0) { m.state = 'idle'; m.st = rr(0.6, 1.1); }
       }
       if (m.pull === undefined) { var ddx = m.x - HB.x, ddz = (m.z - HB.z) / 1.15, dd = Math.sqrt(ddx * ddx + ddz * ddz), keep = m.boss ? KEEP + 0.6 : KEEP; if (dd < keep && dd > 1e-3) { var pushK = Math.min(1, dt * 8) * (keep - dd) / dd; m.x += ddx * pushK; m.z += ddz * 1.15 * pushK; } }
       if (m.state === 'idle' || m.state === 'taunt' || m.state === 'roar') m.face = HB.x < m.x ? 1 : -1;
       if (!moving) { m.vx *= Math.max(0, 1 - dt * 8); m.vz *= Math.max(0, 1 - dt * 8); }
-      m.sp = Math.sqrt(m.vx * m.vx + m.vz * m.vz); m.walk = Math.min(1, m.sp / 1.4);
+      m.sp = Math.sqrt(m.vx * m.vx + m.vz * m.vz); m.walk = gait === 'hop' || !moving ? 0 : Math.min(1, m.sp / 1.4);
     }
     function separate() {
       for (var i = 0; i < mobs.length; i++) for (var j = i + 1; j < mobs.length; j++) {
@@ -554,29 +650,29 @@
       // hero
       if (hero) {
         var moving = heroBrain(dt);
-        var hd = hero.userData, rest = { bend: Math.sin(time * 1.3) * 0.018 + (HB.vx || 0) * 0.03, sq: Math.sin(time * 2.4) * 0.016, lift: 0, slide: 0 };
-        var arms = { walk: HB.walk, speed: HB.sp, stride: 0.34, air: HB.y > 0.08, armR: 0, armL: 0, head: 0, wag: 0 };
+        var hd = hero.userData, fs = HB.faceT, rest = { bend: Math.sin(time * 1.3) * 0.018 + HB.vx * 0.036 + (HB.dash > 0 ? HB.dvx * 0.03 : 0), sq: Math.sin(time * 2.4) * 0.016 - (HB.dash > 0 ? 0.12 : 0), lift: 0, slide: 0 };
+        var arms = { walk: HB.walk, speed: HB.sp, stride: 0.4, air: HB.y > 0.08, armR: 0, armL: 0, head: 0, wag: 0, cheer: HB.cheer > 0 ? 1 : 0 };
         if (pose) {
           var P = pose.P; pose.t += dt;
-          if (pose.t < pose.a) { var k = pose.t / pose.a, e = k * k * (3 - 2 * k); rest.bend += P.ab * e; rest.sq += P.as * e; rest.slide = P.ax * e; arms.armR = P.aR * e; arms.armL = P.aL * e; }
+          if (pose.t < pose.a) { var k = pose.t / pose.a, e = k * k * (3 - 2 * k); rest.bend += P.ab * e * fs; rest.sq += P.as * e; rest.slide = P.ax * e * fs; arms.armR = P.aR * e; arms.armL = P.aL * e; }
           else {
             if (!pose.rel) {
-              pose.rel = true; hd.bend.v += P.rb; hd.sq.v += P.rs; hd.lift.v += P.rl; hd.slide.v += P.rx;
+              pose.rel = true; hd.bend.v += P.rb * fs; hd.sq.v += P.rs; hd.lift.v += P.rl; hd.slide.v += P.rx * fs;
+              // the shot pushes the wizard back a step (a slash steps in instead); the big ones come with a hop
+              if (P.kick) HB.kx -= fs * P.kick;
+              if (P.hop && HB.y <= 0.01) HB.vy = P.hop;
               hd.anim.aR.v += (P.rR - P.aR) * 9; hd.anim.aL.v += (P.rL - P.aL) * 7;
-              if (P.flip) { flipT = 0; flipDur = P.flip; }
               heroGlow = Math.max(heroGlow, 0.8);
             }
-            var kk = Math.min(1, (pose.t - pose.a) / 0.42); rest.bend += P.hb * (1 - kk); rest.sq += P.hs * (1 - kk);
+            var kk = Math.min(1, (pose.t - pose.a) / 0.42); rest.bend += P.hb * (1 - kk) * fs; rest.sq += P.hs * (1 - kk);
             arms.armR = P.rR * (1 - kk * kk); arms.armL = P.rL * (1 - kk * kk);
             if (pose.t > pose.a + 0.6) pose = null;
           }
-          arms.walk = 0;
         }
         var stepped = animRig(hero, dt, arms);
         if (stepped && hooks.step) hooks.step(new T.Vector3(HB.x, 0.03, HB.z), false);
         rest.bend += Math.sin(hd.anim.ph) * 0.035 * hd.anim.walk;
         driveBillboard(hero, dt, rest, HB.face);
-        if (flipT < 1) { flipT = Math.min(1, flipT + dt / flipDur); hd.u.uScale.value.x *= Math.cos(flipT * Math.PI * 2); }
         var bounce = HB.y <= 0.01 ? Math.abs(Math.sin(hd.anim.ph)) * (0.025 + 0.035 * Math.min(1, HB.sp / 2.2)) * hd.anim.walk : 0;
         hero.position.y = Math.max(0, hd.lift.x) * 0.12 + HB.y + bounce; hero.position.x = hd.slide.x * 0.12;
         hd.shadow.position.y = 0.012 - hero.position.y;
@@ -587,7 +683,7 @@
       }
       ghosts.forEach(function (gh) {
         if (gh.t >= gh.life) { gh.mesh.visible = false; return; }
-        gh.t += dt; var k = gh.t / gh.life; gh.mesh.position.x += gh.vx * dt; gh.mesh.material.uniforms.uOpacity.value = 0.5 * (1 - k);
+        gh.t += dt; var k = gh.t / gh.life; gh.wx += gh.vx * dt; gh.mesh.position.set(gh.wx - HB.x, gh.wy, gh.wz - HB.z); gh.mesh.material.uniforms.uOpacity.value = 0.5 * (1 - k);
         gh.mesh.material.uniforms.uScale.value.multiplyScalar(1 + dt * 0.25);
       });
       if (aura.ring) { aura.ring.rotation.z += dt * 0.8; aura.ring.material.opacity = 0.6 + Math.sin(time * 3) * 0.25; }
@@ -608,29 +704,51 @@
           var grav = m.boss ? 22 : 18;
           m.y += m.vy * dt; m.vy -= grav * dt;
           if (m.y <= 0) {
+            if (m.vy < -1 && m.gait === 'hop') m.hopCd = rr(0.05, 0.16);
             if (m.vy < -3) { d.sq.v -= m.boss ? 3.2 : 2.6; if (hooks.land) hooks.land(new T.Vector3(m.x, 0.03, m.z), m.boss || m.vy < -9); if (m.boss) shake(m.state === 'slam' ? 0.55 : 0.12); if (m.boss && m.state === 'slam' && hooks.slam) hooks.slam(m); }
             m.y = 0; m.vy = 0;
           }
         }
-        var rest = { bend: Math.sin(time * 1.7 + m.phase) * 0.02, sq: Math.sin(time * 2.6 + m.phase) * 0.02 };
+        var hopper = m.gait === 'hop', rest = { bend: Math.sin(time * 1.7 + m.phase) * (d.rig ? 0.02 : 0.03), sq: Math.sin(time * (hopper ? 3.4 : 2.6) + m.phase) * (hopper ? 0.05 : d.rig ? 0.02 : 0.03) };
+        // knocked back by a hit: a real shove over the ground that dies away
+        if (m.pull === undefined && (m.pvx || m.pvz)) {
+          m.x += m.pvx * dt; m.z += m.pvz * dt; var pd = Math.max(0, 1 - dt * 6.5); m.pvx *= pd; m.pvz *= pd;
+          if (Math.abs(m.pvx) + Math.abs(m.pvz) < 0.03) m.pvx = m.pvz = 0;
+          if (m.arrived) { var cl = clampField({ x: m.x, z: m.z }); m.x = cl.x; m.z = cl.z; }
+        }
+        stepSpring(m.tilt, dt);
         if (m.pull !== undefined) { m.x += (m.pull - m.x) * Math.min(1, dt * 5); if (m.pullZ !== undefined) m.z += (m.pullZ - m.z) * Math.min(1, dt * 5); rest.bend = Math.sin(time * 18 + m.phase) * 0.18; rest.sq = -0.12; }
         rest.bend += m.vx * 0.035 + Math.sin(d.anim.ph) * 0.04 * d.anim.walk;
-        if (m.state === 'windup') { rest.sq = -0.16; rest.bend = 0.12; }
+        if (m.state === 'windup') { rest.sq = -0.17; rest.bend = (m.x > HB.x ? 1 : -1) * 0.14; }
         m.hurt = Math.max(0, m.hurt - dt * 3);
         var P = { walk: frozen ? 0 : m.walk, speed: m.sp, stride: m.boss ? 0.42 : 0.22, air: m.y > 0.12, armL: -m.atk * 1.15, armR: m.atk * 0.3, hurt: m.hurt, cheer: m.cheer, stepRate: m.boss ? 0.65 : 1,
           flap: m.flyer ? 0.32 : m.boss ? 0.16 : 0.1, flapF: m.flyer ? 9 : 6, wingOpen: m.state === 'roar' ? 0.25 : 0 };
         if (m.pull !== undefined) { P.cheer = 1; P.hurt = 0.8; }
         var stepped = frozen ? false : animRig(g, frozen ? 0 : dt, P);
         if (stepped && m.boss && !m.flyer) { shake(0.05); if (hooks.step) hooks.step(new T.Vector3(m.x, 0.03, m.z), true); }
+        else if (stepped && m.gait === 'stomp') { d.sq.v -= 1.5; if (hooks.step) hooks.step(new T.Vector3(m.x, 0.03, m.z), false); }
         if (frozen) { d.bend.v *= 0.5; d.sq.v *= 0.5; }
         m.freezeFace = m.face;
-        d.face += (m.face - d.face) * Math.min(1, dt * 9);
+        // monsters also turn in one clean flip, and not more than a few times a second
+        m.flipHold = (m.flipHold || 0) - dt;
+        if (m.face !== d.face && m.flipHold <= 0) { d.face = m.face; m.flipHold = 0.3; d.sq.v -= 0.5; }
         driveBillboard(g, frozen ? dt * 0.15 : dt, rest, d.face);
         stepSpring(m.kx, dt);
-        var hover = m.flyer ? 0.4 + Math.sin(time * 2.4 + m.phase) * 0.12 : 0;
+        var hover = m.flyer ? 0.4 + Math.sin(time * 2.4 + m.phase) * 0.12 : m.gait === 'float' ? 0.2 + Math.sin(time * 2.2 + m.phase) * 0.08 : 0;
         var bounce = m.y <= 0.01 ? Math.abs(Math.sin(d.anim.ph)) * (m.boss ? 0.035 : 0.035 + 0.06 * Math.min(1, m.sp / 3)) * d.anim.walk : 0;
         g.position.set(m.x + m.kx.x * 0.12, m.y + hover + bounce, m.z);
-        g.rotation.z = m.pull !== undefined ? Math.sin(time * 9 + m.phase) * 0.12 : (m.y > 0.2 && !m.boss ? -m.vy * 0.015 * d.face : 0);
+        // the body rocks with the way it moves: waddlers sway from foot to foot, heavy ones lurch, gliders bank into their turns
+        var gz = 0, wkA = d.anim.walk, phA = d.anim.ph;
+        if (m.pull !== undefined) gz = Math.sin(time * 9 + m.phase) * 0.12;
+        else {
+          if (m.gait === 'waddle') gz = Math.sin(phA) * 0.17 * wkA;
+          else if (m.gait === 'stomp') gz = Math.sin(phA) * 0.07 * wkA;
+          else if (m.gait === 'skitter') gz = Math.sin(time * 34 + m.phase) * 0.05 * wkA;
+          else if (m.gait === 'float') gz = -m.vx * 0.06 + Math.sin(time * 1.8 + m.phase) * 0.04;
+          if (m.y > 0.2 && !m.boss) gz += -m.vy * 0.015 * d.face;
+          gz += Math.max(-0.45, Math.min(0.45, m.tilt.x));
+        }
+        g.rotation.z = gz;
         d.shadow.position.y = 0.012 - g.position.y;
         d.shadow.scale.setScalar(Math.max(0.35, 1 - g.position.y * 0.35));
         m.freezeV += ((frozen ? 1 : 0) - m.freezeV) * Math.min(1, dt * 10);
@@ -671,8 +789,9 @@
       punchV += (-punch * 140 - punchV * 16) * rdt; punch += punchV * rdt;
       kick.multiplyScalar(Math.max(0, 1 - rdt * 7));
       if (Math.abs(viewShift - viewShiftT) > 0.001) { viewShift += (viewShiftT - viewShift) * Math.min(1, rdt * 9); applyShift(); }
-      camera.position.set(camBase.x + sx + kick.x + Math.sin(time * 0.35) * 0.06, camBase.y + sy + kick.y + Math.sin(time * 0.5) * 0.03, camBase.z + kick.z);
-      camera.lookAt(lookAt.x + sx * 0.3, lookAt.y + sy * 0.3, lookAt.z);
+      var fk = Math.min(1, rdt * 2.2); pan.x += (HB.x * 0.3 - pan.x) * fk; pan.z += (HB.z * 0.22 - pan.z) * fk;
+      camera.position.set(camBase.x + pan.x + sx + kick.x + Math.sin(time * 0.35) * 0.06, camBase.y + sy + kick.y + Math.sin(time * 0.5) * 0.03, camBase.z + pan.z + kick.z);
+      camera.lookAt(lookAt.x + pan.x + sx * 0.3, lookAt.y + sy * 0.3, lookAt.z + pan.z);
       camera.rotation.z += (Math.sin(st * 19.3) * 0.012) * tq;
       camera.fov = baseFov * (1 - Math.max(-0.2, Math.min(0.2, punch))); camera.updateProjectionMatrix();
       flashEl.style.opacity = flashA; flashA = Math.max(0, flashA - rdt * 2.8);
@@ -686,7 +805,7 @@
     return {
       THREE: T, scene: scene, camera: camera, renderer: renderer, fxGroup: fxGroup, glow: GLOW, hooks: hooks,
       size: size, setRegion: setRegion, setHero: setHero, setHeroTexture: setHeroTexture, setCostumeFx: setCostumeFx, heroTip: heroTip, heroPaw: heroPaw, heroCenter: heroCenter, heroPose: heroPose, heroGlow: heroGlowPulse, ghost: ghost,
-      castPulse: function () { heroGlow = 1; }, heroState: function () { return HB; }, heroFaceTo: heroFaceTo, setViewShift: setViewShift,
+      castPulse: function () { heroGlow = 1; }, heroState: function () { return HB; }, heroFaceTo: heroFaceTo, heroCheer: heroCheer, setViewShift: setViewShift,
       spawnMob: spawnMob, hitMob: hitMob, killMob: killMob, clearMobs: clearMobs, mobs: function () { return mobs; }, mobPos: mobPos, mobTop: mobTop,
       setTierAura: setTierAura, damageText: damageText, screenPos: screenPos, flash: flash, dim: dim, shake: shake, punch: camPunch, light: light,
       hitStop: hitStop, slowmo: slowmo, scaleDt: scaleDt, update: update, render: render,

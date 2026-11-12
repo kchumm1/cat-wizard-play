@@ -16,7 +16,7 @@
   function refreshStats() { st = CW.stats(state); }
   // equipment changes the wizard's picture (hat/robe colour, jewellery, staff glow)
   var lastLook = null;
-  var gained = { gold: 0, xp: 0, gems: 0, dmg: 0, t: 0 };
+  var gained = { gold: 0, xp: 0, gems: 0, dmg: 0, t: 0, more: [] };
   var heroArtId = 'hero', lastCos = null, artWait = {}, artFail = {};
   // costume pictures are fetched the first time they are needed, then the look and the cards refresh
   // monster pictures likewise, when their region is reached
@@ -90,7 +90,7 @@
     var mob = sc.spawnMob({ art: a, tint: res.tint, height: info.isRegionBoss ? 1.9 : 1.55, hp: CW.stageBossHp(state), boss: true, regionBoss: info.isRegionBoss, name: name });
     boss = { mob: mob, time: info.timeLimit, info: info, name: name };
     fx.bossEnter(mob, info.isRegionBoss);
-    ui.banner(info.isRegionBoss ? '전직 시험!' : '보스 등장!'); snd.play('boss');
+    snd.play('boss');
   }
   function onStageMoved(kind) {
     smallKills = 0;
@@ -148,8 +148,13 @@
     onLevel(CW.gainXp(state, bx));
     var res = CW.onBossResult(state, true);
     boss = null;
-    sc.slowmo(0.7, 0.3); snd.play('win'); ui.banner('승리!');
-    ui.toast('다이아 +' + gems + (first ? ' (첫 클리어 2배)' : '') + ' · 골드 +' + CW.fmt(gold) + ' · 마력석 +' + CW.fmt(mana) + (shards ? ' · 신기 조각 +' + shards : '') + (rstone ? ' · 룬석 +' + rstone : '') + (sigs.length ? ' · 신성력 ' + sigs.map(function (x) { return DATA.grades[x.grade].name; }).join('·') : ''));
+    // no pop-up for a win: the wizard cheers, and what was won scrolls by quietly in the corner list
+    sc.slowmo(0.7, 0.3); snd.play('win'); sc.heroCheer(1.5);
+    if (mana) gained.more.push({ t: '마력석 +' + CW.fmt(mana), c: '#8fd8ff' });
+    if (shards) gained.more.push({ t: '신기 조각 +' + shards, c: '#ffd24a' });
+    if (rstone) gained.more.push({ t: '룬석 +' + rstone, c: '#d8b8ff' });
+    if (sigs.length) gained.more.push({ t: '신성력 ' + sigs.map(function (x) { return DATA.grades[x.grade].name; }).join('·'), c: '#8ff59a' });
+    gained.t = 1;
     if (res.tierUp) pendingTier.push({ tier: res.tierUp, at: 1.1 });
     if (res.final) setTimeout(function () {
       var nd = res.unlocked !== null && res.unlocked !== undefined ? DATA.difficulties[res.unlocked] : null;
@@ -180,7 +185,8 @@
     snd.play('tier'); ui.showTierUp(t, sk); ui.slots(); save();
   }
   function pickTargets(skill) {
-    var H = sc.heroState(), dist = function (m) { var dx = m.x - H.x, dz = m.z - H.z; return dx * dx + dz * dz; };
+    // nearest first, leaning toward the ones the wizard already faces so it does not keep turning round
+    var H = sc.heroState(), dist = function (m) { var dx = m.x - H.x, dz = m.z - H.z; return (dx * dx + dz * dz) * (dx * H.faceT < -0.3 ? 1.8 : 1); };
     var list = aliveMobs().filter(function (m) { return m.arrived; }).sort(function (a, b) { return dist(a) - dist(b); });
     return list.slice(0, skill.targets);
   }
@@ -417,7 +423,7 @@
       tick(gdt); fx.update(gdt); sc.update(gdt, rdt);
       updateCoins(rdt);
       lookT -= rdt; if (lookT <= 0) { lookT = 0.25; applyLook(); }
-      gained.t += rdt; if (gained.t >= 1) { ui.gainLog(gained); gained.gold = gained.xp = gained.gems = gained.dmg = 0; gained.t = 0; }
+      gained.t += rdt; if (gained.t >= 1) { ui.gainLog(gained); gained.gold = gained.xp = gained.gems = gained.dmg = 0; gained.t = 0; gained.more.length = 0; }
       uiT += rdt; panelT += rdt; saveT += rdt;
       if (uiT > 0.1) { uiT = 0; ui.hud(); if (nowSlot !== lastSlot) { lastSlot = nowSlot; ui.slots(); } }
       if (panelT > 0.3) { panelT = 0; ui.renderPanel(); }
