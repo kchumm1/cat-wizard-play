@@ -708,6 +708,18 @@ table.prob th:first-child,table.prob td:first-child{text-align:left}
 .jump{gap:8px;padding:8px 0 12px}.jump button{padding:9px 15px}
 .runering{margin:14px auto 18px}
 .skrow .skbtns{margin-top:8px;gap:7px}
+/* keep the battle open: slimmer plates so the field reads wide */
+.ava{width:46px;height:46px}.prof{padding:4px 15px 4px 4px;background:rgba(12,13,22,.62)}
+.chip{min-width:96px;padding:4px 12px 4px 6px;background:rgba(12,13,22,.62)}
+#hud .place.stg{width:min(270px,70%);padding:7px 12px 9px;gap:6px 8px;background:linear-gradient(180deg,rgba(28,24,52,.78),rgba(12,13,22,.72))}
+#hud .stg #placeName{font-size:17px}
+#hud .stg #killBar{height:14px}
+#hud .stg #placeSub{margin-top:-20px;font:700 10.5px/14px var(--body)}
+#bossbox{width:min(270px,70%);padding:7px 12px 9px}#bossbox .bar{height:14px}
+#quick{top:calc(150px + env(safe-area-inset-top,0px));gap:8px;right:max(8px,env(safe-area-inset-right,0px))}
+#quick button{width:48px;padding:5px 0 3px;background:rgba(12,13,22,.6)}
+#quick i,#quick i .ico{width:26px;height:26px}#quick span{font-size:10px}
+#skillbar{padding-top:26px;background:linear-gradient(180deg,rgba(12,13,22,0),rgba(12,13,22,.7) 60%)}
 @media (prefers-reduced-motion:reduce){.ico .orb,.sk.now .ico,.rlines .flow,.rcore.lit,.isg,.gart .gimg,.gart .gstaff,.gshine::after{animation:none!important}}
 </style>
 
