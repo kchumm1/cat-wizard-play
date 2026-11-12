@@ -18,6 +18,7 @@
   // pictures for the gear kinds when they exist (art/gear/<kind>.*), drawn icons otherwise
   function icon(kind) { var img = CW.GEAR_IMG && CW.GEAR_IMG[kind]; if (img) return '<img class="gimg" src="' + img + '" alt="" draggable="false">'; return '<svg viewBox="0 0 64 64" aria-hidden="true">' + ICON[kind] + '</svg>'; }
   function gearArt(kind, grade, sub) { return CW.ICO.gear(kind, grade, (sub || 0) + 1, CW.GEAR_IMG && CW.GEAR_IMG[kind]); }
+  function mi(cat, o) { return (CW.ICO.misc && CW.ICO.misc(cat, o.id)) || o.icon; }
   function gc(g) { return 'var(--g' + g + ')'; }
   // colors and names of the eleven grades (sigils, runes, costumes)
   function hc(g) { return CW.DATA.hiGrades[Math.max(0, Math.min(CW.DATA.hiGrades.length - 1, g))].color; }
@@ -73,7 +74,7 @@
       var head = '<div class="alchhead"><div class="cauldron" aria-hidden="true">⚗️</div><div><b>연금술 Lv.' + lv + '</b><span class="note">' + (lv >= AC.maxLv ? '최고 레벨이에요' : '물약 ' + toNext + '개 더 만들면 레벨업') + ' · 물약 효과 +' + pct(lv * AC.effPerLv) + ' · ' + CW.potionMinutes(s) + '분 지속</span></div></div>';
       var list = DATA.potions.map(function (p) {
         var left = CW.buffLeft(s, p.id, now);
-        return '<div class="row potion' + (left ? ' on' : '') + '"><div class="ricon pt">' + p.icon + '</div><div class="info"><div class="name">' + p.name + '</div><div class="desc">' + p.desc + ' ×' + (1 + CW.potionPower(s, p.id)).toFixed(2) + (left ? ' · <b class="tleft">' + mmss(left) + ' 남음</b>' : '') + '</div></div>' +
+        return '<div class="row potion' + (left ? ' on' : '') + '"><div class="ricon pt">' + mi('potion', p) + '</div><div class="info"><div class="name">' + p.name + '</div><div class="desc">' + p.desc + ' ×' + (1 + CW.potionPower(s, p.id)).toFixed(2) + (left ? ' · <b class="tleft">' + mmss(left) + ' 남음</b>' : '') + '</div></div>' +
           '<button class="buy' + (s.gold < cost ? ' off' : '') + '" data-brew="' + p.id + '"><small>' + (left ? '시간 추가' : '만들기') + '</small><span><i class="coin"></i>' + fmt(cost) + '</span></button></div>';
       }).join('');
       return head + '<div class="list">' + list + '</div><p class="note">물약 값은 지금 ' + Math.round(AC.costSec / 60) + '분 동안 버는 골드쯤이에요. 다시 만들면 시간이 더해져요(최대 ' + CW.potionMinutes(s) * AC.stackCap + '분). 게임을 꺼 둔 동안에도 시간은 흘러요.</p>';
@@ -96,14 +97,14 @@
       var rows = [0, 1, 2].map(function (r) {
         var nodes = DATA.talents.filter(function (t) { return t.row === r; }).map(function (t) {
           var lv = (s.talents || {})[t.id] || 0, open = s.level >= TC.rowLevel[r] && (r === 0 || CW.talentSpent(s, r - 1) >= TC.rowNeed[r]);
-          return '<button class="tnode' + (selTalent === t.id ? ' sel' : '') + (open ? '' : ' lock') + (lv >= t.max ? ' max' : '') + '" data-tal="' + t.id + '"><span class="ti">' + (open ? t.icon : '🔒') + '</span><b>' + lv + '/' + t.max + '</b><small>' + t.name + '</small></button>';
+          return '<button class="tnode' + (selTalent === t.id ? ' sel' : '') + (open ? '' : ' lock') + (lv >= t.max ? ' max' : '') + '" data-tal="' + t.id + '"><span class="ti">' + (open ? mi('talent', t) : '🔒') + '</span><b>' + lv + '/' + t.max + '</b><small>' + t.name + '</small></button>';
         }).join('');
         return '<div class="trow">' + nodes + '</div>' + (r < 2 ? '<div class="tarrow">▼ ' + (TC.rowNeed[r + 1] ? '위에서 ' + TC.rowNeed[r + 1] + '포인트 · ' : '') + 'Lv.' + TC.rowLevel[r + 1] + '</div>' : '');
       }).join('');
       var t = selTalent && CW.talentById(selTalent), info = '';
       if (t) {
         var lv = (s.talents || {})[t.id] || 0;
-        info = '<div class="tinfo"><b>' + t.icon + ' ' + t.name + ' ' + lv + '/' + t.max + '</b><div>' + STAT_KO[t.stat] + ' +' + pct(lv * t.per) + (lv < t.max ? ' → <span style="color:#8ff59a">+' + pct((lv + 1) * t.per) + '</span>' : '') + '</div>' +
+        info = '<div class="tinfo"><b>' + t.name + ' ' + lv + '/' + t.max + '</b><div>' + STAT_KO[t.stat] + ' +' + pct(lv * t.per) + (lv < t.max ? ' → <span style="color:#8ff59a">+' + pct((lv + 1) * t.per) + '</span>' : '') + '</div>' +
           '<div class="note">' + (t.row ? '위 줄에 ' + TC.rowNeed[t.row] + '포인트 이상, ' : '') + '계정 레벨 ' + TC.rowLevel[t.row] + ' 이상</div>' +
           '<div class="btns"><button class="buy' + (CW.talentCan(s, t.id) ? '' : ' off') + '" data-tup="' + t.id + '">레벨업 (포인트 1)</button></div></div>';
       }
@@ -115,7 +116,7 @@
       var head = '<div class="rankbox"><div class="dstars">' + stars + '</div><b>' + RC.names[r] + '</b><span class="note">승급 효과 · 모든 피해 +' + pct(r * RC.rankFinal) + '</span></div>';
       var list = DATA.marks.map(function (m) {
         var lv = (s.marks || {})[m.id] || 0, cost = CW.markCost(lv), full = lv >= cap;
-        return '<div class="row"><div class="ricon mk">' + m.icon + '</div><div class="info"><div class="name">' + m.name + ' <span class="lv">' + lv + '/' + cap + '</span></div><div class="desc">' + STAT_KO[m.stat] + ' +' + pct(lv * m.per) + '</div></div>' +
+        return '<div class="row"><div class="ricon mk">' + mi('mark', m) + '</div><div class="info"><div class="name">' + m.name + ' <span class="lv">' + lv + '/' + cap + '</span></div><div class="desc">' + STAT_KO[m.stat] + ' +' + pct(lv * m.per) + '</div></div>' +
           '<button class="buy gemb' + (full || (s.mana || 0) < cost ? ' off' : '') + '" data-mark="' + m.id + '">' + (full ? '최대' : '' + CW.ICO.cur('mana') + ' ' + fmt(cost)) + '</button></div>';
       }).join('');
       var next = r + 1 < RC.names.length ? RC.names[r + 1] : null;
@@ -140,8 +141,8 @@
           var bestTxt = best ? (d.id === 'mana' ? '최고 피해 ' + fmt(best.dmg) : '최고 ' + best.kills + '마리') : '기록 없음';
           var rw = best ? CW.dungeonReward(s, d.id, best) : null;
           var rwTxt = rw ? (rw.gold ? '골드 +' + fmt(rw.gold) : rw.gems ? '다이아 +' + fmt(rw.gems) : rw.runeStone ? '룬석 +' + fmt(rw.runeStone) : '마력석 +' + fmt(rw.mana)) : '';
-          if (!CW.kindOpen(s, d.id)) return '<div class="dung dg-' + d.id + ' lockd"><div class="dicon">' + d.icon + '</div><div class="info"><div class="dname">' + d.name + '</div><div class="note">' + d.desc + '</div><div class="note">' + d.unlockTier + '차 전직 후에 열려요</div></div></div>';
-          return '<div class="dung dg-' + d.id + '"><div class="dicon">' + d.icon + '</div><div class="info"><div class="dname">' + d.name + '</div><div class="note">' + d.desc + '</div><div class="note">입장권 <b style="color:#fff">' + left + '/' + DATA.dungeonConf.tickets + '</b> · ' + bestTxt + (rwTxt ? ' (' + rwTxt + ')' : '') + '</div></div>' +
+          if (!CW.kindOpen(s, d.id)) return '<div class="dung dg-' + d.id + ' lockd"><div class="dicon">' + mi('dungeon', d) + '</div><div class="info"><div class="dname">' + d.name + '</div><div class="note">' + d.desc + '</div><div class="note">' + d.unlockTier + '차 전직 후에 열려요</div></div></div>';
+          return '<div class="dung dg-' + d.id + '"><div class="dicon">' + mi('dungeon', d) + '</div><div class="info"><div class="dname">' + d.name + '</div><div class="note">' + d.desc + '</div><div class="note">입장권 <b style="color:#fff">' + left + '/' + DATA.dungeonConf.tickets + '</b> · ' + bestTxt + (rwTxt ? ' (' + rwTxt + ')' : '') + '</div></div>' +
             '<div class="dbtns"><button class="buy' + (left && !run ? '' : ' off') + '" data-dgo="' + d.id + '">입장</button><button class="btn' + (left && best && !run ? '' : ' off') + '" data-dsw="' + d.id + '">소탕</button></div></div>';
         }).join('') + '</div>';
     }
@@ -169,7 +170,7 @@
       }).join('') + '</div>';
       var list = DATA.relics.slice().sort(function (a, b) { return (b.divine ? 1 : 0) - (a.divine ? 1 : 0); }).map(function (r) {
         var lv = own[r.id] || 0, max = CW.relicMax(r);
-        return '<div class="row relic' + (r.divine ? ' divine' : '') + (lv ? '' : ' none') + '"><div class="ricon">' + r.icon + '</div><div class="info"><div class="name">' + r.name + ' <span class="lv">Lv.' + lv + ' / ' + max + '</span></div><div class="desc">' +
+        return '<div class="row relic' + (r.divine ? ' divine' : '') + (lv ? '' : ' none') + '"><div class="ricon">' + mi('relic', r) + '</div><div class="info"><div class="name">' + r.name + ' <span class="lv">Lv.' + lv + ' / ' + max + '</span></div><div class="desc">' +
           (lv ? bonusText(r.stat, lv * r.per) : r.desc + ' (레벨당 +' + pct(r.per) + ')') + '</div></div></div>';
       }).join('');
       return '<h3>유물 소환 <small class="note">모은 유물 ' + have + '/' + DATA.relics.length + '</small></h3>' + pulls +
@@ -196,7 +197,7 @@
         var d = D[it.id] || { lv: 0, star: 0 }, cost = CW.divineUpCost(d.lv), sc = CW.starCost(d.star);
         var stars = ''; for (var i = 0; i < C.starMax; i++) stars += '<i class="' + (i < d.star ? 'on' : '') + '">★</i>';
         var val = d.lv ? it.per * d.lv * (1 + C.starBonus * d.star) : 0;
-        return '<div class="dcard' + (open ? '' : ' none') + '"><div class="dstars">' + stars + '</div><div class="dicon">' + it.icon + '</div><div class="dname">' + it.name + ' <span class="lv">Lv.' + d.lv + '</span></div><div class="note">' + it.kind + ' · ' + it.desc + '</div>' +
+        return '<div class="dcard' + (open ? '' : ' none') + '"><div class="dstars">' + stars + '</div><div class="dicon">' + mi('divine', it) + '</div><div class="dname">' + it.name + ' <span class="lv">Lv.' + d.lv + '</span></div><div class="note">' + it.kind + ' · ' + it.desc + '</div>' +
           '<div class="deff">' + (d.lv ? bonusText(it.stat, val) : STAT_KO[it.stat] + ' (레벨당 +' + pct(it.per) + ', 별마다 +' + pct(C.starBonus) + ')') + '</div>' +
           '<div class="btns"><button class="buy' + (!open || s.gold < cost || d.lv >= C.maxLv ? ' off' : '') + '" data-dlv="' + it.id + '">' + (d.lv ? '레벨업' : '깨우기') + ' <i class="coin"></i>' + fmt(cost) + '</button>' +
           '<button class="btn' + (!open || !d.lv || D.shards < sc || d.star >= C.starMax ? ' off' : '') + '" data-dstar="' + it.id + '">별 올리기 ✦' + sc + '</button></div></div>';
@@ -258,7 +259,7 @@
       var shown = list.slice().sort(function (a, b) { return (CW.relicById(b.id).divine ? 1 : 0) - (CW.relicById(a.id).divine ? 1 : 0); });
       var gems = list.reduce(function (a, o) { return a + o.refund; }, 0), hasDivine = list.some(function (o) { return CW.relicById(o.id).divine; });
       modal('<h2' + (hasDivine ? ' style="color:var(--gold)"' : '') + '>' + (hasDivine ? '신유물이 나왔어요!' : '유물 ' + list.length + '개') + '</h2><div class="rgot">' + shown.slice(0, 60).map(function (o) {
-        var r = CW.relicById(o.id); return '<div class="' + (r.divine ? 'divine' : '') + '"><span>' + r.icon + '</span><small>' + r.name + '</small><b>' + (o.refund ? '다이아 +' + o.refund : 'Lv.' + o.lv) + '</b></div>';
+        var r = CW.relicById(o.id); return '<div class="' + (r.divine ? 'divine' : '') + '"><span>' + mi('relic', r) + '</span><small>' + r.name + '</small><b>' + (o.refund ? '다이아 +' + o.refund : 'Lv.' + o.lv) + '</b></div>';
       }).join('') + '</div>' + (gems ? '<p class="note">최대 레벨이라 다이아 ' + gems + '개로 바꿨어요.</p>' : ''), [{ label: '닫기' }, { label: '한 번 더', pri: true, fn: function () { var r = G.summonRelics(list.length); if (!r) toast('다이아가 부족해요'); else { showRelics(r); renderPanel(true); hud(); } } }]);
     }
     var panel = $('panel');
@@ -293,7 +294,7 @@
       }
       $('retry').classList.toggle('on', s.farming && !boss && G.canRetry() && !G.dunState());
       dunHud(G.dunState());
-      var now = Date.now(), bt = DATA.potions.map(function (p) { var l = CW.buffLeft(s, p.id, now); return l ? '<span>' + p.icon + mmss(l) + '</span>' : ''; }).join('');
+      var now = Date.now(), bt = DATA.potions.map(function (p) { var l = CW.buffLeft(s, p.id, now); return l ? '<span>' + mi('potion', p) + mmss(l) + '</span>' : ''; }).join('');
       if (bt !== lastBuffs) { lastBuffs = bt; $('buffs').innerHTML = bt; }
       var tier = DATA.tiers[s.tier - 1];
       var next = s.tier < 9 ? (s.tier) + '-31 보스를 이기면 ' + (s.tier + 1) + '차' : (s.best >= 309 ? '마왕 토벌 완료!' : '최종 목표 10-31 늑대 왕');
@@ -398,7 +399,7 @@
         if (g.runeStone) lines.push('🔮 룬석 ' + fmt(g.runeStone));
         (g.sigils || []).forEach(function (x) { lines.push('<b style="color:' + hc(x.grade) + '">' + hn(x.grade) + '</b> 신성력 ' + x.n + '개'); });
         if (g.sigilStone) lines.push('💠 신성석 ' + fmt(g.sigilStone));
-        return '<div class="pack"><div class="picon">' + p.icon + '</div><div class="info"><div class="name">' + p.name + (s.packs && s.packs[p.id] ? ' <span class="lv">' + s.packs[p.id] + '번 받음</span>' : '') + '</div><div class="desc">' + lines.join(' · ') + '</div></div><button class="buy gemb" data-pack="' + p.id + '">' + p.won.toLocaleString('ko-KR') + '원</button></div>';
+        return '<div class="pack"><div class="picon">' + mi('pack', p) + '</div><div class="info"><div class="name">' + p.name + (s.packs && s.packs[p.id] ? ' <span class="lv">' + s.packs[p.id] + '번 받음</span>' : '') + '</div><div class="desc">' + lines.join(' · ') + '</div></div><button class="buy gemb" data-pack="' + p.id + '">' + p.won.toLocaleString('ko-KR') + '원</button></div>';
       }).join('') + '</div>';
       var st = s.settings;
       var settings = '<h3>설정</h3><div class="list">' +

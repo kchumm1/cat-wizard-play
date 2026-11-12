@@ -191,5 +191,5 @@
   };
   function cur(k) { return svg(CUR[k](), 'icur'); }
 
-  CW.ICO = { skill: skill, rune: rune, sigil: sigil, gear: gear, cur: cur, svg: svg };
+  CW.ICO = { kit: { sh: sh, hl: hl, ln: ln, circ: circ, star: star, spark: spark, O: O, lite: lite, dark: dark, STAFF: STAFF }, skill: skill, rune: rune, sigil: sigil, gear: gear, cur: cur, svg: svg };
 })(this);

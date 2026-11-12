@@ -1,0 +1,68 @@
+// The rest of the small pictures (relics, star items, talents, marks, potions, dungeons, packs), drawn with the same
+// kit as js/icons.js so every menu shares one look. CW.ICO.misc(category, id) returns '' when a picture is missing,
+// and the caller falls back to the old emoji.
+(function (root) {
+  var CW = root.CW, I = CW.ICO, K = I.kit, sh = K.sh, hl = K.hl, ln = K.ln, circ = K.circ, star = K.star, spark = K.spark, O = K.O;
+  function paw(x, y, k, col) { return '<g transform="translate(' + x + ' ' + y + ') scale(' + k + ')"><path d="M0 0c4 0 7 3 7 6.5S4 12 0 12s-7-2-7-5.5S-4 0 0 0zM-7-5a2.7 2.7 0 1 0 .01 0zM0-8a2.7 2.7 0 1 0 .01 0zM7-5a2.7 2.7 0 1 0 .01 0z" fill="' + col + '"/></g>'; }
+  function medal(col, inner) { return sh('M20 4h10l4 16H24zM44 4H34l-4 16h10z', '#5f7cff', 2.4) + circ(32, 38, 20, col) + '<circle cx="32" cy="38" r="15" fill="none" stroke="#fff" stroke-width="1.6" opacity=".55"/>' + inner; }
+  function flask(col, lite, mark) { return sh('M26 6h12v4l-2 2v10l14 24a8 8 0 0 1-7 12H21a8 8 0 0 1-7-12l14-24V12l-2-2z', '#e9f1ff') + '<path d="M22 38h20l7 11a5 5 0 0 1-5 7H20a5 5 0 0 1-5-7z" fill="' + col + '"/>' + hl('M24 40h7l-6 11h-6z', lite, 0.8) + sh('M24 4h16v5H24z', '#b9824f', 2.4) + mark + '<circle cx="36" cy="30" r="2" fill="' + col + '"/><circle cx="30" cy="24" r="1.4" fill="' + col + '"/>'; }
+  function gate(wall, dark, inner) { return sh('M6 58V30C6 14 18 6 32 6s26 8 26 24v28z', wall) + sh('M16 58V34c0-10 7-16 16-16s16 6 16 16v24z', dark, 2.4) + inner; }
+  function coin(x, y, r) { return circ(x, y, r, '#ffcf3a', 2) + '<circle cx="' + x + '" cy="' + y + '" r="' + (r * 0.55) + '" fill="none" stroke="#fff3b0" stroke-width="1.4"/>'; }
+  function box(col, lid, mark) { return sh('M8 26h48v30H8z', col) + sh('M5 16h54v12H5z', lid) + hl('M10 30h10v22H10z', '#ffffff', 0.18) + mark; }
+  var M = {
+    // ----- relics -----
+    'relic:pawHammer': function () { return ln('M20 58L36 30', '#a9794c', 5) + '<g transform="rotate(30 40 20)">' + sh('M22 8h36a4 4 0 0 1 4 4v16a4 4 0 0 1-4 4H22a4 4 0 0 1-4-4V12a4 4 0 0 1 4-4z', '#ff9ec7') + hl('M24 11h30v5H24z', '#ffffff', 0.4) + paw(40, 17, 0.75, '#fff') + '</g>'; },
+    'relic:catEye': function () { return circ(32, 32, 24, '#3fd08a') + hl('M16 26a18 18 0 0 1 20-12a22 22 0 0 0-16 16z', '#d6ffe9') + sh('M32 14c7 9 7 27 0 36c-7-9-7-27 0-36z', '#12281c', 2) + '<circle cx="24" cy="22" r="3.5" fill="#fff"/>'; },
+    'relic:clawRing': function () { return '<circle cx="32" cy="40" r="17" fill="none" stroke="' + O + '" stroke-width="11"/><circle cx="32" cy="40" r="17" fill="none" stroke="#d9e2f2" stroke-width="5.5"/>' + sh('M22 22C24 10 30 4 40 2C36 10 38 16 42 22Z', '#ffffff') + sh('M26 18h14l-7 9z', '#7fe3ff', 2); },
+    'relic:starFeather': function () { return ln('M14 56L40 24', '#fff', 2.4) + sh('M52 6C28 8 14 26 16 50C36 46 54 34 52 6Z', '#bfe6ff') + hl('M48 10C32 14 22 26 20 44C28 30 38 18 48 10Z', '#ffffff', 0.7) + sh(star(46, 46, 9, 4, 5), '#ffe14a', 2); },
+    'relic:moonBell': function () { return sh('M32 8c12 0 18 10 18 24l4 12H10l4-12C14 18 20 8 32 8z', '#ffd24a') + hl('M22 16c-4 5-5 12-5 20c3-10 6-15 12-20z', '#fff6c0') + circ(32, 52, 5.5, '#ffb21c', 2.4) + sh('M36 20a9 9 0 1 0 6 14a7 7 0 0 1-6-14z', '#fff', 1.8) + ln('M32 8V3', '#ffd24a', 3); },
+    'relic:hunterBadge': function () { return sh('M18 40l-6 20 10-5 6 7 4-16zM46 40l6 20-10-5-6 7-4-16z', '#ff5a6e', 2.4) + sh('M32 4l22 8v14c0 12-9 20-22 24c-13-4-22-12-22-24V12z', '#5f7cff') + hl('M32 8L14 15v10c0 6 2 10 5 14z', '#ffffff', 0.2) + sh(star(32, 25, 11, 4.8, 5), '#ffe14a', 2); },
+    'relic:grassCharm': function () { var l = 'M32 32C20 30 16 20 22 14C28 8 34 18 32 32Z', s = ''; for (var i = 0; i < 4; i++) s += '<g transform="rotate(' + (i * 90) + ' 32 32)">' + sh(l, i % 2 ? '#4fc46a' : '#6bd47c') + '</g>'; return ln('M32 34Q36 50 46 58', '#3a9a52', 3.4) + s + circ(32, 32, 4, '#d6ffd9', 2); },
+    'relic:bookmark': function () { return sh('M10 8h40a4 4 0 0 1 4 4v42a4 4 0 0 1-4 4H10z', '#8a5cf0') + hl('M14 8h4v50h-4z', '#000', 0.25) + sh(star(34, 28, 10, 4.4, 5), '#ffe14a', 2) + sh('M40 4h10v24l-5-5-5 5z', '#ff5a6e', 2.2); },
+    'relic:piggyBank': function () { return sh('M16 22l-4-12 12 6zM48 22l4-12-12 6z', '#ffb0cf') + sh('M32 16c14 0 24 9 24 20s-10 22-24 22S8 47 8 36s10-20 24-20z', '#ff9ec7') + hl('M16 28a16 14 0 0 1 14-9a20 16 0 0 0-11 13z', '#ffe0ee') + sh('M24 20h16v4H24z', '#7a2a50', 1.6) + coin(32, 11, 7) + '<circle cx="24" cy="38" r="2.4" fill="' + O + '"/><circle cx="40" cy="38" r="2.4" fill="' + O + '"/><path d="M28 45q2 3 4 0q2 3 4 0" fill="none" stroke="' + O + '" stroke-width="2.2" stroke-linecap="round"/>'; },
+    'relic:sleepyPillow': function () { return sh('M10 30c0-6 4-8 10-8h26c6 0 10 2 10 8v16c0 6-4 8-10 8H20c-6 0-10-2-10-8z', '#bcd0ff') + hl('M16 28h28v5H16z', '#ffffff', 0.5) + '<path d="M24 40q4 4 8 0M38 40q3 3 6 0" fill="none" stroke="' + O + '" stroke-width="2.4" stroke-linecap="round"/><path d="M40 6h10l-10 10h10M26 12h7l-7 7h7" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'; },
+    'relic:windChime': function () { return ln('M32 4v6', '#fff', 2.4) + sh('M14 10h36l-4 8H18z', '#5fd2c0') + ln('M22 18v10M32 18v6M42 18v12', '#e9f1ff', 1.6) + sh('M18 28h8v18h-8z', '#bfe6ff', 2.2) + sh('M28 24h8v26h-8z', '#8fe0ff', 2.2) + sh('M38 30h8v14h-8z', '#bfe6ff', 2.2) + sh('M26 54h12l-6 8z', '#ffe14a', 2); },
+    'relic:cometShard': function () { return ln('M6 10l16 12M4 24l12 6M20 4l8 12', '#9fe8ff', 3) + sh('M30 20l18-4 10 16-8 22-18 4-10-18z', '#5fb8ff') + hl('M32 24l14-3-12 14z', '#e2f6ff') + hl('M48 50l6-16-10 8z', '#000', 0.2) + spark(50, 12, 5); },
+    'relic:galaxyDaggers': function () { var d = sh('M30 4l5 8v26h-10V12z', '#d9e2f2', 2.4) + hl('M30 8l-3 6v22h3z', '#fff') + sh('M20 38h20v5H20z', '#ffd24a', 2.2) + sh('M27 43h6v12h-6z', '#7a5cd6', 2.2) + circ(30, 57, 3.4, '#ffd24a', 2); return '<g transform="rotate(35 32 34)">' + d + '</g><g transform="rotate(-35 32 34) translate(4 0)">' + d + '</g>' + spark(32, 10, 5, '#b9a8ff'); },
+    'relic:dawnCrystal': function () { return sh('M14 56l-4-22 8-10 8 10-2 22z', '#ff9ec7', 2.4) + sh('M40 56l-2-18 8-8 8 8-4 18z', '#9fe8ff', 2.4) + sh('M22 58L20 20 32 4l12 16-2 38z', '#ffe9a0') + hl('M32 10l-8 12 2 30 6-22z', '#ffffff', 0.75) + spark(50, 12, 5); },
+    'relic:hourglass': function () { return sh('M14 6h36v8c0 10-10 14-12 18c2 4 12 8 12 18v8H14v-8c0-10 10-14 12-18c-2-4-12-8-12-18z', '#e9f1ff') + '<path d="M20 14h24c0 6-8 10-12 14c-4-4-12-8-12-14zM22 52c2-6 6-8 10-12c4 4 8 6 10 12z" fill="#ffcf3a"/>' + ln('M32 30v8', '#ffcf3a', 2) + sh('M10 2h44v8H10zM10 54h44v8H10z', '#b9824f', 2.4); },
+    'relic:kingScepter': function () { return ln('M20 60L38 30', '#ffcf3a', 5) + circ(44, 20, 15, '#ff5a6e') + hl('M35 15a10 10 0 0 1 10-6a12 12 0 0 0-8 9z', '#ffd0d8') + sh('M32 6l5 6 7-10 7 10 5-6v12H32z', '#ffe14a', 2.2) + sh('M36 32l8-4 2 6-8 4z', '#ffe14a', 2); },
+    // ----- the three star items -----
+    'divine:staff': function () { return K.STAFF[5](); },
+    'divine:robe': function () { return sh('M32 8c8 0 12 4 14 10l12 36c-8 6-18 6-26 2c-8 4-18 4-26-2L18 18c2-6 6-10 14-10z', '#3b3fa8') + hl('M22 20L10 52c5 3 10 3 15 2z', '#5b63d8') + spark(24, 34, 5, '#ffe14a') + spark(42, 44, 4, '#fff') + spark(40, 26, 3, '#bfe6ff') + sh('M22 8h20l-4 8H26z', '#ffd24a', 2.2) + circ(32, 15, 4, '#ff5a6e', 2); },
+    'divine:charm': function () { return sh(star(32, 34, 30, 22, 12), '#ff9d1c', 2) + sh('M32 12c10 0 15 8 15 20l4 10H13l4-10c0-12 5-20 15-20z', '#ffe14a') + hl('M24 18c-4 5-4 11-4 18c3-9 5-13 10-18z', '#fffbd6') + circ(32, 48, 5, '#ffb21c', 2.2) + sh('M24 14l-2-8 8 4zM40 14l2-8-8 4z', '#ffe14a', 2) + '<circle cx="27" cy="30" r="2" fill="' + O + '"/><circle cx="37" cy="30" r="2" fill="' + O + '"/>'; },
+    // ----- talents -----
+    'talent:tSkill': function () { return sh(star(28, 36, 22, 7, 4), '#b46cff') + hl(star(28, 36, 10, 3.4, 4), '#f0dcff') + spark(50, 14, 9, '#ffe14a') + spark(52, 52, 5); },
+    'talent:tBoss': function () { return circ(32, 32, 25, '#ff5a6e') + circ(32, 32, 16.5, '#fff', 2.4) + circ(32, 32, 8, '#ff5a6e', 2.4) + ln('M32 2v10M32 52v10M2 32h10M52 32h10', '#fff', 2.4); },
+    'talent:tCrit': function () { var c = 'M0 0C16 8 23 24 19 46C15 30 8 15-5 7Z'; return [[12, 8, '#ffb347'], [26, 6, '#ffd24a'], [40, 8, '#fff0a0']].map(function (p) { return '<g transform="translate(' + p[0] + ' ' + p[1] + ')">' + sh(c, p[2]) + '</g>'; }).join(''); },
+    'talent:tChain': function () { return '<g transform="rotate(-35 32 32)"><rect x="6" y="22" width="30" height="20" rx="10" fill="none" stroke="' + O + '" stroke-width="10"/><rect x="28" y="22" width="30" height="20" rx="10" fill="none" stroke="' + O + '" stroke-width="10"/><rect x="6" y="22" width="30" height="20" rx="10" fill="none" stroke="#8fe0ff" stroke-width="5"/><rect x="28" y="22" width="30" height="20" rx="10" fill="none" stroke="#5f9bff" stroke-width="5"/></g>'; },
+    'talent:tGold': function () { return circ(32, 32, 24, '#ffcf3a') + '<circle cx="32" cy="32" r="18" fill="none" stroke="#fff3b0" stroke-width="2"/>' + hl('M16 26a18 18 0 0 1 16-12a22 22 0 0 0-13 15z', '#fffbd6') + '<path d="M22 30l-10-3M22 36l-10 2M42 30l10-3M42 36l10 2" stroke="' + O + '" stroke-width="2.2" stroke-linecap="round"/>' + '<path d="M27 37q2.5 3 5 0q2.5 3 5 0M30 33h4l-2 2z" fill="none" stroke="' + O + '" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>'; },
+    'talent:tXp': function () { return sh('M4 32C12 16 22 10 32 10s20 6 28 22C52 48 42 54 32 54S12 48 4 32Z', '#ffffff') + circ(32, 32, 13, '#5fd28a') + sh('M32 21c4 5 4 17 0 22c-4-5-4-17 0-22z', '#12281c', 1.6) + '<circle cx="26" cy="26" r="3" fill="#fff"/>' + spark(54, 12, 5, '#ffe14a'); },
+    'talent:tChain3': function () { var s = '', xs = [14, 32, 50], cs = ['#8fe0ff', '#5f9bff', '#b46cff']; xs.forEach(function (x) { s += '<circle cx="' + x + '" cy="32" r="11" fill="none" stroke="' + O + '" stroke-width="10"/>'; }); xs.forEach(function (x, i) { s += '<circle cx="' + x + '" cy="32" r="11" fill="none" stroke="' + cs[i] + '" stroke-width="5"/>'; }); return s; },
+    // ----- marks -----
+    'mark:mStar': function () { return medal('#ffb21c', sh(star(32, 38, 12, 5.2, 5), '#fff6b0', 2)); },
+    'mark:mClaw': function () { return medal('#ff7aa8', paw(32, 36, 1.1, '#fff')); },
+    'mark:mMoon': function () { return medal('#7a6cff', sh('M36 26a13 13 0 1 0 8 20a10.5 10.5 0 0 1-8-20z', '#fff6c0', 2)); },
+    'mark:mComet': function () { return medal('#3fb6ff', ln('M22 28l10 10M22 38l6 5', '#fff', 2.4) + sh(star(38, 43, 8, 3.4, 5), '#ffe14a', 2)); },
+    'mark:mCrown': function () { return medal('#ff5a6e', sh('M20 46l-2-16 8 6 6-10 6 10 8-6-2 16z', '#ffe14a', 2)); },
+    'mark:mBook': function () { return medal('#4fc46a', sh('M32 30c-4-3-9-3-13-1v16c4-2 9-2 13 1c4-3 9-3 13-1V29c-4-2-9-2-13 1z', '#fff', 2) + ln('M32 30v16', '#4fc46a', 1.6)); },
+    // ----- potions -----
+    'potion:rage': function () { return flask('#ff4d5e', '#ffc0c8', sh('M30 40c3 3 6 5 6 9a5 5 0 0 1-10 0c0-2 1-3 2-5 1 2 2 2 2-4z', '#ffd24a', 1.6)); },
+    'potion:luck': function () { return flask('#ffc21a', '#fff3b0', sh(star(32, 47, 6.5, 2.8, 5), '#fff', 1.6)); },
+    'potion:wisdom': function () { return flask('#4f9bff', '#cfe6ff', sh(star(32, 47, 7, 2.4, 4), '#fff', 1.6)); },
+    // ----- dungeons -----
+    'dungeon:gold': function () { return gate('#b9824f', '#2a1808', sh('M20 30l-3-9 9 4zM44 30l3-9-9 4z', '#ffcf3a', 2) + '<circle cx="26" cy="36" r="2.4" fill="#ffe14a"/><circle cx="38" cy="36" r="2.4" fill="#ffe14a"/>' + coin(22, 52, 6) + coin(34, 54, 6) + coin(44, 50, 6)); },
+    'dungeon:mana': function () { return sh('M20 60V24l12-20 12 20v36z', '#5f7cff') + hl('M24 58V26l8-14v46z', '#8fa6ff') + sh('M14 60h36v-8H14z', '#3b4fb8', 2.4) + sh('M28 40h8v12h-8z', '#12183a', 2) + circ(32, 28, 5, '#8fe0ff', 2) + spark(52, 14, 6, '#8fe0ff') + spark(10, 30, 4.5); },
+    'dungeon:gem': function () { return gate('#6a7088', '#141624', sh('M32 26l10 12-10 18-10-18z', '#5fd2ff') + hl('M32 30l-6 8h6z', '#e2f8ff') + sh('M18 44l5 6-5 8-5-8z', '#ff9ec7', 2) + sh('M46 44l5 6-5 8-5-8z', '#b46cff', 2)) + spark(48, 16, 5); },
+    'dungeon:rune': function () { return sh('M4 20L32 4l28 16v6H4z', '#8a7ad0') + sh('M10 26h8v26h-8zM28 26h8v26h-8zM46 26h8v26h-8z', '#d9d4f5', 2.4) + sh('M4 52h56v8H4z', '#8a7ad0') + '<path d="M32 9v9M27 12l5 4 5-4" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>'; },
+    // ----- packs -----
+    'pack:runeS': function () { return sh('M22 14c-4-6 0-10 10-10s14 4 10 10z', '#b9824f', 2.4) + sh('M20 16h24c10 10 14 22 12 34c-1 6-6 8-12 8H20c-6 0-11-2-12-8c-2-12 2-24 12-34z', '#7a5cd6') + hl('M18 24c-5 8-7 16-6 24c3-10 6-17 12-24z', '#a58cf0') + ln('M22 16h20', '#ffd24a', 3) + '<path d="M32 28v20M25 34l7 6 7-6" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>'; },
+    'pack:runeL': function () { return box('#7a5cd6', '#9a7cf0', sh('M26 22h12v12H26z', '#ffd24a', 2.2) + '<path d="M32 38v14M27 42l5 4 5-4" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'); },
+    'pack:mixed': function () { return box('#ff7aa8', '#ff9ec7', sh('M28 16h8v40h-8z', '#ffe14a', 2.2) + sh('M32 16C26 4 14 6 18 14c2 3 8 3 14 2zM32 16C38 4 50 6 46 14c-2 3-8 3-14 2z', '#ffe14a', 2.2)); }
+  };
+  var PACK_GRADE = { sigilA: 3, sigilB: 5, sigilC: 7, sigilD: 10 };
+  I.misc = function (cat, id) {
+    if (cat === 'pack' && PACK_GRADE[id] !== undefined) { var g = PACK_GRADE[id]; return I.sigil('megaRate', g, CW.DATA.hiGrades[g].color); }
+    var f = M[cat + ':' + id]; return f ? I.svg(f(), 'imisc') : '';
+  };
+})(this);

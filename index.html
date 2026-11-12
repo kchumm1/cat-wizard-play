@@ -562,6 +562,11 @@ table.prob th:first-child,table.prob td:first-child{text-align:left}
 .tnode .ti{width:40px;height:40px;font-size:21px;border-radius:13px}
 .relic .ricon,.ricon.pt,.ricon.mk{border-radius:16px;background:radial-gradient(circle at 50% 30%,#34385a,#171827);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.14),inset 0 -4px 0 rgba(0,0,0,.25)}
 .relic.divine .ricon{background:radial-gradient(circle at 50% 30%,#6a5010,#221803);box-shadow:inset 0 0 0 1.5px #ffd84a,0 0 10px rgba(255,216,74,.35)}
+.imisc{filter:drop-shadow(0 2px 1px rgba(0,0,0,.4))}
+.ricon .ico,.dung .dicon .ico,.pack .picon .ico{width:78%;height:78%}.tnode .ti .ico{width:80%;height:80%}
+.dcard .dicon{width:72px;height:72px;margin:6px auto;filter:drop-shadow(0 0 10px rgba(255,190,60,.55))}
+#buffs span{display:inline-flex;align-items:center;gap:3px}#buffs .ico{width:16px;height:16px}
+.modal .ico.imisc{width:30px;height:30px;margin:0 auto}
 @media (prefers-reduced-motion:reduce){.ico .orb,.sk.now .ico,.rlines .flow,.rcore.lit,.isg,.gart .gimg,.gart .gstaff,.gshine::after{animation:none!important}}
 </style>
 
@@ -636,8 +641,26 @@ table.prob th:first-child,table.prob td:first-child{text-align:left}
 <script src="js/fx.js"></script>
 <script src="js/sound.js"></script>
 <script src="js/icons.js"></script>
+<script src="js/icons-more.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>
-<script>if ('serviceWorker' in navigator) addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });</script>
+<script>
+// New version: the worker downloads every file first, then takes over; the page saves and restarts once, right away.
+if ('serviceWorker' in navigator) addEventListener('load', function () {
+  var had = !!navigator.serviceWorker.controller, done = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    if (!had) { had = true; return; }
+    if (done) return; done = true;
+    try { dispatchEvent(new Event('pagehide')); } catch (e) {}
+    var t = document.getElementById('toast'); if (t) { t.textContent = '새 버전을 받았어요. 다시 여는 중…'; t.classList.add('on'); }
+    setTimeout(function () { location.reload(); }, 700);
+  });
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (reg) {
+    var check = function () { reg.update().catch(function () {}); };
+    check(); setInterval(check, 60000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
+  }).catch(function () {});
+});
+</script>
 </body>
 </html>
