@@ -567,6 +567,45 @@ table.prob th:first-child,table.prob td:first-child{text-align:left}
 .dcard .dicon{width:72px;height:72px;margin:6px auto;filter:drop-shadow(0 0 10px rgba(255,190,60,.55))}
 #buffs span{display:inline-flex;align-items:center;gap:3px}#buffs .ico{width:16px;height:16px}
 .modal .ico.imisc{width:30px;height:30px;margin:0 auto}
+/* ---------- battle screen layout: profile + wallet on top, stage plate in the middle, big skill tiles, picture menu ---------- */
+#hud{gap:7px}
+.hud-row{align-items:center}
+.prof{display:flex;align-items:center;gap:9px;min-width:0;padding:4px 16px 4px 4px;border-radius:999px;background:rgba(12,13,22,.74);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.12)}
+.ava{width:44px;height:44px;flex:none;border-radius:50%;background:#ffe2b0 url(art/hero.webp) 47% 24%/235% no-repeat;box-shadow:0 0 0 2px #ffcf4a,0 0 0 4px #2b1838}
+.pi{display:flex;flex-direction:column;gap:4px;min-width:0}
+.pl{display:flex;align-items:baseline;gap:6px;min-width:0}
+#lvTxt{font:400 15px var(--display);color:var(--gold)}
+#tierTag{font:700 12px var(--body);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.1;flex:0 1 auto}
+.prof .xpbar{flex:none;width:112px;max-width:34vw;height:6px;background:rgba(255,255,255,.16)}
+.wallet{flex-direction:column;gap:4px}
+.chip{min-width:92px;justify-content:space-between;padding:3px 11px 3px 5px;font-size:14px;background:rgba(12,13,22,.74);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.12);border:0}
+#hud .place.stg{align-self:center;width:min(310px,84%);max-width:none;flex:none;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:5px 8px;padding:7px 12px 9px;border-radius:16px;background:linear-gradient(180deg,rgba(28,24,52,.9),rgba(12,13,22,.86));border:0;box-shadow:inset 0 0 0 1.5px rgba(255,207,74,.5),0 5px 14px rgba(0,0,0,.35)}
+#hud .stg #placeName{font:400 18px/1.1 var(--display);color:#ffe9a0;text-shadow:0 2px 0 rgba(0,0,0,.4)}
+#hud .stg .pmap{background:rgba(255,207,74,.16);border-radius:999px;padding:3px 7px 3px 9px;color:var(--gold)}
+#hud .stg #killBar{grid-column:1/-1;display:block;height:16px;border-radius:9px;background:#0a0b12;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.14)}
+#hud .stg #killBar i{background:linear-gradient(180deg,#b6f77c,#4fc46a);border-radius:9px;box-shadow:inset 0 2px 0 rgba(255,255,255,.35)}
+#hud .stg #placeSub{grid-column:1/-1;margin-top:-21px;position:relative;text-align:center;font:700 11px/16px var(--body);color:#fff;text-shadow:0 1px 2px #000,0 0 3px #000;letter-spacing:0}
+#hud .stg #killBar[style*="none"]+#placeSub{margin-top:0;color:var(--muted);text-shadow:none}
+#bossbox{align-self:center;width:min(310px,84%);background:linear-gradient(180deg,rgba(70,12,32,.92),rgba(30,8,18,.9));border:0;box-shadow:inset 0 0 0 1.5px rgba(255,107,127,.7),0 5px 14px rgba(0,0,0,.35);border-radius:16px;padding:7px 12px 9px}
+#bossbox .bar{height:16px;border-radius:9px;background:#0a0b12;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.14)}
+#bossbox .bar i{box-shadow:inset 0 2px 0 rgba(255,255,255,.35)}
+.boss-top{font-size:16px}#bossTime{color:#ffd0d8}
+#retry{align-self:center;padding:10px 26px;border-radius:999px;font:400 17px var(--display);background:linear-gradient(180deg,#ff8f6b,#e2453a);color:#fff;box-shadow:0 4px 0 #8a1f1a,0 0 18px rgba(255,90,70,.6);animation:pulse 1s ease-in-out infinite}
+#buffs{top:calc(66px + env(safe-area-inset-top,0px));bottom:auto;left:max(16px,env(safe-area-inset-left,0px))}
+#skillbar{flex-direction:column;align-items:center;gap:9px;padding-top:30px;padding-bottom:10px;background:linear-gradient(180deg,rgba(12,13,22,0),rgba(12,13,22,.88) 52%)}
+#quest{display:flex;align-items:center;gap:7px;max-width:100%;padding:3px 12px 3px 4px;border-radius:999px;background:rgba(12,13,22,.8);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.12);font:700 12px var(--body);color:#fff;white-space:nowrap;overflow:hidden}
+#quest b{flex:none;background:var(--gold);color:var(--gold-ink);border-radius:999px;padding:1px 8px;font:400 12px var(--display)}
+#quest span{overflow:hidden;text-overflow:ellipsis}
+#slots{justify-content:center;gap:12px}
+#slots .sk{width:64px;height:64px;border-radius:20px;padding:7px!important}
+#slots .sk b{min-width:22px;height:22px;font-size:11.5px;border-radius:11px}
+#gainlog{bottom:calc(var(--tabh) + 142px + env(safe-area-inset-bottom,0px))}
+#tabs{padding-top:5px}
+#tabs button{gap:1px;min-height:56px;font:700 11px var(--body);color:#a9abc3;position:relative}
+#tabs svg.ico{width:34px;height:34px;padding:0;border-radius:0;background:none!important;box-shadow:none!important;filter:drop-shadow(0 2px 1px rgba(0,0,0,.55)) saturate(.85) brightness(.9);transition:transform .16s cubic-bezier(.3,1.6,.5,1),filter .16s}
+#tabs button[aria-selected=true]{color:var(--gold);background:radial-gradient(60% 70% at 50% 100%,rgba(255,207,74,.22),transparent)}
+#tabs button[aria-selected=true] svg.ico{transform:translateY(-5px) scale(1.2);filter:drop-shadow(0 3px 2px rgba(0,0,0,.6)) drop-shadow(0 0 6px rgba(255,207,74,.55))}
+#tabs button[aria-selected=true]::after{content:'';position:absolute;left:28%;right:28%;bottom:0;height:3px;border-radius:3px;background:var(--gold)}
 @media (prefers-reduced-motion:reduce){.ico .orb,.sk.now .ico,.rlines .flow,.rcore.lit,.isg,.gart .gimg,.gart .gstaff,.gshine::after{animation:none!important}}
 </style>
 
@@ -576,10 +615,10 @@ table.prob th:first-child,table.prob td:first-child{text-align:left}
     <div id="ov"></div>
     <div id="hud">
       <div class="hud-row">
-        <button class="place" id="placeBtn" aria-label="스테이지 선택 열기"><span class="lvline"><b id="lvTxt">Lv.1</b><span class="xpbar"><i id="xpBar"></i></span><span class="pmap">지도<svg viewBox="0 0 12 12" aria-hidden="true"><path d="m3 4.5 3 3 3-3"/></svg></span></span><span id="placeName">꽃밭 1-1</span><small id="placeSub">몬스터 0 / 10</small></button>
+        <div class="prof"><i class="ava"></i><div class="pi"><span class="pl"><b id="lvTxt">Lv.1</b><span id="tierTag">견습 냥법사</span></span><span class="xpbar"><i id="xpBar"></i></span></div></div>
         <div class="wallet"><div class="chip"><i class="coin"></i><span id="goldTxt">0</span></div><div class="chip"><i class="gem"></i><span id="gemTxt">0</span></div></div>
       </div>
-      <div class="bar" id="killBar"><i></i></div>
+      <button class="place stg" id="placeBtn" aria-label="스테이지 선택 열기"><span id="placeName">꽃밭 1-1</span><span class="pmap">지도<svg viewBox="0 0 12 12" aria-hidden="true"><path d="m3 4.5 3 3 3-3"/></svg></span><span class="bar" id="killBar"><i></i></span><small id="placeSub">몬스터 0 / 10</small></button>
       <div id="bossbox"><div class="boss-top"><span id="bossName">보스</span><span id="bossTime">30.0초</span></div><div class="bar"><i id="bossHp"></i></div></div>
       <button id="retry">보스 도전</button>
     </div>
@@ -590,7 +629,7 @@ table.prob th:first-child,table.prob td:first-child{text-align:left}
     <div id="buffs" aria-label="켜진 물약"></div>
   </div>
   <div id="skillbar">
-    <div id="tierTag">견습 냥법사<small>1차 · 다음 전직 1-31</small></div>
+    <div id="quest"><b>목표</b><span id="questTxt"></span></div>
     <div class="slots" id="slots"></div>
   </div>
   <section id="sheet" aria-label="메뉴"><div class="sheet-head"><b id="sheetTitle">강화</b><button id="sheetClose">닫기</button></div><main id="panel" aria-live="polite"></main></section>

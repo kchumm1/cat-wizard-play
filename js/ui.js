@@ -298,7 +298,7 @@
       if (bt !== lastBuffs) { lastBuffs = bt; $('buffs').innerHTML = bt; }
       var tier = DATA.tiers[s.tier - 1];
       var next = s.tier < 9 ? (s.tier) + '-31 보스를 이기면 ' + (s.tier + 1) + '차' : (s.best >= 309 ? '마왕 토벌 완료!' : '최종 목표 10-31 늑대 왕');
-      $('tierTag').innerHTML = esc(tier.name) + '<small>' + s.tier + '차 · ' + next + '</small>';
+      $('tierTag').textContent = s.tier + '차 ' + tier.name; if ($('questTxt').textContent !== next) $('questTxt').textContent = next;
     }
     function slots() {
       var s = G.state, now = G.castingSlot();
@@ -530,6 +530,7 @@
       }
     });
     CW.ICO.onTint = function () { if (tab === 'gear' || tab === 'gacha') renderPanel(true); };
+    document.querySelectorAll('#tabs [data-tab]').forEach(function (b) { var x = CW.ICO.misc && CW.ICO.misc('tab', b.dataset.tab), sv = b.querySelector('svg'); if (x && sv) sv.outerHTML = x; });
     function openTab(name) {
       tab = name; document.querySelectorAll('#tabs [data-tab]').forEach(function (x) { x.setAttribute('aria-selected', x.dataset.tab === name ? 'true' : 'false'); });
       var open = name !== 'battle';
