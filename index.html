@@ -895,6 +895,21 @@ html,body{background:var(--ink);color:var(--text)}
 .rchip{min-height:0;min-width:0;padding:0;border-radius:50%;font-size:14px;box-shadow:0 0 0 2px var(--ol)}
 .rchip.on{background:linear-gradient(180deg,#ffffff,#e4e8ff);color:#1b2352;box-shadow:0 0 0 2px var(--ol),0 0 0 4px var(--gold)}
 #gachaFx{background:radial-gradient(rgba(255,255,255,.07) 1px,transparent 1.6px) 0 0/24px 24px,radial-gradient(circle at 50% 38%,#2c3c86,#0c1024 75%)}
+/* one vertical rhythm inside every menu: 12 between blocks, 24 before a section title, 6 between two notes */
+#panel{display:flex;flex-direction:column;gap:12px;padding-top:2px;scrollbar-width:none}
+#panel::-webkit-scrollbar{display:none}
+#panel>*{flex:none;margin-top:0!important;margin-bottom:0!important}
+#panel>h3{margin-top:12px!important}
+#panel>h3:first-child,#panel>.subtabs+h3,#panel>.jump+h3{margin-top:0!important}
+#panel>.note+.note{margin-top:-6px!important}
+#panel>.kindtabs{padding:2px 2px 6px;margin-bottom:-6px!important}
+#panel>.jump{top:-2px;margin-top:-2px!important;margin-bottom:-6px!important;padding:8px 2px 12px}
+.sheet-head{padding-bottom:14px}
+/* battle: shortcuts start one step below the stage plate, potion timers sit on the left at the same height */
+#hud .place.stg,#bossbox{width:min(246px,64%)}
+#quick{top:calc(160px + env(safe-area-inset-top,0px))}
+#buffs{top:calc(160px + env(safe-area-inset-top,0px));left:var(--m);flex-direction:column;gap:6px;align-items:flex-start}
+#buffs span{background:rgba(22,28,60,.86);border:0;box-shadow:0 0 0 2px var(--ol);border-radius:10px;padding:3px 8px;font:400 12px var(--display)}
 /* ==THEME-END== */
 @media (prefers-reduced-motion:reduce){.ico .orb,.sk.now .ico,.rlines .flow,.rcore.lit,.isg,.gart .gimg,.gart .gstaff,.gshine::after{animation:none!important}}
 </style>
