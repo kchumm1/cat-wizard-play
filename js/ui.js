@@ -291,7 +291,7 @@
         $('bossHp').style.width = Math.max(0, boss.mob.hp / boss.mob.maxHp * 100) + '%';
       } else {
         kp = G.killProgress();
-        sub = s.farming ? '<b class="hunt">사냥 중</b>' : '<i class="mk"></i><b>' + kp.n + '</b><em>/ ' + kp.max + '</em>';
+        sub = s.farming ? '' : '<i class="mk"></i><b>' + kp.n + '</b><em>/ ' + kp.max + '</em>';
         $('killBar').firstChild.style.width = (s.farming ? 100 : kp.n / kp.max * 100) + '%';
         $('killBar').classList.toggle('loop', !!s.farming);
       }
