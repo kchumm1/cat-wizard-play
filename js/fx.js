@@ -791,7 +791,7 @@
     function update(dt) {
       time += dt;
       costumeTick(dt);
-      for (var i = timers.length - 1; i >= 0; i--) if (timers[i].at <= time) { var f = timers[i].fn; timers.splice(i, 1); f(); }
+      for (var i = timers.length - 1; i >= 0; i--) { var tm = timers[i]; if (tm && tm.at <= time) { timers.splice(i, 1); tm.fn(); } }
       for (var j = ticks.length - 1; j >= 0; j--) { if (ticks[j](dt)) ticks.splice(j, 1); }
       // idle sparkle on the staff and crackles on shocked monsters
       idleT += dt; crackleT += dt;
