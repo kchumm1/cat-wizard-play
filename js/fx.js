@@ -675,6 +675,27 @@
       });
     };
 
+    // painted impact pictures (art/fx-<skill>.webp): one pops up where a spell first lands, then fades
+    var picTex = {}, pics = [];
+    function picture(c, mob) {
+      var id = c.sk.id;
+      if (picTex[id] === undefined) { picTex[id] = null; new T.TextureLoader().load((CW.ART_BASE || 'art/') + 'fx-' + id + '.webp', function (t) { if (T.sRGBEncoding) t.encoding = T.sRGBEncoding; picTex[id] = t; }, undefined, function () { }); }
+      var tex = picTex[id]; if (!tex || !tex.image || pics.length >= 5) return;
+      var area = c.targets.length > 2, p = area ? c.center : mob, h = (area ? 2.6 : 1.9) * Math.min(1.3, c.s);
+      var sp = new T.Sprite(new T.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false, opacity: 0 }));
+      sp.center.set(0.5, 0.14); sp.position.set(p.x, 0.04, p.z + 0.25); sp.renderOrder = 40;
+      sp.userData = { t: 0, life: c.D(0.55) + 0.12, h: h, w: h * tex.image.width / tex.image.height };
+      (sc.fxGroup || sc.scene).add(sp); pics.push(sp);
+    }
+    function picTick(dt) {
+      for (var i = pics.length - 1; i >= 0; i--) {
+        var sp = pics[i], d = sp.userData; d.t += dt; var k = d.t / d.life;
+        if (k >= 1) { if (sp.parent) sp.parent.remove(sp); sp.material.dispose(); pics.splice(i, 1); continue; }
+        var a = Math.min(1, k * 5), grow = 0.62 + 0.38 * (1 - Math.pow(1 - a, 3)) + 0.05 * k;
+        sp.scale.set(d.w * grow, d.h * grow, 1); sp.material.opacity = k < 0.55 ? Math.min(1, k * 9) : 1 - (k - 0.55) / 0.45;
+      }
+    }
+    function picClear() { pics.forEach(function (sp) { if (sp.parent) sp.parent.remove(sp); sp.material.dispose(); }); pics.length = 0; }
     function tint(base, tier) { var col = new T.Color(base); if (tier >= 5) col.lerp(new T.Color(0xffffff), 0.12); return col.getHex(); }
     function cast(skill, tier, targets, hit, speedMul, lv) {
       var sp = speedMul || 1; lv = lv || 0;
@@ -685,6 +706,7 @@
       c.hit = function (mob, frac, power) {
         // Decorate at the existing contact time; retain every damage fraction and argument.
         if (decorated.indexOf(mob) < 0 && decorated.length < 3) {
+          if (!released) picture(c, mob);
           spellContact(c, mob, power, !released); decorated.push(mob); released = true;
         }
         hitFn(mob, frac, power);
@@ -790,7 +812,7 @@
     }
     function update(dt) {
       time += dt;
-      costumeTick(dt);
+      costumeTick(dt); picTick(dt);
       for (var i = timers.length - 1; i >= 0; i--) { var tm = timers[i]; if (tm && tm.at <= time) { timers.splice(i, 1); tm.fn(); } }
       for (var j = ticks.length - 1; j >= 0; j--) { if (ticks[j](dt)) ticks.splice(j, 1); }
       // idle sparkle on the staff and crackles on shocked monsters
@@ -805,7 +827,7 @@
     function setQuality(q) { vx.setQuality(q); }
     function setBright(v) { vx.setBright(v); }
     function setRegion(regionData) { dustCol = new T.Color(regionData.ground).lerp(new T.Color(0xffffff), 0.45).getHex(); }
-    function clear() { timers.length = 0; ticks.length = 0; vx.clear(); sc.mobs().forEach(function (m) { m.pull = undefined; m.pullZ = undefined; }); }
+    function clear() { timers.length = 0; ticks.length = 0; vx.clear(); picClear(); sc.mobs().forEach(function (m) { m.pull = undefined; m.pullZ = undefined; }); }
     return { setStaffColor: function (c) { staffCol = c; }, setCostume: function (f) { cosFx = f; cosAcc = 0; }, cast: cast, update: update, setQuality: setQuality, setBright: setBright, setRegion: setRegion, clear: clear, count: vx.count,
       impact: impact, levelUp: levelUp, bossEnter: bossEnter, coinPop: coinPop, burst: function (pos, col) { impact(pos, col, 0.8); }, vfx: vx };
   }

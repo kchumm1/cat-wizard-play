@@ -71,7 +71,7 @@
       var s = G.state, AC = DATA.alchConf, now = Date.now();
       if (!CW.alchemyOpen(s)) return '<div class="notice">' + AC.unlockTier + '차 전직 후에 연금술이 열려요 (1-31 보스를 이기면 2차).</div>';
       var lv = CW.alchLevel(s), cost = CW.potionCost(s), brews = (s.alch && s.alch.brews) || 0, toNext = AC.brewsPerLv - brews % AC.brewsPerLv;
-      var head = '<div class="alchhead"><div class="cauldron" aria-hidden="true">⚗️</div><div><b>연금술 Lv.' + lv + '</b><span class="note">' + (lv >= AC.maxLv ? '최고 레벨이에요' : '물약 ' + toNext + '개 더 만들면 레벨업') + ' · 물약 효과 +' + pct(lv * AC.effPerLv) + ' · ' + CW.potionMinutes(s) + '분 지속</span></div></div>';
+      var head = '<div class="alchhead"><div class="cauldron" aria-hidden="true">' + CW.ICO.pic('cauldron') + '</div><div><b>연금술 Lv.' + lv + '</b><span class="note">' + (lv >= AC.maxLv ? '최고 레벨이에요' : '물약 ' + toNext + '개 더 만들면 레벨업') + ' · 물약 효과 +' + pct(lv * AC.effPerLv) + ' · ' + CW.potionMinutes(s) + '분 지속</span></div></div>';
       var list = DATA.potions.map(function (p) {
         var left = CW.buffLeft(s, p.id, now);
         return '<div class="row potion' + (left ? ' on' : '') + '"><div class="ricon pt">' + mi('potion', p) + '</div><div class="info"><div class="name">' + p.name + '</div><div class="desc">' + p.desc + ' ×' + (1 + CW.potionPower(s, p.id)).toFixed(2) + (left ? ' · <b class="tleft">' + mmss(left) + ' 남음</b>' : '') + '</div></div>' +
@@ -97,7 +97,7 @@
       var rows = [0, 1, 2].map(function (r) {
         var nodes = DATA.talents.filter(function (t) { return t.row === r; }).map(function (t) {
           var lv = (s.talents || {})[t.id] || 0, open = s.level >= TC.rowLevel[r] && (r === 0 || CW.talentSpent(s, r - 1) >= TC.rowNeed[r]);
-          return '<button class="tnode' + (selTalent === t.id ? ' sel' : '') + (open ? '' : ' lock') + (lv >= t.max ? ' max' : '') + '" data-tal="' + t.id + '"><span class="ti">' + (open ? mi('talent', t) : '🔒') + '</span><b>' + lv + '/' + t.max + '</b><small>' + t.name + '</small></button>';
+          return '<button class="tnode' + (selTalent === t.id ? ' sel' : '') + (open ? '' : ' lock') + (lv >= t.max ? ' max' : '') + '" data-tal="' + t.id + '"><span class="ti">' + (open ? mi('talent', t) : CW.ICO.pic('lock', 'ilock')) + '</span><b>' + lv + '/' + t.max + '</b><small>' + t.name + '</small></button>';
         }).join('');
         return '<div class="trow">' + nodes + '</div>' + (r < 2 ? '<div class="tarrow">▼ ' + (TC.rowNeed[r + 1] ? '위에서 ' + TC.rowNeed[r + 1] + '포인트 · ' : '') + 'Lv.' + TC.rowLevel[r + 1] + '</div>' : '');
       }).join('');
@@ -108,7 +108,7 @@
           '<div class="note">' + (t.row ? '위 줄에 ' + TC.rowNeed[t.row] + '포인트 이상, ' : '') + '계정 레벨 ' + TC.rowLevel[t.row] + ' 이상</div>' +
           '<div class="btns"><button class="buy' + (CW.talentCan(s, t.id) ? '' : ' off') + '" data-tup="' + t.id + '">레벨업 (포인트 1)</button></div></div>';
       }
-      return '<div class="tpoints"><span>남은 포인트 <b>' + (pts - spent) + '</b> / ' + pts + '</span><button class="btn" data-act="treset">초기화</button></div><div class="note" style="margin:0 0 8px">계정 레벨 ' + TC.levelsPerPoint + '마다 포인트 1개. 초기화는 무료예요.</div><div class="ttree">' + rows + '</div>' + (info || '<p class="note">칸을 누르면 자세히 볼 수 있어요.</p>');
+      return '<div class="artban ab-talent" aria-hidden="true"></div><div class="tpoints"><span>남은 포인트 <b>' + (pts - spent) + '</b> / ' + pts + '</span><button class="btn" data-act="treset">초기화</button></div><div class="note" style="margin:0 0 8px">계정 레벨 ' + TC.levelsPerPoint + '마다 포인트 1개. 초기화는 무료예요.</div><div class="ttree">' + rows + '</div>' + (info || '<p class="note">칸을 누르면 자세히 볼 수 있어요.</p>');
     }
     function markPanel() {
       var s = G.state, RC = DATA.rankConf, r = s.rank || 0, cap = CW.markCap(s), ready = CW.rankReady(s);
@@ -126,7 +126,7 @@
     function circlePanel() {
       var s = G.state, CC = DATA.circleConf, lv = s.circle || 0, tier = CW.circleTier(s), cost = CW.circleCost(lv), max = lv >= CC.maxLv;
       var toNext = (tier + 1) * CC.tierEvery - lv;
-      return '<div class="mcircle t' + Math.min(8, tier) + '"><div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div><div class="mtext"><small>마나서클 레벨</small><b>Lv.' + lv + '</b><span>' + (tier + 1) + '서클 마법사</span></div></div>' +
+      return '<div class="mcircle t' + Math.min(8, tier) + '"><div class="mcart"></div><div class="mtext"><small>마나서클 레벨</small><b>Lv.' + lv + '</b><span>' + (tier + 1) + '서클 마법사</span></div></div>' +
         '<div class="ceff"><div><span>레벨 효과</span><b>스킬 피해 +' + pct(lv * CC.perLv) + '</b></div><div class="hi"><span>서클 효과</span><b>모든 피해 +' + pct(tier * CC.tierFinal) + '</b></div></div>' +
         '<p class="note" style="text-align:center">' + (max ? '최고 서클이에요' : toNext + '레벨 더 올리면 ' + (tier + 2) + '서클 (모든 피해 +' + pct(CC.tierFinal) + ')') + '</p>' +
         '<div class="btns" style="justify-content:center"><button class="buy gemb' + (max || (s.mana || 0) < cost ? ' off' : '') + '" data-circle="1">' + (max ? '최대' : '레벨업 ' + CW.ICO.cur('mana') + ' ' + fmt(cost)) + '</button></div><p class="note" style="text-align:center">버튼을 꾹 누르면 계속 올라가요.</p>';
@@ -384,7 +384,7 @@
       }).join('') + '</div>';
       var table = '<details style="margin-top:12px"><summary class="note" style="cursor:pointer">확률 보기</summary><div class="tablewrap"><table class="prob"><tr><th>레벨</th>' + DATA.grades.map(function (g) { return '<th style="color:' + g.color + '">' + g.name + '</th>'; }).join('') + '</tr>' +
         DATA.gacha.table.map(function (r, i) { return '<tr style="' + (i + 1 === lv ? 'color:var(--gold)' : '') + '"><td>' + (i + 1) + ' (' + L[i] + '회~)</td>' + r.map(function (p) { return '<td>' + p + '%</td>'; }).join('') + '</tr>'; }).join('') + '</table></div></details>';
-      return '<h3>장비 뽑기</h3>' + head + pulls + table + '<p class="note" style="margin-top:10px">다이아가 부족하면 더보기 → 상점에서 받을 수 있어요(연습용).</p>';
+      return '<div class="artban ab-gacha" aria-hidden="true"></div><h3>장비 뽑기</h3>' + head + pulls + table + '<p class="note" style="margin-top:10px">다이아가 부족하면 더보기 → 상점에서 받을 수 있어요(연습용).</p>';
     }
     function morePanel() {
       var s = G.state;
@@ -422,13 +422,14 @@
       var jump = '<div class="jump">' + ['난이도', '전직', '사냥터', '상점', '패키지', '설정'].map(function (t, i) { return '<button data-jump="' + i + '">' + t + '</button>'; }).join('') + '</div>';
       return jump + diffs + tiers + regions + shop + settings;
     }
+    var MAP_Y = [0, 0, 2, 26, 25, 32, 59, 59, 71, 100];   // where each region's island sits on the map picture
     function stagePanel() {
       var s = G.state, d = selDiff < 0 ? (s.diff || 0) : selDiff, R = selRegion < 0 ? CW.stageInfo(s.stage).region : selRegion;
       var best = d === (s.diff || 0) ? s.best : ((s.diffBest || {})[d] ? s.diffBest[d].best : -1), frontier = Math.min(309, best + 1), here = d === (s.diff || 0) ? s.stage : -1;
       var st = CW.stats(s), reg = DATA.regions[R], open = d <= (s.diffUnlocked || 0);
       var head = '<div class="dsel"><button class="btn" data-dsel="-1" aria-label="이전 난이도">◀</button><b>' + DATA.difficulties[d].name + (open ? '' : ' (잠김)') + '</b><button class="btn" data-dsel="1" aria-label="다음 난이도">▶</button></div>' +
         '<div class="rsel">' + DATA.regions.map(function (r, i) { return '<button class="rchip' + (i === R ? ' on' : '') + (i * 31 > frontier ? ' lock' : '') + '" data-rsel="' + i + '">' + (i + 1) + '</button>'; }).join('') + '</div>' +
-        '<div class="note" style="margin:6px 0 8px">' + reg.name + ' · 판을 누르면 그곳으로 가요</div>';
+        '<div class="artban ab-map" aria-hidden="true" style="background-position:50% ' + MAP_Y[R] + '%"><b>' + reg.name + '</b></div><div class="note" style="margin:6px 0 8px">판을 누르면 그곳으로 가요</div>';
       var rows = '';
       for (var n = 0; n < 31; n++) {
         var i = R * 31 + n, info = CW.stageInfo(i), lock = !open || i > frontier, tmp = { stage: i, diff: d };

@@ -933,6 +933,29 @@ html,body{background:var(--ink);color:var(--text)}
 #bossbox{width:min(262px,70%)}
 #bossbox .bar{height:18px;border-radius:10px}
 #bossbox .bar i{background:repeating-linear-gradient(115deg,rgba(255,255,255,.18) 0 7px,rgba(255,255,255,0) 7px 14px),linear-gradient(180deg,#ff9a7a,#ff4d6d 55%,#c81e4a);box-shadow:inset 0 2.5px 0 rgba(255,255,255,.45),inset 0 -3px 0 rgba(90,0,30,.4),0 0 10px rgba(255,90,110,.6)}
+/* ----- painted pictures (js/art-icons.js) ----- */
+img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
+.sk img.isk{width:100%;height:100%;filter:drop-shadow(0 2px 1px rgba(0,0,0,.45))}
+.sk:has(img.isk){padding:2px!important}.slotpick img.isk{width:46px;height:46px}
+#tabs img.ico{width:40px;height:40px;filter:drop-shadow(0 2px 1px rgba(0,0,0,.55)) saturate(.9) brightness(.92);transition:transform .16s cubic-bezier(.3,1.6,.5,1),filter .16s}
+#tabs button[aria-selected=true] img.ico{transform:translateY(-4px) scale(1.16);filter:drop-shadow(0 3px 2px rgba(0,0,0,.6)) drop-shadow(0 0 7px rgba(255,207,74,.6))}
+#tabs button{color:#fff}
+.ricon img.imisc,.tnode .ti img.imisc{width:92%;height:92%}.ricon.mk img.imisc{width:100%;height:100%}
+.tnode .ti{width:48px;height:48px;background:none;box-shadow:none}.tnode .ti img.ilock{width:30px;height:30px}
+.cauldron img{width:58px;height:58px;display:block}.cauldron{font-size:0}
+.dung .dicon:has(img.p-dungeon){width:92px;height:58px;padding:0;overflow:hidden;filter:none}
+.dicon img.p-dungeon{width:100%!important;height:100%!important;object-fit:cover;filter:none;border-radius:inherit}
+.dcard .dicon:has(img.p-dungeon){width:150px;height:86px;border-radius:16px;overflow:hidden;box-shadow:0 0 0 2px var(--ol),0 0 16px rgba(255,190,60,.45)}
+.rune img.irune,.ricon img.irune{filter:drop-shadow(0 3px 2px rgba(0,0,0,.5)) drop-shadow(0 0 5px var(--gc,transparent))}
+.ricon img.irune{width:88%;height:88%}
+.artban{height:132px;margin:2px 0 12px;border-radius:18px;background:#1a2148 50% 50%/cover no-repeat;box-shadow:0 0 0 2px var(--ol),inset 0 0 0 2px rgba(255,210,74,.5),0 4px 0 var(--ol);position:relative;overflow:hidden}
+.ab-talent{background-image:url(art/ui-talent-room.webp)}.ab-gacha{background-image:url(art/ui-gacha.webp);height:146px}
+.ab-map{background-image:url(art/ui-map.webp);height:150px;margin-top:10px;transition:background-position .35s ease}
+.ab-map b{position:absolute;left:12px;bottom:9px;font:400 19px var(--impact);color:#fff0b8;text-shadow:0 2px 0 var(--ol),0 0 8px var(--ol)}
+.mcircle{width:min(300px,82vw);aspect-ratio:552/488}
+.mcircle .mcart{position:absolute;inset:0;background:url(art/ui-circle.webp) 50% 50%/100% 100%;mix-blend-mode:lighten;-webkit-mask:radial-gradient(closest-side,#000 82%,transparent);mask:radial-gradient(closest-side,#000 82%,transparent)}
+.mcircle .mtext{position:relative;width:42%;aspect-ratio:1;border-radius:50%;display:grid;place-content:center;justify-items:center;background:radial-gradient(circle,#1c2450,#121735);box-shadow:0 0 0 2.5px #e8c25a,0 0 14px rgba(120,160,255,.6)}
+.mcircle.t3 .mcart,.mcircle.t4 .mcart{filter:hue-rotate(50deg)}.mcircle.t5 .mcart,.mcircle.t6 .mcart,.mcircle.t7 .mcart,.mcircle.t8 .mcart{filter:hue-rotate(170deg) saturate(1.2)}
 /* ==THEME-END== */
 @media (prefers-reduced-motion:reduce){#killBar i,.ico .orb,.sk.now .ico,.rlines .flow,.rcore.lit,.isg,.gart .gimg,.gart .gstaff,.gshine::after{animation:none!important}}
 </style>
@@ -1010,6 +1033,7 @@ html,body{background:var(--ink);color:var(--text)}
 <script src="js/sound.js"></script>
 <script src="js/icons.js"></script>
 <script src="js/icons-more.js"></script>
+<script src="js/art-icons.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>
 <script>
