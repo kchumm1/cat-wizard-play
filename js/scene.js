@@ -182,7 +182,7 @@
       an.aL.target = (P.armL || 0) - ch * (0.35 + Math.sin(t * 15 + 1.6) * 0.4);
       an.hd.target = (P.head || 0) - (P.hurt || 0) * 0.24 + ch * Math.sin(t * 7.5) * 0.1;
       stepSpring(an.aR, dt); stepSpring(an.aL, dt); stepSpring(an.hd, dt);
-      A[0] = an.hd.x + Math.sin(t * 1.7 + d.seed) * 0.05 + wk * s * 0.07; TT[0].set(0, br * 0.007 - wk * Math.abs(s) * 0.012);
+      A[0] = an.hd.x + Math.sin(t * 1.7 + d.seed) * 0.05 + wk * s * 0.07; TT[0].set(0, br * 0.012 - wk * Math.abs(s) * 0.012);
       A[1] = an.aL.x + wk * s * 0.3 + br * 0.04 - air * 0.4;
       A[2] = an.aR.x + wk * s * 0.3 - br * 0.04 + air * 0.4;
       A[3] = wk * s * 0.32 - air * 0.3; TT[3].set(0, Math.max(0, s) * 0.075 * wk + air * 0.04);
@@ -209,7 +209,8 @@
       ghosts.forEach(function (gh) { gh.mesh.material.uniforms.map.value = tex; });
       if (old && old !== tex && old._look) old.dispose();
     }
-    var HERO_H = 1.45, TILT = 0.6, COS_T = Math.cos(TILT), SIN_T = Math.sin(TILT);
+    var HERO_H = 1.02, CUTE = HERO_H / 1.45, TILT = 0.6, COS_T = Math.cos(TILT), SIN_T = Math.sin(TILT);
+    auraGroup.scale.setScalar(CUTE);
     // Staff star position inside the hero art (fraction of width from the left, of height from the feet).
     var TIP_U = 0.16, TIP_V = 0.61;
     function heroLocal(u, v) {
@@ -361,12 +362,12 @@
       if (!f) return;
       attachAura();
       var gl = new T.Sprite(new T.SpriteMaterial({ map: GLOW, color: f.col, transparent: true, opacity: f.glow, depthWrite: false, blending: T.AdditiveBlending }));
-      gl.scale.set(1.9, 2.3, 1); gl.position.set(0, 0.85, -0.4); gl.renderOrder = 1; cosGroup.add(gl); cos.glow = gl;
+      gl.scale.set(1.9 * CUTE, 2.3 * CUTE, 1); gl.position.set(0, 0.85 * CUTE, -0.4 * CUTE); gl.renderOrder = 1; cosGroup.add(gl); cos.glow = gl;
     }
     function costumeTick(dt) {
       if (!cos.fx) return;
       if (cos.aura) { var u = cos.aura.material.uniforms; u.uTime.value = time; u.uAmt.value = cos.fx.aura * (0.82 + Math.sin(time * 2.2) * 0.18); }
-      if (cos.glow) { cos.glow.material.opacity = cos.fx.glow * (0.8 + Math.sin(time * 2.2) * 0.2); if (hero) cos.glow.position.set(hero.position.x, 0.85 + hero.position.y, hero.position.z - 0.4); }
+      if (cos.glow) { cos.glow.material.opacity = cos.fx.glow * (0.8 + Math.sin(time * 2.2) * 0.2); if (hero) cos.glow.position.set(hero.position.x, 0.85 * CUTE + hero.position.y, hero.position.z - 0.4 * CUTE); }
     }
 
     // ---------- damage numbers (DOM overlay) ----------
@@ -465,7 +466,7 @@
     }
 
     // ---------- monster brain ----------
-    var KEEP = 1.0;
+    var KEEP = 0.78;
     function chargers() { var n = 0; mobs.forEach(function (m) { if (m.state === 'charge' || m.state === 'swipe') n++; }); return n; }
     function setGoal(m, x, z, speed, state) { var p = clampField({ x: x, z: z }); m.tx = p.x; m.tz = p.z; m.speed = speed; m.state = state; }
     function nearHero(m, dist) { var dx = m.x - HB.x, dz = (m.z - HB.z) / 1.15, d = Math.sqrt(dx * dx + dz * dz) || 1; return { x: HB.x + dx / d * dist, z: HB.z + dz / d * dist * 1.15 }; }
@@ -537,7 +538,7 @@
     }
     function separate() {
       for (var i = 0; i < mobs.length; i++) for (var j = i + 1; j < mobs.length; j++) {
-        var a = mobs[i], b = mobs[j], need = (a.boss || b.boss) ? 1.15 : 0.62, dx = b.x - a.x, dz = (b.z - a.z) * 1.4, dd = Math.sqrt(dx * dx + dz * dz);
+        var a = mobs[i], b = mobs[j], need = (a.boss || b.boss) ? 0.9 : 0.5, dx = b.x - a.x, dz = (b.z - a.z) * 1.4, dd = Math.sqrt(dx * dx + dz * dz);
         if (dd < need && dd > 1e-4) {
           var push = (need - dd) * 0.5, nx = dx / dd, nz = dz / dd;
           var wa = a.boss ? 0.15 : (b.boss ? 1.85 : 1), wb = 2 - wa;
@@ -616,7 +617,7 @@
         rest.bend += m.vx * 0.035 + Math.sin(d.anim.ph) * 0.04 * d.anim.walk;
         if (m.state === 'windup') { rest.sq = -0.16; rest.bend = 0.12; }
         m.hurt = Math.max(0, m.hurt - dt * 3);
-        var P = { walk: frozen ? 0 : m.walk, speed: m.sp, stride: m.boss ? 0.55 : 0.3, air: m.y > 0.12, armL: -m.atk * 1.15, armR: m.atk * 0.3, hurt: m.hurt, cheer: m.cheer, stepRate: m.boss ? 0.65 : 1,
+        var P = { walk: frozen ? 0 : m.walk, speed: m.sp, stride: m.boss ? 0.42 : 0.22, air: m.y > 0.12, armL: -m.atk * 1.15, armR: m.atk * 0.3, hurt: m.hurt, cheer: m.cheer, stepRate: m.boss ? 0.65 : 1,
           flap: m.flyer ? 0.32 : m.boss ? 0.16 : 0.1, flapF: m.flyer ? 9 : 6, wingOpen: m.state === 'roar' ? 0.25 : 0 };
         if (m.pull !== undefined) { P.cheer = 1; P.hurt = 0.8; }
         var stepped = frozen ? false : animRig(g, frozen ? 0 : dt, P);
@@ -627,7 +628,7 @@
         driveBillboard(g, frozen ? dt * 0.15 : dt, rest, d.face);
         stepSpring(m.kx, dt);
         var hover = m.flyer ? 0.4 + Math.sin(time * 2.4 + m.phase) * 0.12 : 0;
-        var bounce = m.y <= 0.01 ? Math.abs(Math.sin(d.anim.ph)) * (m.boss ? 0.03 : 0.02 + 0.045 * Math.min(1, m.sp / 3)) * d.anim.walk : 0;
+        var bounce = m.y <= 0.01 ? Math.abs(Math.sin(d.anim.ph)) * (m.boss ? 0.035 : 0.035 + 0.06 * Math.min(1, m.sp / 3)) * d.anim.walk : 0;
         g.position.set(m.x + m.kx.x * 0.12, m.y + hover + bounce, m.z);
         g.rotation.z = m.pull !== undefined ? Math.sin(time * 9 + m.phase) * 0.12 : (m.y > 0.2 && !m.boss ? -m.vy * 0.015 * d.face : 0);
         d.shadow.position.y = 0.012 - g.position.y;

@@ -21,8 +21,8 @@
       if (o.size !== undefined) {
         // Thin silhouettes can spread; opaque glows stay local so monsters remain readable.
         var ground = o.sys === 'gadd' || o.sys === 'gnorm';
-        var outline = o.frame === 'ring' || o.frame === 'shock' || o.frame === 'circle' || o.frame === 'crescent';
-        var lim = ground && outline ? 6.8 : ground ? 4.4 : outline ? 4.8 : (o.frame === 'streak' ? 3.4 : 2.8);
+        var outline = o.frame === 'ring' || o.frame === 'shock' || o.frame === 'circle' || o.frame === 'crescent' || o.frame === 'frost';
+        var lim = ground && outline ? 11.5 : ground ? 6 : outline ? 8.5 : (o.frame === 'streak' ? 7 : 3.4);
         o.size = Array.isArray(o.size) ? [Math.min(o.size[0], lim), Math.min(o.size[1], lim)] : Math.min(o.size, lim);
       }
       return vx.emit(o);
@@ -33,8 +33,27 @@
     // ---------- building blocks ----------
     // size caps: with the wide view a spell flash must stay around the crowd, not cover the screen
     function capS(v, m) { return Array.isArray(v) ? [Math.min(v[0], m), Math.min(v[1], m)] : Math.min(v, m); }
-    function flare(pos, col, size, life, o) { size = Math.min(size, 1.9); return E(clone({ pos: pos, frame: 'flare', color: col, size: [size, size * 0.25], life: life || 0.2, ease: 1, fadeOut: 0.25, spin: rr(-2, 2) }, o)); }
-    function glow(pos, col, size, life, o) { return E(clone({ pos: pos, frame: 'glow', color: col, size: capS(size, 2.0), life: life || 0.3 }, o)); }
+    // the play field as the camera sees it: spells may now spread over all of it
+    var FC = V(0, 0, -0.4);
+    function fieldPt(y) { var z = rr(-4.3, 3.4); return V(rr(-1, 1) * (1.9 + (3.8 - z) * 0.15), y || 0, z); }
+    // n spots scattered over the whole field, one after another
+    function fieldPops(c, n, t0, gap, fn) { for (var i = 0; i < n; i++) (function (i) { after(c.D(t0 + i * gap + rr(0, gap)), function () { fn(fieldPt(0), i); }); })(i); }
+    // rings rolling out from a point until they leave the screen
+    function fieldWave(pos, col, life, col2) {
+      var G = V(pos.x, 0.035, pos.z);
+      E({ sys: 'gadd', pos: G, frame: 'shock', color: col, size: [0.6, 11], ease: 1, life: life || 0.7, fadeOut: 0.35, rot: 0, alpha: 0.8 });
+      E({ sys: 'gadd', pos: G, frame: 'ring', color: 0xffffff, size: [0.4, 8], ease: 1, life: (life || 0.7) * 0.8, fadeOut: 0.3, rot: 0, alpha: 0.5 });
+      E({ sys: 'gadd', pos: G, frame: 'shock', color: col2 || col, size: [0.3, 9.5], ease: 1, life: (life || 0.7) * 1.25, delay: 0.09, fadeOut: 0.4, rot: 0, alpha: 0.55 });
+    }
+    // things falling (or rising) over the whole field
+    function fieldRain(c, n, dur, o) {
+      for (var i = 0; i < N(n, c); i++) {
+        var p = fieldPt(0); p.y = o.y === undefined ? rr(2.4, 4.2) : o.y();
+        E({ pos: p, vel: o.vel(), frame: pick(o.frames), color: o.cols, size: o.size(), life: rr(0.7, 1.2) * (o.life || 1), delay: rr(0, dur), spin: rr(-3, 3), upd: o.sway ? sway : undefined, fadeIn: 0.15, fadeOut: 0.3, white: o.white, stretch: o.stretch, grav: o.grav || 0, drag: o.drag || 0 });
+      }
+    }
+    function flare(pos, col, size, life, o) { size = Math.min(size, 2.6); return E(clone({ pos: pos, frame: 'flare', color: col, size: [size, size * 0.25], life: life || 0.2, ease: 1, fadeOut: 0.25, spin: rr(-2, 2) }, o)); }
+    function glow(pos, col, size, life, o) { return E(clone({ pos: pos, frame: 'glow', color: col, size: capS(size, 2.8), life: life || 0.3 }, o)); }
     function sparks(pos, col, n, speed, o) {
       o = o || {};
       for (var i = 0; i < n; i++) {
@@ -62,13 +81,13 @@
       }
     }
     function shock(pos, col, r, life, o) {
-      r = Math.min(r, 4.8);
+      r = Math.min(r, 8.5);
       E(clone({ pos: pos, frame: 'ring', color: 0xffffff, size: [r * 0.15, r * 0.92], ease: 1, life: (life || 0.35) * 0.8, fadeOut: 0.2, rot: 0, alpha: 0.5, white: true }, o));
       return E(clone({ sys: 'col', pos: pos, frame: 'shock', color: col, size: [r * 0.15, r], ease: 1, life: life || 0.35, fadeOut: 0.3, rot: 0, alpha: 0.75 }, o));
     }
-    function ring(pos, col, r, life, o) { r = Math.min(r, 4.6); return E(clone({ pos: pos, frame: 'ring', color: col, size: [r * 0.2, r], ease: 1, life: life || 0.3, fadeOut: 0.2, rot: 0 }, o)); }
-    function gRing(pos, col, r, life) { r = Math.min(r, 6.4); return E({ sys: 'gadd', pos: V(pos.x, 0.035, pos.z), frame: 'shock', color: col, size: [r * 0.1, r], ease: 1, life: life || 0.5, fadeOut: 0.25, rot: 0 }); }
-    function gGlow(pos, col, r, life) { r = Math.min(r, 2.6); return E({ sys: 'gadd', pos: V(pos.x, 0.03, pos.z), frame: 'glow', color: col, size: [r, r * 1.15], life: life || 0.6, fadeIn: 0.05, fadeOut: 0.2, alpha: 0.8 }); }
+    function ring(pos, col, r, life, o) { r = Math.min(r, 7.5); return E(clone({ pos: pos, frame: 'ring', color: col, size: [r * 0.2, r], ease: 1, life: life || 0.3, fadeOut: 0.2, rot: 0 }, o)); }
+    function gRing(pos, col, r, life) { r = Math.min(r, 11); return E({ sys: 'gadd', pos: V(pos.x, 0.035, pos.z), frame: 'shock', color: col, size: [r * 0.1, r], ease: 1, life: life || 0.5, fadeOut: 0.25, rot: 0 }); }
+    function gGlow(pos, col, r, life) { r = Math.min(r, 4.2); return E({ sys: 'gadd', pos: V(pos.x, 0.03, pos.z), frame: 'glow', color: col, size: [r, r * 1.15], life: life || 0.6, fadeIn: 0.05, fadeOut: 0.2, alpha: 0.8 }); }
     function scorch(pos, r, life) { return E({ sys: 'gnorm', pos: V(pos.x, 0.025, pos.z), frame: 'smoke', color: 0x1a1210, size: [r * 0.6, r], ease: 1, life: life || 2.2, alpha: 0.5, fadeIn: 0.05, fadeOut: 0.5 }); }
     function dust(pos, n, size) {
       for (var i = 0; i < n; i++) E({ sys: 'norm', pos: V(pos.x + rr(-0.15, 0.15), 0.08, pos.z + rr(-0.1, 0.1)), vel: V(rr(-1.1, 1.1), rr(0.2, 0.7), rr(-0.3, 0.3)), frame: 'smoke', color: dustCol,
@@ -126,7 +145,7 @@
     // These decorations never schedule or repeat a damage callback.
     function spellCharge(c) {
       var G = c.center.clone().setY(0.045), grade = c.sk.tier || 1;
-      var r = Math.min(3.8, 1.25 + grade * 0.22), life = c.D(0.5);
+      var r = Math.min(5.2, 1.6 + grade * 0.32), life = c.D(0.5);
       E({ sys: 'gadd', pos: G, frame: 'circle', color: c.deep, size: [r * 0.65, r], life: life,
         spin: -1.8, alpha: 0.38, ease: 2, fadeIn: 0.08, fadeOut: 0.6 });
       E({ pos: c.from, frame: 'crescent', color: c.col, size: [0.3, 0.85], life: c.D(0.28),
@@ -169,11 +188,11 @@
         size: [0.35, 1.5 * s], life: c.D(0.3), rot: j * 2.094, spin: 5, alpha: 0.6 });
       if (finale && grade >= 5) {
         var C = c.center.clone().setY(0.65), G = c.center.clone().setY(0.04);
-        var radius = Math.min(5.6, (2.5 + grade * 0.38) * s);
+        var radius = Math.min(9, (3.2 + grade * 0.55) * s);
         E({ sys: 'gadd', pos: G, frame: 'circle', color: c.deep, size: [radius * 0.35, radius],
           life: c.D(0.65), spin: -2.4, ease: 1, alpha: 0.35, fadeOut: 0.3 });
         gRing(G, c.col, radius, c.D(0.55));
-        ring(C, c.col, Math.min(4.6, radius), c.D(0.48), { alpha: 0.65, delay: c.D(0.08) });
+        ring(C, c.col, Math.min(7, radius), c.D(0.48), { alpha: 0.65, delay: c.D(0.08) });
         var rays = N(12, c);
         for (var k = 0; k < rays; k++) {
           var angle = k / rays * Math.PI * 2;
@@ -202,7 +221,7 @@
       var heads = (o.heads || []).concat(extra).map(function (h) { return E(clone({ pos: start, life: 30, upd: STAY, fadeOut: 1 }, h)); });
       if (o.fancy !== false && !o.noMuzzle) muzzle(start, o.to(), hc, Math.min(1.4, hw * 6));
       tick(function (dt) {
-        t += dt / o.time; var k = Math.min(1, t), ke = o.ease ? o.ease(k) : k, end = o.to();
+        t += dt / o.time; var k = Math.min(1, t), ke = o.ease ? o.ease(k) : k * (0.55 + 0.45 * k), end = o.to();
         ctrl.copy(start).lerp(end, 0.5).add(arc);
         var a = (1 - ke) * (1 - ke), b = 2 * (1 - ke) * ke, c2 = ke * ke;
         cur.set(a * start.x + b * ctrl.x + c2 * end.x, a * start.y + b * ctrl.y + c2 * end.y, a * start.z + b * ctrl.z + c2 * end.z);
@@ -234,7 +253,9 @@
       smoke(p, [0x6a5a54, 0x2e2624], N(9, c), { size: S_ * 1.1, rise: 1.0, speed: 1.4, life: 1.3 });
       sparks(p, [0xffe080, 0xffffff, 0xff8a2b], N(16, c), 6.5, { size: 0.26, stretch: 0.14 });
       embers(p, [0xffe080, 0xff6a2b], N(12, c), { speed: 3.2, up: 2.2 });
-      shock(p, 0xffc080, 2.6 * S_, 0.35); gRing(p, col, 3 * S_, 0.5); scorch(p, 1.8 * S_, 2.5); gGlow(p, 0xff7a2b, 2.6 * S_, 0.5);
+      shock(p, 0xffc080, 3.4 * S_, 0.4); gRing(p, col, 5.5 * S_, 0.6); scorch(p, 1.8 * S_, 2.5); gGlow(p, 0xff7a2b, 2.6 * S_, 0.5);
+      // burning bits arc out and keep falling over a wide area
+      for (var b = 0; b < N(14, c); b++) E({ sys: b % 2 ? 'col' : 'add', pos: p.clone().add(rdir(0.2)), vel: V(rr(-5.5, 5.5), rr(3, 6.5), rr(-3.5, 3.5)), frame: 'flame', color: [0xffe080, 0xff7a1a, 0xc8301a], size: [rr(0.3, 0.5) * S_, 0.08], life: rr(0.7, 1.1), grav: 9, drag: 0.6, spin: rr(-5, 5), fadeOut: 0.3 });
       sc.light(p, 0xff8a3a, 2, 0.4); heavy(1.5); sc.flash('rgba(255,170,90,0.35)', 0.22);
     }
 
@@ -256,7 +277,18 @@
             onHit: function (p) {
               impact(p, c.col, (big ? 1.05 : 0.65) * c.s);
               for (var k = 0; k < N(big ? 8 : 5, c); k++) E({ sys: 'col', pos: p, vel: rdir(3.4).add(V(0, 1.4, 0)), frame: 'star', color: [c.col, c.deep], size: [0.24 * c.s, 0.06], life: rr(0.3, 0.5), grav: 4, drag: 1.5, spin: rr(-10, 10), ease: 1 });
-              if (big) heavy(0.6);
+              if (big) {
+                heavy(0.6); gRing(p, c.col, 3.4 * c.s, 0.45);
+                // the last star bursts into a ring of little stars that skip away over the field
+                var cnt = N(8, c);
+                for (var q = 0; q < cnt; q++) (function (q) {
+                  var a = q / cnt * 6.283 + rr(-0.2, 0.2), far = V(p.x + Math.cos(a) * rr(2.2, 4), 0.15, p.z + Math.sin(a) * rr(1.8, 3.2));
+                  homing({ from: p.clone(), to: function () { return far; }, time: c.D(rr(0.3, 0.42)), arc: V(0, rr(0.9, 1.5), 0), fancy: false,
+                    trail: { w: 0.07 * c.s, col: c.col, core: 0.8, pts: 10, halo: false },
+                    heads: [{ frame: 'star', color: 0xffffff, size: 0.3 * c.s, spin: 12, white: true }, { frame: 'glow', color: c.col, size: 0.6 * c.s, alpha: 0.3 }],
+                    onHit: function (e) { E({ sys: 'col', pos: e, frame: 'star', color: [c.col, c.deep], size: [0.15, 0.6 * c.s], ease: 1, life: 0.22, spin: 8 }); sparks(e, [c.col, 0xffffff], N(4, c), 3.5, { size: 0.14, up: 1 }); gRing(e, c.col, 1.1 * c.s, 0.3); } });
+                })(q);
+              }
               c.hit(mob, 1 / 3, big ? 1.2 : 0.6);
             } });
         });
@@ -275,7 +307,7 @@
             for (var i = 0; i < 3; i++) (function (i) {
               after(c.D(i * 0.05), function () {
                 var pp = sc.mobPos(mob), off = (i - 1) * 0.19;
-                var a = V(pp.x - 0.62 + off, pp.y + 0.66 + off, pp.z + 0.3), b = V(pp.x + 0.55 + off, pp.y - 0.55 + off, pp.z + 0.3), m = V((a.x + b.x) / 2 + 0.14, (a.y + b.y) / 2 + 0.12, pp.z + 0.45);
+                var R_ = 0.9 * c.s, a = V(pp.x - 0.62 * R_ + off, pp.y + 0.66 * R_ + off, pp.z + 0.3), b = V(pp.x + 0.55 * R_ + off, pp.y - 0.55 * R_ + off, pp.z + 0.3), m = V((a.x + b.x) / 2 + 0.14, (a.y + b.y) / 2 + 0.12, pp.z + 0.45);
                 var bez = new T.QuadraticBezierCurve3(a, m, b), pts = []; for (var k = 0; k <= 20; k++) pts.push(bez.getPoint(k / 20));
                 vx.ribbon({ mode: 'static', sweep: true, pts: pts, w: 0.42 * c.s, color: c.col, core: 0, alpha: 0.32, life: c.D(0.3) });
                 vx.ribbon({ solid: true, mode: 'static', sweep: true, pts: pts, w: 0.15 * c.s, color: c.deep, core: 0.75, life: c.D(0.4) });
@@ -287,6 +319,10 @@
             })(i);
             E({ sys: 'col', pos: p.clone().add(V(0.05, 0.35, 0.2)), frame: 'paw', color: c.deep, size: [0.35 * c.s, 0.6 * c.s], life: c.D(0.5), ease: 1, rot: 0.3, alpha: 0.5, fadeIn: 0.15, delay: c.D(0.12) });
             shock(p, c.col, 1.4 * c.s, 0.3); sc.light(p, c.col, 0.6, 0.3);
+            // three huge claw arcs sweep out past the target
+            for (var w = 0; w < 3; w++) E({ pos: p.clone().add(V(0.2 + w * 0.25, (1 - w) * 0.45, 0.2)), vel: V(5.5, -1.2, 0), frame: 'crescent', color: w === 1 ? 0xffffff : c.col, size: [1.2 * c.s, 3.6 * c.s], ease: 1, life: c.D(0.34), delay: c.D(0.04 + w * 0.05), rot: 2.6, drag: 3.5, alpha: 0.7, fadeOut: 0.5 });
+            gRing(p, c.col, 4.2 * c.s, 0.45);
+            for (var g2 = 0; g2 < N(12, c); g2++) E({ pos: p.clone().add(rdir(0.3)), vel: V(rr(2, 7), rr(-1, 2.5), rr(-1.5, 1.5)), frame: pick(['paw', 'star', 'flare']), color: [0xffffff, c.col], size: [rr(0.14, 0.26) * c.s, 0.03], life: rr(0.4, 0.75), drag: 2.2, grav: 2, spin: rr(-6, 6) });
           } });
       });
     };
@@ -316,8 +352,11 @@
         });
       });
       function boom(p) {
-        var P = 1.15 * c.s;
+        var P = 1.4 * c.s;
         sc.hitStop(0.05);
+        fieldWave(p, 0xffc070, 0.6, c.col);
+        // fluff blown over the whole field, drifting down slowly
+        fieldRain(c, 26, 0.25, { y: function () { return rr(0.6, 2.6); }, vel: function () { return V(rr(-0.6, 0.6), rr(0.3, 1.1), 0); }, frames: ['fluff'], cols: [0xfff1dc, 0xffd9b0, c.col], size: function () { return [rr(0.14, 0.26) * c.s, 0.06]; }, life: 1.3, sway: true, grav: 0.9, drag: 1.5 });
         flare(p, 0xffffff, 1.3 * P, 0.16, { white: true });
         glow(p, 0xff9a40, [0.6, 2.2 * P], 0.35, { ease: 1, alpha: 0.75 });
         fire(p, N(10, c), { size: P * 0.9, speed: 3 });
@@ -332,7 +371,7 @@
     };
     S.orbitRing = function (c) {
       sc.heroPose('spin', c.D(0.08), c.col);
-      var center = sc.heroCenter(), n = 6, orbs = [], t = 0, launch = c.D(0.34), R = 0.95, hits = share(c.targets.slice(0, 3), n);
+      var center = sc.heroCenter(), n = 6, orbs = [], t = 0, launch = c.D(0.34), R = 1.25, hits = share(c.targets.slice(0, 3), n);
       circle(V(center.x, 0, center.z), c.col, 1.7 * c.s, c.D(0.7), { spin: 3 });
       for (var i = 0; i < n; i++) orbs.push({ a0: i * Math.PI / 3, pos: center.clone(),
         rib: vx.ribbon({ solid: true, mode: 'trail', w: 0.1 * c.s, color: c.deep, core: 0.8, maxPts: 14, shrink: 70 }),
@@ -347,6 +386,9 @@
           if (o.rib) o.rib.head(o.pos);
         });
         if (t < launch) return false;
+        // the spin lets go: sparkling rings roll out over the ground and glitter is flung everywhere
+        fieldWave(V(center.x, 0, center.z), c.col, 0.65, 0xffffff);
+        for (var g3 = 0; g3 < N(28, c); g3++) { var ga = rr(0, 6.283), gs = rr(3, 8); E({ pos: center.clone().add(V(Math.cos(ga) * R, 0.1, Math.sin(ga) * R * 0.55)), vel: V(Math.cos(ga) * gs, rr(0.5, 2.2), Math.sin(ga) * gs * 0.8), frame: pick(['star', 'flare', 'dot']), color: [0xffffff, c.col], size: [rr(0.1, 0.2) * c.s, 0], life: rr(0.5, 0.9), drag: 1.6, grav: 1.5, spin: rr(-8, 8) }); }
         orbs.forEach(function (o, i) {
           vx.kill(o.head); vx.kill(o.halo); if (o.rib) o.rib.detach();
           var h = hits[i], from = o.pos.clone();
@@ -403,7 +445,21 @@
           sparks(p, [0xffffff, c.col], N(12, c), 7, { size: 0.16, stretch: 0.2, life: 0.8 });
           for (var k = 0; k < 3; k++) after(c.D(0.05 + k * 0.08), function () { var q = sc.mobPos(mob); vx.lightning(q.clone().add(rdir(0.45)), q.clone().add(rdir(0.45)), { w: 0.045, color: c.col, life: 0.1, branches: 0, segs: 5, amp: 0.3 }); });
           gGlow(p, c.col, 1.4, 0.3); sc.light(p, c.col, 1.6, 0.25);
-          if (i === 0) { sc.flash('rgba(200,235,255,0.55)', 0.22); sc.hitStop(0.04); }
+          if (i === 0) {
+            sc.flash('rgba(200,235,255,0.55)', 0.22); sc.hitStop(0.04);
+            // a thunderbolt drops from the sky on the first target, then stray bolts strike all over the field
+            var sky = p.clone().add(V(rr(-0.6, 0.6), 6.5, -1.2));
+            vx.lightning(sky, to, { w: 0.5 * c.s, color: c.col, core: 0, alpha: 0.45, life: c.D(0.3), branches: 0, segs: 16, amp: 0.2 });
+            vx.lightning(sky, to, { solid: true, w: 0.14 * c.s, color: 0x3d8cff, core: 0.9, life: c.D(0.32), branches: 3, segs: 16, amp: 0.2 });
+            fieldWave(p, c.col, 0.55, 0xffffff);
+            fieldPops(c, N(7, c), 0.05, 0.06, function (g) {
+              var top = g.clone().add(V(rr(-0.8, 0.8), 6.5, -1.2)), hitP = g.clone().setY(0.1);
+              vx.lightning(top, hitP, { w: 0.3 * c.s, color: c.col, core: 0, alpha: 0.4, life: c.D(0.22), branches: 0, segs: 14, amp: 0.22 });
+              vx.lightning(top, hitP, { solid: true, w: 0.08 * c.s, color: 0x3d8cff, core: 0.9, life: c.D(0.25), branches: 1, segs: 14, amp: 0.22 });
+              flare(hitP, 0xffffff, 0.9 * c.s, 0.12, { white: true }); gRing(g, c.col, 1.8 * c.s, 0.35); gGlow(g, c.col, 1.2, 0.3);
+              sparks(hitP, [0xffffff, c.col], N(5, c), 5, { size: 0.14, stretch: 0.18, up: 1.5 }); sc.shake(0.03);
+            });
+          }
           sc.shake(0.08);
           c.hit(mob, 1, 1.0);
         });
@@ -414,6 +470,14 @@
       sc.heroPose('raise', c.D(0.12), c.col);
       var C = c.center.clone(), dur = c.D(0.9);
       E({ sys: 'gadd', pos: V(C.x, 0.04, C.z), frame: 'frost', color: c.col, size: [0.4, 4.4 * c.s], ease: 1, life: dur * 1.3, spin: 0.25, fadeIn: 0.1, fadeOut: 0.6, alpha: 0.9 });
+      // frost creeps over the whole ground, wind and snow cross the whole screen, ice spikes pop up everywhere
+      E({ sys: 'gadd', pos: V(FC.x, 0.035, FC.z), frame: 'frost', color: 0xdff4ff, size: [1.5, 10.5], ease: 1, life: dur * 1.5, spin: -0.12, fadeIn: 0.15, fadeOut: 0.5, alpha: 0.5 });
+      for (var wv = 0; wv < N(22, c); wv++) { var wp = fieldPt(rr(0.3, 2.8)); wp.x = rr(-5, -1); E({ pos: wp, vel: V(rr(7, 11), rr(-1.4, -0.4), 0), frame: 'streak', color: 0xe8f8ff, size: [0.3, 0.5], life: rr(0.4, 0.7), delay: rr(0, dur * 0.8), stretch: 0.14, alpha: 0.5, fadeIn: 0.2, fadeOut: 0.4 }); }
+      fieldRain(c, 70, dur * 0.7, { vel: function () { return V(rr(0.8, 2.2), rr(-3, -1.6), 0); }, frames: ['snow', 'snow', 'dot'], cols: 0xffffff, size: function () { return rr(0.07, 0.16) * c.s; }, life: 1.2, sway: true, white: true });
+      fieldPops(c, N(9, c), 0.3, 0.035, function (g) {
+        for (var s = 0; s < 3; s++) { var h = rr(0.6, 1.2) * c.s; E({ sys: 'norm', pos: V(g.x + (s - 1) * 0.16, h * 0.42, g.z), frame: 'shard', color: pick([0xffffff, 0xd8f2ff, 0xbfe8ff]), size: [0.05, h * 0.5], ar: 2.0, rot: -(s - 1) * 0.4, ease: 2, life: c.D(0.6), fadeOut: 0.85, white: true }); }
+        gRing(g, c.col, 1.3 * c.s, 0.35); sparks(g.clone().setY(0.3), [0xffffff, c.col], N(3, c), 3, { size: 0.13, up: 1.5 });
+      });
       circle(V(sc.heroCenter().x, 0, sc.heroCenter().z), c.col, 1.4, c.D(0.5));
       for (var i = 0; i < N(14, c); i++) E({ pos: V(C.x + rr(-2, 1.5), rr(0.3, 2.5), C.z + rr(-1.2, 1.2)), vel: V(rr(4, 7), rr(-1.2, -0.6), 0), frame: 'streak', color: 0xe8f8ff, size: 0.35, life: rr(0.25, 0.45), delay: rr(0, dur * 0.6), stretch: 0.12, alpha: 0.6 });
       for (var j = 0; j < N(45, c); j++) E({ pos: V(C.x + rr(-2, 2), rr(2.2, 3.4), C.z + rr(-1.4, 1.4)), vel: V(rr(0.6, 1.6), rr(-2.8, -1.6), 0), frame: pick(['snow', 'snow', 'dot']), color: 0xffffff,
@@ -445,11 +509,14 @@
       sc.heroPose('raise', c.D(0.12), c.col);
       sc.dim(0.35, c.D(0.9));
       var tg = c.targets, n = Math.max(tg.length, Math.round(5 + c.s * 3)), hits = share(tg, Math.min(n, tg.length * 2));
+      // extra stars that hit nobody: they rain on the whole field so the sky looks full
+      n = Math.max(n, hits.length) + N(8, c);
+      fieldRain(c, 30, c.D(0.7), { y: function () { return rr(3.5, 5.5); }, vel: function () { return V(rr(-3.2, -1.8), rr(-9, -6), 0.4); }, frames: ['streak', 'flare'], cols: [0xffffff, c.col], size: function () { return [rr(0.12, 0.22), 0.04]; }, life: 0.6, stretch: 0.1 });
       for (var i = 0; i < N(10, c); i++) E({ pos: V(c.center.x + rr(-2.5, 2.5), rr(2.8, 3.8), c.center.z + rr(-2, -0.5)), frame: 'flare', color: [0xffffff, c.col], size: [0, 0.28], ease: 2, life: rr(0.4, 0.8), delay: rr(0, c.D(0.3)), spin: 2, white: true });
       for (var m = 0; m < n; m++) (function (m) {
         var h = hits[m], big = c.tier >= 7 && m === n - 1;
         after(c.D(0.14 + m * 0.065), function () {
-          var land = h ? sc.mobPos(h.mob) : V(c.center.x + rr(-1.5, 1.5), 0.1, c.center.z + rr(-1, 1));
+          var land = h ? sc.mobPos(h.mob) : fieldPt(0.1);
           var from = land.clone().add(V(rr(1.4, 2.0), rr(4.2, 4.8), -0.6));
           homing({ from: from, to: function () { return h ? sc.mobPos(h.mob) : land; }, time: c.D(0.27), ease: function (k) { return k * k * 0.5 + k * 0.5; },
             trail: { w: 0.26 * c.s * (big ? 1.5 : 1), col: c.col, core: 1.2, pts: 18, shrink: 45 },
@@ -461,7 +528,7 @@
             onHit: function (p) {
               var gp = V(p.x, 0.03, p.z), P = big ? 1.6 : 1;
               flare(p, 0xffffff, 1.6 * c.s * P, 0.15, { white: true }); glow(p, c.col, [0.5, 1.8 * c.s * P], 0.3, { ease: 1, hot: 1.3 });
-              gRing(gp, c.col, 1.6 * c.s * P, 0.4); scorch(gp, 1.0 * c.s * P, 2); gGlow(gp, 0xffb040, 1.3 * P, 0.4);
+              gRing(gp, c.col, 2.4 * c.s * P, 0.45); scorch(gp, 1.0 * c.s * P, 2); if (big) fieldWave(gp, c.col, 0.7, 0xffffff); gGlow(gp, 0xffb040, 1.3 * P, 0.4);
               sparks(p, [0xffffff, c.col, 0xffa040], N(10, c), 5.5, { size: 0.2, up: 1.5 });
               for (var k = 0; k < N(6, c); k++) E({ sys: 'norm', pos: gp.clone().add(V(0, 0.1, 0)), vel: rdir(2.5).add(V(0, 3, 0)), frame: 'dot', color: 0x3a2a2a, size: rr(0.06, 0.11), life: rr(0.5, 0.8), grav: 9, drag: 0.5 });
               smoke(gp, 0x8a7a8a, N(3, c), { size: 0.8, alpha: 0.4, rise: 0.4 });
@@ -474,22 +541,27 @@
     S.beam = function (c) {
       sc.heroPose('thrust', c.D(0.22), c.col);
       sc.dim(0.4, c.D(0.85));
-      var moon = sc.heroCenter().add(V(0.2, 1.5, -0.1));
+      var moon = sc.heroCenter().add(V(0.2, 1.25, -0.1));
       E({ pos: moon, frame: 'crescent', color: 0xf4f0ff, size: [0.2, 0.95 * c.s], ease: 2, life: c.D(0.85), rot: 0.5, spin: 0.6, fadeOut: 0.8, white: true });
       E({ pos: moon, frame: 'glow', color: c.col, size: [0.4, 2.1 * c.s], ease: 2, life: c.D(0.85), fadeOut: 0.8, alpha: 0.6 });
       converge(moon, [0xffffff, c.col], N(16, c), 1.2, c.D(0.22));
       after(c.D(0.22), function () {
         var start = sc.heroPaw(), aim = c.targets[0] ? sc.mobPos(c.targets[0]) : c.center.clone().setY(0.6), dir = aim.clone().sub(start); dir.y = 0; dir.normalize();
-        var len = 6.2, y = start.y, end = start.clone().add(dir.clone().multiplyScalar(len)).setY(y - 0.2), life = c.D(0.55), pts = [];
+        var len = 10, y = start.y, end = start.clone().add(dir.clone().multiplyScalar(len)).setY(y - 0.2), life = c.D(0.55), pts = [];
         for (var i = 0; i <= 20; i++) pts.push(new T.Vector3().lerpVectors(start, end, i / 20));
         var pulse = function (u, rb) { var k = rb.t / rb.life, open = k < 0.12 ? k / 0.12 : k > 0.72 ? Math.max(0, 1 - (k - 0.72) / 0.28) : 1; return open * (1 + Math.sin(rb.t * 70 + u * 20) * 0.12) * (u < 0.04 ? 0.6 : 1); };
-        vx.ribbon({ mode: 'static', taper: 'bolt', pts: pts, w: 0.36 * c.s, color: c.col, core: 0, alpha: 0.45, life: life, widthFn: pulse });
-        vx.ribbon({ solid: true, mode: 'static', taper: 'bolt', pts: pts, w: 0.17 * c.s, color: 0x8a6cff, core: 0.9, alpha: 0.95, life: life, widthFn: pulse });
-        vx.ribbon({ mode: 'static', taper: 'bolt', pts: pts, w: 0.07 * c.s, color: 0xffffff, core: 1.5, life: life, widthFn: pulse });
+        vx.ribbon({ mode: 'static', taper: 'bolt', pts: pts, w: 1.5 * c.s, color: c.col, core: 0, alpha: 0.16, life: life, widthFn: pulse });
+        vx.ribbon({ mode: 'static', taper: 'bolt', pts: pts, w: 0.7 * c.s, color: c.col, core: 0, alpha: 0.45, life: life, widthFn: pulse });
+        vx.ribbon({ solid: true, mode: 'static', taper: 'bolt', pts: pts, w: 0.32 * c.s, color: 0x8a6cff, core: 0.9, alpha: 0.95, life: life, widthFn: pulse });
+        vx.ribbon({ mode: 'static', taper: 'bolt', pts: pts, w: 0.13 * c.s, color: 0xffffff, core: 1.5, life: life, widthFn: pulse });
+        // moonlight spills off the beam: crescents peel away to both sides and moon dust hangs over the field
+        for (var cr = 0; cr < N(12, c); cr++) { var cp = start.clone().add(dir.clone().multiplyScalar(rr(0.5, len * 0.8))), sd = cr % 2 ? 1 : -1; E({ pos: cp, vel: V(-dir.z * sd * rr(2, 4), rr(0.5, 2), dir.x * sd * rr(2, 4)), frame: 'crescent', color: [0xffffff, c.col], size: [0.2, rr(0.5, 0.9) * c.s], life: rr(0.4, 0.7), delay: rr(0, life * 0.6), spin: rr(-6, 6), drag: 2, fadeOut: 0.5 }); }
+        fieldRain(c, 34, life * 0.7, { y: function () { return rr(0.2, 3); }, vel: function () { return V(rr(-0.3, 0.3), rr(0.2, 0.9), 0); }, frames: ['flare', 'dot', 'star'], cols: [0xffffff, c.col], size: function () { return [rr(0.08, 0.16), 0]; }, life: 0.9, white: true });
+        fieldWave(V(start.x, 0, start.z), c.col, 0.6, 0xffffff);
         flare(start, 0xffffff, 1.5 * c.s, 0.25, { white: true }); glow(start, c.col, 1.2 * c.s, life, { alpha: 0.6 }); seal(start.clone().add(V(0.1, 0, 0.05)), c.col, 0.8 * c.s, life);
         for (var r = 0; r < N(7, c); r++) E({ pos: start.clone(), vel: dir.clone().multiplyScalar(9), frame: 'ring', color: c.col, size: [0.22 * c.s, 0.3 * c.s], ar: 2.6, life: c.D(0.6), delay: r * c.D(0.06), rot: 0, fadeOut: 0.5, alpha: 0.75 });
         for (var s = 0; s < N(30, c); s++) E({ pos: start.clone().add(dir.clone().multiplyScalar(rr(0, len))).add(V(0, rr(-0.14, 0.14), 0)), vel: dir.clone().multiplyScalar(rr(5, 9)), frame: 'streak', color: [0xffffff, c.col], size: [0.28, 0.1], life: rr(0.15, 0.3), delay: rr(0, life * 0.8), stretch: 0.08 });
-        for (var d = 0; d < 7; d++) E({ sys: 'gadd', pos: start.clone().add(dir.clone().multiplyScalar(0.6 + d * 0.75)).setY(0.035), frame: 'glow', color: c.col, size: [0.5, 0.95], ar: 0.5, life: life * 1.4, rot: 0, alpha: 0.5, fadeIn: 0.15 });
+        for (var d = 0; d < 12; d++) E({ sys: 'gadd', pos: start.clone().add(dir.clone().multiplyScalar(0.6 + d * 0.8)).setY(0.035), frame: 'glow', color: c.col, size: [0.8, 1.6], ar: 0.5, life: life * 1.4, rot: 0, alpha: 0.5, fadeIn: 0.15 });
         sc.flash('rgba(230,225,255,0.55)', 0.28); sc.punch(0.05);
         var t2 = 0;
         tick(function (dt) {
@@ -522,10 +594,11 @@
         glow(C, 0xffb030, [1, 4.0 * c.s], 0.45, { ease: 1, alpha: 0.45, fadeOut: 0.2 });
         glow(C, 0xff8a20, [1, 3.6 * c.s], 0.5, { ease: 1, alpha: 0.55, sys: 'col', fadeOut: 0.2 });
         flare(C, 0xffffff, 3.2 * c.s, 0.22, { white: true });
-        for (var r = 0; r < N(14, c); r++) E({ pos: C, frame: 'streak', color: [0xffffff, 0xffd84a], size: [0.5, 4.5 * c.s], ease: 1, life: rr(0.3, 0.45), rot: r / 14 * 3.1416 + rr(-0.1, 0.1), alpha: 0.55, fadeOut: 0.3 });
-        shock(C, 0xfff2a0, 6 * c.s, 0.5); shock(C, 0xff9a40, 4.5 * c.s, 0.6, { delay: 0.05 });
-        gRing(G, 0xffd84a, 6.5 * c.s, 0.6); gGlow(G, 0xffb040, 5, 0.8);
-        for (var e = 0; e < N(36, c); e++) E({ pos: C.clone().add(rdir(1.2, 0.4)), vel: rdir(5).add(V(0, 2.5, 0)), frame: 'dot', color: [0xffffff, 0xffe14a, 0xff8a2b], size: [rr(0.06, 0.12), 0], life: rr(0.6, 1.1), grav: 3, drag: 1.2, stretch: 0.1 });
+        for (var r = 0; r < N(14, c); r++) E({ pos: C, frame: 'streak', color: [0xffffff, 0xffd84a], size: [0.6, 7 * c.s], ease: 1, life: rr(0.35, 0.55), rot: r / 14 * 3.1416 + rr(-0.1, 0.1), alpha: 0.55, fadeOut: 0.3 });
+        shock(C, 0xfff2a0, 8 * c.s, 0.55); shock(C, 0xff9a40, 6 * c.s, 0.65, { delay: 0.05 }); fieldWave(G, 0xffd84a, 0.75, 0xff9a40);
+        gRing(G, 0xffd84a, 9 * c.s, 0.6); gGlow(G, 0xffb040, 5, 0.8);
+        fieldPops(c, N(10, c), 0.02, 0.03, function (g) { var q = g.clone().setY(0.4); fire(q, N(4, c), { size: 0.9 * c.s, speed: 1.6, up: 2.2 }); gRing(g, 0xffb040, 1.6 * c.s, 0.4); scorch(g, 0.9, 1.8); embers(q, [0xffe080, 0xff6a2b], N(4, c), { speed: 2, up: 2.5 }); });
+        for (var e = 0; e < N(60, c); e++) E({ pos: C.clone().add(rdir(1.2, 0.4)), vel: rdir(8).add(V(0, 2.5, 0)), frame: 'dot', color: [0xffffff, 0xffe14a, 0xff8a2b], size: [rr(0.06, 0.12), 0], life: rr(0.6, 1.1), grav: 3, drag: 1.2, stretch: 0.1 });
         c.targets.forEach(function (m) { var q = sc.mobPos(m); fire(q, N(5, c), { size: 0.9, speed: 2 }); scorch(V(q.x, 0, q.z), 1.2); c.hit(m, 1, 2); });
         sc.light(C, 0xffe080, 2.5, 0.6);
       });
@@ -534,11 +607,11 @@
       sc.heroPose('raise', c.D(0.14), c.col);
       sc.dim(0.55, c.D(1.0));
       var C = c.center.clone().setY(1.05), dur = c.D(0.78);
-      E({ pos: C, frame: 'shock', color: c.col, size: [0.5, 2.6 * c.s], ease: 1, life: dur, spin: 2, fadeOut: 0.85, alpha: 0.9 });
+      E({ pos: C, frame: 'shock', color: c.col, size: [0.5, 3.6 * c.s], ease: 1, life: dur, spin: 2, fadeOut: 0.85, alpha: 0.9 });
       E({ pos: C, frame: 'ring', color: 0xffd8ff, size: [0.4, 1.35 * c.s], ease: 1, life: dur, fadeOut: 0.85, alpha: 0.8, white: true });
       var core = E({ sys: 'addB', pos: C, frame: 'dot', color: 0x07020e, size: [0.1, 1.2 * c.s], ease: 1, life: dur + 0.5, alpha: 1, fadeOut: 0.95 });
-      E({ sys: 'gadd', pos: V(C.x, 0.04, C.z), frame: 'circle', color: c.col, size: [0.5, 3.4 * c.s], ease: 2, life: dur, spin: -2.5, fadeOut: 0.8, alpha: 0.7 });
-      for (var i = 0; i < N(70, c); i++) { var life = dur * rr(0.4, 0.75); E({ pos: C, frame: pick(['streak', 'dot', 'flare']), color: pick([0xffffff, c.col, 0xff6ad8, 0x6a5aff]), size: [rr(0.12, 0.22), 0.03], life: life, delay: rr(0, dur - life), upd: spiralIn(C, rr(0, 6.283), rr(1.0, 2.4), 7), stretch: 0.05, fadeIn: 0.25 }); }
+      E({ sys: 'gadd', pos: V(C.x, 0.04, C.z), frame: 'circle', color: c.col, size: [0.5, 6 * c.s], ease: 2, life: dur, spin: -2.5, fadeOut: 0.8, alpha: 0.7 });
+      for (var i = 0; i < N(110, c); i++) { var life = dur * rr(0.4, 0.75); E({ pos: C, frame: pick(['streak', 'dot', 'flare']), color: pick([0xffffff, c.col, 0xff6ad8, 0x6a5aff]), size: [rr(0.12, 0.22), 0.03], life: life, delay: rr(0, dur - life), upd: spiralIn(C, rr(0, 6.283), rr(1.2, 4.6), 7), stretch: 0.05, fadeIn: 0.25 }); }
       c.targets.forEach(function (m) { m.pull = C.x + rr(-0.3, 0.3); m.pullZ = C.z + rr(-0.25, 0.25); });
       for (var k = 0; k < 4; k++) after(c.D(0.12 + k * 0.15), function () { vx.lightning(C.clone().add(rdir(0.4)), C.clone().add(rdir(1.3)), { w: 0.06, color: 0xd8a0ff, life: 0.14, branches: 1, segs: 8, amp: 0.25 }); });
       after(dur, function () {
@@ -547,8 +620,8 @@
         after(c.D(0.08), function () {
           sc.flash('rgba(220,170,255,0.8)', 0.6); sc.hitStop(0.07); sc.shake(0.4); sc.punch(0.09);
           flare(C, 0xffffff, 4 * c.s, 0.3, { white: true });
-          shock(C, c.col, 5 * c.s, 0.5); shock(C, 0xffffff, 3.5 * c.s, 0.35);
-          sparks(C, [0xffffff, c.col, 0xff6ad8], N(30, c), 9, { size: 0.3, stretch: 0.14 });
+          shock(C, c.col, 7.5 * c.s, 0.55); shock(C, 0xffffff, 5 * c.s, 0.4); fieldWave(V(C.x, 0, C.z), c.col, 0.8, 0xff6ad8);
+          sparks(C, [0xffffff, c.col, 0xff6ad8], N(46, c), 12, { size: 0.3, stretch: 0.14, life: 1.4 });
           gRing(V(C.x, 0, C.z), c.col, 5 * c.s, 0.6);
           embers(C, [0xffffff, c.col, 0xff6ad8], N(20, c), { speed: 4, up: 0.5, grav: 1 });
           sc.light(C, c.col, 2.2, 0.5);
@@ -561,7 +634,7 @@
       sc.dim(0.5, c.D(1.1));
       var H = sc.heroCenter(), top = c.center.clone().add(V(0, 2.9, -0.3)), cols = [0xff6a2b, 0x9fd8ff, 0xbfefff, 0xffe14a, 0xd8d8ff], dur = c.D(0.48);
       circle(V(H.x, 0, H.z), 0xffffff, 2.2, c.D(1.0), { spin: 2 });
-      E({ sys: 'gadd', pos: V(top.x, 0.04, c.center.z), frame: 'circle', color: 0xffe9ff, size: [0.5, 5 * c.s], ease: 2, life: c.D(1.1), spin: -1.2, fadeOut: 0.8, alpha: 0.8 });
+      E({ sys: 'gadd', pos: V(top.x, 0.04, c.center.z), frame: 'circle', color: 0xffe9ff, size: [0.5, 8 * c.s], ease: 2, life: c.D(1.1), spin: -1.2, fadeOut: 0.8, alpha: 0.8 });
       cols.forEach(function (col, i) {
         var rib = vx.ribbon({ mode: 'trail', w: 0.12, color: col, core: 1, maxPts: 20, shrink: 60 });
         var head = E({ pos: H, frame: 'flare', color: 0xffffff, size: 0.45, life: 30, upd: STAY, fadeOut: 1, white: true, spin: 6 });
@@ -587,9 +660,11 @@
         vx.ribbon({ mode: 'static', taper: 'bolt', pts: shaft, w: 0.55 * c.s, color: 0xd8b8ff, core: 1, life: c.D(0.26) });
         sc.flash('rgba(255,255,255,1)', 0.8); sc.hitStop(0.1); sc.slowmo(0.35, 0.35); sc.shake(0.5); sc.punch(0.14);
         flare(C, 0xffffff, 2.6 * c.s, 0.22, { white: true });
-        cols.concat([0xff6ad8]).forEach(function (col, j) { shock(C, col, (2.2 + j * 0.75) * c.s, 0.5 + j * 0.07, { delay: j * 0.035 }); });
+        cols.concat([0xff6ad8]).forEach(function (col, j) { shock(C, col, (2.6 + j * 1.15) * c.s, 0.5 + j * 0.07, { delay: j * 0.035 }); });
+        fieldWave(G, 0xffffff, 0.85, 0xd8b8ff);
+        fieldPops(c, N(10, c), 0.02, 0.04, function (g, gi) { var col = cols[gi % cols.length], q = g.clone().setY(0.5); vx.ribbon({ mode: 'static', taper: 'bolt', pts: [g.clone().setY(5.5), g.clone().setY(2.5), g.clone().setY(0.05)], w: 0.4 * c.s, color: col, core: 1.2, life: c.D(0.3) }); impact(q, col, 1.1 * c.s); gRing(g, col, 2.2 * c.s, 0.4); });
         gRing(G, 0xffffff, 7 * c.s, 0.7); gGlow(G, 0xffe9ff, 5, 0.9);
-        sparks(C, cols.concat([0xffffff]), N(48, c), 10, { size: 0.32, stretch: 0.14, up: 1 });
+        sparks(C, cols.concat([0xffffff]), N(70, c), 13, { size: 0.32, stretch: 0.14, up: 1, life: 1.4 });
         fire(C, N(10, c), { size: 1.2, speed: 4 });
         for (var k = 0; k < N(10, c); k++) E({ sys: 'norm', pos: C.clone().add(rdir(0.3)), vel: rdir(5).add(V(0, 2, 0)), frame: 'shard', color: 0xffffff, size: [rr(0.12, 0.2), 0.05], ar: 2, life: rr(0.5, 0.8), grav: 6, spin: rr(-12, 12), white: true });
         c.targets.forEach(function (m) {
@@ -603,7 +678,7 @@
     function tint(base, tier) { var col = new T.Color(base); if (tier >= 5) col.lerp(new T.Color(0xffffff), 0.12); return col.getHex(); }
     function cast(skill, tier, targets, hit, speedMul, lv) {
       var sp = speedMul || 1; lv = lv || 0;
-      var c = { sk: skill, tier: tier, lv: lv, col: tint(skill.color, tier), s: (1 + 0.08 * (tier - 1)) * (1 + 0.018 * lv), n: Math.min(2.4, 1 + 0.1 * (tier - 1) + 0.025 * lv), sp: sp,
+      var c = { sk: skill, tier: tier, lv: lv, col: tint(skill.color, tier), s: 1.12 * (1 + 0.08 * (tier - 1)) * (1 + 0.018 * lv), n: Math.min(2.4, 1 + 0.1 * (tier - 1) + 0.025 * lv), sp: sp,
         D: function (t) { return t / sp; }, deep: deep(tint(skill.color, tier)), from: sc.heroPaw(), targets: targets.slice(), hit: hit || function () { } };
       c.center = crowdCenter(c.targets);
       var hitFn = c.hit, decorated = [], released = false;
@@ -617,7 +692,7 @@
       spellCharge(c);
       var H = sc.heroCenter();
       // casting circle: two rune rings under the feet, sparks rising, a coloured seal at the paw
-      E({ sys: 'gadd', pos: V(H.x, 0.045, H.z), frame: 'circle', color: c.col, size: [0.4, 1.5 + 0.03 * lv], ease: 2, life: c.D(0.55), spin: 3, fadeIn: 0.1, fadeOut: 0.5, alpha: 0.95 });
+      E({ sys: 'gadd', pos: V(H.x, 0.045, H.z), frame: 'circle', color: c.col, size: [0.3, 1.2 + 0.03 * lv], ease: 2, life: c.D(0.55), spin: 3, fadeIn: 0.1, fadeOut: 0.5, alpha: 0.95 });
       E({ sys: 'gadd', pos: V(H.x, 0.05, H.z), frame: 'ring', color: 0xffffff, size: [0.3, 1.1], ease: 1, life: c.D(0.35), alpha: 0.6 });
       for (var q = 0; q < N(8, c); q++) { var qa = rr(0, 6.28); E({ pos: V(H.x + Math.cos(qa) * 0.6, 0.1, H.z + Math.sin(qa) * 0.45), vel: V(0, rr(1.6, 2.8), 0), frame: pick(['star', 'dot']), color: [0xffffff, c.col], size: [0.1, 0], life: rr(0.35, 0.6), drag: 0.6, spin: 6 }); }
       seal(c.from.clone().add(V(0, 0, 0.1)), c.col, 0.55 * c.s, c.D(0.3));

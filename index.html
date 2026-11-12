@@ -484,6 +484,85 @@ table.prob th:first-child,table.prob td:first-child{text-align:left}
 .slotout{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:var(--muted)}
 .dung{box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}.dung.dg-gold{box-shadow:inset 0 0 0 1px rgba(255,200,90,.45)}.dung.dg-mana{box-shadow:inset 0 0 0 1px rgba(110,170,255,.45)}.dung.dg-gem{box-shadow:inset 0 0 0 1px rgba(90,220,235,.45)}.dung.dg-rune{box-shadow:inset 0 0 0 1px rgba(180,140,255,.45)}
 .bcell .gimg{width:70%;height:70%}.bcell.big .gimg{width:74%;height:74%}.eslot .gimg{width:64%;height:64%}.gcard .gimg{width:62%;height:50%}
+/* ---------- drawn pictures (js/icons.js): skills, runes, sigils, gear grades, currencies ---------- */
+.ico{display:block;width:100%;height:100%;overflow:visible}
+.icur{display:inline-block;width:1.15em;height:1.15em;vertical-align:-.22em}
+.buy .icur{width:1.05em;height:1.05em}
+.ico .orb{transform-box:view-box;transform-origin:32px 32px;animation:spin 9s linear infinite}.ico .orb.rev{animation-duration:6s;animation-direction:reverse}
+/* skills: a dark tile tinted with the spell colour, the spell's shape on top (no names) */
+.sk{width:54px;height:54px;border-radius:17px;background:radial-gradient(circle at 50% 30%,color-mix(in srgb,var(--c,#888) 46%,#1b1430),#120d20 82%);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--c,#888) 70%,#000),inset 0 -5px 0 rgba(0,0,0,.28),0 3px 0 rgba(0,0,0,.35);padding:5px!important;flex:none}
+.sk .ico{filter:drop-shadow(0 2px 1px rgba(0,0,0,.45))}
+.sk.empty{background:#1c1e30;box-shadow:inset 0 0 0 2px rgba(255,255,255,.1)}.sk.empty b{position:static;background:none;box-shadow:none;color:var(--faint);font:400 18px var(--display)}
+.sk.now{transform:translateY(-5px) scale(1.1);box-shadow:inset 0 0 0 2px #fff,0 0 0 2px var(--c),0 0 18px var(--c)}
+.sk.now .ico{animation:skbob .5s ease-in-out infinite alternate}
+@keyframes skbob{to{transform:scale(1.1) rotate(-4deg)}}
+.sk b{top:-7px;right:-7px;min-width:20px;width:auto;height:20px;padding:0 4px;border-radius:10px;background:#0f1019;box-shadow:0 0 0 1.5px color-mix(in srgb,var(--c,#888) 80%,#fff);font:700 10.5px var(--body)}
+.slots{gap:9px}
+.skrow .sk{padding:6px!important}
+.slotpick{min-height:84px;box-shadow:inset 0 -5px 0 color-mix(in srgb,var(--c,#3a2d63) 70%,#000)}
+.spi{width:44px;height:44px;display:grid;place-items:center}.spi.none{font:400 26px var(--display);color:var(--faint);border-radius:14px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.1)}
+/* runes: carved stones on a ring; lines of power run from the core to every awakened stone */
+.runering{background:radial-gradient(circle,#231a3c 0 30%,#16122a 31% 66%,transparent 67%);box-shadow:none;width:300px;max-width:none}
+.rlines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.rlines .flow{stroke-dasharray:5 6;animation:rflow 1.1s linear infinite}
+@keyframes rflow{to{stroke-dashoffset:-22}}
+.rune{transform:rotate(calc(var(--i) * 60deg)) translateY(-104px) rotate(calc(var(--i) * -60deg));width:66px;height:66px;margin:-33px 0 0 -33px;border-radius:0;background:none;box-shadow:none!important;padding:0;transition:filter .15s}
+.rune .ico{width:60px;height:60px;filter:drop-shadow(0 3px 2px rgba(0,0,0,.5))}
+.rune .glyph,.ricon .glyph{filter:drop-shadow(0 0 2.5px currentColor)}
+.rune.zero .ico{filter:grayscale(.9) brightness(.6)}
+.rune b{position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);background:#0f1019;border-radius:8px;padding:0 6px;font:700 10.5px var(--body);white-space:nowrap;box-shadow:0 0 0 1.5px var(--rc)}
+.rune .rgn{top:-9px;z-index:1}
+.rune.sel .ico{filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 9px var(--rc));transform:scale(1.1)}
+.rune.up .ico{animation:runeup .34s ease-out}
+@keyframes runeup{0%{transform:scale(1.42);filter:brightness(2.3) drop-shadow(0 0 16px var(--rc))}100%{transform:scale(1.1)}}
+.rcore{border-radius:50%;inset:35.5%;background:radial-gradient(circle,#3a2a66,#1a1230);box-shadow:inset 0 0 0 2px #6a55b0}
+.rcore.lit{box-shadow:inset 0 0 0 2px #cdb8ff,0 0 18px #9a7bff;animation:corep 2.2s ease-in-out infinite}
+@keyframes corep{50%{box-shadow:inset 0 0 0 2px #fff,0 0 30px #b79bff}}
+.row>.ricon{width:52px;height:52px;flex:none;display:grid;place-items:center;border-radius:16px;font-size:26px}
+.ricon .irune{width:88%;height:88%}
+.sglv>span{display:block}.sglv>span small{display:block}.sglv .buy span{display:inline-flex;flex-direction:row;align-items:center;gap:3px}
+/* sigils (신성력): holy gems — the cut shows the grade, the mark shows the stat, the dots show the quality */
+.sgcell{border-radius:16px;background:radial-gradient(circle at 50% 46%,color-mix(in srgb,var(--gc,#555) 34%,transparent),rgba(20,16,36,.9) 72%);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--gc,#555) 55%,transparent);padding:4px}
+.sgcell .ico{filter:drop-shadow(0 2px 2px rgba(0,0,0,.5))}
+.sgcell .isg.b3,.sgcell .isg.b4,.sgbig .isg.b3,.sgbig .isg.b4{animation:sgfloat 2.4s ease-in-out infinite}
+@keyframes sgfloat{50%{transform:translateY(-2px);filter:drop-shadow(0 0 7px var(--gc))}}
+.sgcell .q{bottom:-6px;font:700 8.5px var(--body);background:#0f1019;box-shadow:0 0 0 1px color-mix(in srgb,var(--gc,#555) 70%,transparent)}
+.sgcell .tg{left:1px;top:-5px;z-index:1}
+.sgcell.sel{box-shadow:inset 0 0 0 2.5px #fff,0 0 12px var(--gc)}
+.sgcell.empty{background:#141626;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.08)}.sgcell.empty::before{content:'';width:34%;height:34%;border-radius:50%;box-shadow:inset 0 0 0 2px rgba(255,255,255,.1)}
+.sgcell.lockd{border-radius:16px}
+.sggrid.got .sgcell{animation:sgpop .42s cubic-bezier(.2,1.5,.4,1) backwards}
+.sggrid.got .sgcell:nth-child(2){animation-delay:.07s}.sggrid.got .sgcell:nth-child(3){animation-delay:.14s}.sggrid.got .sgcell:nth-child(4){animation-delay:.21s}.sggrid.got .sgcell:nth-child(5){animation-delay:.28s}.sggrid.got .sgcell:nth-child(n+6){animation-delay:.35s}
+@keyframes sgpop{0%{opacity:0;transform:scale(.2) rotate(-25deg);filter:brightness(3)}}
+.sgselhead{display:flex;align-items:center;gap:10px}.sgbig{width:62px;height:62px;flex:none}
+/* gear: each grade has its own colours and motif, each step I~IV more trimmings */
+.gart{position:relative;display:block;width:76%;aspect-ratio:1;flex:none}
+.gart .ico,.bcell .gart .ico,.gcard .gart .ico,.eslot .gart .ico{position:absolute;inset:0;width:100%!important;height:100%!important}
+.gart .ico.gback,.bcell .gart .ico.gback,.gcard .gart .ico.gback{inset:-9%!important;width:118%!important;height:118%!important;opacity:.9}
+.gart .gimg.tinted{filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))!important}.gart.g4 .gimg.tinted{filter:drop-shadow(0 0 4px rgba(255,200,60,.7))!important}.gart.g5 .gimg.tinted{filter:drop-shadow(0 0 5px rgba(255,80,110,.85))!important}
+.bcell .tg,.bcell .blv,.bcell .bn,.bcell .E,.bcell .bst{z-index:2}
+.gart .gimg,.bcell .gart .gimg,.gcard .gart .gimg{position:absolute;left:14%;top:14%;width:72%!important;height:72%!important}
+.gart.g0 .gimg{filter:grayscale(.85) brightness(1.02) drop-shadow(0 2px 2px rgba(0,0,0,.35))}
+.gart.g1 .gimg{filter:hue-rotate(72deg) saturate(.95) drop-shadow(0 2px 2px rgba(0,0,0,.35))}
+.gart.g2 .gimg{filter:hue-rotate(168deg) saturate(1.1) drop-shadow(0 2px 2px rgba(0,0,0,.35))}
+.gart.g3 .gimg{filter:hue-rotate(236deg) saturate(1.05) drop-shadow(0 2px 2px rgba(0,0,0,.35))}
+.gart.g4 .gimg{filter:saturate(1.15) brightness(1.05) drop-shadow(0 0 4px rgba(255,200,60,.7))}
+.gart.g5 .gimg{filter:hue-rotate(-48deg) saturate(1.35) drop-shadow(0 0 5px rgba(255,80,110,.85))}
+.gart.s4 .gimg,.gart.s4 .gstaff{animation:gfloat 2.2s ease-in-out infinite}
+@keyframes gfloat{50%{transform:translateY(-3%)}}
+.gshine{position:absolute;inset:0;border-radius:50%;overflow:hidden;pointer-events:none;mix-blend-mode:screen}
+.gshine::after{content:'';position:absolute;top:-20%;left:-60%;width:38%;height:140%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.75),transparent);transform:rotate(20deg);animation:gsweep 2.6s ease-in-out infinite}
+@keyframes gsweep{0%,55%{left:-60%}100%{left:130%}}
+.bcell{padding:14px 2px}.bcell .gart{width:78%}.bcell.big .gart{width:80%}.gcard .gart{width:66%}
+.bcell:has(.g5){background:radial-gradient(circle at 50% 40%,#5a1830,#1c0a18)}.bcell:has(.g4){background:radial-gradient(circle at 50% 40%,#5a3c0c,#1c1406)}
+.bcell:has(.g3){background:radial-gradient(circle at 50% 40%,#3a1f66,#150c26)}.bcell:has(.g2){background:radial-gradient(circle at 50% 40%,#173a70,#0a1426)}
+.bcell:has(.g1){background:radial-gradient(circle at 50% 40%,#1c4a2a,#0a1a10)}.bcell:has(.g0){background:radial-gradient(circle at 50% 40%,#3a3d48,#15161c)}
+/* emoji pictures all sit in the same round badge so they read as one set */
+.dung .dicon,.pack .picon,.tnode .ti{width:52px;height:52px;flex:none;display:grid;place-items:center;border-radius:16px;background:radial-gradient(circle at 50% 30%,#34385a,#171827);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.14),inset 0 -4px 0 rgba(0,0,0,.25);font-size:28px;filter:none}
+.tnode .ti{width:40px;height:40px;font-size:21px;border-radius:13px}
+.relic .ricon,.ricon.pt,.ricon.mk{border-radius:16px;background:radial-gradient(circle at 50% 30%,#34385a,#171827);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.14),inset 0 -4px 0 rgba(0,0,0,.25)}
+.relic.divine .ricon{background:radial-gradient(circle at 50% 30%,#6a5010,#221803);box-shadow:inset 0 0 0 1.5px #ffd84a,0 0 10px rgba(255,216,74,.35)}
+@media (prefers-reduced-motion:reduce){.ico .orb,.sk.now .ico,.rlines .flow,.rcore.lit,.isg,.gart .gimg,.gart .gstaff,.gshine::after{animation:none!important}}
 </style>
 
 <div id="app">
@@ -556,6 +635,7 @@ table.prob th:first-child,table.prob td:first-child{text-align:left}
 <script src="js/vfx.js"></script>
 <script src="js/fx.js"></script>
 <script src="js/sound.js"></script>
+<script src="js/icons.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>
 <script>if ('serviceWorker' in navigator) addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });</script>

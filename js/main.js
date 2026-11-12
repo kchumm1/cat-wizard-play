@@ -79,7 +79,7 @@
     var id = R.monsters[Math.random() < 0.5 ? 0 : 1], res = CW.resolveArt(id, 'monster', info.region);
     var a = mobArt(res.id, 'M2'); if (!a) return;
     var r = Math.random(), entry = r < 0.6 ? 'run' : r < 0.85 ? 'leap' : 'drop';
-    sc.spawnMob({ art: a, tint: res.tint, height: 1.3 + Math.random() * 0.2, hp: CW.stageMonsterHp(state) / CROWD, entry: entry });
+    sc.spawnMob({ art: a, tint: res.tint, height: 0.86 + Math.random() * 0.16, hp: CW.stageMonsterHp(state) / CROWD, entry: entry });
   }
   function startBoss() {
     var info = CW.stageInfo(state.stage), R = DATA.regions[info.region];
@@ -87,7 +87,7 @@
     var res = info.isRegionBoss ? CW.resolveArt(R.boss.art, 'boss', info.region) : CW.resolveArt(R.miniBoss || R.monsters[info.num % 2], R.miniBoss ? 'boss' : 'monster', info.region);
     var a = mobArt(res.id, 'B2') || art.B2;
     var name = info.isRegionBoss ? R.boss.name : R.name + ' 대장';
-    var mob = sc.spawnMob({ art: a, tint: res.tint, height: info.isRegionBoss ? 2.6 : 2.1, hp: CW.stageBossHp(state), boss: true, regionBoss: info.isRegionBoss, name: name });
+    var mob = sc.spawnMob({ art: a, tint: res.tint, height: info.isRegionBoss ? 1.9 : 1.55, hp: CW.stageBossHp(state), boss: true, regionBoss: info.isRegionBoss, name: name });
     boss = { mob: mob, time: info.timeLimit, info: info, name: name };
     fx.bossEnter(mob, info.isRegionBoss);
     ui.banner(info.isRegionBoss ? '전직 시험!' : '보스 등장!'); snd.play('boss');
@@ -204,7 +204,7 @@
     var info = CW.stageInfo(Math.max(0, state.best)), R = DATA.regions[info.region];
     var res = CW.resolveArt(R.monsters[Math.random() < 0.5 ? 0 : 1], 'monster', info.region), a = mobArt(res.id, 'M2'); if (!a) return;
     var hp = CW.stageMonsterHp({ stage: Math.max(0, state.best), diff: state.diff || 0 }) / CROWD * 0.6;
-    sc.spawnMob({ art: a, tint: dun.kind === 'gold' ? 0xffd84a : dun.kind === 'rune' ? 0xc49bff : 0x8ff0ff, height: 1.25 + Math.random() * 0.2, hp: hp, entry: Math.random() < 0.7 ? 'run' : 'leap' });
+    sc.spawnMob({ art: a, tint: dun.kind === 'gold' ? 0xffd84a : dun.kind === 'rune' ? 0xc49bff : 0x8ff0ff, height: 0.84 + Math.random() * 0.16, hp: hp, entry: Math.random() < 0.7 ? 'run' : 'leap' });
   }
   function dungeonStart(kind) {
     var def = dunDef(kind); if (!def) return 'none';
@@ -214,7 +214,7 @@
     dun = { kind: kind, t: def.time, kills: 0, dmg: 0, golem: null, sp: 0.3, def: def };
     if (kind === 'mana') {
       var g = art.B4 || art.B2 || art.K1;
-      dun.golem = sc.spawnMob({ art: g, tint: 0x7fb8ff, height: 2.7, hp: 1e300, boss: true, name: '마력 골렘' });
+      dun.golem = sc.spawnMob({ art: g, tint: 0x7fb8ff, height: 1.95, hp: 1e300, boss: true, name: '마력 골렘' });
     }
     ui.banner(def.name); snd.play('boss'); save();
     return 'ok';
