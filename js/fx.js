@@ -675,6 +675,76 @@
       });
     };
 
+    // ---------- painted skill pictures (art/fx-<skill>.webp) ----------
+    // Each picture moves the way its spell does instead of just appearing: falling ones streak in and squash on landing,
+    // claws sweep across, blasts puff out, pillars grow from the ground, lightning flickers, rings and holes turn.
+    // A second, glowing copy flashes on top for the first moment so it reads as light, not as a sticker.
+    var PIC_MOVE = { starShot: 'drop', fireball: 'drop', meteorRain: 'drop', magicClaw: 'slash', furBomb: 'burst', solarBurst: 'burst',
+      chainLightning: 'strike', iceStorm: 'rise', moonLaser: 'rise', sparkRing: 'swirl', blackHole: 'swirl', elementNova: 'swirl' };
+    var PIC_LIFE = { drop: 0.62, slash: 0.36, burst: 0.6, strike: 0.42, rise: 0.7, swirl: 0.8 };
+    var picTex = {}, pics = [];
+    function picLoad(id) {
+      if (picTex[id] !== undefined) return picTex[id];
+      picTex[id] = null;
+      new T.TextureLoader().load((CW.ART_BASE || 'art/') + 'fx-' + id + '.webp', function (t) { if (T.sRGBEncoding) t.encoding = T.sRGBEncoding; picTex[id] = t; }, undefined, function () { });
+      return null;
+    }
+    function picSprite(tex, add) {
+      var sp = new T.Sprite(new T.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false, opacity: 0, blending: add ? T.AdditiveBlending : T.NormalBlending }));
+      sp.center.set(0.5, 0.14); sp.renderOrder = add ? 41 : 40; return sp;
+    }
+    function picture(c, at, big) {
+      var id = c.sk.id, move = PIC_MOVE[id]; if (!move) return;
+      var tex = picLoad(id); if (!tex || !tex.image || pics.length >= 8) return;
+      var h = (big ? 2.7 : 1.75) * Math.min(1.3, c.s), w = h * tex.image.width / tex.image.height;
+      var a = picSprite(tex, false), g = picSprite(tex, true), grp = sc.fxGroup || sc.scene;
+      grp.add(a); grp.add(g);
+      pics.push({ a: a, g: g, t: 0, life: PIC_LIFE[move] / Math.max(1, c.sp * 0.8), h: h, w: w, x: at.x, z: at.z + 0.25, move: move, seed: Math.random() * 6.28, hit: false, col: c.col });
+      picPose(pics[pics.length - 1]);
+    }
+    function ease3(x) { x = Math.max(0, Math.min(1, x)); return 1 - Math.pow(1 - x, 3); }
+    function picPose(p) {
+      var k = p.t / p.life, sx = 1, sy = 1, ox = 0, oy = 0, rot = 0, op = k < 0.62 ? Math.min(1, k * 14) : Math.max(0, 1 - (k - 0.62) / 0.38), glow = Math.max(0, 0.7 - k * 2.6);
+      if (p.move === 'drop') {
+        // streaks in from the upper left (the picture's own trail points that way), squashes when it lands, then settles
+        var f = Math.min(1, k / 0.2), fall = 1 - f * f;
+        ox = -fall * p.h * 0.75; oy = fall * p.h * 0.85; sx = 0.82 + 0.18 * f; sy = sx;
+        if (k >= 0.2) { var q = Math.min(1, (k - 0.2) / 0.22), b = Math.sin(q * 3.14159) * 0.16; sx = 1 + b; sy = 1 - b * 0.8; if (!p.hit) { p.hit = true; glow = 0.9; gRing(V(p.x, 0, p.z), p.col, p.h * 0.9, 0.3); } glow = Math.max(glow, 0.8 * (1 - q)); }
+        else { op = Math.min(1, k * 14); glow = 0.35; }
+      } else if (p.move === 'slash') {
+        // the claw marks sweep across in one fast stroke and keep sliding a little as they fade
+        var s = ease3(k / 0.28); sx = 0.2 + 0.8 * s; sy = 0.9 + 0.1 * s; rot = (1 - s) * -0.45; ox = (-0.35 + 0.35 * s + k * 0.18) * p.w; op = k < 0.45 ? Math.min(1, k * 20) : Math.max(0, 1 - (k - 0.45) / 0.55); glow = Math.max(0, 0.8 - k * 3);
+      } else if (p.move === 'burst') {
+        // puffs out past its size, drops back, then keeps swelling slowly while it thins out
+        var u = k < 0.16 ? 0.25 + 0.93 * ease3(k / 0.16) : k < 0.32 ? 1.18 - 0.18 * (k - 0.16) / 0.16 : 1 + 0.1 * (k - 0.32) / 0.68;
+        sx = sy = u; glow = Math.max(0, 0.95 - k * 3.2);
+      } else if (p.move === 'rise') {
+        // grows up out of the ground, overshoots a touch, and sinks back as it fades
+        var r = ease3(k / 0.22); sy = k < 0.22 ? 0.06 + 1.06 * r : k < 0.36 ? 1.12 - 0.12 * (k - 0.22) / 0.14 : 1 - 0.12 * Math.max(0, (k - 0.7) / 0.3); sx = 0.78 + 0.22 * r;
+        glow = Math.max(0, 0.75 - k * 2.4);
+      } else if (p.move === 'strike') {
+        // slams down all at once and flickers like a real bolt before it dies
+        sy = 1.25 - 0.25 * ease3(k / 0.12); sx = 0.9 + 0.1 * ease3(k / 0.12);
+        var fl = k < 0.5 ? (Math.sin(k * 70 + p.seed) > -0.25 ? 1 : 0.35) : 1; op *= fl; glow = (k < 0.5 ? 0.85 : 0) * fl;
+      } else {
+        // rings and holes: open up, turn and breathe, then close in on themselves
+        var o = ease3(k / 0.25), close = k > 0.7 ? 1 - 0.3 * (k - 0.7) / 0.3 : 1;
+        sx = sy = (0.45 + 0.55 * o) * close * (1 + 0.035 * Math.sin(k * 24 + p.seed)); rot = Math.sin(k * 9 + p.seed) * 0.07 + (1 - o) * 0.5; glow = 0.28 + 0.2 * Math.sin(k * 24 + p.seed); if (k > 0.62) glow *= op;
+      }
+      p.a.position.set(p.x + ox, 0.04 + oy, p.z); p.g.position.set(p.x + ox, 0.04 + oy, p.z + 0.01);
+      p.a.scale.set(p.w * sx, p.h * sy, 1); p.g.scale.set(p.w * sx * 1.06, p.h * sy * 1.06, 1);
+      p.a.material.rotation = rot; p.g.material.rotation = rot;
+      p.a.material.opacity = op; p.g.material.opacity = Math.max(0, Math.min(1, glow)) * Math.min(1, op + 0.3);
+    }
+    function picDrop(p) { [p.a, p.g].forEach(function (sp) { if (sp.parent) sp.parent.remove(sp); sp.material.dispose(); }); }
+    function picTick(dt) {
+      for (var i = pics.length - 1; i >= 0; i--) {
+        var p = pics[i]; p.t += dt;
+        if (p.t >= p.life) { picDrop(p); pics.splice(i, 1); continue; }
+        picPose(p);
+      }
+    }
+    function picClear() { pics.forEach(picDrop); pics.length = 0; }
     function tint(base, tier) { var col = new T.Color(base); if (tier >= 5) col.lerp(new T.Color(0xffffff), 0.12); return col.getHex(); }
     function cast(skill, tier, targets, hit, speedMul, lv) {
       var sp = speedMul || 1; lv = lv || 0;
@@ -685,10 +755,13 @@
       c.hit = function (mob, frac, power) {
         // Decorate at the existing contact time; retain every damage fraction and argument.
         if (decorated.indexOf(mob) < 0 && decorated.length < 3) {
+          // wide spells get one big picture over the crowd; the others get one on each monster they land on
+          if (c.sk.targets >= 99) { if (!released) picture(c, c.center, true); } else picture(c, mob, false);
           spellContact(c, mob, power, !released); decorated.push(mob); released = true;
         }
         hitFn(mob, frac, power);
       };
+      picLoad(skill.id);
       spellCharge(c);
       var H = sc.heroCenter();
       // casting circle: two rune rings under the feet, sparks rising, a coloured seal at the paw
@@ -790,7 +863,7 @@
     }
     function update(dt) {
       time += dt;
-      costumeTick(dt);
+      costumeTick(dt); picTick(dt);
       for (var i = timers.length - 1; i >= 0; i--) { var tm = timers[i]; if (tm && tm.at <= time) { timers.splice(i, 1); tm.fn(); } }
       for (var j = ticks.length - 1; j >= 0; j--) { if (ticks[j](dt)) ticks.splice(j, 1); }
       // idle sparkle on the staff and crackles on shocked monsters
@@ -805,7 +878,7 @@
     function setQuality(q) { vx.setQuality(q); }
     function setBright(v) { vx.setBright(v); }
     function setRegion(regionData) { dustCol = new T.Color(regionData.ground).lerp(new T.Color(0xffffff), 0.45).getHex(); }
-    function clear() { timers.length = 0; ticks.length = 0; vx.clear(); sc.mobs().forEach(function (m) { m.pull = undefined; m.pullZ = undefined; }); }
+    function clear() { timers.length = 0; ticks.length = 0; vx.clear(); picClear(); sc.mobs().forEach(function (m) { m.pull = undefined; m.pullZ = undefined; }); }
     return { setStaffColor: function (c) { staffCol = c; }, setCostume: function (f) { cosFx = f; cosAcc = 0; }, cast: cast, update: update, setQuality: setQuality, setBright: setBright, setRegion: setRegion, clear: clear, count: vx.count,
       impact: impact, levelUp: levelUp, bossEnter: bossEnter, coinPop: coinPop, burst: function (pos, col) { impact(pos, col, 0.8); }, vfx: vx };
   }

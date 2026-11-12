@@ -956,6 +956,25 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 .mcircle .mcart{position:absolute;inset:0;background:url(art/ui-circle.webp) 50% 50%/100% 100%;mix-blend-mode:lighten;-webkit-mask:radial-gradient(closest-side,#000 82%,transparent);mask:radial-gradient(closest-side,#000 82%,transparent)}
 .mcircle .mtext{position:relative;width:42%;aspect-ratio:1;border-radius:50%;display:grid;place-content:center;justify-items:center;background:radial-gradient(circle,#1c2450,#121735);box-shadow:0 0 0 2.5px #e8c25a,0 0 14px rgba(120,160,255,.6)}
 .mcircle.t3 .mcart,.mcircle.t4 .mcart{filter:hue-rotate(50deg)}.mcircle.t5 .mcart,.mcircle.t6 .mcart,.mcircle.t7 .mcart,.mcircle.t8 .mcart{filter:hue-rotate(170deg) saturate(1.2)}
+/* ----- small stage panel: it sat over the fight, so everything in it is about a third smaller ----- */
+#hud .place.stg,#bossbox{width:min(192px,50%)}
+#hud .place.stg{padding:5px 9px 6px;gap:4px 6px;border-radius:13px;box-shadow:0 0 0 2px var(--ol),inset 0 0 0 1.5px rgba(255,210,74,.55),0 3px 0 rgba(12,16,36,.6)}
+#hud .stg #placeName{font:400 14px/1.05 var(--impact);gap:5px}
+#placeName b{-webkit-text-stroke:3px var(--ol)}
+#placeName i{font-size:11px;padding:3px 7px 2px;box-shadow:0 0 0 1.5px var(--ol),inset 0 -1.5px 0 rgba(160,90,0,.35),inset 0 1px 0 rgba(255,255,255,.7)}
+#placeName u{left:9px;top:-8px;font-size:9px;padding:2px 7px 1px}
+#hud .stg .pmap{font-size:10px;padding:2px 5px 2px 7px}.pmap svg{width:10px;height:10px}
+#hud .stg #killBar{height:12px;border-radius:7px;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.14)}
+#hud .stg #killBar i{border-radius:7px}
+#hud .stg #placeSub{margin-top:-16px;height:12px;gap:3px;font:400 10px/12px var(--impact)}
+#placeSub b{font:400 11px/12px var(--impact);-webkit-text-stroke:2.5px var(--ol)}
+#placeSub em{font:400 10px/12px var(--impact);-webkit-text-stroke:2.5px var(--ol)}
+#placeSub b.hunt{font:400 10px/12px var(--display)}
+#placeSub .mk{width:11px;height:10px}
+#placeSub::after{right:-5px;width:17px;height:17px}
+#bossbox{padding:5px 9px 7px;border-radius:13px;gap:4px}.boss-top{font-size:12px}#bossbox .bar{height:10px}
+#retry{padding:5px 15px;font:400 13px var(--impact);box-shadow:0 0 0 2px var(--ol),0 3px 0 var(--ol),0 0 10px rgba(255,90,70,.5)}
+#quick{top:calc(116px + env(safe-area-inset-top,0px))}
 /* ==THEME-END== */
 @media (prefers-reduced-motion:reduce){#killBar i,.ico .orb,.sk.now .ico,.rlines .flow,.rcore.lit,.isg,.gart .gimg,.gart .gstaff,.gshine::after{animation:none!important}}
 </style>
