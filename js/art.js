@@ -73,9 +73,9 @@
     return { id: pick, tint: tints[region % tints.length] };
   }
   CW.loadArt = loadArt; CW.resolveArt = resolveArt; CW.ART_IDS = AVAILABLE; CW.MON_ART = MON_ART;
-  // gear pictures (white background already removed, 256px). The ring still uses its drawn icon.
+  // gear pictures (white background already removed, 256px)
   CW.GEAR_IMG = {};
-  ['hat', 'staff', 'robe', 'belt', 'necklace', 'ear'].forEach(function (k) { CW.GEAR_IMG[k] = (CW.ART_BASE || 'art/') + 'g-' + k + '.webp'; });
+  ['hat', 'staff', 'robe', 'belt', 'necklace', 'ear', 'ring'].forEach(function (k) { CW.GEAR_IMG[k] = (CW.ART_BASE || 'art/') + 'g-' + k + '.webp'; });
   // costume pictures load only when a costume is worn or its card is shown
   CW.COSTUME_ART = ['cos1', 'cos2', 'cos3', 'cos4', 'cos5', 'cos6', 'cos7', 'cos8', 'cos9', 'cos10'];
 })(this);
