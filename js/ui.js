@@ -289,7 +289,7 @@
         $('bossHp').style.width = Math.max(0, boss.mob.hp / boss.mob.maxHp * 100) + '%';
         $('placeSub').textContent = info.isRegionBoss ? '이기면 ' + (Math.min(9, info.region + 2)) + '차 전직' : '보스를 쓰러뜨리세요';
       } else {
-        $('placeSub').textContent = s.farming ? (G.canRetry() ? '보스 처치를 위해 도전 버튼을 눌러 주세요' : '사냥 중') : '몬스터 ' + G.killProgress().n + ' / ' + G.killProgress().max;
+        $('placeSub').textContent = s.farming ? '사냥 중' : '몬스터 ' + G.killProgress().n + ' / ' + G.killProgress().max;
         $('killBar').firstChild.style.width = (s.farming ? 100 : G.killProgress().n / G.killProgress().max * 100) + '%';
       }
       $('retry').classList.toggle('on', s.farming && !boss && G.canRetry() && !G.dunState());
