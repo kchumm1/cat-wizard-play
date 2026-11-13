@@ -357,6 +357,9 @@
     },
     retryBoss: function () { if (boss || dun) return; if (CW.retryBoss(state)) { syncRegion(); startBoss(); } },
     setSetting: function (k, v) { state.settings[k] = v; applySettings(); save(); },
+    // slider being dragged: show the numbers at that value right away, save when the finger lifts
+    previewDamage: function (size, alpha) { sc.setDamageStyle(size / 100, alpha / 100); },
+    showDamageSample: function () { var h = sc.heroCenter(); for (var i = 0; i < 3; i++) sc.damageText(h.clone().add(new T.Vector3(0.9 + i * 0.5, 0.6 + i * 0.25, 0)), ['1,234', '5.6만', '78억'][i], i); },
     reset: function () { CW.clearSave(storage); state = CW.newState(); rot = CW.rotation(state); refreshStats(); clearField(true); region = -1; syncRegion(); sc.setTierAura(1); ui.renderPanel(true); ui.slots(); save(); cloudPush(true); ui.toast('처음부터 다시 시작해요'); },
     storageOk: function () { return !!storage; },
     exportSave: function () { save(); return CW.exportCode(state); },
@@ -388,6 +391,7 @@
   function applySettings() {
     var s = state.settings;
     snd.setEnabled(s.sound); sc.setPixel(s.pixel);
+    sc.setDamageStyle((s.dmgSize === undefined ? 60 : s.dmgSize) / 100, (s.dmgAlpha === undefined ? 85 : s.dmgAlpha) / 100);
     var q = s.quality === 'auto' ? autoQ : s.quality; sc.setQuality(q); fx.setQuality(q);
   }
 

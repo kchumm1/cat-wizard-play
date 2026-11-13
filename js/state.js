@@ -16,7 +16,7 @@
       divine: { staff: { lv: 0, star: 0 }, robe: { lv: 0, star: 0 }, charm: { lv: 0, star: 0 }, shards: 0 },
       inv: [], bag: {}, equip: { hat: null, staff: null, robe: null, belt: null, necklace: null, ear: null, ring: null },
       pulls: 0, pity: 0, uidSeq: 0, firstBuy: {}, firstClear: {},
-      settings: { sound: true, pixel: false, quality: 'auto', autoBoss: true },
+      settings: { sound: true, pixel: false, quality: 'auto', autoBoss: true, dmgSize: 60, dmgAlpha: 85 },
       lastSeen: Date.now()
     };
   }

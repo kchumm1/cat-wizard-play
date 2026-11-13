@@ -416,6 +416,8 @@
         '<div class="row"><div class="info"><div class="name">효과음</div></div><button class="btn" data-set="sound">' + (st.sound ? '켜짐' : '꺼짐') + '</button></div>' +
         '<div class="row"><div class="info"><div class="name">보는 방식</div><div class="desc">도트 느낌은 픽셀 그림처럼 보여요</div></div><button class="btn" data-set="pixel">' + (st.pixel ? '도트 느낌' : '보통 3D') + '</button></div>' +
         '<div class="row"><div class="info"><div class="name">보스 자동 도전</div><div class="desc">끄면 도전 버튼을 눌러야 보스가 나와요</div></div><button class="btn" data-set="autoBoss">' + (st.autoBoss === false ? '꺼짐' : '켜짐') + '</button></div>' +
+        dmgRow('dmgSize', '대미지 글씨 크기', '작게 하면 몬스터가 잘 보여요', st.dmgSize === undefined ? 60 : st.dmgSize, 30, 120) +
+        dmgRow('dmgAlpha', '대미지 글씨 투명도', '낮출수록 글씨가 비쳐 보여요', st.dmgAlpha === undefined ? 85 : st.dmgAlpha, 10, 100) +
         '<div class="row"><div class="info"><div class="name">화질</div><div class="desc">버벅이면 낮춰 보세요</div></div><button class="btn" data-set="quality">' + ({ auto: '자동', high: '높음', mid: '보통', low: '낮음' })[st.quality] + '</button></div>' +
         '<div class="row"><div class="info"><div class="name">진행 옮기기</div><div class="desc">다른 기기(아이폰·갤럭시)로 옮길 때: 코드를 복사해서 다른 기기의 "코드 넣기"에 붙여요</div></div><div class="sbtns"><button class="btn" data-act="savecopy">코드 복사</button><button class="btn" data-act="savepaste">코드 넣기</button></div></div>' +
         '<div class="row"><div class="info"><div class="name">처음부터 다시 하기</div><div class="desc">모든 진행이 지워져요</div></div><button class="btn" data-set="reset">다시 하기</button></div>' +
@@ -457,8 +459,25 @@
       var y = panel.scrollTop; panel.innerHTML = html; panel.scrollTop = y; lastPanel = html;
     }
 
+    function dmgRow(key, name, desc, v, lo, hi) {
+      return '<div class="row dmgset"><div class="info"><div class="name">' + name + ' <b class="dmgval" data-val="' + key + '">' + v + '%</b></div><div class="desc">' + desc + '</div>' +
+        '<input type="range" min="' + lo + '" max="' + hi + '" step="5" value="' + v + '" data-range="' + key + '" aria-label="' + name + '"></div></div>';
+    }
     // ---------- interactions ----------
     var holdT = null, holdI = null;
+    // the two damage-number sliders: preview while dragging (the menu is not redrawn), keep the value on release
+    function rangeVals() { var o = {}; panel.querySelectorAll('[data-range]').forEach(function (r) { o[r.dataset.range] = +r.value; }); return o; }
+    var sampleT = 0;
+    panel.addEventListener('input', function (e) {
+      var r = e.target.closest('[data-range]'); if (!r) return;
+      var o = rangeVals(), lab = panel.querySelector('[data-val="' + r.dataset.range + '"]'); if (lab) lab.textContent = r.value + '%';
+      G.previewDamage(o.dmgSize, o.dmgAlpha);
+      var now = Date.now(); if (now - sampleT > 450) { sampleT = now; G.showDamageSample(); }
+    });
+    panel.addEventListener('change', function (e) {
+      var r = e.target.closest('[data-range]'); if (!r) return;
+      G.setSetting(r.dataset.range, +r.value); G.showDamageSample(); renderPanel(true);
+    });
     function stopHold() { clearTimeout(holdT); clearInterval(holdI); holdT = holdI = null; }
     panel.addEventListener('pointerdown', function (e) {
       var b = e.target.closest('[data-up],[data-mark],[data-circle],[data-blv],[data-rune],[data-sglv]'); if (!b) return;
