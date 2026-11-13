@@ -1076,10 +1076,8 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 #hud{padding-top:calc(4px + env(safe-area-inset-top,0px))}
 #app{-webkit-touch-callout:none}
 #app{position:fixed;top:0;bottom:0;left:0;right:0;height:auto}
-html.fullh,html.fullh body{height:var(--apph)}
-html.fullh #app{bottom:auto;height:var(--apph)}
+html,body{background:#0f1330}
 </style>
-<script>(function(){var sa=navigator.standalone||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches);if(!sa)return;function fit(){var land=window.innerWidth>window.innerHeight,h=land?Math.min(screen.width,screen.height):Math.max(screen.width,screen.height),d=document.documentElement;if(h>window.innerHeight+4){d.style.setProperty("--apph",h+"px");d.classList.add("fullh");}else d.classList.remove("fullh");}fit();addEventListener("resize",function(){setTimeout(fit,60);});addEventListener("orientationchange",function(){setTimeout(fit,250);});})();</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="js/num.js"></script>
 <script src="js/data.js"></script>
