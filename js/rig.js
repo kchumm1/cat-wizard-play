@@ -38,7 +38,7 @@
   function smooth(a, b, x) { var t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
   // Weight of every bone at one point of the picture (u right, v up from the feet, both 0..1 of the cropped art).
   function weightsAt(rig, crop, u, v) {
-    var px = crop.x0 + u * crop.cw, py = crop.y0 + (1 - v) * crop.ch, out = new Array(8), sum = 0;
+    var px = rig && rig.frac ? u : crop.x0 + u * crop.cw, py = rig && rig.frac ? 1 - v : crop.y0 + (1 - v) * crop.ch, out = new Array(8), sum = 0;
     for (var i = 0; i < 8; i++) {
       var b = rig && rig[BONES[i]]; out[i] = 0;
       if (!b) continue;
@@ -51,6 +51,7 @@
   // Pivot of a bone in the billboard's own units (x from the centre line, y up from the feet).
   function pivotOf(rig, crop, name, w, h) {
     var b = rig && rig[name]; if (!b) return null;
+    if (rig.frac) return [(b.p[0] - 0.5) * w, (1 - b.p[1]) * h];
     return [((b.p[0] - crop.x0) / crop.cw - 0.5) * w, (1 - (b.p[1] - crop.y0) / crop.ch) * h];
   }
   return { RIGS: RIGS, RIG_BONES: BONES, RIG_SIZE: SIZE, rigWeightsAt: weightsAt, rigPivotOf: pivotOf };

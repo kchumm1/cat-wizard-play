@@ -10,6 +10,14 @@
     var isBoss = isRegionBoss || num % 5 === 0;
     return { region: Math.floor(i / 31), num: num, isBoss: isBoss, isRegionBoss: isRegionBoss, timeLimit: isRegionBoss ? 45 : isBoss ? 30 : 0 };
   }
+  // the boss of a boss stage: the region boss at 31, the region's minis in turn at 5, 10, … 30
+  function stageBoss(i) {
+    var info = stageInfo(i), R = DATA.regions[info.region]; if (!info.isBoss || !R) return null;
+    if (info.isRegionBoss) return { art: R.boss.art, name: R.boss.name, region: true };
+    var list = R.minis || [], id = list[(info.num / 5 - 1) % list.length];
+    var BEST = (isNode ? require('./bestiary.js') : root.CW).BESTIARY || {};
+    return { art: id, name: (BEST[id] && BEST[id].name) || R.name + ' 대장', region: false };
+  }
   function onKill(state) {
     if (state.bossTry) return null;
     state.kills = (state.kills || 0) + 1;
@@ -73,5 +81,5 @@
     state.farming = state.stage <= state.best;
     return true;
   }
-  return { clearKey: clearKey, setDifficulty: setDifficulty, stageLabel: stageLabel, stageInfo: stageInfo, onKill: onKill, onBossResult: onBossResult, retryBoss: retryBoss, onHidden: onHidden, goStage: goStage, LAST_STAGE: LAST };
+  return { clearKey: clearKey, setDifficulty: setDifficulty, stageLabel: stageLabel, stageInfo: stageInfo, stageBoss: stageBoss, onKill: onKill, onBossResult: onBossResult, retryBoss: retryBoss, onHidden: onHidden, goStage: goStage, LAST_STAGE: LAST };
 });

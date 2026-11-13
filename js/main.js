@@ -34,10 +34,12 @@
   // the picture for a monster, or null while it is still loading (a failed load falls back to a stand-in)
   function mobArt(id, fallback) {
     if (art[id]) return art[id];
-    if (artFail[id] || (CW.MON_ART || []).indexOf(id) < 0) return art[fallback] || art.M2;
+    if (artFail[id] || (CW.MON_ART || []).indexOf(id) < 0) return art[fallback] || null;
     needArt(id); return null;
   }
-  function regionArt(r) { var R = DATA.regions[r]; return R ? R.monsters.map(function (id) { return CW.resolveArt(id, 'monster', r).id; }) : []; }
+  function regionArt(r) { var R = DATA.regions[r]; return R ? R.monsters.concat(R.minis || [], [R.boss.art]) : []; }
+  // wide pictures (crabs, turtles, snakes) are drawn a little shorter so every monster takes about the same room
+  function fitHeight(a, h) { return a.aspect > 1.05 ? h / Math.pow(a.aspect, 0.45) : h; }
   function applyLook(silent) {
     var l = CW.lookOf(state), cl = CW.costumeLook(state), key = CW.lookKey(l) + '|' + cl.id + '|' + (art[cl.art] ? cl.art : 'hero');
     if (key === lastLook || !art.hero) return;
@@ -73,21 +75,29 @@
   // Normal monsters come in crowds: each one has a third of a stage monster's health and gold,
   // and every three of them count as one kill toward the stage.
   var CROWD = 3, smallKills = 0, wave = { left: 0, t: 0 };
-  function crowdMax() { var q = sc.getQuality(), extra = CW.diffOf(state).extraMobs; return q === 'low' ? 6 + Math.round(extra / 2) : q === 'mid' ? 8 + Math.round(extra * 0.75) : 11 + extra; }
+  function crowdMax() { var q = sc.getQuality(), extra = CW.diffOf(state).extraMobs; return q === 'low' ? 7 + Math.round(extra / 2) : q === 'mid' ? 10 + Math.round(extra * 0.75) : 14 + extra; }
+  // each wave brings two to four kinds of the region's monsters, taking turns so every kind keeps showing up
+  var waveKinds = [], kindTurn = 0;
+  function pickKinds(R) {
+    var n = Math.min(R.monsters.length, 2 + Math.floor(Math.random() * 3)); waveKinds = [];
+    for (var k = 0; k < n; k++) waveKinds.push(R.monsters[(kindTurn + k * 3) % R.monsters.length]);
+    kindTurn = (kindTurn + 1) % R.monsters.length;
+  }
   function spawnNormal() {
     var info = CW.stageInfo(state.stage), R = DATA.regions[info.region];
-    var id = R.monsters[Math.random() < 0.5 ? 0 : 1], res = CW.resolveArt(id, 'monster', info.region);
-    var a = mobArt(res.id, 'M2'); if (!a) return;
+    if (!waveKinds.length || R.monsters.indexOf(waveKinds[0]) < 0) pickKinds(R);
+    var id = waveKinds[Math.floor(Math.random() * waveKinds.length)], a = mobArt(id, R.monsters[0]); if (!a) return;
     var r = Math.random(), entry = r < 0.6 ? 'run' : r < 0.85 ? 'leap' : 'drop';
-    sc.spawnMob({ art: a, tint: res.tint, height: 0.86 + Math.random() * 0.16, hp: CW.stageMonsterHp(state) / CROWD, entry: entry });
+    sc.spawnMob({ art: a, height: fitHeight(a, 0.9 + Math.random() * 0.14), hp: CW.stageMonsterHp(state) / CROWD, entry: entry });
   }
   function startBoss() {
     var info = CW.stageInfo(state.stage), R = DATA.regions[info.region];
     clearField(false);
-    var res = info.isRegionBoss ? CW.resolveArt(R.boss.art, 'boss', info.region) : CW.resolveArt(R.miniBoss || R.monsters[info.num % 2], R.miniBoss ? 'boss' : 'monster', info.region);
-    var a = mobArt(res.id, 'B2') || art.B2;
-    var name = info.isRegionBoss ? R.boss.name : R.name + ' 대장';
-    var mob = sc.spawnMob({ art: a, tint: res.tint, height: info.isRegionBoss ? 1.9 : 1.55, hp: CW.stageBossHp(state), boss: true, regionBoss: info.isRegionBoss, name: name });
+    var sb = CW.stageBoss(state.stage), a = mobArt(sb.art, R.boss.art) || mobArt(R.boss.art);
+    if (!a) { needArt(sb.art); restT = 0.3; state.bossTry = true; return; }
+    var name = sb.name;
+    // bosses are drawn clearly bigger than the crowd: a stage boss about twice a monster, the region boss more
+    var mob = sc.spawnMob({ art: a, height: fitHeight(a, info.isRegionBoss ? 2.45 : 2.0), hp: CW.stageBossHp(state), boss: true, regionBoss: info.isRegionBoss, name: name });
     boss = { mob: mob, time: info.timeLimit, info: info, name: name };
     fx.bossEnter(mob, info.isRegionBoss);
     snd.play('boss');
@@ -208,9 +218,9 @@
   function dunDef(kind) { for (var i = 0; i < DATA.dungeons.length; i++) if (DATA.dungeons[i].id === kind) return DATA.dungeons[i]; return null; }
   function spawnDun() {
     var info = CW.stageInfo(Math.max(0, state.best)), R = DATA.regions[info.region];
-    var res = CW.resolveArt(R.monsters[Math.random() < 0.5 ? 0 : 1], 'monster', info.region), a = mobArt(res.id, 'M2'); if (!a) return;
+    var a = mobArt(R.monsters[Math.floor(Math.random() * R.monsters.length)], R.monsters[0]); if (!a) return;
     var hp = CW.stageMonsterHp({ stage: Math.max(0, state.best), diff: state.diff || 0 }) / CROWD * 0.6;
-    sc.spawnMob({ art: a, tint: dun.kind === 'gold' ? 0xffd84a : dun.kind === 'rune' ? 0xc49bff : 0x8ff0ff, height: 0.84 + Math.random() * 0.16, hp: hp, entry: Math.random() < 0.7 ? 'run' : 'leap' });
+    sc.spawnMob({ art: a, tint: dun.kind === 'gold' ? 0xffd84a : dun.kind === 'rune' ? 0xc49bff : 0x8ff0ff, height: fitHeight(a, 0.88 + Math.random() * 0.14), hp: hp, entry: Math.random() < 0.7 ? 'run' : 'leap' });
   }
   function dungeonStart(kind) {
     var def = dunDef(kind); if (!def) return 'none';
@@ -218,9 +228,10 @@
     if (!CW.useTicket(state, kind, Date.now())) return 'ticket';
     clearField(true); restT = 0;
     dun = { kind: kind, t: def.time, kills: 0, dmg: 0, golem: null, sp: 0.3, def: def };
+    var R0 = DATA.regions[CW.stageInfo(Math.max(0, state.best)).region]; needArt('b47');
     if (kind === 'mana') {
-      var g = art.B4 || art.B2 || art.K1;
-      dun.golem = sc.spawnMob({ art: g, tint: 0x7fb8ff, height: 1.95, hp: 1e300, boss: true, name: '마력 골렘' });
+      var g = mobArt('b47', R0.boss.art) || mobArt(R0.boss.art);
+      if (g) dun.golem = sc.spawnMob({ art: g, height: fitHeight(g, 2.3), hp: 1e300, boss: true, name: '마력 골렘' });
     }
     ui.banner(def.name); snd.play('boss'); save();
     return 'ok';

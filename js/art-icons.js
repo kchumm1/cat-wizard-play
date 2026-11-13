@@ -3,7 +3,10 @@
 (function (root) {
   var CW = root.CW, I = CW.ICO, B = CW.ART_BASE || 'art/';
   function img(file, cls, style) { return '<img class="ico pic ' + cls + '" src="' + B + file + '.webp" alt="" draggable="false"' + (style ? ' style="' + style + '"' : '') + '>'; }
-  var SKILLS = ['starShot', 'magicClaw', 'furBomb', 'sparkRing', 'fireball', 'chainLightning', 'iceStorm', 'meteorRain', 'moonLaser', 'solarBurst', 'blackHole', 'elementNova'];
+  var SKILLS = ['starShot', 'magicClaw', 'furBomb', 'sparkRing', 'fireball', 'chainLightning', 'iceStorm', 'meteorRain', 'moonLaser', 'solarBurst', 'blackHole', 'elementNova',
+    'pawStamp', 'yarnBall', 'starDust', 'flamePillar', 'flameWave', 'inferno', 'thunderStrike', 'stormCloud', 'ballLightning', 'iceLance', 'frostNova', 'glacierSpikes',
+    'cometStrike', 'starBarrage', 'constellation', 'crescentWave', 'moonFall', 'moonOrbs', 'sunSpear', 'sunArrows', 'coronaRing', 'voidRift', 'gravityCrush', 'darkStar',
+    'elementStorm', 'prismBeam', 'elementWheel'];
   var MISC = ['tab:battle', 'tab:up', 'tab:skill', 'tab:gear', 'tab:gacha', 'tab:dungeon', 'tab:more', 'talent:tSkill', 'talent:tBoss', 'talent:tCrit',
     'potion:rage', 'potion:luck', 'potion:wisdom', 'mark:mStar', 'mark:mClaw', 'mark:mMoon', 'mark:mComet', 'mark:mCrown', 'dungeon:gold', 'dungeon:mana', 'dungeon:gem', 'dungeon:rune'];
   var RUNES = ['rFire', 'rWave', 'rWind', 'rEarth', 'rLight', 'rDark'];

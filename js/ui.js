@@ -438,7 +438,7 @@
       var rows = '';
       for (var n = 0; n < 31; n++) {
         var i = R * 31 + n, info = CW.stageInfo(i), lock = !open || i > frontier, tmp = { stage: i, diff: d };
-        var res = info.isBoss ? CW.resolveArt(info.isRegionBoss ? reg.boss.art : (reg.miniBoss || reg.monsters[0]), 'boss', R) : CW.resolveArt(reg.monsters[n % 2], 'monster', R);
+        var res = { id: info.isBoss ? CW.stageBoss(i).art : reg.monsters[(n * 5) % reg.monsters.length], tint: null };
         var img = G.thumb(res.id), gold = CW.stageGold(tmp) * st.goldMul / 3, xp = CW.killXp(tmp) / 3;
         rows += '<button class="srow' + (i === here ? ' here' : '') + (info.isBoss ? ' boss' : '') + '" data-sgo="' + i + '" data-sd="' + d + '"' + (lock ? ' disabled' : '') + '>' +
           '<span class="sname"><small>' + DATA.difficulties[d].name + '</small>' + CW.stageLabel(i) + (info.isRegionBoss ? ' 전직 시험' : info.isBoss ? ' 보스' : '') + '</span>' +

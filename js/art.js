@@ -1,13 +1,9 @@
 (function (root) {
   var CW = root.CW = root.CW || {};
-  var AVAILABLE = ['hero', 'hero-cheese', 'M2', 'K1', 'M10', 'M15', 'M19', 'B2', 'B4', 'B7'];
-  var MONSTER_POOL = ['M2', 'M10', 'M15', 'M19'];
-  var BOSS_POOL = ['B2', 'B4', 'B7'];
-  // the user's monster pictures: slime 꽃밭, mushroom 버섯 숲, cactus 사막, ice penguin 얼음 동굴, crystal dragon 화산, ghost bunny 별빛 호수,
-  // moss golem 달의 정원, mimic 태양 신전, crystal spider 은하, skeleton knight 마왕성. Loaded when their region is reached.
-  var MON_ART = ['M1', 'M3', 'M5', 'M7', 'M9', 'M11', 'M13', 'M16', 'M17', 'M20'];
-  // monsters still without their own picture borrow one that suits the place (sometimes recoloured)
-  var ALIAS = { M4: { id: 'M3', tint: 0xd8ffd0 }, M6: { id: 'M20', tint: null }, M8: { id: 'M17', tint: 0xb8e4ff }, M12: { id: 'M7', tint: null }, M14: { id: 'M11', tint: 0xfff0c0 }, M18: { id: 'M9', tint: 0xc8b0ff } };
+  var AVAILABLE = ['hero', 'hero-cheese'];
+  // monster and boss pictures (js/bestiary.js): fetched when their region is reached, never all at the start
+  var BEST = CW.BESTIARY || (typeof module !== 'undefined' && module.exports ? require('./bestiary.js').BESTIARY : {});
+  var MON_ART = Object.keys(BEST);
   var cache = {};
 
   function loadImage(src) {
@@ -57,21 +53,14 @@
         var cv = cutout(img, maxSide || 512);
         var tex = new T.CanvasTexture(cv); tex.minFilter = T.LinearMipmapLinearFilter; tex.anisotropy = 2;
         if (T.sRGBEncoding) tex.encoding = T.sRGBEncoding;
-        return { id: id, tex: tex, aspect: cv.width / cv.height, canvas: cv, crop: cv.crop, rig: (CW.RIGS || {})[id] || null };
+        return { id: id, tex: tex, aspect: cv.width / cv.height, canvas: cv, crop: cv.crop, rig: (CW.RIGS || {})[id] || (CW.BODY_RIGS || {})[id] || null };
       }).catch(function () { return null; });
       return cache[id];
     })).then(function (list) { var m = {}; list.forEach(function (a) { if (a) m[a.id] = a; }); return m; });
   }
   function hasArt(id) { return AVAILABLE.indexOf(id) >= 0 || MON_ART.indexOf(id) >= 0; }
-  // Picks real art when it exists, otherwise a tinted stand-in from the same family.
-  function resolveArt(id, kind, region) {
-    if (id && hasArt(id)) return { id: id, tint: null };
-    if (id && ALIAS[id]) return { id: ALIAS[id].id, tint: ALIAS[id].tint };
-    var pool = kind === 'boss' ? BOSS_POOL : MONSTER_POOL;
-    var pick = pool[(region * 3 + (id ? id.length + parseInt(id.slice(1), 10) || 0 : 0)) % pool.length];
-    var tints = [0xffd0e8, 0xc8ffd8, 0xffe7b0, 0xcfe8ff, 0xffb8a0, 0xc0d0ff, 0xe8d8ff, 0xfff0a0, 0xd8c8ff, 0xffb0c0];
-    return { id: pick, tint: tints[region % tints.length] };
-  }
+  // every monster and boss now has its own picture; kind and region stay for older callers
+  function resolveArt(id) { return { id: hasArt(id) ? id : MON_ART[0], tint: null }; }
   CW.loadArt = loadArt; CW.resolveArt = resolveArt; CW.ART_IDS = AVAILABLE; CW.MON_ART = MON_ART;
   // gear pictures (white background already removed, 256px)
   CW.GEAR_IMG = {};

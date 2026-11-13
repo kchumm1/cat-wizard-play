@@ -281,10 +281,10 @@
       if (boss) a = rr(-Math.PI * 0.85, -Math.PI * 0.15);
       return clampField({ x: HB.x + Math.cos(a) * r, z: HB.z + Math.sin(a) * r * 1.15 });
     }
-    var FLYERS = { B2: 1, B7: 1 };
+    var FLYERS = {}, GAITS = {};
+    Object.keys(CW.BESTIARY || {}).forEach(function (id) { var b = CW.BESTIARY[id]; if (b.flyer) FLYERS[id] = 1; if (b.gait && b.gait !== 'walk') GAITS[id] = b.gait; });
     // how each kind of monster gets about: slimes and bunnies hop, penguins and mushrooms waddle, golems and knights stomp,
     // spiders dart and stop, ghosts and dragons glide. Pictures with arms and legs simply walk.
-    var GAITS = { M1: 'hop', M11: 'hop', M16: 'hop', M3: 'waddle', M5: 'waddle', M7: 'waddle', M13: 'stomp', M20: 'stomp', M17: 'skitter', M9: 'float' };
     function freeSpot(boss) {
       var best = null, bestS = -1e9;
       for (var k = 0; k < 16; k++) {

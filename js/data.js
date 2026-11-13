@@ -1,16 +1,18 @@
 (function (root, f) { var m = f(root); if (typeof module !== 'undefined' && module.exports) module.exports = m; else { root.CW = root.CW || {}; Object.assign(root.CW, m); } })(this, function () {
   var DATA = {
+    // monsters: every kind that roams the region (art/<id>.webp, names and bodies in js/bestiary.js); a crowd mixes a few of them.
+    // minis: the bosses of stages 5, 10, 15, 20, 25 and 30 in turn; boss: the region boss at stage 31.
     regions: [
-      { name: '꽃밭', sky: 0xbfe8ff, ground: 0x8fd16a, accent: 0xff9fc8, monsters: ['M1', 'M2'], miniBoss: 'K1', boss: { art: 'B1', name: '사나운 불독' } },
-      { name: '버섯 숲', sky: 0xa8dcc8, ground: 0x5f9f62, accent: 0xff6b5b, monsters: ['M3', 'M4'], miniBoss: null, boss: { art: 'B2', name: '박쥐 백작' } },
-      { name: '사막', sky: 0xffe2b0, ground: 0xe8c27a, accent: 0xffb347, monsters: ['M5', 'M6'], miniBoss: null, boss: { art: 'B3', name: '거대 독수리' } },
-      { name: '얼음 동굴', sky: 0xcfe6ff, ground: 0xeef6ff, accent: 0x7fd3ff, monsters: ['M7', 'M8'], miniBoss: null, boss: { art: 'B4', name: '설원 늑대' } },
-      { name: '화산', sky: 0x4a1e1e, ground: 0x5a2a20, accent: 0xff6a2b, monsters: ['M9', 'M10'], miniBoss: null, boss: { art: 'B5', name: '불꽃 도마뱀' } },
-      { name: '별빛 호수', sky: 0x1d2550, ground: 0x34407a, accent: 0x9fd8ff, monsters: ['M11', 'M12'], miniBoss: null, boss: { art: 'B6', name: '호수 악어' } },
-      { name: '달의 정원', sky: 0x2c2448, ground: 0x4a6a5a, accent: 0xe6e6ff, monsters: ['M13', 'M14'], miniBoss: null, boss: { art: 'B7', name: '공포의 부엉이' } },
-      { name: '태양 신전', sky: 0xfff1c9, ground: 0xe8c27a, accent: 0xffd84a, monsters: ['M15', 'M16'], miniBoss: null, boss: { art: 'B8', name: '황금 하이에나' } },
-      { name: '은하', sky: 0x120f2a, ground: 0x2a2650, accent: 0xb58cff, monsters: ['M17', 'M18'], miniBoss: null, boss: { art: 'B9', name: '우주 뱀' } },
-      { name: '마왕성', sky: 0x1e1530, ground: 0x3a2a50, accent: 0xff3b5c, monsters: ['M19', 'M20'], miniBoss: null, boss: { art: 'B10', name: '늑대 왕' } }
+      { name: '꽃밭', sky: 0xbfe8ff, ground: 0x8fd16a, accent: 0xff9fc8, monsters: ['c01', 'c02', 'f01', 'f02', 'f03', 'f04', 'f05', 'f06', 'f07', 'f08', 'f09', 'f10'], minis: ['b22', 'b41', 'b44', 'b43'], boss: { art: 'b01', name: '사나운 불독' } },
+      { name: '버섯 숲', sky: 0xa8dcc8, ground: 0x5f9f62, accent: 0xff6b5b, monsters: ['c03', 'c04', 'v01', 'v02', 'v03', 'v04', 'v05', 'v06', 'v07', 'v08', 'v09', 'v10', 'k02'], minis: ['b42', 'b23', 'b21', 'b28'], boss: { art: 'b02', name: '박쥐 백작' } },
+      { name: '사막', sky: 0xffe2b0, ground: 0xe8c27a, accent: 0xffb347, monsters: ['c05', 'c06', 'd01', 'd02', 'd03', 'd04', 'd08', 'd10'], minis: ['b49', 'b14', 'b13', 'b48'], boss: { art: 'b03', name: '거대 독수리' } },
+      { name: '얼음 동굴', sky: 0xcfe6ff, ground: 0xeef6ff, accent: 0x7fd3ff, monsters: ['c07', 'c08', 'i01', 'i02', 'i03', 'i04', 'i05', 'k01', 'k04', 'k06', 'k08'], minis: ['b25', 'b47', 'b32', 'b20'], boss: { art: 'b04', name: '설원 늑대' } },
+      { name: '화산', sky: 0x4a1e1e, ground: 0x5a2a20, accent: 0xff6a2b, monsters: ['c09', 'c10', 'd05', 'd06', 'd07', 'd09', 'g03'], minis: ['b27', 'b18', 'b31', 'b50'], boss: { art: 'b05', name: '불꽃 도마뱀' } },
+      { name: '별빛 호수', sky: 0x1d2550, ground: 0x34407a, accent: 0x9fd8ff, monsters: ['c11', 'c12', 'l06', 'l07', 'l08', 'k10', 'o03', 'o04', 'o05', 'o07', 'o08', 'o09', 'o10'], minis: ['b17', 'b26', 'b16', 'b35', 'b34'], boss: { art: 'b06', name: '호수 악어' } },
+      { name: '달의 정원', sky: 0x2c2448, ground: 0x4a6a5a, accent: 0xe6e6ff, monsters: ['c13', 'c14', 'l09', 'l10', 'g04', 'o01', 'o02', 'o06'], minis: ['b15', 'b30', 'b29', 'b36'], boss: { art: 'b07', name: '공포의 부엉이' } },
+      { name: '태양 신전', sky: 0xfff1c9, ground: 0xe8c27a, accent: 0xffd84a, monsters: ['c15', 'c16', 'g05', 's01', 's02', 's03', 's04', 's05', 's06'], minis: ['b12', 'b46', 'b24', 'b37'], boss: { art: 'b08', name: '황금 하이에나' } },
+      { name: '은하', sky: 0x120f2a, ground: 0x2a2650, accent: 0xb58cff, monsters: ['c17', 'c18', 'g01', 'g02', 's07', 's08', 's09'], minis: ['b19', 'b45', 'b33', 'b38'], boss: { art: 'b09', name: '우주 뱀' } },
+      { name: '마왕성', sky: 0x1e1530, ground: 0x3a2a50, accent: 0xff3b5c, monsters: ['c19', 'c20', 'k03', 'k05', 'k07', 'k09', 'g06', 'g07', 'g08', 'g09', 'g10', 's10'], minis: ['b11', 'b39', 'b40'], boss: { art: 'b10', name: '늑대 왕' } }
     ],
     // After the last boss, a harder difficulty opens: stages start again at 1-1 with far tougher monsters
     difficulties: [
