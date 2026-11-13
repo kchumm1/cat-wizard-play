@@ -203,6 +203,24 @@
     g.computeVertexNormals(); return g;
   }
 
+  // Smoke puffs are drawn many at a time, but in the very order three.js draws see-through things one by one: within
+  // one draw order, far to near (z: a thing's depth as the camera sees it; at the same depth the one made first, its
+  // id). So a puff may lie between two other see-through things of its draw order (a glow on the ground, a crater, the
+  // black hole) and is drawn between them: drawing all smoke in one go, before or after those, changed the picture
+  // (the first attempt, which looked weaker, 2026-11-14).
+  // things: [{ z, id, puff }], everything see-through of ONE draw order. Returns what to draw, far to near: each step is
+  // { thing } (something that is not smoke) or { puffs: [...] } (puffs with nothing between them, at most cap of them).
+  CW.smokeSteps = function (things, cap) {
+    var list = things.slice().sort(function (a, b) { return a.z !== b.z ? b.z - a.z : a.id - b.id; }), steps = [], run = null;
+    for (var i = 0; i < list.length; i++) {
+      var t = list[i];
+      if (!t.puff) { steps.push({ thing: t }); run = null; continue; }
+      if (!run || run.puffs.length >= cap) { run = { puffs: [] }; steps.push(run); }
+      run.puffs.push(t);
+    }
+    return steps;
+  };
+
   CW.createFx3d = function (sc) {
     var group = sc.fxGroup || sc.scene, parts = [], time = 0, bright = false, Y = new T.Vector3(0, 1, 0);
     var GEO = {
@@ -304,21 +322,99 @@
       });
     }
 
-    // ---------- smoke and rock chips are drawn the same way ----------
+    // ---------- smoke and rock chips are drawn many at a time ----------
     // Meteor rain alone had about 490 puffs of smoke and 250 rock chips alive at once, one draw each (2026-11-14). Each puff
     // keeps its own colours and progress in per-copy attributes; the chips (three shapes) glow by a per-copy colour.
-    var PUFF_CAP = 512, CHIP_CAP = 192, puffs = [], chips = [[], [], []], IQ = new T.Quaternion(), IE = new T.Euler();
+    var CHIP_CAP = 192, chips = [[], [], []], IQ = new T.Quaternion(), IE = new T.Euler();
     var VS_PUFF = VS.replace('void main(){', 'attribute vec3 iDark,iLight,iKSA;varying vec3 vDark,vLight,vKSA;void main(){vDark=iDark;vLight=iLight;vKSA=iKSA;');
     var FS_PUFF = 'varying vec3 vDark,vLight,vKSA;\n#define uDark vDark\n#define uLight vLight\n#define uK vKSA.x\n#define uSeed vKSA.y\n#define uAlpha vKSA.z\n' + FS.smoke.replace('uniform vec3 uDark,uLight;uniform float uK,uSeed,uAlpha;', '');
     var puffMat = mat(FS_PUFF, {}, { normal: true }, VS_PUFF);
-    // one smoke layer per draw order the puffs ask for (4: chip trails and ice mist, 5: the rest), as single puffs were;
-    // inside a layer the copies are written far to near each frame, the order three draws single see-through puffs in
-    function makePuffLayer(order) {
-      var geo = GEO.puff.clone(), at = function () { return new T.InstancedBufferAttribute(new Float32Array(PUFF_CAP * 3), 3); }, L = { dark: at(), light: at(), ksa: at(), n: 0 };
-      geo.setAttribute('iDark', L.dark); geo.setAttribute('iLight', L.light); geo.setAttribute('iKSA', L.ksa);
-      L.mesh = new T.InstancedMesh(geo, puffMat, PUFF_CAP); L.mesh.renderOrder = order; return L;
+    // A run of smoke: up to PUFF_RUN puffs in one draw. A puff is still a part like any other (made, moved and ended by
+    // the same code at the same moments as a single puff: see puff below); only its drawing is shared. Just before each
+    // picture (the scene's onBeforeRender, so with the camera of that picture) the live puffs and the other see-through
+    // things of their draw order (4: chip and rock trails, ice mist; 5: the rest) are put in three.js's own order
+    // (CW.smokeSteps), each run of puffs is written into the next free run mesh, and every thing and run gets a draw
+    // order just above its own (4 + n/8192) in that sequence, which three.js then follows.
+    // A run mesh has its own per-copy data and shares the puff's shape; 40 are made at the start and drawn once in the
+    // first picture (one unseen puff far under the ground) so that their buffers exist before a spell needs them; more
+    // are made when a picture needs more.
+    var PUFF_RUN = 128, STEP = 1 / 8192, puffRuns = { 4: [], 5: [] }, primeRuns = true, hadSmoke = false, smokeNow = { puffs: 0, draws: 0 }, puffId = 0, HOLD = new T.Object3D();
+    function makePuffRun(order) {
+      var geo = new T.BufferGeometry(), at = function () { var a = new T.InstancedBufferAttribute(new Float32Array(PUFF_RUN * 3), 3); a.setUsage(T.DynamicDrawUsage); return a; }, R = { dark: at(), light: at(), ksa: at() };
+      geo.setIndex(GEO.puff.index); ['position', 'normal', 'uv'].forEach(function (k) { geo.setAttribute(k, GEO.puff.attributes[k]); });
+      geo.setAttribute('iDark', R.dark); geo.setAttribute('iLight', R.light); geo.setAttribute('iKSA', R.ksa);
+      R.mesh = new T.InstancedMesh(geo, puffMat, PUFF_RUN); R.mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);
+      R.mesh.renderOrder = order; R.mesh.frustumCulled = false; R.mesh.count = 0; R.mesh.visible = false; R.mesh.name = 'smoke3d run'; R.mesh.userData.cwSmoke = true;
+      group.add(R.mesh); puffRuns[order].push(R); return R;
     }
-    var puffLayers = { 4: makePuffLayer(4), 5: makePuffLayer(5) }, camAt = new T.Vector3(), farFirst = [];
+    function fillRun(R, list) {
+      var n = list.length, M = R.mesh;
+      for (var k = 0; k < n; k++) {
+        var u = list[k]; M.setMatrixAt(k, IM.compose(u.p, u.q, IS.set(u.s, u.s, u.s)));
+        R.dark.setXYZ(k, u.dark.r, u.dark.g, u.dark.b); R.light.setXYZ(k, u.light.r, u.light.g, u.light.b); R.ksa.setXYZ(k, u.k, u.seed, u.alpha);
+      }
+      M.count = n; M.visible = n > 0;
+      M.instanceMatrix.updateRange.offset = 0; M.instanceMatrix.updateRange.count = n * 16; M.instanceMatrix.needsUpdate = true;
+      R.dark.updateRange.offset = R.light.updateRange.offset = R.ksa.updateRange.offset = 0;
+      R.dark.updateRange.count = R.light.updateRange.count = R.ksa.updateRange.count = n * 3;
+      R.dark.needsUpdate = R.light.needsUpdate = R.ksa.needsUpdate = true;
+    }
+    for (var pr4 = 0; pr4 < 32; pr4++) makePuffRun(4);   // a meteor rain at its thickest took 28 runs (491 puffs)
+    for (var pr5 = 0; pr5 < 8; pr5++) makePuffRun(5);
+    var PSM = new T.Matrix4(), SV = new T.Vector3(), seen = { 4: [], 5: [] }, FAR_PUFF = [{ p: new T.Vector3(0, -40, 0), q: new T.Quaternion(), s: 0.001, k: 1, seed: 0, alpha: 0, dark: C(0), light: C(0) }];
+    // The other see-through things of smoke's two draw orders, anywhere in the scene: not only effect parts (the glow under
+    // a falling rock, a crater, the black hole) but the wizard's aura lights too, which are of draw order 4 (found by the
+    // pixel check: smoke covered the light over the wizard's head). The scene is walked as three.js walks it: what is
+    // not shown is skipped with all inside it, and a Group hands its draw order down as the group order (go), which
+    // three.js sorts by first, so only things of the smoke's own group order (mine) can lie between puffs.
+    // cwOrder: the draw order (4 or 5) such a thing was given; its renderOrder is moved a little above that, see above.
+    function others(o, go, mine, live) {
+      if (o.visible === false) return;
+      if (o.isGroup) go = o.renderOrder;
+      else if (go === mine && o.material && !o.userData.cwSmoke && (o.isMesh || o.isSprite || o.isPoints || o.isLine)) {
+        var m = o.material, base = o.userData.cwOrder; if (base === undefined) { base = o.renderOrder; if (base === 4 || base === 5) o.userData.cwOrder = base; }
+        if ((base === 4 || base === 5) && m.transparent === true && m.visible !== false) {
+          if (!live[base]) o.renderOrder = base;   // no smoke of this order: three.js sorts them itself
+          else { var w = o.userData.cwThing || (o.userData.cwThing = { puff: false, id: o.id, o: o, z: 0 }); w.z = SV.setFromMatrixPosition(o.matrixWorld).applyMatrix4(PSM).z; seen[base].push(w); }
+        }
+      }
+      for (var ch = o.children, i = 0; i < ch.length; i++) others(ch[i], go, mine, live);
+    }
+    // (compiling: called while the programs are being readied, not for a picture)
+    function layoutSmoke(camera, compiling) {
+      var i, used = { 4: 0, 5: 0 }, live = { 4: 0, 5: 0 };
+      puffMat.uniforms.uTime.value = time;
+      seen[4].length = seen[5].length = 0;
+      PSM.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+      for (i = 0; i < parts.length; i++) {
+        var q = parts[i].puff; if (!q || parts[i].dead) continue;
+        q.z = SV.copy(q.p).applyMatrix4(group.matrixWorld).applyMatrix4(PSM).z; seen[q.order].push(q); live[q.order]++;
+      }
+      if (live[4] || live[5] || hadSmoke) others(sc.scene || group, 0, group.isGroup ? group.renderOrder : 0, live);
+      hadSmoke = !!(live[4] || live[5]);
+      [4, 5].forEach(function (c) {
+        if (!live[c]) return;
+        var steps = CW.smokeSteps(seen[c], PUFF_RUN), n = 0;
+        for (var j = 0; j < steps.length; j++) {
+          var st = steps[j], ro = c + Math.min(8191, ++n) * STEP;
+          if (st.thing) { st.thing.o.renderOrder = ro; continue; }
+          var R = puffRuns[c][used[c]] || makePuffRun(c); used[c]++;
+          R.mesh.renderOrder = ro; fillRun(R, st.puffs);
+        }
+      });
+      [4, 5].forEach(function (c) {
+        for (var k = used[c]; k < puffRuns[c].length; k++) {
+          var R = puffRuns[c][k];
+          if (primeRuns && !compiling) { fillRun(R, FAR_PUFF); R.mesh.renderOrder = c; } else if (R.mesh.visible) { R.mesh.visible = false; R.mesh.count = 0; }
+        }
+      });
+      if (!compiling) primeRuns = false;
+      smokeNow.puffs = live[4] + live[5]; smokeNow.draws = used[4] + used[5];
+    }
+    if (sc.scene) {
+      var beforeRender = sc.scene.onBeforeRender;
+      sc.scene.onBeforeRender = function (renderer, scene, camera) { if (beforeRender) beforeRender.apply(this, arguments); layoutSmoke(camera); };
+    }
     // a chip: the same lit stone material as before (lit by the scene's lights), glowing by a per-copy heat colour (iEmi)
     var chipMatI = new T.MeshLambertMaterial({ color: 0x4a3a36 });
     chipMatI.onBeforeCompile = function (sh) {
@@ -331,27 +427,7 @@
       return new T.InstancedMesh(geo, chipMatI, CHIP_CAP);
     });
     chipLayers.forEach(function (m) { m.renderOrder = 5; });
-    [puffLayers[4].mesh, puffLayers[5].mesh].concat(chipLayers).forEach(function (m) { m.frustumCulled = false; m.count = 0; m.visible = false; group.add(m); });
-    function drawPuffs(dt) {
-      for (var i = puffs.length - 1; i >= 0; i--) {
-        var q = puffs[i]; q.t += dt; if (q.t >= q.life) { puffs.splice(i, 1); continue; }
-        q.p.addScaledVector(q.v, dt); q.v.multiplyScalar(Math.max(0, 1 - dt * q.drag));
-      }
-      if (sc.camera) camAt.setFromMatrixPosition(sc.camera.matrixWorld);
-      farFirst.length = 0; for (var f = 0; f < puffs.length; f++) { puffs[f].d = puffs[f].p.distanceToSquared(camAt); farFirst.push(puffs[f]); }
-      farFirst.sort(function (a, b) { return b.d - a.d; });
-      puffLayers[4].n = puffLayers[5].n = 0;
-      for (var j = 0; j < farFirst.length; j++) {
-        var u = farFirst[j], L = puffLayers[u.order], n = L.n++, k = u.t / u.life, s = u.s0 + (u.s1 - u.s0) * ease(k);
-        L.mesh.setMatrixAt(n, IM.compose(u.p, u.q, IS.set(s, s, s)));
-        L.dark.setXYZ(n, u.dark.r, u.dark.g, u.dark.b); L.light.setXYZ(n, u.light.r, u.light.g, u.light.b); L.ksa.setXYZ(n, k, u.seed, u.alpha);
-      }
-      [puffLayers[4], puffLayers[5]].forEach(function (L) {
-        L.mesh.count = L.n; L.mesh.visible = L.n > 0;
-        L.mesh.instanceMatrix.needsUpdate = L.dark.needsUpdate = L.light.needsUpdate = L.ksa.needsUpdate = true;
-      });
-      puffMat.uniforms.uTime.value = time;
-    }
+    chipLayers.forEach(function (m) { m.frustumCulled = false; m.count = 0; m.visible = false; group.add(m); });
     function drawChips(dt) {
       chips.forEach(function (list, g) {
         for (var i = list.length - 1; i >= 0; i--) {
@@ -409,11 +485,13 @@
     // run fn after t seconds of effect time (cleared with everything else)
     function later(t, fn) { add(new T.Object3D(), { life: 1e9, upd: function (dt, tt) { if (tt >= t) { fn(); return true; } } }); }
     // ---------- smoke: a grey puff that swells, drifts and frays away ----------
-    // Each puff is its own mesh, as before batch 3 (2026-11-14): the user found the meteor rain weaker when the smoke was
-    // drawn as copies in one layer. batchSmoke switches the (sorted) smoke layers on, for checks that compare the looks.
+    // Puffs are drawn in runs (above). The first time smoke was drawn as copies, all of it in one layer, the user found
+    // the meteor rain weaker (2026-11-14) and each puff went back to its own mesh, 450 draws a frame: an iPhone 17 Pro
+    // stuttered ("스킬 난사하다보면 엄청 버벅"). In runs the picture is the single puffs' picture, checked pixel by pixel
+    // against it. batchSmoke(false) draws single puffs again, for such checks.
     // Rock chips are solid (drawn with the depth buffer, in any order), so drawing them as copies does not change how they
     // look: batchChips stays on (a quarter of the meteor rain's draws).
-    var batchSmoke = false, batchChips = true;
+    var batchSmoke = true, batchChips = true;
     function puffMesh(pos, o) {
       var life = o.life || 0.9, s0 = o.s0 || 0.2, s1 = o.s1 || 0.6, v = o.vel ? o.vel.clone() : new T.Vector3(0, 0.6, 0), drag = o.drag === undefined ? 1.5 : o.drag;
       var m = new T.Mesh(GEO.puff, mat(FS.smoke, { uDark: { value: C(o.dark || 0x2c2624) }, uLight: { value: C(o.light || 0x9a908a) }, uK: { value: 0 }, uSeed: { value: Math.random() * 9 }, uAlpha: { value: o.alpha === undefined ? 0.85 : o.alpha } }, { normal: true }));
@@ -423,12 +501,18 @@
       } });
       return p;
     }
-    // (with batchSmoke: a copy in the smoke layer; when it is full the oldest, most faded puff goes)
+    // (with batchSmoke: no mesh of its own, drawn in a run. Everything else is what puffMesh does, in the same order, the
+    // three random numbers too: it is in parts, first moved in the frame after it was made, and ended, like a single puff.
+    // id: which of two puffs at exactly the same depth was made first)
     function puff(pos, o) {
       o = o || {}; if (!batchSmoke) return puffMesh(pos, o);
-      if (puffs.length >= PUFF_CAP) puffs.shift();
-      puffs.push({ p: pos.clone(), v: o.vel ? o.vel.clone() : new T.Vector3(0, 0.6, 0), drag: o.drag === undefined ? 1.5 : o.drag, s0: o.s0 || 0.2, s1: o.s1 || 0.6, life: o.life || 0.9, t: 0,
-        q: new T.Quaternion().setFromEuler(IE.set(Math.random() * 6, Math.random() * 6, 0)), dark: C(o.dark || 0x2c2624), light: C(o.light || 0x9a908a), seed: Math.random() * 9, alpha: o.alpha === undefined ? 0.85 : o.alpha, order: o.order === 4 ? 4 : 5 });
+      var life = o.life || 0.9, s0 = o.s0 || 0.2, s1 = o.s1 || 0.6, v = o.vel ? o.vel.clone() : new T.Vector3(0, 0.6, 0), drag = o.drag === undefined ? 1.5 : o.drag;
+      var q = { puff: true, id: ++puffId, z: 0, p: pos.clone(), q: null, s: s0, k: 0, dark: C(o.dark || 0x2c2624), light: C(o.light || 0x9a908a), seed: Math.random() * 9, alpha: o.alpha === undefined ? 0.85 : o.alpha, order: o.order === 4 ? 4 : 5 };
+      q.q = new T.Quaternion().setFromEuler(IE.set(Math.random() * 6, Math.random() * 6, 0));
+      var p = { mesh: HOLD, puff: q, t: 0, life: life, dead: false, upd: function (dt, t) {
+        var k = t / life; q.p.addScaledVector(v, dt); v.multiplyScalar(Math.max(0, 1 - dt * drag)); q.s = s0 + (s1 - s0) * ease(k); q.k = k;
+      } };
+      parts.push(p); return p;
     }
     // ---------- a burning rock: faceted stone with a dark outline, a white-hot cap of air in front, a fire tail that
     // starts behind it (so the stone itself stays in sight) and a trail of smoke that hangs in the air after it ----------
@@ -600,7 +684,7 @@
       for (var i = 0; i < (o.chips === undefined ? 7 : o.chips); i++) chip(pos, R, o.hot || 0xff7a1a);
     }
     // a rock chip thrown out of a hit: flies, bounces, cools from glowing to dark stone, shrinks away (its own mesh; with
-    // batchSmoke a copy in the chip layer of its shape, when full the oldest goes)
+    // batchChips a copy in the chip layer of its shape, when full the oldest goes)
     function chipMat(hot) { var l = pool.chip, m = l && l.pop(); if (!m) { m = new T.MeshLambertMaterial({ color: 0x4a3a36 }); m.userData.poolKey = 'chip'; } m.emissive.setHex(hot); return m; }
     function chipMesh(pos, R, hot, smoky) {
       var m = new T.Mesh(GEO.chips[(Math.random() * 3) | 0], chipMat(hot)), a = Math.random() * 6.283, sp = (2 + Math.random() * 3.5) * Math.sqrt(R);
@@ -667,9 +751,9 @@
         p.t += dt; var u = p.mesh.material && p.mesh.material.uniforms; if (u && u.uTime) u.uTime.value = time;
         if ((p.upd && p.upd(dt, p.t) === true) || p.t >= p.life) { drop(p); parts.splice(i, 1); }
       }
-      drawChips(dt); drawPuffs(dt); drawSpikes(dt);
+      drawChips(dt); drawSpikes(dt);
     }
-    function clear() { parts.forEach(drop); parts.length = 0; spikes.length = 0; puffs.length = 0; chips.forEach(function (l) { l.length = 0; }); drawSpikes(0); drawPuffs(0); drawChips(0); if (sc.lens) sc.lens(null); }
+    function clear() { parts.forEach(drop); parts.length = 0; spikes.length = 0; chips.forEach(function (l) { l.length = 0; }); drawSpikes(0); drawChips(0); if (sc.lens) sc.lens(null); }
     // Build every program before it is needed. A compiled program also depends on the scene (whether it has fog, and of
     // which kind), so this is done again whenever that changes (fx.setRegion calls it); the same scene state is skipped.
     // Only the parts made here are dropped again, and their materials go into the pool, so the programs stay.
@@ -678,17 +762,19 @@
       var f = sc.scene.fog, sig = f ? (f.isFogExp2 ? 'exp2' : 'linear') : 'none';
       if (warmed[sig] || !sc.renderer || !sc.renderer.compile) return;
       warmed[sig] = true;
-      var far = new T.Vector3(0, -40, 0), vel = new T.Vector3(1, -3, 0), start = parts.length, spikeStart = spikes.length, puffStart = puffs.length, chipStart = chips.map(function (l) { return l.length; });
+      var far = new T.Vector3(0, -40, 0), vel = new T.Vector3(1, -3, 0), start = parts.length, spikeStart = spikes.length, chipStart = chips.map(function (l) { return l.length; });
       beam({ col: 0xffffff, deep: 0x8866ff, r: 0.1 }).set(far, far.clone().add(vel), 1); orb({ col: 0xffffff }).set(far, 1, 1); moon({}).set(far, 1, 0);
       rock({ size: 0.3 }).set(far, vel, 0.05); fireball({ size: 0.3 }).set(far, vel, 0.05); iceSpear({ size: 1 }).set(far, vel, 0.05); iceSpikes(far, { n: 2 }); mark({}).set(far, 0.5, 1); impact(far, { size: 1, chips: 3 }); blast(far, { size: 1, flash: true });
       var h = hole({ pos: far }); h.set(1, 1, 0); h.lens.dead = true; puff(far, {}); chip(far, 1, 0xff7a1a, false);
-      drawSpikes(0); drawPuffs(0); drawChips(0);   // the layers must be drawing copies when compiled, so their (instanced) programs are built too
+      drawSpikes(0); layoutSmoke(sc.camera, true); drawChips(0);   // the layers must be drawing copies when compiled, so their (instanced) programs are built too
       sc.renderer.compile(sc.scene, sc.camera);
       for (var i = parts.length - 1; i >= start; i--) drop(parts[i]);
-      parts.length = start; spikes.length = spikeStart; puffs.length = puffStart; chips.forEach(function (l, i) { l.length = chipStart[i]; }); drawSpikes(0); drawPuffs(0); drawChips(0);
+      parts.length = start; spikes.length = spikeStart; chips.forEach(function (l, i) { l.length = chipStart[i]; }); drawSpikes(0); drawChips(0);
       if (sc.warmLens) sc.warmLens();
     }
     return { beam: beam, orb: orb, moon: moon, rock: rock, fireball: fireball, iceSpear: iceSpear, iceSpikes: iceSpikes, iceSpike: iceSpike, mark: mark, impact: impact, puff: puff, blast: blast, chip: chip, hole: hole, update: update, clear: clear, warm: warm, setBright: function (v) { bright = !!v; }, setBatchSmoke: function (v) { batchSmoke = !!v; }, setBatchChips: function (v) { batchChips = !!v; },
-      count: function () { return parts.length + spikes.length + puffs.length + chips[0].length + chips[1].length + chips[2].length; }, spikeTops: spikeTops };
+      count: function () { return parts.length + spikes.length + chips[0].length + chips[1].length + chips[2].length; }, spikeTops: spikeTops,
+      // for checks: the puffs in the last picture and the draws they took
+      smoke: function () { return { puffs: smokeNow.puffs, draws: smokeNow.draws }; } };
   };
 })(this);
