@@ -1250,6 +1250,7 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 #hud{padding-top:calc(4px + var(--cap,0px) + env(safe-area-inset-top,0px))}
 html.sa{--cap:0px}
 html.sa #topcap{display:block;position:fixed;left:0;right:0;top:0;height:env(safe-area-inset-top,0px);background-color:var(--capc,#2e232f);z-index:40}
+html.sa #ov::after{content:"";position:absolute;left:0;right:0;top:0;height:calc(env(safe-area-inset-top,0px) + 34px);pointer-events:none;background:linear-gradient(180deg,var(--capc,#2e232f) 0,var(--capc,#2e232f) calc(100% - 34px),rgba(0,0,0,0))}
 html.sa #quick{top:calc(102px + var(--cap) + env(safe-area-inset-top,0px))}
 html.sa #buffs{top:calc(102px + var(--cap) + env(safe-area-inset-top,0px))}
 html.sa #dunHud{top:calc(96px + var(--cap) + env(safe-area-inset-top,0px))}
