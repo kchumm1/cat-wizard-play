@@ -1023,6 +1023,9 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 #surgeGauge b{position:absolute;left:-34px;top:50%;transform:translateY(-50%);font:400 10px var(--display);color:#e6d8ff;text-shadow:0 1px 0 var(--ol)}
 #surgeGauge.full i{box-shadow:0 0 10px #d07bff,0 0 4px #fff;animation:surgePulse .5s ease-in-out infinite alternate}
 @keyframes surgePulse{to{filter:brightness(1.4)}}
+/* skill level badge: small, tucked into the bottom-right corner so the surge gauge above stays clear */
+#slots .sk b{top:auto;bottom:-4px;right:-4px;min-width:17px;height:15px;padding:0 3px;border-radius:8px;font:400 9.5px var(--display);line-height:15px;box-shadow:0 0 0 1.5px color-mix(in srgb,var(--c,#888) 75%,#fff)}
+#surgeGauge{margin-bottom:3px}
 /* ==THEME-END== */
 @media (prefers-reduced-motion:reduce){#killBar i,.ico .orb,.sk.now .ico,.rlines .flow,.rcore.lit,.isg,.gart .gimg,.gart .gstaff,.gshine::after{animation:none!important}}
 </style>
