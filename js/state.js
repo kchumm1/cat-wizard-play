@@ -52,10 +52,15 @@
   function b64enc(str) { return isNode ? Buffer.from(str, 'utf8').toString('base64') : btoa(unescape(encodeURIComponent(str))); }
   function b64dec(b) { return isNode ? Buffer.from(b, 'base64').toString('utf8') : decodeURIComponent(escape(atob(b))); }
   function exportCode(state) { return 'CW1:' + b64enc(JSON.stringify(state)); }
+  // Forgiving: the code may arrive with words before or after it (a memo, a chat message), line breaks or spaces inside,
+  // invisible characters, the URL-safe base64 letters, a missing "CW1:" or missing "=" at the end.
   function importCode(code) {
     try {
-      var c = String(code || '').replace(/\s+/g, ''); if (c.indexOf('CW1:') !== 0) return null;
-      var b = c.slice(4); if (!b || !/^[A-Za-z0-9+/=]+$/.test(b)) return null;
+      var c = String(code || '').replace(/[\s​-‍﻿]+/g, '');
+      var at = c.indexOf('CW1:'); c = at >= 0 ? c.slice(at + 4) : c;
+      var m = /[A-Za-z0-9+/\-_]{40,}={0,2}/.exec(c); if (!m) return null;
+      var b = m[0].replace(/-/g, '+').replace(/_/g, '/').replace(/=+$/, '');
+      while (b.length % 4) b += '=';
       var json = b64dec(b); return load({ getItem: function () { return json; } });
     } catch (e) { return null; }
   }
