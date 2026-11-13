@@ -735,9 +735,9 @@
     // A coloured warning circle opens on the ground first, then the element falls into it; done(pos) runs as it lands.
     var ELRGBA = ['rgba(255,120,40,0.42)', 'rgba(140,210,255,0.48)', 'rgba(220,245,255,0.42)', 'rgba(255,225,90,0.40)', 'rgba(170,120,255,0.44)'];
     function elemDrop(c, mob, kind, big, done) {
-      var col = ELC[kind], g = gp(mob), to = function () { return mp(mob); }, B = (big ? 1.35 : 0.9) * Math.min(1.25, c.s) * (mob.boss ? 1.2 : 1);
-      // warning circle: the element's colour and shape on the ground where it is about to land
-      E({ sys: 'gadd', pos: V(g.x, 0.04, g.z), frame: 'circle', color: col, size: [0.4, 2.1 * B], ease: 1, life: c.D(0.34), spin: 2.2, alpha: 0.75, fadeIn: 0.3, fadeOut: 0.4 });
+      var col = ELC[kind], g = gp(mob), to = function () { return mp(mob); }, B = (big ? 1.8 : 1.2) * Math.min(1.25, c.s) * (mob.boss ? 1.2 : 1);
+      // where it is about to land: a soft spot of the element's light and its shape on the ground (no magic circle)
+      E({ sys: 'gadd', pos: V(g.x, 0.04, g.z), frame: 'glow', color: col, size: [0.4, 1.8 * B], ease: 1, life: c.D(0.34), alpha: 0.7, fadeIn: 0.3, fadeOut: 0.4 });
       E({ sys: 'gadd', pos: V(g.x, 0.05, g.z), frame: kind === 0 ? 'flame' : kind === 1 ? 'streak' : kind === 2 ? 'frost' : kind === 3 ? 'star' : 'crescent', color: col, size: [0.2, 1.2 * B], ease: 1, life: c.D(0.3), spin: -3, alpha: 0.6, fadeIn: 0.3 });
       function land(p) {
         var q = p || mp(mob), gg = V(q.x, 0, q.z);
@@ -859,14 +859,14 @@
     // fire, lightning, ice, star, moon — each wave led by one huge drop with smaller ones of the same element beside it.
     S.elemStorm = function (c) {
       sc.heroPose('raise', c.D(0.16), 0xffffff); sc.dim(0.55, c.D(1.75));
-      var top = above(V(FC.x, 0, FC.z - 0.6), 4.7), life = c.D(1.7);
+      // the five element orbs turn low enough to be seen (at 4.7 they sat small along the top edge, 2026-11-14)
+      var top = above(V(FC.x, 0, FC.z - 0.6), 3.4), life = c.D(1.7);
       ELC.forEach(function (col, i) {
         var a0 = i / 5 * 6.283;
-        E({ pos: top, frame: 'glow', color: col, size: 2.6, life: life, alpha: 0.7, fadeIn: 0.15, fadeOut: 0.7, upd: function (p, dt, k) { var a = a0 + k * 6; p.x = top.x + Math.cos(a) * 2.6; p.y = top.y + Math.sin(a) * 0.5; p.z = top.z; return true; } });
-        E({ sys: 'col', pos: top, frame: ELF[i], color: col, size: 1.0, life: life, alpha: 0.9, fadeIn: 0.15, fadeOut: 0.7, spin: 4, upd: function (p, dt, k) { var a = a0 + k * 6; p.x = top.x + Math.cos(a) * 2.6; p.y = top.y + Math.sin(a) * 0.5; p.z = top.z; return true; } });
-        E({ sys: 'norm', pos: top, frame: 'smoke', color: col, size: 2.6, life: life, alpha: 0.32, fadeIn: 0.25, fadeOut: 0.7, upd: function (p, dt, k) { var a = a0 + 0.6 + k * 6; p.x = top.x + Math.cos(a) * 2.2; p.y = top.y + Math.sin(a) * 0.45; p.z = top.z; return true; } });
+        E({ pos: top, frame: 'glow', color: col, size: 3.4, life: life, alpha: 0.75, fadeIn: 0.15, fadeOut: 0.7, upd: function (p, dt, k) { var a = a0 + k * 6; p.x = top.x + Math.cos(a) * 2.2; p.y = top.y + Math.sin(a) * 0.5; p.z = top.z; return true; } });
+        E({ sys: 'col', pos: top, frame: ELF[i], color: col, size: 1.6, life: life, alpha: 0.9, fadeIn: 0.15, fadeOut: 0.7, spin: 4, upd: function (p, dt, k) { var a = a0 + k * 6; p.x = top.x + Math.cos(a) * 2.2; p.y = top.y + Math.sin(a) * 0.5; p.z = top.z; return true; } });
+        E({ sys: 'norm', pos: top, frame: 'smoke', color: col, size: 3.2, life: life, alpha: 0.32, fadeIn: 0.25, fadeOut: 0.7, upd: function (p, dt, k) { var a = a0 + 0.6 + k * 6; p.x = top.x + Math.cos(a) * 1.9; p.y = top.y + Math.sin(a) * 0.45; p.z = top.z; return true; } });
       });
-      E({ sys: 'gadd', pos: V(FC.x, 0.04, FC.z), frame: 'circle', color: 0xffe9ff, size: [1, 9], ease: 1, life: life, spin: -1.4, fadeOut: 0.8, alpha: 0.6 });
       // the shots are spread in time; the fifths of them in order belong to fire, lightning, ice, star and moon
       // in each wave only the first three shots are falling elements (one big, two smaller); the rest of the crowd is
       // struck by the same element as a short burst when the big one lands, so each element reads on its own

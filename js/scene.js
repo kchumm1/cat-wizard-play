@@ -280,7 +280,28 @@
     // ---------- monsters ----------
     var FIELD = { z0: -4.6, z1: 3.8 };
     function halfX(z) { return 2.2 + (3.8 - z) * 0.16; }
-    function clampField(p) { p.z = Math.max(FIELD.z0, Math.min(FIELD.z1, p.z)); var hx = halfX(p.z); p.x = Math.max(-hx, Math.min(hx, p.x)); return p; }
+    // Where a monster may go is also kept inside what the camera shows now: on a tall phone the painted field is wider
+    // than the picture, and the camera follows the wizard a little, so a monster (or a boss) could walk out past the edge,
+    // or under the skill bar, and every spell aimed at it flew off the screen with it. The limits are for a monster's
+    // middle (0.6 above the ground): left/right VIEW_X of the picture's half width, below the top bar, above the skills.
+    var VIEW_X = 0.8, VIEW_TOP = 0.62, VIEW_BOT = -0.42, MID_Y = 0.6, VM = new T.Matrix4();
+    function viewBox(z) {
+      VM.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse); var e = VM.elements;
+      // clip = VM * (x, MID_Y, z, 1); ndc.x = (e0 x + b) / (e3 x + d) solved for x at ±VIEW_X; ndc.y the same for z
+      var b = e[4] * MID_Y + e[8] * z + e[12], d = e[7] * MID_Y + e[11] * z + e[15];
+      var xAt = function (t) { return (t * d - b) / (e[0] - t * e[3]); };
+      var zAt = function (t) { return (t * (e[7] * MID_Y + e[15]) - (e[5] * MID_Y + e[13])) / (e[9] - t * e[11]); };
+      return { x0: xAt(-VIEW_X), x1: xAt(VIEW_X), zFar: zAt(VIEW_TOP), zNear: zAt(VIEW_BOT) };
+    }
+    function clampField(p) {
+      var z0 = FIELD.z0, z1 = FIELD.z1, v = viewBox(0);
+      if (isFinite(v.zFar) && isFinite(v.zNear) && v.zFar < v.zNear) { z0 = Math.max(z0, v.zFar); z1 = Math.min(z1, v.zNear); }
+      p.z = Math.max(z0, Math.min(z1, p.z));
+      var hx = halfX(p.z), x0 = -hx, x1 = hx; v = viewBox(p.z);
+      if (isFinite(v.x0) && isFinite(v.x1) && v.x0 < v.x1) { x0 = Math.max(x0, v.x0); x1 = Math.min(x1, v.x1); }
+      p.x = Math.max(x0, Math.min(x1, p.x)); return p;
+    }
+    function inView(m) { var p = clampField({ x: m.x, z: m.z }); return Math.abs(p.x - m.x) + Math.abs(p.z - m.z) < 0.05; }
     function ringSpot(r0, r1, boss) {
       var a = rr(0, Math.PI * 2), r = rr(r0, r1);
       if (boss) a = rr(-Math.PI * 0.85, -Math.PI * 0.15);
@@ -295,7 +316,7 @@
       for (var k = 0; k < 16; k++) {
         var p;
         if (boss) p = ringSpot(1.9, 2.6, true);
-        else { var z = rr(FIELD.z0 + 0.6, 2.7), hx = halfX(z) - 0.4; p = { x: rr(-hx, hx), z: z }; }
+        else { var z = rr(FIELD.z0 + 0.6, 2.7), hx = halfX(z) - 0.4; p = clampField({ x: rr(-hx, hx), z: z }); }
         var dh = Math.hypot(p.x - HB.x, p.z - HB.z), dmin = 9;
         if (!boss && dh < 1.3) continue;
         mobs.forEach(function (m) { var dd = Math.hypot(m.tx - p.x, m.tz - p.z); if (dd < dmin) dmin = dd; });
@@ -549,6 +570,8 @@
     function setGoal(m, x, z, speed, state) { var p = clampField({ x: x, z: z }); m.tx = p.x; m.tz = p.z; m.speed = speed; m.state = state; }
     function nearHero(m, dist) { var dx = m.x - HB.x, dz = (m.z - HB.z) / 1.15, d = Math.sqrt(dx * dx + dz * dz) || 1; return { x: HB.x + dx / d * dist, z: HB.z + dz / d * dist * 1.15 }; }
     function nextAction(m) {
+      // left outside the picture (the camera moved with the wizard): walk back in first
+      if (m.arrived && !inView(m)) { var cb = clampField({ x: m.x, z: m.z }); setGoal(m, cb.x * 0.9, cb.z, m.boss ? 1.5 : rr(1.5, 2.0), 'wander'); return; }
       if (m.boss) return bossAction(m);
       var r = Math.random(), dH = Math.hypot(m.x - HB.x, m.z - HB.z), run = m.gait === 'skitter' ? 1.3 : m.gait === 'stomp' ? 0.75 : 1;
       if (dH > 4.3) { var c0 = nearHero(m, rr(2.0, 3.1)); setGoal(m, c0.x, c0.z, rr(1.7, 2.3) * run, 'wander'); }   // the wizard ran off: go after it

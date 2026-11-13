@@ -308,11 +308,17 @@
     // Meteor rain alone had about 490 puffs of smoke and 250 rock chips alive at once, one draw each (2026-11-14). Each puff
     // keeps its own colours and progress in per-copy attributes; the chips (three shapes) glow by a per-copy colour.
     var PUFF_CAP = 512, CHIP_CAP = 192, puffs = [], chips = [[], [], []], IQ = new T.Quaternion(), IE = new T.Euler();
-    var puffGeo = GEO.puff.clone(), iDark = new T.InstancedBufferAttribute(new Float32Array(PUFF_CAP * 3), 3), iLight = new T.InstancedBufferAttribute(new Float32Array(PUFF_CAP * 3), 3), iKSA = new T.InstancedBufferAttribute(new Float32Array(PUFF_CAP * 3), 3);
-    puffGeo.setAttribute('iDark', iDark); puffGeo.setAttribute('iLight', iLight); puffGeo.setAttribute('iKSA', iKSA);
     var VS_PUFF = VS.replace('void main(){', 'attribute vec3 iDark,iLight,iKSA;varying vec3 vDark,vLight,vKSA;void main(){vDark=iDark;vLight=iLight;vKSA=iKSA;');
     var FS_PUFF = 'varying vec3 vDark,vLight,vKSA;\n#define uDark vDark\n#define uLight vLight\n#define uK vKSA.x\n#define uSeed vKSA.y\n#define uAlpha vKSA.z\n' + FS.smoke.replace('uniform vec3 uDark,uLight;uniform float uK,uSeed,uAlpha;', '');
-    var puffLayer = new T.InstancedMesh(puffGeo, mat(FS_PUFF, {}, { normal: true }, VS_PUFF), PUFF_CAP);
+    var puffMat = mat(FS_PUFF, {}, { normal: true }, VS_PUFF);
+    // one smoke layer per draw order the puffs ask for (4: chip trails and ice mist, 5: the rest), as single puffs were;
+    // inside a layer the copies are written far to near each frame, the order three draws single see-through puffs in
+    function makePuffLayer(order) {
+      var geo = GEO.puff.clone(), at = function () { return new T.InstancedBufferAttribute(new Float32Array(PUFF_CAP * 3), 3); }, L = { dark: at(), light: at(), ksa: at(), n: 0 };
+      geo.setAttribute('iDark', L.dark); geo.setAttribute('iLight', L.light); geo.setAttribute('iKSA', L.ksa);
+      L.mesh = new T.InstancedMesh(geo, puffMat, PUFF_CAP); L.mesh.renderOrder = order; return L;
+    }
+    var puffLayers = { 4: makePuffLayer(4), 5: makePuffLayer(5) }, camAt = new T.Vector3(), farFirst = [];
     // a chip: the same lit stone material as before (lit by the scene's lights), glowing by a per-copy heat colour (iEmi)
     var chipMatI = new T.MeshLambertMaterial({ color: 0x4a3a36 });
     chipMatI.onBeforeCompile = function (sh) {
@@ -324,27 +330,34 @@
       var geo = g.clone(); geo.setAttribute('iEmi', new T.InstancedBufferAttribute(new Float32Array(CHIP_CAP * 3), 3));
       return new T.InstancedMesh(geo, chipMatI, CHIP_CAP);
     });
-    [puffLayer].concat(chipLayers).forEach(function (m) { m.renderOrder = 5; m.frustumCulled = false; m.count = 0; m.visible = false; group.add(m); });
+    chipLayers.forEach(function (m) { m.renderOrder = 5; });
+    [puffLayers[4].mesh, puffLayers[5].mesh].concat(chipLayers).forEach(function (m) { m.frustumCulled = false; m.count = 0; m.visible = false; group.add(m); });
     function drawPuffs(dt) {
       for (var i = puffs.length - 1; i >= 0; i--) {
         var q = puffs[i]; q.t += dt; if (q.t >= q.life) { puffs.splice(i, 1); continue; }
         q.p.addScaledVector(q.v, dt); q.v.multiplyScalar(Math.max(0, 1 - dt * q.drag));
       }
-      for (var j = 0; j < puffs.length; j++) {
-        var u = puffs[j], k = u.t / u.life, s = u.s0 + (u.s1 - u.s0) * ease(k);
-        puffLayer.setMatrixAt(j, IM.compose(u.p, u.q, IS.set(s, s, s)));
-        iDark.setXYZ(j, u.dark.r, u.dark.g, u.dark.b); iLight.setXYZ(j, u.light.r, u.light.g, u.light.b); iKSA.setXYZ(j, k, u.seed, u.alpha);
+      if (sc.camera) camAt.setFromMatrixPosition(sc.camera.matrixWorld);
+      farFirst.length = 0; for (var f = 0; f < puffs.length; f++) { puffs[f].d = puffs[f].p.distanceToSquared(camAt); farFirst.push(puffs[f]); }
+      farFirst.sort(function (a, b) { return b.d - a.d; });
+      puffLayers[4].n = puffLayers[5].n = 0;
+      for (var j = 0; j < farFirst.length; j++) {
+        var u = farFirst[j], L = puffLayers[u.order], n = L.n++, k = u.t / u.life, s = u.s0 + (u.s1 - u.s0) * ease(k);
+        L.mesh.setMatrixAt(n, IM.compose(u.p, u.q, IS.set(s, s, s)));
+        L.dark.setXYZ(n, u.dark.r, u.dark.g, u.dark.b); L.light.setXYZ(n, u.light.r, u.light.g, u.light.b); L.ksa.setXYZ(n, k, u.seed, u.alpha);
       }
-      puffLayer.count = puffs.length; puffLayer.visible = puffs.length > 0;
-      puffLayer.instanceMatrix.needsUpdate = iDark.needsUpdate = iLight.needsUpdate = iKSA.needsUpdate = true;
-      puffLayer.material.uniforms.uTime.value = time;
+      [puffLayers[4], puffLayers[5]].forEach(function (L) {
+        L.mesh.count = L.n; L.mesh.visible = L.n > 0;
+        L.mesh.instanceMatrix.needsUpdate = L.dark.needsUpdate = L.light.needsUpdate = L.ksa.needsUpdate = true;
+      });
+      puffMat.uniforms.uTime.value = time;
     }
     function drawChips(dt) {
       chips.forEach(function (list, g) {
         for (var i = list.length - 1; i >= 0; i--) {
           var c = list[i]; c.t += dt; if (c.t >= c.life) { list.splice(i, 1); continue; }
           c.v.y -= 16 * dt; c.p.addScaledVector(c.v, dt); c.ang += dt * 14;
-          if (c.smoky && c.t < 0.5 && (c.trail -= dt) <= 0) { c.trail = 0.045; puff(c.p, { s0: c.s * 0.9, s1: c.s * 2.4, life: 0.55, vel: new T.Vector3(0, 0.3, 0), alpha: 0.6 }); }
+          if (c.smoky && c.t < 0.5 && (c.trail -= dt) <= 0) { c.trail = 0.045; puff(c.p, { s0: c.s * 0.9, s1: c.s * 2.4, life: 0.55, vel: new T.Vector3(0, 0.3, 0), alpha: 0.6, order: 4 }); }
           if (c.p.y < c.s && c.v.y < 0) { c.p.y = c.s; c.v.y *= -0.35; c.v.x *= 0.6; c.v.z *= 0.6; }
         }
         var L = chipLayers[g];
@@ -396,11 +409,26 @@
     // run fn after t seconds of effect time (cleared with everything else)
     function later(t, fn) { add(new T.Object3D(), { life: 1e9, upd: function (dt, tt) { if (tt >= t) { fn(); return true; } } }); }
     // ---------- smoke: a grey puff that swells, drifts and frays away ----------
-    // (a copy in the smoke layer; when it is full the oldest, most faded puff goes)
+    // Each puff is its own mesh, as before batch 3 (2026-11-14): the user found the meteor rain weaker when the smoke was
+    // drawn as copies in one layer. batchSmoke switches the (sorted) smoke layers on, for checks that compare the looks.
+    // Rock chips are solid (drawn with the depth buffer, in any order), so drawing them as copies does not change how they
+    // look: batchChips stays on (a quarter of the meteor rain's draws).
+    var batchSmoke = false, batchChips = true;
+    function puffMesh(pos, o) {
+      var life = o.life || 0.9, s0 = o.s0 || 0.2, s1 = o.s1 || 0.6, v = o.vel ? o.vel.clone() : new T.Vector3(0, 0.6, 0), drag = o.drag === undefined ? 1.5 : o.drag;
+      var m = new T.Mesh(GEO.puff, mat(FS.smoke, { uDark: { value: C(o.dark || 0x2c2624) }, uLight: { value: C(o.light || 0x9a908a) }, uK: { value: 0 }, uSeed: { value: Math.random() * 9 }, uAlpha: { value: o.alpha === undefined ? 0.85 : o.alpha } }, { normal: true }));
+      m.position.copy(pos); m.scale.setScalar(s0); m.rotation.set(Math.random() * 6, Math.random() * 6, 0);
+      var p = add(m, { order: o.order === undefined ? 5 : o.order, life: life, upd: function (dt, t) {
+        var k = t / life; m.position.addScaledVector(v, dt); v.multiplyScalar(Math.max(0, 1 - dt * drag)); m.scale.setScalar(s0 + (s1 - s0) * ease(k)); U(p).uK.value = k;
+      } });
+      return p;
+    }
+    // (with batchSmoke: a copy in the smoke layer; when it is full the oldest, most faded puff goes)
     function puff(pos, o) {
-      o = o || {}; if (puffs.length >= PUFF_CAP) puffs.shift();
+      o = o || {}; if (!batchSmoke) return puffMesh(pos, o);
+      if (puffs.length >= PUFF_CAP) puffs.shift();
       puffs.push({ p: pos.clone(), v: o.vel ? o.vel.clone() : new T.Vector3(0, 0.6, 0), drag: o.drag === undefined ? 1.5 : o.drag, s0: o.s0 || 0.2, s1: o.s1 || 0.6, life: o.life || 0.9, t: 0,
-        q: new T.Quaternion().setFromEuler(IE.set(Math.random() * 6, Math.random() * 6, 0)), dark: C(o.dark || 0x2c2624), light: C(o.light || 0x9a908a), seed: Math.random() * 9, alpha: o.alpha === undefined ? 0.85 : o.alpha });
+        q: new T.Quaternion().setFromEuler(IE.set(Math.random() * 6, Math.random() * 6, 0)), dark: C(o.dark || 0x2c2624), light: C(o.light || 0x9a908a), seed: Math.random() * 9, alpha: o.alpha === undefined ? 0.85 : o.alpha, order: o.order === 4 ? 4 : 5 });
     }
     // ---------- a burning rock: faceted stone with a dark outline, a white-hot cap of air in front, a fire tail that
     // starts behind it (so the stone itself stays in sight) and a trail of smoke that hangs in the air after it ----------
@@ -571,9 +599,25 @@
       }
       for (var i = 0; i < (o.chips === undefined ? 7 : o.chips); i++) chip(pos, R, o.hot || 0xff7a1a);
     }
-    // a rock chip thrown out of a hit: flies, bounces, cools from glowing to dark stone, shrinks away (a copy in the chip
-    // layer of its shape; when full, the oldest goes)
+    // a rock chip thrown out of a hit: flies, bounces, cools from glowing to dark stone, shrinks away (its own mesh; with
+    // batchSmoke a copy in the chip layer of its shape, when full the oldest goes)
+    function chipMat(hot) { var l = pool.chip, m = l && l.pop(); if (!m) { m = new T.MeshLambertMaterial({ color: 0x4a3a36 }); m.userData.poolKey = 'chip'; } m.emissive.setHex(hot); return m; }
+    function chipMesh(pos, R, hot, smoky) {
+      var m = new T.Mesh(GEO.chips[(Math.random() * 3) | 0], chipMat(hot)), a = Math.random() * 6.283, sp = (2 + Math.random() * 3.5) * Math.sqrt(R);
+      var v = new T.Vector3(Math.cos(a) * sp, (3 + Math.random() * 4) * Math.sqrt(R), Math.sin(a) * sp * 0.75), ax = new T.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize(), s = (0.05 + Math.random() * 0.07) * Math.sqrt(R), ang = 0, life = 0.9 + Math.random() * 0.4, trail = 0;
+      m.position.set(pos.x, 0.15, pos.z); m.scale.setScalar(s);
+      return add(m, {
+        order: 5, life: life, upd: function (dt, t) {
+          v.y -= 16 * dt; m.position.addScaledVector(v, dt); ang += dt * 14;
+          if (smoky && t < 0.5 && (trail -= dt) <= 0) { trail = 0.045; puff(m.position, { s0: s * 0.9, s1: s * 2.4, life: 0.55, vel: new T.Vector3(0, 0.3, 0), alpha: 0.6, order: 4 }); }
+          if (m.position.y < s && v.y < 0) { m.position.y = s; v.y *= -0.35; v.x *= 0.6; v.z *= 0.6; }
+          m.quaternion.setFromAxisAngle(ax, ang); m.material.emissive.setHex(hot).multiplyScalar(Math.max(0, 1 - t / (life * 0.7)));
+          if (t > life * 0.75) m.scale.setScalar(s * Math.max(0, 1 - (t - life * 0.75) / (life * 0.25)));
+        }
+      });
+    }
     function chip(pos, R, hot, smoky) {
+      if (!batchChips) return chipMesh(pos, R, hot, smoky);
       var a = Math.random() * 6.283, sp = (2 + Math.random() * 3.5) * Math.sqrt(R), list = chips[(Math.random() * 3) | 0];
       if (list.length >= CHIP_CAP) list.shift();
       list.push({ p: new T.Vector3(pos.x, 0.15, pos.z), v: new T.Vector3(Math.cos(a) * sp, (3 + Math.random() * 4) * Math.sqrt(R), Math.sin(a) * sp * 0.75),
@@ -644,7 +688,7 @@
       parts.length = start; spikes.length = spikeStart; puffs.length = puffStart; chips.forEach(function (l, i) { l.length = chipStart[i]; }); drawSpikes(0); drawPuffs(0); drawChips(0);
       if (sc.warmLens) sc.warmLens();
     }
-    return { beam: beam, orb: orb, moon: moon, rock: rock, fireball: fireball, iceSpear: iceSpear, iceSpikes: iceSpikes, iceSpike: iceSpike, mark: mark, impact: impact, puff: puff, blast: blast, chip: chip, hole: hole, update: update, clear: clear, warm: warm, setBright: function (v) { bright = !!v; },
+    return { beam: beam, orb: orb, moon: moon, rock: rock, fireball: fireball, iceSpear: iceSpear, iceSpikes: iceSpikes, iceSpike: iceSpike, mark: mark, impact: impact, puff: puff, blast: blast, chip: chip, hole: hole, update: update, clear: clear, warm: warm, setBright: function (v) { bright = !!v; }, setBatchSmoke: function (v) { batchSmoke = !!v; }, setBatchChips: function (v) { batchChips = !!v; },
       count: function () { return parts.length + spikes.length + puffs.length + chips[0].length + chips[1].length + chips[2].length; }, spikeTops: spikeTops };
   };
 })(this);
