@@ -97,7 +97,8 @@
       var rows = [0, 1, 2].map(function (r) {
         var nodes = DATA.talents.filter(function (t) { return t.row === r; }).map(function (t) {
           var lv = (s.talents || {})[t.id] || 0, open = s.level >= TC.rowLevel[r] && (r === 0 || CW.talentSpent(s, r - 1) >= TC.rowNeed[r]);
-          return '<button class="tnode' + (selTalent === t.id ? ' sel' : '') + (open ? '' : ' lock') + (lv >= t.max ? ' max' : '') + '" data-tal="' + t.id + '"><span class="ti">' + (open ? mi('talent', t) : CW.ICO.pic('lock', 'ilock')) + '</span><b>' + lv + '/' + t.max + '</b><small>' + t.name + '</small></button>';
+          // a closed talent still shows its picture, with a small lock on its corner (design pack 2026-11-14)
+          return '<button class="tnode' + (selTalent === t.id ? ' sel' : '') + (open ? '' : ' lock') + (lv >= t.max ? ' max' : '') + '" data-tal="' + t.id + '"><span class="ti">' + mi('talent', t) + '</span>' + (open ? '' : '<i class="tlock">' + CW.ICO.pic('lock', 'ilock') + '</i>') + '<b>' + lv + '/' + t.max + '</b><small>' + t.name + '</small></button>';
         }).join('');
         return '<div class="trow">' + nodes + '</div>' + (r < 2 ? '<div class="tarrow">▼ ' + (TC.rowNeed[r + 1] ? '위에서 ' + TC.rowNeed[r + 1] + '포인트 · ' : '') + 'Lv.' + TC.rowLevel[r + 1] + '</div>' : '');
       }).join('');
@@ -275,7 +276,8 @@
     var lastPlace = '', lastSub = null;
     function hud() {
       var s = G.state, info = CW.stageInfo(s.stage), R = DATA.regions[info.region];
-      var pn = (s.diff ? '<u>' + CW.diffOf(s).name + '</u>' : '') + '<b data-t="' + R.name + '">' + R.name + '</b><i>' + CW.stageLabel(s.stage) + '</i>';
+      var mark = CW.ICO.region ? CW.ICO.region(info.region) : '';   // the region's own little mark (design-cream.js)
+      var pn = (s.diff ? '<u>' + CW.diffOf(s).name + '</u>' : '') + '<span class="rmark">' + mark + '</span><b data-t="' + R.name + '">' + R.name + '</b><i>' + CW.stageLabel(s.stage) + '</i>';
       if (pn !== lastPlace) { lastPlace = pn; $('placeName').innerHTML = pn; }
       $('goldTxt').textContent = fmt(s.gold); $('gemTxt').textContent = fmt(s.gems);
       $('lvTxt').textContent = 'Lv.' + s.level; $('xpBar').style.width = (s.level >= DATA.balance.levelMax ? 100 : Math.min(100, s.xp / CW.xpNeed(s.level) * 100)) + '%';
@@ -289,7 +291,7 @@
         $('bossHp').style.width = Math.max(0, boss.mob.hp / boss.mob.maxHp * 100) + '%';
       } else {
         kp = G.killProgress();
-        sub = s.farming ? '' : '<i class="mk"></i><b>' + kp.n + '</b><em>/ ' + kp.max + '</em>';
+        sub = s.farming ? '' : '<i class="mk">' + mark + '</i><b>' + kp.n + '</b><em>/' + kp.max + '</em>';
         $('killBar').firstChild.style.width = (s.farming ? 100 : kp.n / kp.max * 100) + '%';
         $('killBar').classList.toggle('loop', !!s.farming);
       }
@@ -336,7 +338,7 @@
         var u = DATA.upgrades[k], lv = s.up[k] || 0, max = u.max !== null && lv >= u.max, one = CW.upgradeCost(k, lv), cost = upMul > 1 ? CW.upgradeCostN(s, k, upMul) : one;
         if (!CW.upgradeOpen(s, k)) {
           var nd = CW.upgradeNeed(k), why = u.tier && (s.tier || 1) < u.tier ? u.tier + '차 전직 후에 열려요' : DATA.upgrades[nd.key].name + ' Lv.' + nd.lv + ' 달성하면 열려요';
-          return '<div class="row lockrow"><div class="ricon">' + CW.ICO.stat(k) + '</div><div class="info"><div class="name">' + u.name + '</div><div class="desc need">' + why + '</div></div><span class="lockic">🔒</span></div>';
+          return '<div class="row lockrow"><div class="ricon">' + CW.ICO.stat(k) + '</div><div class="info"><div class="name">' + u.name + '</div><div class="desc need">' + why + '</div></div><span class="lockic">' + CW.ICO.pic('lock', 'ilock') + '</span></div>';
         }
         return '<div class="row"><div class="ricon">' + CW.ICO.stat(k) + '</div><div class="info"><div class="name">' + u.name + '<span class="lv">Lv.' + lv + '</span></div><div class="desc">' + eff[k] + '</div></div>' +
           '<button class="buy ' + (max || s.gold < one ? 'off' : '') + '" data-up="' + k + '">' + (max ? '최대' : (upMul > 1 ? '<small>×' + upMul + '</small>' : '') + '<i class="coin"></i>' + fmt(cost)) + '</button></div>';
@@ -619,7 +621,7 @@
     function openTab(name) {
       tab = name; document.querySelectorAll('#tabs [data-tab]').forEach(function (x) { x.setAttribute('aria-selected', x.dataset.tab === name ? 'true' : 'false'); });
       var open = name !== 'battle';
-      $('sheet').classList.toggle('on', open); $('sheet').classList.toggle('tall', name !== 'more' && name !== 'gacha'); G.setSheet(open);
+      $('sheet').classList.toggle('on', open); $('sheet').classList.toggle('tall', name !== 'more' && name !== 'gacha'); $('sheet').classList.toggle('cream', name === 'up'); G.setSheet(open);
       if (open) { $('sheetTitle').innerHTML = ((CW.ICO.misc && CW.ICO.misc('tab', name)) || (name === 'stage' ? CW.ICO.misc('quick', 'map') : '')) + TITLES[name]; panel.scrollTop = 0; renderPanel(true); }
     }
     $('tabs').addEventListener('click', function (e) {
