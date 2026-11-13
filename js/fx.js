@@ -888,7 +888,7 @@
           // space runs out over the whole screen
           bh.ripple(15, 0.75, 0.07); bh.kill();
           P3.blast(C, { ball: true, y: C.y, size: 1.5 * cs, col: 0xb050f0, low: 0x22073e, hotness: 0.22, ringCol: c.col, ring: 4.5, chips: 0, crater: false, life: 0.85, keepAdd: true });
-          sc.flash('rgba(200,140,255,0.45)', 0.35); sc.hitStop(0.1); sc.slowmo(0.25, 0.4); sc.shake(0.7); sc.punch(0.14);
+          sc.flash('rgba(200,140,255,0.45)', 0.35); sc.slowmo(0.45, 0.45, true); sc.shake(0.7); sc.punch(0.14);
           flare(C, 0xffffff, 1.4, 0.14, { white: true });
           E({ sys: 'col', pos: C, frame: 'shock', color: c.col, size: [1, 15], ease: 1, life: 0.6, alpha: 0.7, big: true, fadeOut: 0.3 });
           fieldWave(G, c.col, 0.8, 0xff6ad8); gGlow(G, c.col, 4.2, 0.6); scorch(G, 2.6, 2.6);

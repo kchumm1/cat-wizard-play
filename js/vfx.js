@@ -236,7 +236,9 @@
         n++;
       }
       L.geo.instanceCount = n;
-      if (n) { for (var key in L.b) { L.b[key].needsUpdate = true; } }
+      // only the live part of each list goes to the graphics card (sending the whole list every frame, ~185 KB with
+      // the ribbons twice that, made a frame stall now and then while a spell was full of sparks)
+      if (n) { for (var key in L.b) { var at = L.b[key]; at.updateRange.offset = 0; at.updateRange.count = n * 4; at.needsUpdate = true; } }
     }
 
     // ---- ribbons: two batches, glowing (additive) and solid colour (normal blending) ----
@@ -248,7 +250,7 @@
       var geo = new T.BufferGeometry();
       this.PA = new T.BufferAttribute(this.pos, 3); this.CA = new T.BufferAttribute(this.col, 4); this.UA = new T.BufferAttribute(this.uv, 3);
       [this.PA, this.CA, this.UA].forEach(function (x) { if (x.setUsage) x.setUsage(T.DynamicDrawUsage); });
-      geo.setAttribute('position', this.PA); geo.setAttribute('aCol', this.CA); geo.setAttribute('aUv', this.UA); geo.setIndex(idx);
+      geo.setAttribute('position', this.PA); geo.setAttribute('aCol', this.CA); geo.setAttribute('aUv', this.UA); geo.setIndex(idx); this.geo = geo;
       this.mat = new T.ShaderMaterial({ vertexShader: RVS, fragmentShader: RFS, transparent: true, depthWrite: false, depthTest: false, blending: blending, side: T.DoubleSide });
       this.mesh = new T.Mesh(geo, this.mat); this.mesh.frustumCulled = false; this.mesh.renderOrder = order; scene.add(this.mesh);
     }
@@ -279,7 +281,7 @@
     }
     var tmpT = new T.Vector3(), tmpS = new T.Vector3(), tmpC = new T.Vector3(), lastSide = new T.Vector3(0, 1, 0);
     function writeRibbons(B, dt) {
-      var rPos = B.pos, rCol = B.col, rUv = B.uv, ribs = B.ribs;
+      var rPos = B.pos, rCol = B.col, rUv = B.uv, ribs = B.ribs, hi = 0;
       for (var r = 0; r < B.RN; r++) {
         var rb = ribs[r], base = r * RP * 2;
         if (rb) {
@@ -296,6 +298,7 @@
           }
           if (rb.dead) { ribs[r] = null; rb = null; }
         }
+        if (rb) hi = r + 1;
         var n = rb && rb.t >= 0 ? Math.min(rb.pts.length, RP) : 0;
         if (n < 2) { for (var z = 0; z < RP * 2; z++) rCol[(base + z) * 4 + 3] = 0; continue; }
         var k = rb.mode === 'trail' ? 0 : Math.min(1, rb.t / rb.life);
@@ -330,7 +333,13 @@
           }
         }
       }
-      B.PA.needsUpdate = true; B.CA.needsUpdate = true; B.UA.needsUpdate = true;
+      // new lines take the first free place, so the ones in use sit at the front: only those are drawn and sent
+      var vs = hi * RP * 2;
+      B.geo.setDrawRange(0, hi * (RP - 1) * 6);
+      if (!hi) return;
+      B.PA.updateRange.offset = 0; B.PA.updateRange.count = vs * 3; B.PA.needsUpdate = true;
+      B.CA.updateRange.offset = 0; B.CA.updateRange.count = vs * 4; B.CA.needsUpdate = true;
+      B.UA.updateRange.offset = 0; B.UA.updateRange.count = vs * 3; B.UA.needsUpdate = true;
     }
 
     // jagged path between two points, perpendicular jitter in the screen plane

@@ -65,6 +65,11 @@
     var lookAt = new T.Vector3(0, 0.55, -0.4), PITCH = 0.87, CAM_D = 16, H_HALF = 0.185, baseFov = 44;
     var camBase = new T.Vector3(0, lookAt.y + CAM_D * Math.sin(PITCH), lookAt.z + CAM_D * Math.cos(PITCH));
     var viewShift = 0, viewShiftT = 0, vw = 360, vh = 640;
+    // the canvas's size on the page, kept up to date by the browser (ResizeObserver) instead of being read for every
+    // damage number: reading it right after numbers were added makes the browser lay the page out again each time,
+    // and a spell that hits the whole crowd at once did that once per monster (a stall on phones)
+    var cssW = 360, cssH = 640;
+    if (window.ResizeObserver) new window.ResizeObserver(function () { cssW = canvas.clientWidth; cssH = canvas.clientHeight; }).observe(canvas);
     camera.position.copy(camBase); camera.lookAt(lookAt);
     scene.add(new T.HemisphereLight(0xffffff, 0x666688, 0.85));
     var sun = new T.DirectionalLight(0xffffff, 0.7); sun.position.set(3, 8, 6); scene.add(sun);
@@ -86,7 +91,7 @@
       var pr = quality === 'high' ? Math.min(window.devicePixelRatio || 1, 2) : quality === 'mid' ? Math.min(window.devicePixelRatio || 1, 1.5) : 1;
       if (pixel) { renderer.setPixelRatio(1); renderer.setSize(Math.max(1, Math.round(w / 3)), Math.max(1, Math.round(h / 3)), false); canvas.style.imageRendering = 'pixelated'; }
       else { renderer.setPixelRatio(pr); renderer.setSize(w, h, false); canvas.style.imageRendering = 'auto'; }
-      camera.aspect = w / h; vw = w; vh = h;
+      camera.aspect = w / h; vw = w; vh = h; cssW = canvas.clientWidth; cssH = canvas.clientHeight;
       // keep the same width of ground on every phone; tall screens simply see more ground above and below
       baseFov = Math.max(22, Math.min(60, 2 * Math.atan(Math.tan(H_HALF) / Math.min(w / h, 0.95)) * 180 / Math.PI));
       camera.fov = baseFov; applyShift(); camera.updateProjectionMatrix();
@@ -408,7 +413,7 @@
     var tmpV = new T.Vector3();
     function screenPos(pos) {
       tmpV.copy(pos).project(camera);
-      return { x: (tmpV.x * 0.5 + 0.5) * canvas.clientWidth, y: (-tmpV.y * 0.5 + 0.5) * canvas.clientHeight };
+      return { x: (tmpV.x * 0.5 + 0.5) * cssW, y: (-tmpV.y * 0.5 + 0.5) * cssH };
     }
     function damageText(pos, text, crit, color) {
       var slot = null; for (var i = 0; i < pool.length; i++) if (!pool[i].live) { slot = pool[i]; break; }

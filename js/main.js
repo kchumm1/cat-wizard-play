@@ -259,8 +259,13 @@
   // ---------- coins flying to the gold counter ----------
   var coins = [];
   for (var i = 0; i < 18; i++) { var el = document.createElement('i'); el.className = 'coin fly'; el.style.opacity = 0; document.body.appendChild(el); coins.push({ el: el, t: 1, d: 0.6 }); }
+  // where the stage and the gold counter are: read at most once a frame, at the first kill (reading it at every kill,
+  // after damage numbers were added, made the browser lay the page out again for each monster a spell killed at once)
+  var coinBox = null;
+  function readCoinBox() { coinBox = { stage: $('stage').getBoundingClientRect(), dst: $('goldTxt').getBoundingClientRect() }; }
   function flyCoins(pos, n) {
-    var sp = sc.screenPos(pos), stage = $('stage').getBoundingClientRect(), dst = $('goldTxt').getBoundingClientRect();
+    if (!coinBox) readCoinBox();
+    var sp = sc.screenPos(pos), stage = coinBox.stage, dst = coinBox.dst;
     for (var k = 0; k < n; k++) {
       var c = null; for (var j = 0; j < coins.length; j++) if (coins[j].t >= 1) { c = coins[j]; break; }
       if (!c) return;
@@ -436,6 +441,7 @@
   function frame(now) {
     var rdt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
     if (ready) {
+      coinBox = null;
       var gdt = sc.scaleDt(rdt) * FAST;
       tick(gdt); fx.update(gdt); sc.update(gdt, rdt);
       updateCoins(rdt);
@@ -528,7 +534,7 @@
   // test hook: advance the game by hand (the page may be hidden, which pauses animation frames)
   function step(sec, dt) {
     dt = dt || 1 / 30;
-    for (var n = Math.round(sec / dt); n > 0; n--) { var g = sc.scaleDt(dt) * FAST; tick(g); fx.update(g); sc.update(g, dt); updateCoins(dt); }
+    for (var n = Math.round(sec / dt); n > 0; n--) { coinBox = null; var g = sc.scaleDt(dt) * FAST; tick(g); fx.update(g); sc.update(g, dt); updateCoins(dt); }
     applyLook(); ui.hud(); ui.slots(); ui.renderPanel(); sc.render();
   }
   root.GAME = { G: G, sc: sc, fx: fx, ui: ui, step: step, isReady: function () { return ready; }, get state() { return state; } };
