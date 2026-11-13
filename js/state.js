@@ -30,13 +30,22 @@
   function save(state, storage) {
     try { if (!storage) return false; state.lastSeen = Date.now(); storage.setItem(KEY, JSON.stringify(state)); return true; } catch (e) { return false; }
   }
+  // 2체인/3체인 were replaced by 약점 피해 / 폭주 피해: sigils change their stat (their value is worked out from it),
+  // gear potential lines keep their roll but move to the new range (ten times the old numbers)
+  function migrateChain(s) {
+    var MAP = { chain2: 'weakDmg', chain3: 'surgeDmg' };
+    ((s.sigil && s.sigil.items) || []).forEach(function (it) { if (MAP[it.stat]) it.stat = MAP[it.stat]; });
+    var bag = s.bag || {};
+    Object.keys(bag).forEach(function (k) { (bag[k] && bag[k].pot || []).forEach(function (p) { if (p.stat === 'chain2') { p.stat = 'weakDmg'; p.val = (p.val || 0) * 10; } }); });
+    return s;
+  }
   function load(storage) {
     try {
       if (!storage) return null;
       var raw = storage.getItem(KEY); if (!raw) return null;
       var obj = JSON.parse(raw);
       if (!obj || typeof obj !== 'object' || typeof obj.stage !== 'number') return null;
-      return fill(newState(), obj);
+      return migrateChain(fill(newState(), obj));
     } catch (e) { return null; }
   }
   // save code: the whole progress as one copy-and-paste text, to move it between phones without a server

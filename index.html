@@ -198,10 +198,6 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .buy small{font-size:11px;opacity:.8}
 .presets{display:flex;align-items:center;gap:6px;margin-top:8px}.presets .btn{min-width:48px}
 /* Round 4: training, chains, dungeons */
-#chainBanner{position:absolute;right:max(12px,env(safe-area-inset-right,0px));top:58%;text-align:right;font:400 30px var(--display);color:#fff;-webkit-text-stroke:5px #4a1a08;paint-order:stroke fill;opacity:0;transform:translateX(30px) scale(.8);transition:opacity .2s,transform .2s;pointer-events:none}
-#chainBanner small{display:block;font:700 12px var(--body);-webkit-text-stroke:0;color:#ffe9a0;text-shadow:0 1px 3px #000}
-#chainBanner.on{opacity:1;transform:none}
-#chainBanner.c2{color:#ffb84a}#chainBanner.c3{color:#ff5a4a;font-size:38px;text-shadow:0 0 18px #ffb02e}
 #dunHud{position:absolute;left:50%;top:calc(96px + env(safe-area-inset-top,0px));transform:translateX(-50%);display:none;gap:10px;align-items:center;background:rgba(20,12,40,.78);border:1px solid #ffd84a66;border-radius:14px;padding:6px 12px;font:400 14px var(--display);white-space:nowrap;pointer-events:none}
 #dunHud.on{display:flex}#dunHud b{color:var(--gold)}
 .manaline,.tpoints,.codexbar{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--panel);border-radius:14px;padding:10px 12px;margin-bottom:8px;font:400 15px var(--display);flex-wrap:wrap}
@@ -768,7 +764,7 @@ html,body{background:var(--ink);color:var(--text)}
 #gainlog{left:var(--m);font:400 13px var(--display);text-shadow:0 1px 0 var(--ol),0 0 4px var(--ol)}
 .coin.fly{z-index:4}
 .dmg{font-family:var(--impact);letter-spacing:.01em}
-#banner,#chainBanner,.reveal{font-family:var(--impact)}
+#banner,.reveal{font-family:var(--impact)}
 #tabs{background:linear-gradient(180deg,#1a2148,#0f1330);box-shadow:0 -2px 0 var(--ol),0 -10px 24px rgba(4,6,20,.5);padding-left:8px;padding-right:8px}
 #tabs::before{background:linear-gradient(90deg,transparent,rgba(255,255,255,.2) 20%,rgba(255,255,255,.2) 80%,transparent)}
 #tabs button{font:400 12px var(--display);color:var(--muted);letter-spacing:0}
@@ -1021,6 +1017,12 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 .dmgset .info{width:100%}
 .dmgset input[type=range]{width:100%;margin:8px 0 2px;accent-color:var(--gold);height:26px}
 .dmgval{font:400 13px var(--display);color:var(--gold);margin-left:4px}
+/* mana surge gauge over the skill row, weak-hit label on damage numbers */
+#surgeGauge{position:relative;width:min(250px,64%);height:9px;margin:0 auto;border-radius:6px;background:rgba(10,8,30,.7);box-shadow:0 0 0 1.5px var(--ol),inset 0 0 0 1px rgba(255,255,255,.12)}
+#surgeGauge i{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:6px;background:linear-gradient(90deg,#7b5cff,#d07bff 60%,#ffd0ff);transition:width .2s}
+#surgeGauge b{position:absolute;left:-34px;top:50%;transform:translateY(-50%);font:400 10px var(--display);color:#e6d8ff;text-shadow:0 1px 0 var(--ol)}
+#surgeGauge.full i{box-shadow:0 0 10px #d07bff,0 0 4px #fff;animation:surgePulse .5s ease-in-out infinite alternate}
+@keyframes surgePulse{to{filter:brightness(1.4)}}
 /* ==THEME-END== */
 @media (prefers-reduced-motion:reduce){#killBar i,.ico .orb,.sk.now .ico,.rlines .flow,.rcore.lit,.isg,.gart .gimg,.gart .gstaff,.gshine::after{animation:none!important}}
 </style>
@@ -1040,14 +1042,13 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
     </div>
     <div id="quick" aria-label="바로가기"><button data-quick="map"><i></i><span>지도</span></button><button data-quick="alch"><i></i><span>물약</span></button><button data-quick="rune"><i></i><span>룬</span></button><button data-quick="sigil"><i></i><span>신성력</span></button></div>
     <div id="banner"></div>
-    <div id="chainBanner"></div>
     <div id="dunHud"></div>
     <div id="gainlog" aria-live="off"></div>
     <div id="buffs" aria-label="켜진 물약"></div>
   </div>
   <div id="skillbar">
     <div id="qrow"><div id="quest"><b>목표</b><span id="questTxt"></span></div><div id="pre" role="group" aria-label="스킬 프리셋"></div></div>
-    <div class="slots" id="slots"></div>
+    <div id="surgeGauge" aria-label="마력 폭주 게이지"><i id="surgeFill"></i><b>폭주</b></div><div class="slots" id="slots"></div>
   </div>
   <section id="sheet" aria-label="메뉴"><div class="sheet-head"><b id="sheetTitle">강화</b><button id="sheetClose">닫기</button></div><main id="panel" aria-live="polite"></main></section>
   <nav id="tabs" role="tablist">

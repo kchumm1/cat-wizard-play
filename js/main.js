@@ -206,9 +206,11 @@
     var s = rot.next(); if (!s) { castT = 0.5; return; }
     nowSlot = rot.index();
     var tg = pickTargets(s); if (tg[0]) sc.heroFaceTo(tg[0].x);
-    var chain = CW.rollChain(st);
-    if (chain > 1) { ui.chain(chain, s.name); sc.shake(0.12 * chain); if (chain === 3) sc.flash('rgba(255,200,120,0.28)', 0.2); }
-    fx.cast(s, state.tier, tg, onHit(s, CW.chainMul(chain)), st.speedMul, CW.skillLevel(state, s.id) + (chain - 1) * 14);
+    // mana surge: when the gauge is full this cast hits far harder and is drawn bigger
+    var surge = CW.surgeTick(state, st), weak = CW.isWeak(s, CW.regionOf(state));
+    if (surge) { sc.shake(0.3); sc.flash('rgba(190,140,255,0.32)', 0.22); }
+    fx.cast(s, state.tier, tg, onHit(s, (surge ? st.surgeMul : 1) * (weak ? st.weakMul : 1)), st.speedMul, CW.skillLevel(state, s.id) + (surge ? 30 : 0));
+    ui.surgeGauge(state.surge || 0, DATA.surgeConf.charge);
     snd.play('cast');
     castT = CW.castTime(s, st.speedMul);
   }

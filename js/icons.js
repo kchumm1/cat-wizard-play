@@ -113,7 +113,7 @@
     s += sh(cut, gcol) + '<g transform="translate(32 34) scale(.66) translate(-32 -34)">' + hl(cut, lite(gcol, 0.3)) + '</g>' + hl('M32 34L18 34 32 ' + (band ? 16 : 20) + 'Z', '#ffffff', 0.22) + hl('M32 34L46 34 32 ' + (band ? 53 : 49) + 'Z', '#000000', 0.16);
     if (band >= 2) s += '<ellipse cx="32" cy="8" rx="10" ry="3.4" fill="none" stroke="' + O + '" stroke-width="4.6"/><ellipse cx="32" cy="8" rx="10" ry="3.4" fill="none" stroke="#ffe9a0" stroke-width="2.2"/>';
     if (band >= 4) s += sh('M24 13l3 4 5-8 5 8 3-4v8H24z', '#ffd84a', 1.6);
-    s += stat === 'chain2' ? rings([28, 36]) : stat === 'chain3' ? rings([25, 32, 39]) : '<path d="' + (EMB[stat] || EMB.atkPct)() + '" fill="#fff" fill-rule="evenodd" stroke="' + O + '" stroke-width="1.7" stroke-linejoin="round"/>';
+    s += stat === 'weakDmg' ? rings([20, 30]) + '<circle cx="32" cy="32" r="5" fill="#fff"/>' : '<path d="' + (EMB[stat] || EMB.atkPct)() + '" fill="#fff" fill-rule="evenodd" stroke="' + O + '" stroke-width="1.7" stroke-linejoin="round"/>';
     if (odd) s += spark(51, 16, 4.5) + spark(13, 52, 3.5);
     if (q !== undefined) { var n = q < 0.2 ? 1 : q < 0.4 ? 2 : q < 0.6 ? 3 : q < 0.85 ? 4 : 5; for (var i = 0; i < n; i++) s += '<circle cx="' + (32 + (i - (n - 1) / 2) * 6) + '" cy="60.5" r="2.2" fill="#ffe14a" stroke="' + O + '" stroke-width="1"/>'; }
     return svg(s, 'isg b' + band);

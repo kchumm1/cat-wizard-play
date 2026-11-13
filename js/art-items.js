@@ -27,7 +27,7 @@
   if (CW.GEAR_IMG) KINDS.forEach(function (k) { CW.GEAR_IMG[k] = gearPic(k, 1); });
 
   // ---------- sigils (신성력) ----------
-  var BOLT = { superRate: 1, ultraRate: 1, hyperRate: 1, megaRate: 1, critDmg: 1, superDmg: 1, chain2: 1, chain3: 1 };
+  var BOLT = { superRate: 1, ultraRate: 1, hyperRate: 1, megaRate: 1, critDmg: 1, superDmg: 1, weakDmg: 1, surgeDmg: 1 };
   var sigil0 = I.sigil, MARK = {};
   // the stat mark of the drawn sigil, shown small in the corner so sigils of one grade can still be told apart
   function mark(stat) {

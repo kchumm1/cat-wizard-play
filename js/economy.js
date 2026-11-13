@@ -60,7 +60,7 @@
     state.up[key] = lv + 1;
     return true;
   }
-  var BONUS_KEYS = ['chain2', 'chain3', 'finalPct', 'atk', 'atkPct', 'critRate', 'critDmg', 'goldMul', 'skillDmg', 'speed', 'bossDmg', 'normalDmg', 'xpMul', 'superRate', 'superDmg', 'ultraRate', 'ultraDmg', 'hyperRate', 'hyperDmg', 'megaRate', 'megaDmg', 'ultimateRate', 'ultimateDmg', 'alphaRate', 'alphaDmg', 'potion', 'potionGold', 'potionXp'];
+  var BONUS_KEYS = ['weakDmg', 'surgeDmg', 'surgeRate', 'finalPct', 'atk', 'atkPct', 'critRate', 'critDmg', 'goldMul', 'skillDmg', 'speed', 'bossDmg', 'normalDmg', 'xpMul', 'superRate', 'superDmg', 'ultraRate', 'ultraDmg', 'hyperRate', 'hyperDmg', 'megaRate', 'megaDmg', 'ultimateRate', 'ultimateDmg', 'alphaRate', 'alphaDmg', 'potion', 'potionGold', 'potionXp'];
   // every source of bonuses (gear, relics, costumes, star items, skill collection) adds into one object
   var SOURCES = [['gear', 'gearStats'], ['relics', 'relicStats'], ['costume', 'costumeStats'], ['divine', 'divineStats'], ['skills', 'skillOwnedStats'], ['training', 'trainingStats'], ['runes', 'runeStats'], ['sigil', 'sigilStats'], ['alchemy', 'alchemyStats']];
   function gearBonus(state) {
@@ -87,8 +87,9 @@
       bossDmg: 1 + gb.bossDmg,
       normalDmg: 1 + gb.normalDmg,
       finalMul: (1 + gb.finalPct) * (1 + gb.potion),
-      chain2Rate: Math.min(DATA.chainConf.max2, DATA.chainConf.base2 + gb.chain2),
-      chain3Rate: Math.min(DATA.chainConf.max3, DATA.chainConf.base3 + gb.chain3),
+      weakMul: DATA.weakConf.mul * (1 + (gb.weakDmg || 0)),
+      surgeMul: DATA.surgeConf.mul * (1 + (gb.surgeDmg || 0)),
+      surgeRate: 1 + (gb.surgeRate || 0),
       xpMul: (1 + gb.xpMul) * (1 + gb.potionXp),
       skillLv: state.skillLv || {},
       superRate: Math.min(0.6, (u.superCrit || 0) * B.superPerLevel + (gb.superRate || 0)),
@@ -114,14 +115,18 @@
     if (o.shocked) d *= B.shockBonus;
     return cap(d);
   }
-  // chain casting: every cast is chain 1; chain 2 and then chain 3 may follow and multiply the whole cast
-  function rollChain(st, rng) {
-    rng = rng || Math.random;
-    if (!(rng() < (st.chain2Rate || 0))) return 1;
-    return rng() < (st.chain3Rate || 0) ? 3 : 2;
+  // element weakness: is this skill's element one the region is weak to? (tier-9 skills carry every element)
+  function regionOf(state) { return Math.max(0, Math.min(DATA.regions.length - 1, Math.floor(Math.max(0, state.stage || 0) / 31))); }
+  function isWeak(skill, region) { var R = DATA.regions[region]; return !!(skill && R && R.weak && (skill.el === 'all' || R.weak.indexOf(skill.el) >= 0)); }
+  // mana surge: the gauge fills with every cast; at full the cast is a surge. Returns true when this cast surges.
+  function surgeTick(state, st) {
+    var g = (state.surge || 0) + (st.surgeRate || 1);
+    if (g >= DATA.surgeConf.charge) { state.surge = g - DATA.surgeConf.charge; return true; }
+    state.surge = g; return false;
   }
-  function chainMul(c) { return DATA.chainConf.mul[Math.max(1, Math.min(3, c)) - 1]; }
-  function chainFactor(st) { var p2 = st.chain2Rate || 0, p3 = st.chain3Rate || 0; return (1 - p2) + p2 * ((1 - p3) * chainMul(2) + p3 * chainMul(3)); }
+  // the average boost a surge gives over many casts
+  function surgeFactor(st) { return 1 + (st.surgeMul - 1) * Math.min(1, (st.surgeRate || 1) / DATA.surgeConf.charge); }
+  function weakFactor(state, st, skill) { return isWeak(skill, regionOf(state)) ? st.weakMul : 1; }
   // tiers 1..7: crit, super, ultra, hyper, mega, ultimate, alpha
   function tierRates(st) { return [st.critRate || 0, st.superRate || 0, st.ultraRate || 0, st.hyperRate || 0, st.megaRate || 0, st.ultimateRate || 0, st.alphaRate || 0]; }
   function tierDmgs(st) { return [st.critDmg, st.superDmg || B.superDmg, st.ultraDmg || B.ultraDmg, st.hyperDmg || B.hyperDmg, st.megaDmg || B.megaDmg, st.ultimateDmg || B.ultimateDmg, st.alphaDmg || B.alphaDmg]; }
@@ -145,7 +150,7 @@
     var dmg = 0, time = 0;
     (state.slots || []).forEach(function (id) {
       var s = skillById(id); if (!s) return;
-      dmg += hitDamage(st, s, {}) * Math.min(s.targets, 3) * critFactor(st) * chainFactor(st);
+      dmg += hitDamage(st, s, {}) * Math.min(s.targets, 3) * critFactor(st) * surgeFactor(st) * weakFactor(state, st, s);
       time += (s.dur + B.gap) / st.speedMul;
     });
     return time > 0 ? cap(dmg / time) : 0;
@@ -156,7 +161,7 @@
     var dmg = 0, time = 0;
     (state.slots || []).forEach(function (id) {
       var s = skillById(id); if (!s) return;
-      dmg += hitDamage(st, s, { boss: true }) * critFactor(st) * chainFactor(st) * (s.status === 'freeze' || s.status === 'shock' ? 1.1 : 1);
+      dmg += hitDamage(st, s, { boss: true }) * critFactor(st) * surgeFactor(st) * weakFactor(state, st, s) * (s.status === 'freeze' || s.status === 'shock' ? 1.1 : 1);
       time += (s.dur + B.gap) / st.speedMul;
     });
     return time > 0 ? cap(dmg / time) : 0;
@@ -169,7 +174,7 @@
   return {
     stageMonsterHp: stageMonsterHp, stageBossHp: stageBossHp, stageGold: stageGold, diffOf: diffOf,
     monsterHp: monsterHp, bossHp: bossHp, monsterGold: monsterGold, bossGems: bossGems,
-    rollChain: rollChain, chainMul: chainMul, chainFactor: chainFactor, upgradeCostN: upgradeCostN, tryUpgradeN: tryUpgradeN, upgradeOpen: upgradeOpen, upgradeNeed: upgradeNeed, rollCrit: rollCrit, critFactor: critFactor, upgradeCost: upgradeCost, tryUpgrade: tryUpgrade, stats: stats, hitDamage: hitDamage,
+    isWeak: isWeak, regionOf: regionOf, surgeTick: surgeTick, surgeFactor: surgeFactor, weakFactor: weakFactor, upgradeCostN: upgradeCostN, tryUpgradeN: tryUpgradeN, upgradeOpen: upgradeOpen, upgradeNeed: upgradeNeed, rollCrit: rollCrit, critFactor: critFactor, upgradeCost: upgradeCost, tryUpgrade: tryUpgrade, stats: stats, hitDamage: hitDamage,
     dps: dps, bossDps: bossDps, killsPerSecond: killsPerSecond, goldPerSecond: goldPerSecond, skillById: skillById,
     isRegionBoss: isRegionBoss, isMiniBoss: isMiniBoss
   };

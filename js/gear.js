@@ -86,7 +86,7 @@
   }
   function addStat(r, stat, v) { if (stat === 'speedBoss') { r.speed += v; r.bossDmg += v * 8; } else r[stat] = (r[stat] || 0) + v; }
   function gearStats(state) {
-    var r = { atk: 0, atkPct: 0, critRate: 0, critDmg: 0, goldMul: 0, skillDmg: 0, speed: 0, bossDmg: 0, superRate: 0, chain2: 0, finalPct: 0 };
+    var r = { atk: 0, atkPct: 0, critRate: 0, critDmg: 0, goldMul: 0, skillDmg: 0, speed: 0, bossDmg: 0, superRate: 0, weakDmg: 0, finalPct: 0 };
     var b = state.bag || {}, eq = state.equip || {};
     for (var k in b) { if (!validKey(k)) continue; var p = parseKey(k); addStat(r, DATA.kindStat[p.kind], ownedValue(p.kind, p.t, b[k].lv, b[k].star)); }
     DATA.kinds.forEach(function (kind) {
