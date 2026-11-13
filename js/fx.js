@@ -40,6 +40,8 @@
     function capS(v, m) { return Array.isArray(v) ? [Math.min(v[0], m), Math.min(v[1], m)] : Math.min(v, m); }
     // the play field as the camera sees it: spells may now spread over all of it
     var FC = V(0, 0, -0.4);
+    // skills drawn without any rune ring (the 'circle' picture): the user found the magic circles in element storm tacky
+    var NO_CIRCLE = { elementStorm: 1 };
     function fieldPt(y) { var z = rr(-4.3, 3.4); return V(rr(-1, 1) * (1.9 + (3.8 - z) * 0.15), y || 0, z); }
     // n spots scattered over the whole field, one after another
     function fieldPops(c, n, t0, gap, fn) { for (var i = 0; i < n; i++) (function (i) { after(c.D(t0 + i * gap + rr(0, gap)), function () { fn(fieldPt(0), i); }); })(i); }
@@ -159,7 +161,7 @@
     function spellCharge(c) {
       var G = c.center.clone().setY(0.045), grade = c.sk.tier || 1;
       var r = Math.min(5.2, 1.6 + grade * 0.32), life = c.D(0.5);
-      E({ sys: 'gadd', pos: G, frame: 'circle', color: c.deep, size: [r * 0.65, r], life: life,
+      if (!c.noCircle) E({ sys: 'gadd', pos: G, frame: 'circle', color: c.deep, size: [r * 0.65, r], life: life,
         spin: -1.8, alpha: 0.38, ease: 2, fadeIn: 0.08, fadeOut: 0.6 });
       E({ pos: c.from, frame: 'crescent', color: c.col, size: [0.3, 0.85], life: c.D(0.28),
         spin: 13, alpha: 0.8, fadeOut: 0.55 });
@@ -202,7 +204,7 @@
       if (finale && grade >= 5) {
         var C = c.center.clone().setY(0.65), G = c.center.clone().setY(0.04);
         var radius = Math.min(9, (3.2 + grade * 0.55) * s);
-        E({ sys: 'gadd', pos: G, frame: 'circle', color: c.deep, size: [radius * 0.35, radius],
+        if (!c.noCircle) E({ sys: 'gadd', pos: G, frame: 'circle', color: c.deep, size: [radius * 0.35, radius],
           life: c.D(0.65), spin: -2.4, ease: 1, alpha: 0.35, fadeOut: 0.3 });
         gRing(G, c.col, radius, c.D(0.55));
         ring(C, c.col, Math.min(7, radius), c.D(0.48), { alpha: 0.65, delay: c.D(0.08) });
@@ -1133,7 +1135,7 @@
     function tint(base, tier) { var col = new T.Color(base); if (tier >= 5) col.lerp(new T.Color(0xffffff), 0.12); return col.getHex(); }
     function cast(skill, tier, targets, hit, speedMul, lv) {
       var sp = speedMul || 1; lv = lv || 0;
-      var c = { sk: skill, tier: tier, lv: lv, col: tint(skill.color, tier), s: 1.12 * (1 + 0.08 * (tier - 1)) * (1 + 0.018 * lv), n: Math.min(2.4, 1 + 0.1 * (tier - 1) + 0.025 * lv), sp: sp,
+      var c = { sk: skill, noCircle: !!NO_CIRCLE[skill.id], tier: tier, lv: lv, col: tint(skill.color, tier), s: 1.12 * (1 + 0.08 * (tier - 1)) * (1 + 0.018 * lv), n: Math.min(2.4, 1 + 0.1 * (tier - 1) + 0.025 * lv), sp: sp,
         D: function (t) { return t / sp; }, deep: deep(tint(skill.color, tier)), from: sc.heroPaw(), targets: targets.slice(), hit: hit || function () { } };
       c.center = crowdCenter(c.targets);
       c.epoch = epoch;
@@ -1167,10 +1169,10 @@
       spellCharge(c);
       var H = sc.heroCenter();
       // casting circle: two rune rings under the feet, sparks rising, a coloured seal at the paw
-      E({ sys: 'gadd', pos: V(H.x, 0.045, H.z), frame: 'circle', color: c.col, size: [0.3, 1.2 + 0.03 * lv], ease: 2, life: c.D(0.55), spin: 3, fadeIn: 0.1, fadeOut: 0.5, alpha: 0.95 });
+      if (!c.noCircle) E({ sys: 'gadd', pos: V(H.x, 0.045, H.z), frame: 'circle', color: c.col, size: [0.3, 1.2 + 0.03 * lv], ease: 2, life: c.D(0.55), spin: 3, fadeIn: 0.1, fadeOut: 0.5, alpha: 0.95 });
       E({ sys: 'gadd', pos: V(H.x, 0.05, H.z), frame: 'ring', color: 0xffffff, size: [0.3, 1.1], ease: 1, life: c.D(0.35), alpha: 0.6 });
       for (var q = 0; q < N(8, c); q++) { var qa = rr(0, 6.28); E({ pos: V(H.x + Math.cos(qa) * 0.6, 0.1, H.z + Math.sin(qa) * 0.45), vel: V(0, rr(1.6, 2.8), 0), frame: pick(['star', 'dot']), color: [0xffffff, c.col], size: [0.1, 0], life: rr(0.35, 0.6), drag: 0.6, spin: 6 }); }
-      seal(c.from.clone().add(V(0, 0, 0.1)), c.col, 0.55 * c.s, c.D(0.3));
+      if (!c.noCircle) seal(c.from.clone().add(V(0, 0, 0.1)), c.col, 0.55 * c.s, c.D(0.3));
       if (lv >= 10) E({ pos: H.clone().add(V(0, 0.2, 0.05)), frame: 'glow', color: c.col, size: [1.6, 0.4], life: c.D(0.4), alpha: 0.35 });
       if (tier >= 4) after(c.D(0.12), function () { sc.ghost(c.col); });
       (S[skill.shape] || S.bolt3)(c);
