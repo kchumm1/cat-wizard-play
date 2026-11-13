@@ -18,8 +18,14 @@
     'vec3 ramp3(float t,vec3 lo,vec3 mid){t=clamp(t,0.0,1.0);return t<0.5?mix(lo,mid,t*2.0):mix(mid,vec3(1.0,0.97,0.86),(t-0.5)*2.0);}',
     'vec3 ramp(float t,vec3 mid){return ramp3(t,vec3(0.42,0.05,0.07),mid);}'
   ].join('\n');
-  var VARY = 'varying vec2 vUv; varying vec3 vN; varying vec3 vV; varying vec3 vP; varying vec3 vWN; uniform float uTime,uBright;\n';
-  var VS = VARY + 'void main(){vUv=uv;vP=position;vec4 mv=modelViewMatrix*vec4(position,1.0);vN=normalize(normalMatrix*normal);vV=normalize(-mv.xyz);vWN=normalize(mat3(modelMatrix)*normal);gl_Position=projectionMatrix*mv;}';
+  // vIC: the instance's own colour when a mesh draws many copies at once (the ice crystal layer), else white.
+  // A copy's normal for vN goes through the inverse-transpose of its own (unevenly scaled) matrix, as normalMatrix does
+  // for one mesh: im*(n/s^2) = R*S^-1*n; vWN keeps the plain im*n, as one mesh's mat3(modelMatrix)*n did
+  var VARY = 'varying vec2 vUv; varying vec3 vN; varying vec3 vV; varying vec3 vP; varying vec3 vWN; varying vec3 vIC; uniform float uTime,uBright;\n';
+  var VS = VARY + 'void main(){vUv=uv;vP=position;vec4 lp=vec4(position,1.0);vec3 ln=normal,cn=normal;vIC=vec3(1.0);\n' +
+    '#ifdef USE_INSTANCING\nmat3 im=mat3(instanceMatrix);lp=instanceMatrix*lp;ln=im*normal;cn=im*(normal/vec3(dot(im[0],im[0]),dot(im[1],im[1]),dot(im[2],im[2])));\n#endif\n' +
+    '#ifdef USE_INSTANCING_COLOR\nvIC=instanceColor;\n#endif\n' +
+    'vec4 mv=modelViewMatrix*lp;vN=normalize(normalMatrix*cn);vV=normalize(-mv.xyz);vWN=normalize(mat3(modelMatrix)*ln);gl_Position=projectionMatrix*mv;}';
   // the beam tube: grows from the paw (thin there), its width ripples along it as the light pours out
   var VS_TUBE = VARY + 'uniform float uLen,uOpen,uWob;\n' +
     'void main(){vUv=uv;vec3 p=position;float s=uv.y*uLen;' +
@@ -58,8 +64,11 @@
     moon: 'uniform vec3 uLit,uDark,uRim,uL;uniform float uAlpha;void main(){vec3 N=normalize(vN);' + F +
       'float lit=smoothstep(-0.08,0.38,dot(N,normalize(uL)));' +
       'float sea=smoothstep(0.02,0.24,fbm(vP*2.6)),dots=smoothstep(0.5,0.72,n3(vP*7.5)*0.5+0.5);' +
-      'vec3 surf=mix(uLit,uLit*0.7,sea*0.75+dots*0.35);vec3 c=mix(uDark,surf,lit);' +
-      'c+=uRim*pow(1.0-f,3.0)*(0.35+0.9*lit);gl_FragColor=vec4(c,uAlpha*(0.5+0.5*lit));}',
+      'vec3 surf=mix(uLit,uLit*0.7,sea*0.75+dots*0.35);surf*=1.0-0.2*uBright;vec3 c=mix(uDark,surf,lit);' +
+      'c+=uRim*pow(1.0-f,3.0)*(0.35+0.9*lit)*(1.0-uBright);' +
+      // on snow or sand the white face sinks into the ground and the see-through dark side reads as a faint disk:
+      // there it is a little greyer, solid, and edged dark
+      'c=mix(c,uDark*0.55,uBright*smoothstep(0.55,0.95,1.0-f));gl_FragColor=vec4(c,uAlpha*mix(0.5+0.5*lit,1.0,uBright));}',
     // a rock: faceted grey-brown stone lit from above, pitted, with thin glowing cracks; only the face it flies into is
     // white hot, so the dark body and its outline stay readable even when it is past in a moment
     rock: 'uniform vec3 uHot,uDir,uBase;uniform float uHeat;void main(){vec3 N=normalize(vWN);' +
@@ -91,7 +100,7 @@
       'float rim=pow(1.0-f,2.0),facet=0.5+0.5*dot(N,normalize(vec3(0.4,0.8,0.45)));' +
       'float glint=pow(max(dot(reflect(-normalize(vV),normalize(vN)),normalize(vec3(0.25,0.55,0.8))),0.0),20.0);' +
       'float inner=fb(vP*vec3(3.0,1.1,3.0)+vec3(0.0,-uTime*2.0,uSeed));' +
-      'vec3 c=mix(uDeep,uCol,facet*0.75+inner*0.35);c=mix(c,vec3(1.0),clamp(rim*0.7+glint,0.0,1.0));' +
+      'vec3 c=mix(uDeep,uCol*vIC,facet*0.75+inner*0.35);c=mix(c,vec3(1.0),clamp(rim*0.7+glint,0.0,1.0));' +
       'float al=(0.45+0.35*facet+rim*0.5+glint)*uAlpha;gl_FragColor=vec4(c,clamp(al,0.0,1.0));}',
     // the white-hot air in front of a falling rock: a cap (half ball, pole into the wind) that streams back
     sheath: 'uniform vec3 uCol;uniform float uAlpha;void main(){' + F +
@@ -229,10 +238,16 @@
       m = new T.ShaderMaterial({ uniforms: uni, vertexShader: vs || VS, fragmentShader: VARY + NOISE + '\n' + fs, transparent: !o.solid, depthWrite: depthWrite, depthTest: depthTest, blending: blending, side: side });
       m.userData.poolKey = key; return m;
     }
-    // one outline material for every falling stone; one pool for the lit rock chips
+    // one outline material for every falling stone
     var LINE = new T.MeshBasicMaterial({ color: 0x170d0a, side: T.BackSide }); LINE.userData.keep = true;
     var ICE_LINE = new T.MeshBasicMaterial({ color: 0x17407a, side: T.BackSide }); ICE_LINE.userData.keep = true;
-    function chipMat(hot) { var l = pool.chip, m = l && l.pop(); if (!m) { m = new T.MeshLambertMaterial({ color: 0x4a3a36 }); m.userData.poolKey = 'chip'; } m.emissive.setHex(hot); return m; }
+    // a spear's outline in another colour: one kept material per colour
+    var LINE_MATS = {};
+    function lineMat(hex) {
+      if (hex === undefined || hex === 0x17407a) return ICE_LINE;
+      var m = LINE_MATS[hex]; if (!m) { m = new T.MeshBasicMaterial({ color: hex, side: T.BackSide }); m.userData.keep = true; LINE_MATS[hex] = m; }
+      return m;
+    }
     function add(mesh, o) {
       o = o || {}; mesh.renderOrder = o.order === undefined ? 6 : o.order; mesh.frustumCulled = false; group.add(mesh);
       var p = { mesh: mesh, upd: o.upd || null, t: 0, life: o.life || 1e9, dead: false }; parts.push(p); return p;
@@ -244,6 +259,103 @@
     }
     function U(p) { return p.mesh.material.uniforms; }
     function ease(x) { x = Math.max(0, Math.min(1, x)); return 1 - Math.pow(1 - x, 3); }
+
+    // ---------- the ice crystal layer ----------
+    // Every ice spike is one copy in two shared meshes (the crystal and its outline), so all spikes together cost two
+    // draws a frame; a mesh per spike cost two draws each (ice lance's group drew 341 times a frame, 2026-11-14). The
+    // layer has its own materials: a material drawn both as many copies and as one mesh would switch programs each frame.
+    var CAP = 256, spikes = [], spikeId = 0, IM = new T.Matrix4(), IP = new T.Vector3(), IS = new T.Vector3(), IV = new T.Vector3();
+    var layerBody = new T.InstancedMesh(GEO.crystal, mat(FS.ice, { uCol: { value: C(0xffffff) }, uDeep: { value: C(0x2a6cff) }, uAlpha: { value: 0.9 }, uSeed: { value: 3.1 } }, { normal: true }), CAP);
+    var layerLine = new T.InstancedMesh(GEO.crystal, ICE_LINE.clone(), CAP);
+    [layerBody, layerLine].forEach(function (m) { m.renderOrder = 5; m.frustumCulled = false; m.count = 0; m.visible = false; m.name = 'spike3d layer'; group.add(m); });
+    // (made at full size here: setColorAt would size it by the live count, which is 0 now)
+    layerBody.instanceColor = new T.InstancedBufferAttribute(new Float32Array(CAP * 3), 3);
+    // s: { x, z, h (height), w (width), tilt (Quaternion), col (Color), delay, life }
+    function addSpike(s) { if (spikes.length >= CAP) spikes.shift(); s.id = ++spikeId; s.t = 0; spikes.push(s); }
+    // shoots up in 0.1 s, stands, and in the last 32% of its life sinks all the way under the ground (tip and tilted edge
+    // too), so it never vanishes in the air: when its life is over it is drawn once more fully sunk, then taken away
+    // (at any frame rate; a frame of a short-lived spike can be longer than its whole sinking)
+    function spikeNow(s) {
+      var k = Math.max(0, s.t - s.delay), up = ease(k / 0.1), sink = Math.min(1, Math.max(0, (s.t - s.life * 0.68) / (s.life * 0.32))), hh = s.h * Math.max(0.001, up);
+      IP.set(s.x, hh * 0.42 - sink * hh * 1.5, s.z); return hh;
+    }
+    function drawSpikes(dt) {
+      for (var i = spikes.length - 1; i >= 0; i--) {
+        var sp = spikes[i]; if (sp.sunk) { spikes.splice(i, 1); continue; }
+        sp.t += dt; if (sp.t >= sp.life) { sp.t = sp.life; sp.sunk = true; }
+      }
+      for (var j = 0; j < spikes.length; j++) {
+        var s = spikes[j], hh = spikeNow(s);
+        layerBody.setMatrixAt(j, IM.compose(IP, s.tilt, IS.set(s.w, hh, s.w))); layerBody.setColorAt(j, s.col);
+        layerLine.setMatrixAt(j, IM.compose(IP, s.tilt, IS.set(s.w * 1.18, hh * 1.04, s.w * 1.18)));
+      }
+      layerBody.count = layerLine.count = spikes.length; layerBody.visible = layerLine.visible = spikes.length > 0;
+      layerBody.instanceMatrix.needsUpdate = layerLine.instanceMatrix.needsUpdate = layerBody.instanceColor.needsUpdate = true;
+      layerBody.material.uniforms.uTime.value = time;
+    }
+    // for checks: each live spike's id and the highest point of its outline crystal
+    var crystalPts = null;
+    function spikeTops() {
+      if (!crystalPts) { var a = GEO.crystal.attributes.position; crystalPts = []; for (var i = 0; i < a.count; i++) crystalPts.push(new T.Vector3(a.getX(i), a.getY(i), a.getZ(i))); }
+      return spikes.map(function (s) {
+        var hh = spikeNow(s), top = -1e9; IM.compose(IP, s.tilt, IS.set(s.w * 1.18, hh * 1.04, s.w * 1.18));
+        crystalPts.forEach(function (v) { top = Math.max(top, IV.copy(v).applyMatrix4(IM).y); });
+        return { id: s.id, top: top };
+      });
+    }
+
+    // ---------- smoke and rock chips are drawn the same way ----------
+    // Meteor rain alone had about 490 puffs of smoke and 250 rock chips alive at once, one draw each (2026-11-14). Each puff
+    // keeps its own colours and progress in per-copy attributes; the chips (three shapes) glow by a per-copy colour.
+    var PUFF_CAP = 512, CHIP_CAP = 192, puffs = [], chips = [[], [], []], IQ = new T.Quaternion(), IE = new T.Euler();
+    var puffGeo = GEO.puff.clone(), iDark = new T.InstancedBufferAttribute(new Float32Array(PUFF_CAP * 3), 3), iLight = new T.InstancedBufferAttribute(new Float32Array(PUFF_CAP * 3), 3), iKSA = new T.InstancedBufferAttribute(new Float32Array(PUFF_CAP * 3), 3);
+    puffGeo.setAttribute('iDark', iDark); puffGeo.setAttribute('iLight', iLight); puffGeo.setAttribute('iKSA', iKSA);
+    var VS_PUFF = VS.replace('void main(){', 'attribute vec3 iDark,iLight,iKSA;varying vec3 vDark,vLight,vKSA;void main(){vDark=iDark;vLight=iLight;vKSA=iKSA;');
+    var FS_PUFF = 'varying vec3 vDark,vLight,vKSA;\n#define uDark vDark\n#define uLight vLight\n#define uK vKSA.x\n#define uSeed vKSA.y\n#define uAlpha vKSA.z\n' + FS.smoke.replace('uniform vec3 uDark,uLight;uniform float uK,uSeed,uAlpha;', '');
+    var puffLayer = new T.InstancedMesh(puffGeo, mat(FS_PUFF, {}, { normal: true }, VS_PUFF), PUFF_CAP);
+    // a chip: the same lit stone material as before (lit by the scene's lights), glowing by a per-copy heat colour (iEmi)
+    var chipMatI = new T.MeshLambertMaterial({ color: 0x4a3a36 });
+    chipMatI.onBeforeCompile = function (sh) {
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec3 iEmi;\nvarying vec3 vIEmi;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvIEmi = iEmi;');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vIEmi;').replace('vec3 totalEmissiveRadiance = emissive;', 'vec3 totalEmissiveRadiance = emissive + vIEmi;');
+    };
+    chipMatI.customProgramCacheKey = function () { return 'cw-chip-layer'; };
+    var chipLayers = GEO.chips.map(function (g) {
+      var geo = g.clone(); geo.setAttribute('iEmi', new T.InstancedBufferAttribute(new Float32Array(CHIP_CAP * 3), 3));
+      return new T.InstancedMesh(geo, chipMatI, CHIP_CAP);
+    });
+    [puffLayer].concat(chipLayers).forEach(function (m) { m.renderOrder = 5; m.frustumCulled = false; m.count = 0; m.visible = false; group.add(m); });
+    function drawPuffs(dt) {
+      for (var i = puffs.length - 1; i >= 0; i--) {
+        var q = puffs[i]; q.t += dt; if (q.t >= q.life) { puffs.splice(i, 1); continue; }
+        q.p.addScaledVector(q.v, dt); q.v.multiplyScalar(Math.max(0, 1 - dt * q.drag));
+      }
+      for (var j = 0; j < puffs.length; j++) {
+        var u = puffs[j], k = u.t / u.life, s = u.s0 + (u.s1 - u.s0) * ease(k);
+        puffLayer.setMatrixAt(j, IM.compose(u.p, u.q, IS.set(s, s, s)));
+        iDark.setXYZ(j, u.dark.r, u.dark.g, u.dark.b); iLight.setXYZ(j, u.light.r, u.light.g, u.light.b); iKSA.setXYZ(j, k, u.seed, u.alpha);
+      }
+      puffLayer.count = puffs.length; puffLayer.visible = puffs.length > 0;
+      puffLayer.instanceMatrix.needsUpdate = iDark.needsUpdate = iLight.needsUpdate = iKSA.needsUpdate = true;
+      puffLayer.material.uniforms.uTime.value = time;
+    }
+    function drawChips(dt) {
+      chips.forEach(function (list, g) {
+        for (var i = list.length - 1; i >= 0; i--) {
+          var c = list[i]; c.t += dt; if (c.t >= c.life) { list.splice(i, 1); continue; }
+          c.v.y -= 16 * dt; c.p.addScaledVector(c.v, dt); c.ang += dt * 14;
+          if (c.smoky && c.t < 0.5 && (c.trail -= dt) <= 0) { c.trail = 0.045; puff(c.p, { s0: c.s * 0.9, s1: c.s * 2.4, life: 0.55, vel: new T.Vector3(0, 0.3, 0), alpha: 0.6 }); }
+          if (c.p.y < c.s && c.v.y < 0) { c.p.y = c.s; c.v.y *= -0.35; c.v.x *= 0.6; c.v.z *= 0.6; }
+        }
+        var L = chipLayers[g];
+        for (var j = 0; j < list.length; j++) {
+          var d = list[j], sc2 = d.t > d.life * 0.75 ? d.s * Math.max(0, 1 - (d.t - d.life * 0.75) / (d.life * 0.25)) : d.s;
+          L.setMatrixAt(j, IM.compose(d.p, IQ.setFromAxisAngle(d.ax, d.ang), IS.set(sc2, sc2, sc2)));
+          var heat = Math.max(0, 1 - d.t / (d.life * 0.7)); L.geometry.attributes.iEmi.setXYZ(j, d.hot.r * heat, d.hot.g * heat, d.hot.b * heat);
+        }
+        L.count = list.length; L.visible = list.length > 0; L.instanceMatrix.needsUpdate = L.geometry.attributes.iEmi.needsUpdate = true;
+      });
+    }
 
     // ---------- the laser: three tubes of light, one inside the other ----------
     function beam(o) {
@@ -272,6 +384,7 @@
     function moon(o) {
       var body = add(new T.Mesh(GEO.ball, mat(FS.moon, { uLit: { value: C(o.lit || 0xf4f0ff) }, uDark: { value: C(o.dark || 0x372a72) }, uRim: { value: C(o.rim || 0xb8a8ff) }, uL: { value: new T.Vector3(-0.75, 0.42, 0.5) }, uAlpha: { value: 1 } }, { normal: true, depthTest: false })), { order: 7 });
       var glow = orb({ col: o.rim || 0xb8a8ff, deep: o.deep || 0x6a4cff, alpha: 0.5, order: 6 }), spin = 0;
+      body.mesh.name = 'core3d moon';
       return {
         set: function (pos, radius, dt) {
           spin += (dt || 0) * 0.6; body.mesh.position.copy(pos); body.mesh.scale.setScalar(Math.max(0.001, radius)); body.mesh.rotation.set(0.3, spin, 0.2);
@@ -283,14 +396,11 @@
     // run fn after t seconds of effect time (cleared with everything else)
     function later(t, fn) { add(new T.Object3D(), { life: 1e9, upd: function (dt, tt) { if (tt >= t) { fn(); return true; } } }); }
     // ---------- smoke: a grey puff that swells, drifts and frays away ----------
+    // (a copy in the smoke layer; when it is full the oldest, most faded puff goes)
     function puff(pos, o) {
-      o = o || {}; var life = o.life || 0.9, s0 = o.s0 || 0.2, s1 = o.s1 || 0.6, v = o.vel ? o.vel.clone() : new T.Vector3(0, 0.6, 0), drag = o.drag === undefined ? 1.5 : o.drag;
-      var m = new T.Mesh(GEO.puff, mat(FS.smoke, { uDark: { value: C(o.dark || 0x2c2624) }, uLight: { value: C(o.light || 0x9a908a) }, uK: { value: 0 }, uSeed: { value: Math.random() * 9 }, uAlpha: { value: o.alpha === undefined ? 0.85 : o.alpha } }, { normal: true }));
-      m.position.copy(pos); m.scale.setScalar(s0); m.rotation.set(Math.random() * 6, Math.random() * 6, 0);
-      var p = add(m, { order: o.order === undefined ? 5 : o.order, life: life, upd: function (dt, t) {
-        var k = t / life; m.position.addScaledVector(v, dt); v.multiplyScalar(Math.max(0, 1 - dt * drag)); m.scale.setScalar(s0 + (s1 - s0) * ease(k)); U(p).uK.value = k;
-      } });
-      return p;
+      o = o || {}; if (puffs.length >= PUFF_CAP) puffs.shift();
+      puffs.push({ p: pos.clone(), v: o.vel ? o.vel.clone() : new T.Vector3(0, 0.6, 0), drag: o.drag === undefined ? 1.5 : o.drag, s0: o.s0 || 0.2, s1: o.s1 || 0.6, life: o.life || 0.9, t: 0,
+        q: new T.Quaternion().setFromEuler(IE.set(Math.random() * 6, Math.random() * 6, 0)), dark: C(o.dark || 0x2c2624), light: C(o.light || 0x9a908a), seed: Math.random() * 9, alpha: o.alpha === undefined ? 0.85 : o.alpha });
     }
     // ---------- a burning rock: faceted stone with a dark outline, a white-hot cap of air in front, a fire tail that
     // starts behind it (so the stone itself stays in sight) and a trail of smoke that hangs in the air after it ----------
@@ -356,12 +466,13 @@
       };
     }
     // ---------- an ice spear: a long clear crystal with a dark blue outline, a cold glow round it and frost mist left
-    // along its way. set(pos, vel, dt, grow): its middle at pos, its point along vel, grow 0..1 while it forms ----------
+    // along its way. set(pos, vel, dt, grow): its middle at pos, its point along vel, grow 0..1 while it forms.
+    // o.line: another outline colour; o.mist false: no frost mist (a spear of light, not of ice) ----------
     function iceSpear(o) {
-      var len = o.size || 1, col = o.col || 0x9fe4ff, deep = o.deep || 0x2a6cff, vd = new T.Vector3(0, 1, 0), q = new T.Quaternion(), spin = 0, mistT = 0, at = new T.Vector3();
+      var len = o.size || 1, col = o.col || 0x9fe4ff, deep = o.deep || 0x2a6cff, vd = new T.Vector3(0, 1, 0), q = new T.Quaternion(), spin = 0, mistT = 0, at = new T.Vector3(), mist = o.mist !== false;
       var glow = orb({ col: col, deep: deep, alpha: 0.35, order: 6 });
       var body = add(new T.Mesh(GEO.crystal, mat(FS.ice, { uCol: { value: C(col) }, uDeep: { value: C(deep) }, uAlpha: { value: 0.88 }, uSeed: { value: Math.random() * 9 } }, { normal: true })), { order: 7 });
-      var line = add(new T.Mesh(GEO.crystal, ICE_LINE), { order: 7 });
+      var line = add(new T.Mesh(GEO.crystal, lineMat(o.line)), { order: 7 });
       body.mesh.name = 'core3d ice';
       return {
         set: function (pos, vel, dt, grow) {
@@ -373,7 +484,7 @@
           glow.set(pos, L * 0.42);
           mistT -= dt || 0;
           // frost mist only while it flies (not while it forms, when vel is just where it aims)
-          if (grow === undefined && sp > 1 && mistT <= 0) { mistT = 0.04; at.copy(pos).addScaledVector(vd, -L * (0.5 + Math.random() * 0.4)); puff(at, { s0: r * 0.7, s1: r * 1.8, life: 0.45, vel: new T.Vector3(0, 0.2, 0), dark: 0x8fc0e8, light: 0xf0faff, alpha: 0.2, order: 4 }); }
+          if (mist && grow === undefined && sp > 1 && mistT <= 0) { mistT = 0.04; at.copy(pos).addScaledVector(vd, -L * (0.5 + Math.random() * 0.4)); puff(at, { s0: r * 0.7, s1: r * 1.8, life: 0.45, vel: new T.Vector3(0, 0.2, 0), dark: 0x8fc0e8, light: 0xf0faff, alpha: 0.2, order: 4 }); }
         },
         kill: function () { glow.kill(); drop(body); drop(line); }
       };
@@ -381,24 +492,18 @@
     // ---------- ice bursting up out of the ground round a spot: crystals shoot up leaning outward, stand a moment, then
     // sink back into the ground (size: how far they spread; n: how many) ----------
     function iceSpikes(pos, o) {
-      o = o || {}; var R = o.size || 1, n = o.n || 7, col = o.col || 0x9fe4ff, life = 1.0;
+      o = o || {}; var R = o.size || 1, n = o.n || 7, col = C(o.col || 0x9fe4ff);
       for (var i = 0; i < n; i++) {
-        (function (i) {
-          var a = i / n * 6.283 + Math.random() * 0.4, d = i === 0 ? 0 : R * (0.35 + Math.random() * 0.3), h = R * (i === 0 ? 1.25 : 0.6 + Math.random() * 0.45), w = h * 0.2;
-          var tilt = new T.Quaternion().setFromAxisAngle(new T.Vector3(Math.sin(a), 0, -Math.cos(a)), i === 0 ? 0 : 0.35 + Math.random() * 0.3);
-          var body = add(new T.Mesh(GEO.crystal, mat(FS.ice, { uCol: { value: C(col) }, uDeep: { value: C(0x2a6cff) }, uAlpha: { value: 0.9 }, uSeed: { value: Math.random() * 9 } }, { normal: true })), { order: 5, life: life });
-          var line = add(new T.Mesh(GEO.crystal, ICE_LINE), { order: 5, life: life });
-          body.mesh.name = 'spike3d';
-          var x = pos.x + Math.cos(a) * d, z = pos.z + Math.sin(a) * d * 0.8, delay = i === 0 ? 0 : 0.02 + Math.random() * 0.06;
-          body.upd = function (dt, t) {
-            var k = Math.max(0, t - delay), up = ease(k / 0.1), sink = Math.max(0, (t - life * 0.68) / (life * 0.32));
-            // sinks all the way under the ground (tip and tilted edge too) before it goes, so it never vanishes in the air
-            var hh = h * Math.max(0.001, up), y = hh * 0.42 - sink * hh * 1.5;
-            [body, line].forEach(function (p, j) { p.mesh.position.set(x, y, z); p.mesh.quaternion.copy(tilt); p.mesh.scale.set(w * (j ? 1.18 : 1), hh * (j ? 1.04 : 1), w * (j ? 1.18 : 1)); });
-          };
-          body.upd(0, 0);
-        })(i);
+        var a = i / n * 6.283 + Math.random() * 0.4, d = i === 0 ? 0 : R * (0.35 + Math.random() * 0.3), h = R * (i === 0 ? 1.25 : 0.6 + Math.random() * 0.45);
+        var tilt = new T.Quaternion().setFromAxisAngle(new T.Vector3(Math.sin(a), 0, -Math.cos(a)), i === 0 ? 0 : 0.35 + Math.random() * 0.3);
+        addSpike({ x: pos.x + Math.cos(a) * d, z: pos.z + Math.sin(a) * d * 0.8, h: h, w: h * 0.2, tilt: tilt, col: col, delay: i === 0 ? 0 : 0.02 + Math.random() * 0.06, life: 1.0 });
       }
+    }
+    // ---------- one ice spike shooting up out of the ground (a row of these makes a path of ice); lean tips it sideways
+    // (radians) ----------
+    function iceSpike(pos, o) {
+      o = o || {}; var h = o.h || 0.6;
+      addSpike({ x: pos.x, z: pos.z, h: h, w: h * 0.2, tilt: new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 0, 1), o.lean || 0), col: C(o.col || 0x9fe4ff), delay: 0, life: o.life || 0.6 });
     }
     // ---------- where a rock is about to land: the ground darkens under it and is lit by its fire ----------
     function mark(o) {
@@ -466,42 +571,40 @@
       }
       for (var i = 0; i < (o.chips === undefined ? 7 : o.chips); i++) chip(pos, R, o.hot || 0xff7a1a);
     }
+    // a rock chip thrown out of a hit: flies, bounces, cools from glowing to dark stone, shrinks away (a copy in the chip
+    // layer of its shape; when full, the oldest goes)
     function chip(pos, R, hot, smoky) {
-      var m = new T.Mesh(GEO.chips[(Math.random() * 3) | 0], chipMat(hot)), a = Math.random() * 6.283, sp = (2 + Math.random() * 3.5) * Math.sqrt(R);
-      var v = new T.Vector3(Math.cos(a) * sp, (3 + Math.random() * 4) * Math.sqrt(R), Math.sin(a) * sp * 0.75), ax = new T.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize(), s = (0.05 + Math.random() * 0.07) * Math.sqrt(R), ang = 0, bounced = 0, life = 0.9 + Math.random() * 0.4, trail = 0;
-      m.position.set(pos.x, 0.15, pos.z); m.scale.setScalar(s);
-      var p = add(m, {
-        order: 5, life: life, upd: function (dt, t) {
-          v.y -= 16 * dt; m.position.addScaledVector(v, dt); ang += dt * 14;
-          if (smoky && t < 0.5 && (trail -= dt) <= 0) { trail = 0.045; puff(m.position, { s0: s * 0.9, s1: s * 2.4, life: 0.55, vel: new T.Vector3(0, 0.3, 0), alpha: 0.6, order: 4 }); }
-          if (m.position.y < s && v.y < 0) { m.position.y = s; v.y *= -0.35; v.x *= 0.6; v.z *= 0.6; bounced++; }
-          m.quaternion.setFromAxisAngle(ax, ang); m.material.emissive.setHex(hot).multiplyScalar(Math.max(0, 1 - t / (life * 0.7)));
-          if (t > life * 0.75) m.scale.setScalar(s * Math.max(0, 1 - (t - life * 0.75) / (life * 0.25)));
-        }
-      });
-      return p;
+      var a = Math.random() * 6.283, sp = (2 + Math.random() * 3.5) * Math.sqrt(R), list = chips[(Math.random() * 3) | 0];
+      if (list.length >= CHIP_CAP) list.shift();
+      list.push({ p: new T.Vector3(pos.x, 0.15, pos.z), v: new T.Vector3(Math.cos(a) * sp, (3 + Math.random() * 4) * Math.sqrt(R), Math.sin(a) * sp * 0.75),
+        ax: new T.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize(), s: (0.05 + Math.random() * 0.07) * Math.sqrt(R), ang: 0,
+        life: 0.9 + Math.random() * 0.4, t: 0, trail: 0, smoky: !!smoky, hot: C(hot) });
     }
     // ---------- a black hole: dark ball, turning disk, and the picture bent around it ----------
+    // o.lens false: no bending of the picture (that is the black hole's own); o.pit false: no whirl on the ground (for a
+    // small one flying through the air); move(pos) carries it along
     function hole(o) {
       var pos = o.pos.clone(), spin = 0, rippling = false, lens = { pos: pos, r: 0.01, k: 0, wr: 0, wa: 0 };
       var ball = add(new T.Mesh(GEO.ball, mat(FS.horizon, { uRim: { value: C(o.rim || 0xffd8ff) }, uAlpha: { value: 1 } }, { normal: true, depthTest: false, depthWrite: true })), { order: 5 });
+      ball.mesh.name = 'core3d hole';
       var disk = add(new T.Mesh(GEO.disk, mat(FS.disk, { uIn: { value: C(0xfff0ff) }, uMid: { value: C(o.mid || 0xff6ad8) }, uOut: { value: C(o.out || 0x6a4cff) }, uAlpha: { value: 0 }, uSpin: { value: 0 } }, { side: T.DoubleSide, keepAdd: true })), { order: 6 });
       // the disk lies tilted, nearly edge on: its front half passes in front of the ball, the back half behind it
       var view = new T.Vector3(); sc.camera.getWorldDirection(view);
       disk.mesh.quaternion.setFromEuler(new T.Euler(1.06, 0, 0)).premultiply(new T.Quaternion().setFromAxisAngle(view, o.roll === undefined ? 0.32 : o.roll));
       ball.mesh.position.copy(pos); disk.mesh.position.copy(pos);
       // the ground under it darkens into a whirl that turns inward (no ring round it)
-      var pit = add(new T.Mesh(GEO.flat, mat(FS.pit, { uCol: { value: C(o.out || 0x6a4cff) }, uAlpha: { value: 0 }, uSpin: { value: 0 } }, { normal: true })), { order: 3 });
-      pit.mesh.position.set(pos.x, 0.04, pos.z);
-      if (sc.lens) sc.lens(lens);
+      var pit = o.pit === false ? null : add(new T.Mesh(GEO.flat, mat(FS.pit, { uCol: { value: C(o.out || 0x6a4cff) }, uAlpha: { value: 0 }, uSpin: { value: 0 } }, { normal: true })), { order: 3 });
+      if (pit) pit.mesh.position.set(pos.x, 0.04, pos.z);
+      if (o.lens !== false && sc.lens) sc.lens(lens);
       return {
         lens: lens,
         set: function (R, open, dt) {
           spin += (dt || 0) * 5; ball.mesh.scale.setScalar(Math.max(0.001, R)); disk.mesh.scale.setScalar(Math.max(0.001, R * 1.25));
           U(disk).uAlpha.value = open; U(disk).uSpin.value = spin; lens.r = R; lens.k = 0.38 * open;
-          pit.mesh.scale.setScalar(Math.max(0.001, R * 4.2)); U(pit).uAlpha.value = 0.75 * open; U(pit).uSpin.value = spin;
+          if (pit) { pit.mesh.scale.setScalar(Math.max(0.001, R * 4.2)); U(pit).uAlpha.value = 0.75 * open; U(pit).uSpin.value = spin; }
         },
-        kill: function () { drop(ball); drop(disk); drop(pit); lens.k = 0; if (!rippling) lens.dead = true; },
+        move: function (p) { pos.copy(p); ball.mesh.position.copy(p); disk.mesh.position.copy(p); if (pit) pit.mesh.position.set(p.x, 0.04, p.z); },
+        kill: function () { drop(ball); drop(disk); if (pit) drop(pit); lens.k = 0; if (!rippling) lens.dead = true; },
         // the ripple of bent space that runs out from where it was (call before kill)
         ripple: function (speed, life, amp) {
           var t = 0; rippling = true; lens.k = 0; lens.wa = amp || 0.05;
@@ -520,8 +623,9 @@
         p.t += dt; var u = p.mesh.material && p.mesh.material.uniforms; if (u && u.uTime) u.uTime.value = time;
         if ((p.upd && p.upd(dt, p.t) === true) || p.t >= p.life) { drop(p); parts.splice(i, 1); }
       }
+      drawChips(dt); drawPuffs(dt); drawSpikes(dt);
     }
-    function clear() { parts.forEach(drop); parts.length = 0; if (sc.lens) sc.lens(null); }
+    function clear() { parts.forEach(drop); parts.length = 0; spikes.length = 0; puffs.length = 0; chips.forEach(function (l) { l.length = 0; }); drawSpikes(0); drawPuffs(0); drawChips(0); if (sc.lens) sc.lens(null); }
     // Build every program before it is needed. A compiled program also depends on the scene (whether it has fog, and of
     // which kind), so this is done again whenever that changes (fx.setRegion calls it); the same scene state is skipped.
     // Only the parts made here are dropped again, and their materials go into the pool, so the programs stay.
@@ -530,15 +634,17 @@
       var f = sc.scene.fog, sig = f ? (f.isFogExp2 ? 'exp2' : 'linear') : 'none';
       if (warmed[sig] || !sc.renderer || !sc.renderer.compile) return;
       warmed[sig] = true;
-      var far = new T.Vector3(0, -40, 0), vel = new T.Vector3(1, -3, 0), start = parts.length;
+      var far = new T.Vector3(0, -40, 0), vel = new T.Vector3(1, -3, 0), start = parts.length, spikeStart = spikes.length, puffStart = puffs.length, chipStart = chips.map(function (l) { return l.length; });
       beam({ col: 0xffffff, deep: 0x8866ff, r: 0.1 }).set(far, far.clone().add(vel), 1); orb({ col: 0xffffff }).set(far, 1, 1); moon({}).set(far, 1, 0);
       rock({ size: 0.3 }).set(far, vel, 0.05); fireball({ size: 0.3 }).set(far, vel, 0.05); iceSpear({ size: 1 }).set(far, vel, 0.05); iceSpikes(far, { n: 2 }); mark({}).set(far, 0.5, 1); impact(far, { size: 1, chips: 3 }); blast(far, { size: 1, flash: true });
       var h = hole({ pos: far }); h.set(1, 1, 0); h.lens.dead = true; puff(far, {}); chip(far, 1, 0xff7a1a, false);
+      drawSpikes(0); drawPuffs(0); drawChips(0);   // the layers must be drawing copies when compiled, so their (instanced) programs are built too
       sc.renderer.compile(sc.scene, sc.camera);
       for (var i = parts.length - 1; i >= start; i--) drop(parts[i]);
-      parts.length = start;
+      parts.length = start; spikes.length = spikeStart; puffs.length = puffStart; chips.forEach(function (l, i) { l.length = chipStart[i]; }); drawSpikes(0); drawPuffs(0); drawChips(0);
       if (sc.warmLens) sc.warmLens();
     }
-    return { beam: beam, orb: orb, moon: moon, rock: rock, fireball: fireball, iceSpear: iceSpear, iceSpikes: iceSpikes, mark: mark, impact: impact, puff: puff, blast: blast, chip: chip, hole: hole, update: update, clear: clear, warm: warm, setBright: function (v) { bright = !!v; }, count: function () { return parts.length; } };
+    return { beam: beam, orb: orb, moon: moon, rock: rock, fireball: fireball, iceSpear: iceSpear, iceSpikes: iceSpikes, iceSpike: iceSpike, mark: mark, impact: impact, puff: puff, blast: blast, chip: chip, hole: hole, update: update, clear: clear, warm: warm, setBright: function (v) { bright = !!v; },
+      count: function () { return parts.length + spikes.length + puffs.length + chips[0].length + chips[1].length + chips[2].length; }, spikeTops: spikeTops };
   };
 })(this);
