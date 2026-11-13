@@ -1242,8 +1242,8 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 
 <style>/* app only: clear the iPhone notch, no long-press menus */
 #hud{padding-top:calc(4px + var(--cap,0px) + env(safe-area-inset-top,0px))}
-html.sa{--cap:24px}
-html.sa #stage::after{content:"";position:absolute;left:0;right:0;top:0;height:calc(env(safe-area-inset-top,0px) + var(--cap));pointer-events:none;background:linear-gradient(180deg,#F1E8D8 0,#F1E8D8 calc(100% - var(--cap)),rgba(241,232,216,0))}
+html.sa{--cap:0px}
+html.sa #stage::after{content:"";position:absolute;left:0;right:0;top:0;height:calc(env(safe-area-inset-top,0px) + var(--cap) + 10px);pointer-events:none;background:linear-gradient(180deg,#F1E8D8 0,#F1E8D8 calc(100% - 10px),rgba(241,232,216,0))}
 html.sa #quick{top:calc(102px + var(--cap) + env(safe-area-inset-top,0px))}
 html.sa #buffs{top:calc(102px + var(--cap) + env(safe-area-inset-top,0px))}
 html.sa #dunHud{top:calc(96px + var(--cap) + env(safe-area-inset-top,0px))}
