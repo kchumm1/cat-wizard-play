@@ -801,7 +801,63 @@
       if (dimT > 0) { dimT -= rdt; dimA += (dimTarget - dimA) * Math.min(1, rdt * 9); } else { dimTarget = 0; dimA += (0 - dimA) * Math.min(1, rdt * 4); }
       dimMat.uniforms.uDim.value = dimA; dimMesh.visible = dimA > 0.01;
     }
-    function render() { renderer.render(scene, camera); }
+    // ---------- bending the picture around a black hole ----------
+    // While a lens is open the scene is drawn into a texture first and then onto the screen through a pass that pulls
+    // the picture round the hole (and lets a ripple of bent space run out). With no lens open nothing changes.
+    // A lens is { pos (world), r (radius of the hole, world), k (how hard it bends, 0..1), wr (ripple radius, world),
+    // wa (ripple strength) }; set lens.dead = true (or call lens(null) to drop them all) when it is over.
+    var lenses = [], lensRT = null, lensMat = null, lensScene = null, lensCam = null, lensBuf = new T.Vector2(), lp = new T.Vector3(), lq = new T.Vector3(), camRight = new T.Vector3();
+    var LENS_FS = 'uniform sampler2D tDiffuse;uniform vec2 uC[2];uniform vec4 uP[2];uniform float uAspect;varying vec2 vUv;\n' +
+      'void main(){vec2 uv=vUv;\n' +
+      // nothing is pulled in from beyond the edge of the screen (that would smear the border)
+      ' float edge=smoothstep(0.0,0.12,min(min(vUv.x,1.0-vUv.x),min(vUv.y,1.0-vUv.y)));\n' +
+      ' for(int i=0;i<2;i++){vec4 P=uP[i];if(P.y<=0.0&&P.w<=0.0)continue;\n' +
+      '  vec2 d=uv-uC[i];d.x*=uAspect;float r=length(d)+1e-5;vec2 n=d/r;float R=P.x;\n' +
+      // outside the hole the picture is taken from further out and turned a little: space is pulled in and round
+      '  float k=P.y*smoothstep(R*0.95,R*1.35,r)*edge;float bend=k*R*R/r;float sw=k*0.8*exp(-(r-R)/(R*1.8));\n' +
+      '  float ca=cos(sw),sa=sin(sw);vec2 rn=vec2(n.x*ca-n.y*sa,n.x*sa+n.y*ca);vec2 off=rn*(r+bend)-d;\n' +
+      '  if(P.w>0.0){float x=(r-P.z)/max(0.02,R*0.6);off+=n*P.w*edge*exp(-x*x)*(-x);}\n' +
+      '  off.x/=uAspect;uv+=off;}\n' +
+      ' gl_FragColor=texture2D(tDiffuse,clamp(uv,0.0,1.0));}';
+    function lens(o) {
+      if (o === null) { lenses.length = 0; return; }
+      if (lenses.indexOf(o) < 0) { lenses.push(o); if (lenses.length > 2) lenses.shift(); }
+    }
+    function lensReady() {
+      renderer.getDrawingBufferSize(lensBuf);
+      var w = Math.max(1, lensBuf.x | 0), h = Math.max(1, lensBuf.y | 0);
+      if (!lensRT || lensRT.width !== w || lensRT.height !== h) {
+        if (lensRT) lensRT.dispose();
+        var RT = renderer.capabilities.isWebGL2 && T.WebGLMultisampleRenderTarget ? T.WebGLMultisampleRenderTarget : T.WebGLRenderTarget;
+        lensRT = new RT(w, h, { minFilter: T.LinearFilter, magFilter: T.LinearFilter, format: T.RGBAFormat });
+        // the scene is written into the texture exactly as it would be onto the screen, so it looks the same
+        if (T.sRGBEncoding) lensRT.texture.encoding = T.sRGBEncoding;
+      }
+      if (!lensMat) {
+        lensMat = new T.ShaderMaterial({ uniforms: { tDiffuse: { value: null }, uC: { value: [new T.Vector2(), new T.Vector2()] }, uP: { value: [new T.Vector4(), new T.Vector4()] }, uAspect: { value: 1 } },
+          vertexShader: 'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.0,1.0);}', fragmentShader: LENS_FS, depthTest: false, depthWrite: false });
+        lensScene = new T.Scene(); var q = new T.Mesh(new T.PlaneGeometry(2, 2), lensMat); q.frustumCulled = false; lensScene.add(q);
+        lensCam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+      }
+    }
+    function render() {
+      for (var i = lenses.length - 1; i >= 0; i--) if (lenses[i].dead) lenses.splice(i, 1);
+      var on = lenses.filter(function (L) { return L.k > 0.001 || L.wa > 0.001; });
+      if (!on.length) { renderer.render(scene, camera); return; }
+      lensReady(); camera.updateMatrixWorld(); camRight.setFromMatrixColumn(camera.matrixWorld, 0);
+      var u = lensMat.uniforms, asp = camera.aspect || 1;
+      u.uAspect.value = asp;
+      for (var j = 0; j < 2; j++) {
+        var L = on[j];
+        if (!L) { u.uP.value[j].set(0, 0, 0, 0); continue; }
+        lp.copy(L.pos).project(camera); lq.copy(L.pos).addScaledVector(camRight, 1).project(camera);
+        var unit = Math.abs(lq.x - lp.x) * 0.5 * asp;   // one world unit, in screen heights
+        u.uC.value[j].set((lp.x + 1) / 2, (lp.y + 1) / 2);
+        u.uP.value[j].set(Math.max(0.001, L.r * unit), L.k || 0, (L.wr || 0) * unit, L.wa || 0);
+      }
+      renderer.setRenderTarget(lensRT); renderer.render(scene, camera); renderer.setRenderTarget(null);
+      u.tDiffuse.value = lensRT.texture; renderer.render(lensScene, lensCam);
+    }
     function setPixel(v) { pixel = !!v; size(); }
     function setQuality(q) { quality = q; size(); }
     size();
@@ -811,7 +867,7 @@
       castPulse: function () { heroGlow = 1; }, heroState: function () { return HB; }, heroFaceTo: heroFaceTo, heroCheer: heroCheer, setViewShift: setViewShift,
       spawnMob: spawnMob, hitMob: hitMob, killMob: killMob, clearMobs: clearMobs, mobs: function () { return mobs; }, mobPos: mobPos, mobTop: mobTop,
       setTierAura: setTierAura, damageText: damageText, screenPos: screenPos, flash: flash, dim: dim, shake: shake, punch: camPunch, light: light,
-      hitStop: hitStop, slowmo: slowmo, scaleDt: scaleDt, update: update, render: render,
+      hitStop: hitStop, slowmo: slowmo, scaleDt: scaleDt, update: update, render: render, lens: lens,
       setPixel: setPixel, setDamageStyle: setDamageStyle, setQuality: setQuality, getQuality: function () { return quality; }
     };
   }
