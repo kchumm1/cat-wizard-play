@@ -15,7 +15,7 @@
     var vx = CW.createVfx(sc.scene, sc.camera);
     // real 3D parts (js/fx3d.js) for the spells whose body should have a shape: the laser, the meteors, the black hole
     var P3 = CW.createFx3d(sc);
-    P3.warm();
+    P3.warm(); warmPics();
     var staffCol = 0xffe14a;
     var timers = [], ticks = [], time = 0, dustCol = 0xd8c8a8, idleT = 0, crackleT = 0, tierNow = 1;
     function after(t, fn) { timers.push({ at: time + Math.max(0, t), fn: fn }); }
@@ -29,8 +29,9 @@
         var lim = ground && outline ? 11.5 : ground ? 6 : outline ? 8.5 : (o.frame === 'streak' ? 7 : 3.4);
         o.size = Array.isArray(o.size) ? [Math.min(o.size[0], lim), Math.min(o.size[1], lim)] : Math.min(o.size, lim);
       }
-      return vx.emit(o);
+      var p = vx.emit(o); if (watcher && p) watcher(o, p); return p;
     }
+    var watcher = null;   // checks only: called with every card made (fx.watch)
     function N(n, c) { return Math.max(1, Math.round(n * vx.quality() * (c ? c.n : 1))); }
     function clone(o, extra) { var r = {}; for (var k in o) r[k] = o[k]; for (var j in extra) r[j] = extra[j]; return r; }
 
@@ -76,6 +77,11 @@
       for (var i = 0; i < n; i++) E({ sys: 'norm', pos: pos.clone().add(rdir(o.r || 0.2, 0.5)), vel: rdir(o.speed || 0.8, 0.5).add(V(0, o.rise === undefined ? 0.6 : o.rise, 0)), frame: 'smoke',
         color: Array.isArray(col) ? col : [col], size: [rr(0.3, 0.5) * (o.size || 1), rr(0.9, 1.4) * (o.size || 1)], ease: 1, life: rr(0.7, 1.2) * (o.life || 1), drag: 2, alpha: o.alpha || 0.5, spin: rr(-1, 1), fadeIn: 0.12, fadeOut: 0.35 });
     }
+    // one flame left behind a flying 3D body of radius rb (moving with velocity v): past its back edge, not on it
+    function trailFire(p, v, rb, o) {
+      var sp = v.length(), at = p.clone(); if (sp > 0.5) at.addScaledVector(v, -rb * 1.4 / sp); else at.y += rb * 1.4;   // still: it rises off its top
+      if (o.r === undefined) o.r = rb * 0.3; o.trail = true; fire(at, 1, o);   // (trail: lets the checks tell these from blasts)
+    }
     function fire(pos, n, o) {
       o = o || {};
       for (var i = 0; i < n; i++) {
@@ -83,7 +89,7 @@
         // two kinds mixed: white-hot glowing flames and solid orange ones (a single flame is one or the other by chance,
         // so fire that is fed one flame at a time is not all white)
         var solid = n === 1 ? Math.random() < 0.6 : i % 2;
-        E({ sys: solid ? 'col' : 'add', pos: pos.clone().add(rdir(o.r || 0.12)), vel: v, frame: 'flame', color: o.cols || (solid ? [0xffd060, 0xff7a1a, 0xc8301a, 0x5a1a10] : [0xffffff, 0xffe080, 0xff8a2b, 0xd2361a]),
+        E({ sys: solid ? 'col' : 'add', trail: o.trail, pos: pos.clone().add(rdir(o.r || 0.12)), vel: v, frame: 'flame', color: o.cols || (solid ? [0xffd060, 0xff7a1a, 0xc8301a, 0x5a1a10] : [0xffffff, 0xffe080, 0xff8a2b, 0xd2361a]),
           size: [rr(0.35, 0.55) * (o.size || 1), rr(1.0, 1.5) * (o.size || 1)], ease: 1, life: rr(0.35, 0.6) * (o.life || 1), drag: 3, spin: rr(-3, 3), fadeOut: 0.4, hot: o.hot });
       }
     }
@@ -482,18 +488,17 @@
         after(c.D(0.18 + j * 0.09), function () {
           var from = sc.heroPaw(), S_ = c.s * (1 + 0.08 * (c.tier - 2));
           flare(from, 0xffffff, 1.1 * c.s, 0.14, { white: true }); smoke(from, 0x5a4a44, N(3, c), { size: 0.5, rise: 0.4 });
-          var ball = picHead('fireball-ball', 1.0 * S_, -0.765, 0.756, 0.286);
-          homing({ from: from, to: function () { return sc.mobPos(mob); }, time: c.D(0.36), arc: V(0, 1.9 - j * 0.6, 0.15), ease: function (k) { return k * k * 0.6 + k * 0.4; },
-            trail: { w: 0.26 * S_, col: 0xff7a2b, core: 0.9, pts: 16, shrink: 50 },
-            heads: [{ frame: 'glow', color: 0xff6a2b, size: 1.5 * S_, alpha: 0.45 }, { sys: 'col', frame: 'flame', color: 0xff6a1a, size: 0.85 * S_, spin: 6 }, { sys: 'col', frame: 'flame', color: 0xffc040, size: 0.6 * S_, spin: -9 }, { frame: 'flare', color: 0xffffff, size: 0.45 * S_, spin: -5, white: true }],
+          // a real ball of fire (js/fx3d.js) instead of a painted one: no flat cards over it, its own tail and smoke
+          var ball = P3.fireball({ size: 0.17 * S_ });
+          homing({ from: from, to: function () { return sc.mobPos(mob); }, time: c.D(0.36), arc: V(0, 1.9 - j * 0.6, 0.15), ease: function (k) { return k * k * 0.6 + k * 0.4; }, fancy: false, heads: [],
             emit: function (p, v, dt) {
               if (ball) ball.set(p, v, dt);
               var back = v.clone().multiplyScalar(-0.12);
-              if (Math.random() < dt * 90 * c.n) fire(p, 1, { size: 0.55 * S_, speed: 0.6, up: 0.4, life: 0.7, v: back });
+              if (Math.random() < dt * 34 * c.n) trailFire(p, v, 0.17 * S_, { size: 0.36 * S_, speed: 0.6, up: 0.4, life: 0.7, v: back });
               if (Math.random() < dt * 25 * c.n) E({ sys: 'norm', pos: p.clone(), vel: back.clone().add(V(0, 0.5, 0)), frame: 'smoke', color: 0x4a3c38, size: [0.2 * S_, 0.7 * S_], ease: 1, life: 0.6, alpha: 0.35, drag: 2, fadeIn: 0.2 });
               if (Math.random() < dt * 30 * c.n) E({ pos: p.clone(), vel: rdir(1.5).add(back), frame: 'dot', color: [0xffe080, 0xff5a1a], size: [0.07, 0], life: 0.4, grav: 2, stretch: 0.1 });
             },
-            onHit: function (p) { if (ball) ball.kill(); picAt('fireball-blast', V(p.x, 0, p.z), 0.85 * S_, 'blast', 0.3); explosion(c, p, S_, 0xff7a2b); c.hit(mob, 1, 1.6); } });
+            onHit: function (p) { ball.kill(); P3.blast(V(p.x, 0, p.z), { size: 0.5 * S_, col: 0xff8a2b, flash: true, chips: 4, ring: 2.4, life: 0.7 }); explosion(c, p, S_, 0xff7a2b); c.hit(mob, 1, 1.6); } });
         });
       });
     };
@@ -928,12 +933,14 @@
       ELC.forEach(function (col, i) {
         var a0 = i / 5 * 6.283 + 0.5, R = 5.4, P = V(C.x + Math.cos(a0) * R, C.y + Math.sin(a0) * 0.5, C.z + Math.sin(a0) * R * 0.7), t = 0, last = P.clone(), vel = V(), hold = c.D(0.1 + i * 0.012);
         // each one arrives with its own burst, so the five are seen apart before they move
-        var pic = i === 0 ? picHead('fireball-ball', 1.3 * cs, -0.765, 0.756, 0.286) : i === 2 ? picHead('iceStorm-shard', 1.5 * cs, 1.5708, 0.5, 0.5) : i === 3 ? picHead('starShot-star', 1.25 * cs, -0.72, 0.77, 0.273) : null;
+        // fire and ice come as real 3D pieces (js/fx3d.js); the star is still its picture
+        var solid = i === 0 || i === 2, pic = i === 0 ? P3.fireball({ size: 0.22 * cs }) : i === 2 ? P3.iceSpear({ size: 1.1 * cs }) : i === 3 ? picHead('starShot-star', 1.25 * cs, -0.72, 0.77, 0.273) : null;
         flare(P, 0xffffff, 1.6, 0.22, { white: true }); ring(P, col, 2.0, 0.3); ring(P, 0xffffff, 1.3, 0.22);
         for (var s = 0; s < N(10, c); s++) E({ sys: i === 2 ? 'norm' : 'add', pos: P, vel: rdir(3.5), frame: FR5[i], color: [0xffffff, col], size: [rr(0.16, 0.3), 0.03], life: rr(0.3, 0.5), spin: rr(-8, 8), drag: 2, white: i === 2 });
         var rib = vx.ribbon({ solid: true, mode: 'trail', w: 0.26 * cs, color: deep(col), core: 0.9, maxPts: 22, shrink: 44 }), rib2 = vx.ribbon({ mode: 'trail', w: 0.65 * cs, color: col, core: 0, alpha: 0.32, maxPts: 22, shrink: 44 });
-        var heads = [E({ pos: P, frame: 'glow', color: col, size: 2.0 * cs, life: 30, upd: STAY, fadeOut: 1, hot: 1.3, alpha: 0.8 }), E({ pos: P, frame: 'ring', color: col, size: 1.2 * cs, life: 30, upd: STAY, fadeOut: 1, spin: 8, alpha: 0.7 }),
-          E({ sys: 'col', pos: P, frame: FR5[i], color: col, size: (pic ? 0.5 : 1.0) * cs, life: 30, upd: STAY, fadeOut: 1, spin: i === 4 ? 4 : 9 }), E({ pos: P, frame: 'flare', color: 0xffffff, size: 0.75 * cs, life: 30, upd: STAY, fadeOut: 1, white: true, spin: -6 })];
+        // no flat cards over a 3D piece (it has its own glow)
+        var heads = solid ? [] : [E({ pos: P, frame: 'glow', color: col, size: 2.0 * cs, life: 30, upd: STAY, fadeOut: 1, hot: 1.3, alpha: 0.8 }), E({ pos: P, frame: 'ring', color: col, size: 1.2 * cs, life: 30, upd: STAY, fadeOut: 1, spin: 8, alpha: 0.7 })];
+        if (!solid) heads.push(E({ sys: 'col', pos: P, frame: FR5[i], color: col, size: (pic ? 0.5 : 1.0) * cs, life: 30, upd: STAY, fadeOut: 1, spin: i === 4 ? 4 : 9 }), E({ pos: P, frame: 'flare', color: 0xffffff, size: 0.75 * cs, life: 30, upd: STAY, fadeOut: 1, white: true, spin: -6 }));
         tick(function (dt) {
           t += dt; var k = Math.min(1, Math.max(0, (t - hold) / (gatherT - hold))), e = k * k, r = R * (1 - e), a = a0 + e * 3.6;
           P.set(C.x + Math.cos(a) * r, C.y + Math.sin(a) * 0.5 * (1 - e), C.z + Math.sin(a) * r * 0.7);
@@ -941,8 +948,8 @@
           heads.forEach(function (p) { if (p) { p.x = P.x; p.y = P.y; p.z = P.z; } });
           if (pic) pic.set(P, vel, dt); if (rib) rib.head(P); if (rib2) rib2.head(P);
           // its own element pours off it on the way
-          for (var n2 = 0; n2 < 2; n2++) if (Math.random() < dt * 45 * c.n) {
-            if (i === 0) fire(P, 1, { size: 0.8 * cs, speed: 0.6, up: 0.6, life: 0.7 });
+          for (var n2 = 0; n2 < 2; n2++) if (Math.random() < dt * (i === 0 ? 17 : 45) * c.n) {
+            if (i === 0) trailFire(P, vel, 0.22 * cs, { size: 0.45 * cs, speed: 0.6, up: 0.6, life: 0.7 });
             else if (i === 1) vx.lightning(P.clone(), P.clone().add(rdir(1.1)), { w: 0.055, color: col, life: 0.1, branches: 0, segs: 5, amp: 0.3 });
             else E({ sys: i === 2 ? 'norm' : 'add', pos: P.clone().add(rdir(0.2)), vel: rdir(1.2).add(V(0, i === 2 ? -1 : 0.4, 0)), frame: i === 2 ? pick(['shard', 'snow']) : FR5[i], color: [0xffffff, col], size: [rr(0.16, 0.3), 0.03], life: rr(0.3, 0.6), spin: rr(-8, 8), grav: i === 2 ? 5 : 0, white: i === 2 });
           }
@@ -1019,11 +1026,20 @@
     function picRoom() { if (pics.length < 30) return; var bi = 0, bk = -1; for (var i = 0; i < pics.length; i++) { var k = pics[i].t / pics[i].life; if (k > bk) { bk = k; bi = i; } } var q = pics[bi]; if (q.onLand && !q.landed) { q.landed = true; q.onLand(); } picDrop(q); pics.splice(bi, 1); }
     // the sprite materials are not disposed: disposing the last one deletes the compiled sprite program, and rebuilding it
     // on the next picture stalls the frame (they are small and collected by the browser)
+    // the painted pictures' sprite program is built before the first picture needs it, once for each kind of fog (the
+    // program depends on it); a 1-pixel stand-in with the same colour encoding as the loaded pictures is enough
+    var picWarmed, picDummy;   // (no starting value: warmPics() already runs at the top of createFx)
+    function warmPics() {
+      var f = sc.scene.fog, sig = f ? (f.isFogExp2 ? 'exp2' : 'linear') : 'none';
+      picWarmed = picWarmed || {}; if (picWarmed[sig] || !sc.renderer || !sc.renderer.compile) return; picWarmed[sig] = true;
+      if (!picDummy) { picDummy = new T.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1); if (T.sRGBEncoding) picDummy.encoding = T.sRGBEncoding; picDummy.needsUpdate = true; }
+      var sp = picSprite(picDummy, false); sp.position.set(0, -40, 0); sc.renderer.compile(sc.scene, sc.camera); if (sp.parent) sp.parent.remove(sp);
+    }
     function picDrop(p) { [p.a, p.g].forEach(function (sp) { if (sp.parent) sp.parent.remove(sp); }); p.dead = true; }
     // a picture that rides a projectile: call set(pos, vel, dt) every frame, kill() when it lands
     function picHead(name, h, artAng, cx, cy) {
       var tex = picLoad(name); if (!tex || !tex.image || picHeads.length >= 20) return null;
-      var p = { a: picSprite(tex, false, cx, cy), g: picSprite(tex, true, cx, cy) }, w = h * tex.image.width / tex.image.height, t = 0, pa = V(), pb = V();
+      var p = { name: name, a: picSprite(tex, false, cx, cy), g: picSprite(tex, true, cx, cy) }, w = h * tex.image.width / tex.image.height, t = 0, pa = V(), pb = V();
       picHeads.push(p);
       return {
         set: function (pos, vel, dt) {
@@ -1109,9 +1125,9 @@
     function picClear() { pics.forEach(picDrop); pics.length = 0; picHeads.forEach(picDrop); picHeads.length = 0; }
     // the rest of the skills live in js/fx-more.js and are built from the same parts
     if (CW.fxMore) CW.fxMore({ T: T, sc: sc, vx: vx, V: V, rr: rr, rdir: rdir, pick: pick, STAY: STAY, sway: sway, deep: deep, E: E, N: N, after: after, tick: tick, FC: FC, UPC: UPC, above: above,
-      fieldPt: fieldPt, fieldPops: fieldPops, fieldWave: fieldWave, fieldRain: fieldRain, flare: flare, glow: glow, sparks: sparks, embers: embers, smoke: smoke, fire: fire, shock: shock, ring: ring, gRing: gRing, gGlow: gGlow,
+      fieldPt: fieldPt, fieldPops: fieldPops, fieldWave: fieldWave, fieldRain: fieldRain, flare: flare, glow: glow, sparks: sparks, embers: embers, smoke: smoke, fire: fire, trailFire: trailFire, shock: shock, ring: ring, gRing: gRing, gGlow: gGlow,
       scorch: scorch, dust: dust, circle: circle, seal: seal, converge: converge, impact: impact, muzzle: muzzle, heavy: heavy, homing: homing, explosion: explosion, spiralTo: spiralTo, spiralIn: spiralIn,
-      liveMobs: liveMobs, gp: gp, near: near, share: share, volley: volley, ringHits: ringHits, passHits: passHits, skyBolt: skyBolt, zapHit: zapHit, beamOf: beamOf, picHead: picHead, picAt: picAt, picFall: picFall,
+      P3: P3, liveMobs: liveMobs, gp: gp, near: near, share: share, volley: volley, ringHits: ringHits, passHits: passHits, skyBolt: skyBolt, zapHit: zapHit, beamOf: beamOf, picHead: picHead, picAt: picAt, picFall: picFall,
       dustCol: function () { return dustCol; } }, S);
     var epoch = 0;
     function tint(base, tier) { var col = new T.Color(base); if (tier >= 5) col.lerp(new T.Color(0xffffff), 0.12); return col.getHex(); }
@@ -1264,10 +1280,12 @@
     }
     function setQuality(q) { vx.setQuality(q); }
     function setBright(v) { vx.setBright(v); P3.setBright(v); }
-    function setRegion(regionData) { dustCol = new T.Color(regionData.ground).lerp(new T.Color(0xffffff), 0.45).getHex(); P3.warm(); }
+    function setRegion(regionData) { dustCol = new T.Color(regionData.ground).lerp(new T.Color(0xffffff), 0.45).getHex(); P3.warm(); warmPics(); }
     function clear() { epoch++; timers.length = 0; ticks.length = 0; vx.clear(); P3.clear(); picClear(); sc.mobs().forEach(function (m) { m.pull = undefined; m.pullZ = undefined; m.lift = undefined; }); }
     return { setStaffColor: function (c) { staffCol = c; }, setCostume: function (f) { cosFx = f; cosAcc = 0; }, cast: cast, update: update, setQuality: setQuality, setBright: setBright, setRegion: setRegion, clear: clear, count: vx.count,
-      impact: impact, levelUp: levelUp, bossEnter: bossEnter, coinPop: coinPop, burst: function (pos, col) { impact(pos, col, 0.8); }, vfx: vx };
+      impact: impact, levelUp: levelUp, bossEnter: bossEnter, coinPop: coinPop, burst: function (pos, col) { impact(pos, col, 0.8); }, vfx: vx,
+      // for checks: 3D parts alive, and painted heads alive (only those of the given pictures when names are given)
+      count3d: function () { return P3.count(); }, watch: function (fn) { watcher = fn || null; }, picCount: function (names) { return picHeads.filter(function (h) { return !names || names.indexOf(h.name) >= 0; }).length; } };
   }
   CW.createFx = createFx;
 })(this);

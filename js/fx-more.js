@@ -4,9 +4,10 @@
   var CW = root.CW = root.CW || {};
   CW.fxMore = function (K, S) {
     var T = K.T, sc = K.sc, vx = K.vx, V = K.V, rr = K.rr, rdir = K.rdir, pick = K.pick, STAY = K.STAY, sway = K.sway, deep = K.deep, E = K.E, N = K.N, after = K.after, tick = K.tick, FC = K.FC, UPC = K.UPC, above = K.above;
-    var fieldPt = K.fieldPt, fieldWave = K.fieldWave, fieldRain = K.fieldRain, flare = K.flare, glow = K.glow, sparks = K.sparks, embers = K.embers, smoke = K.smoke, fire = K.fire, shock = K.shock, ring = K.ring, gRing = K.gRing, gGlow = K.gGlow;
+    var fieldPt = K.fieldPt, fieldWave = K.fieldWave, fieldRain = K.fieldRain, flare = K.flare, glow = K.glow, sparks = K.sparks, embers = K.embers, smoke = K.smoke, fire = K.fire, trailFire = K.trailFire, shock = K.shock, ring = K.ring, gRing = K.gRing, gGlow = K.gGlow;
     var scorch = K.scorch, dust = K.dust, circle = K.circle, seal = K.seal, converge = K.converge, impact = K.impact, heavy = K.heavy, homing = K.homing, explosion = K.explosion;
     var liveMobs = K.liveMobs, gp = K.gp, share = K.share, volley = K.volley, ringHits = K.ringHits, skyBolt = K.skyBolt, zapHit = K.zapHit, beamOf = K.beamOf, picHead = K.picHead, picAt = K.picAt, picFall = K.picFall;
+    var P3 = K.P3;
     var ICE = [0xffffff, 0xd8f2ff, 0xbfe8ff], ELC = [0xff6a2b, 0x7bddff, 0xdff6ff, 0xffe14a, 0xb68aff], ELF = ['flame', 'streak', 'shard', 'star', 'crescent'];
     function mp(m) { return sc.mobPos(m); }
     function put(list, p) { for (var i = 0; i < list.length; i++) if (list[i]) { list[i].x = p.x; list[i].y = p.y; list[i].z = p.z; } }
@@ -15,9 +16,9 @@
     function shaft(g, len, w, col, life, o) { var q = { pos: above(g, len / 2), frame: 'streak', color: col, size: [len, len], ar: w, rot: 1.5708, life: life }; for (var k in o) q[k] = o[k]; return E(q); }
     // ice standing up out of the ground at a spot
     function iceSpike(g, h, life, lean) { return E({ sys: 'norm', pos: V(g.x, h * 0.42, g.z + 0.25), frame: 'shard', color: pick(ICE), size: [0.05, h * 0.5], ar: 2.0, rot: lean || 0, ease: 2, life: life, fadeOut: 0.85, white: true }); }
-    function iceBurst(c, m, big) {
+    function iceBurst(c, m, big, noCards) {
       var g = gp(m), q = mp(m), B = (m.boss ? 1.45 : 1) * (big || 1);
-      for (var s = 0; s < 5; s++) iceSpike(V(g.x + (s - 2) * 0.17 * B, 0, g.z + rr(-0.05, 0.1)), rr(0.85, 1.35) * c.s * B, c.D(0.6), -((s - 2) * 0.36 + rr(-0.1, 0.1)));
+      for (var s = 0; s < 5 && !noCards; s++) iceSpike(V(g.x + (s - 2) * 0.17 * B, 0, g.z + rr(-0.05, 0.1)), rr(0.85, 1.35) * c.s * B, c.D(0.6), -((s - 2) * 0.36 + rr(-0.1, 0.1)));
       flare(q, 0xffffff, 1.2, 0.15, { white: true }); shock(q, c.col, 1.8 * B, 0.3);
       for (var k = 0; k < N(8, c); k++) E({ sys: 'norm', pos: q.clone().add(rdir(0.3)), vel: rdir(3.2).add(V(0, 2.2, 0)), frame: 'shard', color: pick(ICE), size: [rr(0.1, 0.2), 0.05], ar: 2, life: rr(0.5, 0.8), grav: 7, spin: rr(-12, 12), white: true });
       E({ sys: 'gadd', pos: V(g.x, 0.04, g.z), frame: 'frost', color: c.col, size: [0.3, 2.4 * B], ease: 1, life: 0.8, fadeOut: 0.5, alpha: 0.8 });
@@ -160,20 +161,19 @@
       glow(tip, 0xff6a2b, [0.3, 1.5 * c.s], c.D(0.24), { fadeIn: 0.6, hot: 1.4 });
       for (var i = 0; i < N(18, c); i++) { var a = rr(0, 6.28), r = rr(0.5, 1.0); E({ pos: tip, frame: 'flame', color: [0xffe080, 0xff6a2b], size: [0.3, 0.1], life: c.D(rr(0.14, 0.22)), delay: rr(0, c.D(0.05)), upd: K.spiralTo(tip, a, r), fadeIn: 0.3 }); }
       after(c.D(0.22), function () {
-        var from = sc.heroPaw(), S_ = 1.55 * c.s, ball = picHead('fireball-ball', 1.5 * S_, -0.765, 0.756, 0.286), land = mp(mob);
+        var from = sc.heroPaw(), S_ = 1.55 * c.s, ball = P3.fireball({ size: 0.24 * S_, col: 0xff6a1a }), land = mp(mob);
         flare(from, 0xffffff, 1.4 * c.s, 0.16, { white: true }); smoke(from, 0x5a4a44, N(4, c), { size: 0.7, rise: 0.4 });
         homing({ from: from, to: function () { if (mob.alive) land = mp(mob); return land; }, time: c.D(0.42), arc: V(0, 3.6, -0.5), ease: function (x) { return x * x * 0.7 + x * 0.3; },
-          trail: { w: 0.42 * c.s, col: 0xff5a1a, core: 0.9, pts: 20, shrink: 40 },
-          heads: [{ frame: 'glow', color: 0xff6a2b, size: 2.2 * S_, alpha: 0.45 }, { sys: 'col', frame: 'flame', color: 0xff5a1a, size: 1.3 * S_, spin: 6 }, { sys: 'col', frame: 'flame', color: 0xffc040, size: 0.9 * S_, spin: -9 }, { frame: 'flare', color: 0xffffff, size: 0.6 * S_, spin: -5, white: true }],
+          fancy: false, heads: [],
           emit: function (p, v, dt) {
             if (ball) ball.set(p, v, dt);
             var back = v.clone().multiplyScalar(-0.12);
-            if (Math.random() < dt * 110 * c.n) fire(p, 1, { size: 0.8 * S_, speed: 0.8, up: 0.4, life: 0.8, v: back });
+            if (Math.random() < dt * 34 * c.n) trailFire(p, v, 0.24 * S_, { size: 0.5 * S_, speed: 0.8, up: 0.4, life: 0.8, v: back });
             if (Math.random() < dt * 30 * c.n) E({ sys: 'norm', pos: p.clone(), vel: back.clone().add(V(0, 0.5, 0)), frame: 'smoke', color: 0x4a3c38, size: [0.3 * S_, 0.9 * S_], ease: 1, life: 0.7, alpha: 0.4, drag: 2, fadeIn: 0.2 });
           },
           onHit: function (p) {
             var g = V(p.x, 0, p.z);
-            if (ball) ball.kill(); picAt('fireball-blast', g, 1.3 * S_, 'blast', 0.3);
+            ball.kill(); P3.blast(g, { size: 0.65 * S_, col: 0xff7a1a, flash: true, chips: 6, ring: 2.6, life: 0.8 });
             explosion(c, p, S_, 0xff5a1a); fieldWave(g, 0xff7a2b, 0.7, 0xffe14a); sc.shake(0.3);
             // the blast throws up a ring of fire around where it landed
             for (var f = 0; f < 7; f++) { var a = f / 7 * 6.283, q = V(g.x + Math.cos(a) * 1.5, 0.3, g.z + Math.sin(a) * 1.2); fire(q, N(4, c), { size: 1.0 * c.s, speed: 1.2, up: 3, life: 0.8 }); scorch(V(q.x, 0, q.z), 0.8, 2); }
@@ -257,21 +257,20 @@
       sc.heroPose('thrust', c.D(0.24), c.col);
       var up = sc.heroCenter().add(V(0, 1.35, -0.2));
       converge(up, [0xffffff, c.col], N(18, c), 1.3, c.D(0.22), { frame: 'shard' });
-      E({ sys: 'norm', pos: up, frame: 'shard', color: ICE, size: [0.1, 1.0 * c.s], ar: 2.6, ease: 2, life: c.D(0.26), rot: 0.5, white: true, fadeOut: 0.9 });
+      var spear = P3.iceSpear({ size: 1.25 * c.s }), formT = 0, aim = V();
+      tick(function (dt) { formT += dt; aim.copy(mp(mob)).sub(up); spear.set(up, aim, dt, Math.min(1, formT / c.D(0.2))); return formT >= c.D(0.24); });
       E({ pos: up, frame: 'frost', color: c.col, size: [0.3, 1.8 * c.s], ease: 2, life: c.D(0.3), spin: 2, fadeOut: 0.7, alpha: 0.7 });
       after(c.D(0.24), function () {
-        var spear = picHead('iceStorm-shard', 2.0 * c.s, 1.5708, 0.5, 0.5), land = mp(mob);
+        var land = mp(mob);
         flare(up, 0xffffff, 1.2 * c.s, 0.14, { white: true }); ring(up, c.col, 1.3 * c.s, 0.22);
-        homing({ from: up, to: function () { if (mob.alive) land = mp(mob); return land; }, time: c.D(0.17), fancy: false, ease: function (x) { return x * x; },
-          trail: { w: 0.24 * c.s, col: c.col, core: 1.1, pts: 16, shrink: 50 },
-          heads: [{ frame: 'glow', color: c.col, size: 1.3 * c.s, alpha: 0.5 }, { frame: 'flare', color: 0xffffff, size: 0.6 * c.s, white: true, spin: 6 }],
-          emit: function (p, v, dt) { if (spear) spear.set(p, v, dt); if (Math.random() < dt * 70 * c.n) E({ pos: p.clone().add(rdir(0.1)), vel: rdir(0.7), frame: pick(['snow', 'dot']), color: 0xffffff, size: rr(0.07, 0.14), life: rr(0.3, 0.5), white: true, spin: 3 }); },
+        homing({ from: up, to: function () { if (mob.alive) land = mp(mob); return land; }, time: c.D(0.17), fancy: false, ease: function (x) { return x * x; }, heads: [],
+          emit: function (p, v, dt) { spear.set(p, v, dt); if (Math.random() < dt * 70 * c.n) E({ pos: p.clone().add(rdir(0.1)), vel: rdir(0.7), frame: pick(['snow', 'dot']), color: 0xffffff, size: rr(0.07, 0.14), life: rr(0.3, 0.5), white: true, spin: 3 }); },
           onHit: function (p) {
             var g = V(p.x, 0, p.z);
-            if (spear) spear.kill();
+            spear.kill(); P3.iceSpikes(g, { size: 1.15 * Math.min(1.3, c.s), n: 7, col: c.col });
             // it goes in, and a crown of ice bursts out the far side
             for (var s = 0; s < 9; s++) { var a = s / 9 * 6.283; E({ sys: 'norm', pos: p.clone().add(V(Math.cos(a) * 0.3, Math.sin(a) * 0.3, 0.2)), vel: V(Math.cos(a) * 1.2, Math.sin(a) * 1.2, 0), frame: 'shard', color: pick(ICE), size: [0.1, rr(0.7, 1.1) * c.s], ar: 2.4, rot: a - 1.5708, ease: 1, life: c.D(0.5), drag: 4, fadeOut: 0.7, white: true }); }
-            if (mob.alive) { iceBurst(c, mob, 1.3); picAt('iceStorm', gp(mob), 1.7 * Math.min(1.3, c.s), 'rise'); }
+            if (mob.alive) iceBurst(c, mob, 1.3, true);
             E({ sys: 'gadd', pos: V(g.x, 0.04, g.z), frame: 'frost', color: 0xdff4ff, size: [0.5, 4.6 * c.s], ease: 1, life: 0.9, fadeOut: 0.5, alpha: 0.8 });
             smoke(V(g.x, 0.3, g.z), 0xe8f8ff, N(5, c), { size: 1.0, alpha: 0.4, rise: 0.3 });
             sc.flash('rgba(210,240,255,0.45)', 0.2); sc.light(p, c.col, 1.8, 0.4); heavy(1.4);
@@ -337,21 +336,25 @@
       E({ sys: 'gadd', pos: V(g0.x, 0.04, g0.z), frame: 'ring', color: 0xffffff, size: [4.2, 0.8], life: c.D(0.5), rot: 0, alpha: 0.7, fadeIn: 0.2 });
       E({ pos: above(g0, 5.6).add(V(2.2, 0, 0)), frame: 'flare', color: [0xffffff, c.col], size: [0.1, 1.8], ease: 2, life: c.D(0.3), spin: 3, white: true });
       after(c.D(0.24), function () {
-        var land = mp(mob), from = above(gp(mob), 7.6).add(V(3.4, 0, 0)), P = 1.6 * c.s;
-        var rock = picHead('meteorRain-rock', 2.3 * c.s, -2.24, 0.314, 0.167);
-        homing({ from: from, to: function () { if (mob.alive) land = mp(mob); return land; }, time: c.D(0.3), ease: function (x) { return x * x; },
-          trail: { w: 0.62 * c.s, col: c.col, core: 1.3, pts: 22, shrink: 30 },
-          heads: [{ sys: 'col', frame: 'glow', color: c.col, size: 1.6 * c.s, alpha: 0.85 }, { frame: 'glow', color: c.col, size: 2.8 * c.s, alpha: 0.4 }, { frame: 'flare', color: 0xffffff, size: 1.2 * c.s, white: true, spin: 6 }],
-          emit: function (p, v, dt) {
-            if (rock) rock.set(p, v, dt);
-            if (Math.random() < dt * 120 * c.n) fire(p, 1, { size: 0.9 * c.s, speed: 0.6, up: 0.3, life: 0.6, cols: [0xffffff, 0xffe14a, 0xff8a2b] });
-            if (Math.random() < dt * 60 * c.n) E({ pos: p.clone().add(rdir(0.3)), vel: rdir(1.2), frame: pick(['star', 'flare', 'dot']), color: [0xffffff, c.col], size: [rr(0.14, 0.26), 0], life: rr(0.4, 0.7), spin: 5 });
+        // one great stone wrapped in golden fire (the meteor rain's 3D rock, bigger and gold), the ground under it
+        // darkening as it comes, and star dust shed all the way down
+        var land = mp(mob), from = above(gp(mob), 7.6).add(V(3.4, 0, 0)), cs = Math.min(1.6, c.s), R = 0.75 * cs;
+        var rock = P3.rock({ size: R, col: 0xffe27a, hot: 0xffb030 }), spot = P3.mark({ col: 0xffd060 });
+        homing({ from: from, to: function () { if (mob.alive) land = mp(mob); return land; }, time: c.D(0.3), ease: function (x) { return x * x; }, fancy: false, heads: [],
+          emit: function (p, v, dt, k) {
+            rock.set(p, v, dt); spot.set(land, k, R * 1.6);
+            if (Math.random() < dt * 34 * c.n) trailFire(p, v, R, { size: 0.9 * c.s, speed: 0.6, up: 0.3, life: 0.6, cols: [0xffffff, 0xffe14a, 0xff8a2b] });
+            if (Math.random() < dt * 60 * c.n) E({ pos: p.clone().addScaledVector(v, -R * 1.4 / Math.max(1e-4, v.length())).add(rdir(0.3)), vel: rdir(1.2), frame: pick(['star', 'flare', 'dot']), color: [0xffffff, c.col], size: [rr(0.14, 0.26), 0], life: rr(0.4, 0.7), spin: 5 });
           },
           onHit: function (p) {
             var g = V(p.x, 0.03, p.z);
-            if (rock) rock.kill(); picAt('meteorRain-ripple', g, 1.0 * c.s, 'blast', 0.4);
-            explosion(c, p, P, c.col); fieldWave(g, c.col, 0.8, 0xffffff); gRing(g, 0xffffff, 6 * c.s, 0.6); scorch(g, 2.6 * c.s, 3);
-            sc.flash('rgba(255,240,180,0.9)', 0.6); sc.slowmo(0.2, 0.4); sc.shake(0.5); sc.punch(0.1);
+            rock.kill(); spot.kill();
+            // a golden blast: flash, crown of dirt, rising fireball, rolling ring, thrown rocks, a scorched hollow
+            P3.impact(g, { size: 1.15 * cs, col: 0xffc84a, hot: 0xffa020, ringCol: 0xffe08a, dirt: new T.Color(K.dustCol()).lerp(new T.Color(0x4a382c), 0.75).getHex(), chips: 16, ring: 3.8 });
+            fire(V(p.x, 0.3, p.z), N(14, c), { size: 0.9 * cs, speed: 3.6, up: 3.0, life: 0.7, cols: [0xffffff, 0xffe14a, 0xff9a2b] });
+            sparks(p, [0xffffff, 0xffe080, 0xffb040], N(36, c), 8.5, { size: 0.18, up: 2.8, stretch: 0.12 });
+            fieldWave(g, c.col, 0.8, 0xffffff); sc.light(p, 0xffd060, 3.0, 0.45);
+            sc.flash('rgba(255,240,180,0.9)', 0.6); sc.slowmo(0.4, 0.45, true); sc.shake(0.7); sc.punch(0.13);
             for (var k = 0; k < N(16, c); k++) E({ sys: 'norm', pos: g.clone().add(V(0, 0.1, 0)), vel: rdir(4.5).add(V(0, 5, 0)), frame: 'dot', color: 0x3a2a2a, size: rr(0.08, 0.16), life: rr(0.6, 1), grav: 10, drag: 0.5 });
             // pieces of the comet skip away over the field
             for (var s = 0; s < N(10, c); s++) E({ pos: p.clone(), vel: V(rr(-7, 7), rr(3, 7), rr(-5, 5)), frame: 'star', color: [0xffffff, c.col], size: [rr(0.25, 0.4) * c.s, 0.05], life: rr(0.6, 1), grav: 9, drag: 0.6, spin: rr(-10, 10) });
@@ -727,20 +730,18 @@
       }
       if (kind === 0) {
         // fire: a burning meteor falls in a slant with a thick flame trail and smoke, and blows up into a fire blast
-        var ball = picHead('fireball-ball', 1.35 * B, -0.765, 0.756, 0.286);
-        homing({ from: skyStart(g, rr(1.0, 1.6), -0.4), to: to, time: c.D(big ? 0.42 : 0.34), fancy: false, noMuzzle: true, ease: function (x) { return x * x * 0.7 + x * 0.3; },
-          trail: { w: 0.42 * B, col: 0xff6a1a, core: 1, pts: 22, shrink: 40 },
-          heads: [{ frame: 'glow', color: 0xff6a2b, size: 2.2 * B, alpha: 0.55 }, { sys: 'col', frame: 'flame', color: 0xff5a1a, size: 1.2 * B, spin: 6 }, { sys: 'col', frame: 'flame', color: 0xffc040, size: 0.85 * B, spin: -9 }, { frame: 'flare', color: 0xffffff, size: 0.6 * B, spin: -5, white: true }],
+        var ball = P3.fireball({ size: 0.24 * B, col: 0xff6a1a });
+        homing({ from: skyStart(g, rr(1.0, 1.6), -0.4), to: to, time: c.D(big ? 0.42 : 0.34), fancy: false, noMuzzle: true, ease: function (x) { return x * x * 0.7 + x * 0.3; }, heads: [],
           emit: function (p, v, dt) {
-            if (ball) ball.set(p, v, dt);
+            ball.set(p, v, dt);
             var back = v.clone().multiplyScalar(-0.1);
-            if (Math.random() < dt * 110 * c.n) fire(p, 1, { size: 0.8 * B, speed: 0.6, up: 0.4, life: 0.7, v: back });
+            if (Math.random() < dt * 34 * c.n) trailFire(p, v, 0.24 * B, { size: 0.5 * B, speed: 0.6, up: 0.4, life: 0.7, v: back });
             if (Math.random() < dt * 30 * c.n) E({ sys: 'norm', pos: p.clone(), vel: back.clone().add(V(0, 0.5, 0)), frame: 'smoke', color: 0x4a3c38, size: [0.3 * B, 1.0 * B], ease: 1, life: 0.7, alpha: 0.4, drag: 2, fadeIn: 0.2 });
             if (Math.random() < dt * 40 * c.n) E({ pos: p.clone(), vel: rdir(1.8).add(back), frame: 'dot', color: [0xffe080, 0xff5a1a], size: [0.09, 0], life: 0.45, grav: 2, stretch: 0.1 });
           },
           onHit: function (p) {
-            if (ball) ball.kill();
-            picAt('fireball-blast', V(p.x, 0, p.z), (big ? 0.95 : 0.7) * B, 'blast', 0.3); if (mob.alive) fireBurst(c, mob, 0.9 * B);
+            ball.kill();
+            P3.blast(V(p.x, 0, p.z), { size: (big ? 0.7 : 0.5) * B, col: 0xff8a2b, flash: true, chips: 3, ring: 2.2, life: 0.7 }); if (mob.alive) fireBurst(c, mob, 0.9 * B);
             shaft(V(p.x, 0, p.z), 2.8 * B, 0.32, [0xffffff, 0xffc23a, 0xff5a1a], 0.26, { hot: 1.2, fadeOut: 0.4 });
             embers(p, [0xffe080, 0xff6a2b], N(big ? 12 : 6, c), { speed: 3.2, up: 3, grav: 3 }); scorch(V(p.x, 0, p.z), 1.3 * B, 2.6);
             land(p);
@@ -763,15 +764,15 @@
       }
       if (kind === 2) {
         // ice: a great icicle spears down, smaller shards follow around it, and the ground freezes in a ring of spikes
-        picFall('iceStorm-shard', g, (big ? 1.9 : 1.4) * B, c.D(big ? 0.26 : 0.22), 0.55, function () {
-          if (mob.alive) iceBurst(c, mob, 1.0 * B);
+        iceFall(g, (big ? 1.7 : 1.3) * B, c.D(big ? 0.26 : 0.22), function () {
+          if (mob.alive) iceBurst(c, mob, 1.0 * B, true);
           var q = mp(mob);
-          for (var s = 0; s < (big ? 8 : 5); s++) { var a = s / (big ? 8 : 5) * 6.283; iceSpike(V(g.x + Math.cos(a) * 0.9 * B, 0, g.z + Math.sin(a) * 0.45 * B), rr(0.7, 1.1) * B, c.D(0.7), Math.cos(a) * 0.5); }
+          P3.iceSpikes(g, { size: 0.95 * B, n: big ? 8 : 5, col: col });
           E({ sys: 'gadd', pos: V(g.x, 0.04, g.z), frame: 'frost', color: 0xbfe8ff, size: [0.4, 3.4 * B], ease: 1, life: 1.0, fadeOut: 0.5, alpha: 0.85 });
           flare(q, 0xffffff, 1.8 * B, 0.18, { white: true });
           land(q);
         });
-        if (big) for (var j = 0; j < 2; j++) (function (j) { var a = rr(0, 6.28), off = V(g.x + Math.cos(a) * 1.0 * B, 0, g.z + Math.sin(a) * 0.5 * B); after(c.D(0.06 + j * 0.05), function () { picFall('iceStorm-shard', off, 1.0 * B, c.D(0.2), 0.45, null); }); })(j);
+        if (big) for (var j = 0; j < 2; j++) (function (j) { var a = rr(0, 6.28), off = V(g.x + Math.cos(a) * 1.0 * B, 0, g.z + Math.sin(a) * 0.5 * B); after(c.D(0.06 + j * 0.05), function () { iceFall(off, 0.9 * B, c.D(0.2), function () { P3.iceSpikes(off, { size: 0.5 * B, n: 3, col: col }); }); }); })(j);
         return;
       }
       if (kind === 3) {
@@ -813,6 +814,17 @@
     // the small burst a monster takes when its element's wave lands elsewhere
     // Is this point on the part of the battle screen the player can see (not under the top bar or the skill row)?
     function onScreen(p) { var q = p.clone().project(sc.camera); return q.x > -0.84 && q.x < 0.84 && q.y > -0.52 && q.y < 0.76 && q.z < 1; }
+    // a 3D icicle dropping out of the sky, slanted a little, point first, on to the ground point g
+    function iceFall(g, len, time, onLand) {
+      var spear = P3.iceSpear({ size: len }), from = skyStart(g, rr(-0.8, 0.8), -0.4), end = V(g.x, len * 0.35, g.z), t = 0, cur = V(), last = from.clone(), vel = V();
+      tick(function (dt) {
+        t += dt; var f = Math.min(1, t / time), e = f * f;
+        cur.copy(from).lerp(end, e); if (dt > 1e-4) vel.copy(cur).sub(last).multiplyScalar(1 / dt); last.copy(cur);
+        spear.set(cur, vel.lengthSq() > 1e-6 ? vel : V(0, -1, 0), dt);
+        if (f < 1) return false;
+        spear.kill(); if (onLand) onLand(); return true;
+      });
+    }
     // Where something falling out of the sky starts: as high above the spot as the screen allows, so the whole fall is seen.
     function skyStart(g, dx, dz) {
       for (var h = 5.6; h > 2.4; h -= 0.4) { var p = V(g.x + dx * h / 5.6, h, g.z + dz); var q = p.clone().project(sc.camera); if (q.y < 0.74) return p; }

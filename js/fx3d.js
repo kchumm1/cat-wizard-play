@@ -78,6 +78,21 @@
       'float fl=n*0.65+n2*0.35;float body=smoothstep(-0.8,0.7,b)*(0.55+0.45*f);' +
       'float al=smoothstep(0.44,0.66,fl+b*0.1)*body*uAlpha;' +
       'gl_FragColor=vec4(ramp(0.4+fl*0.48-b*0.22-uBright*0.15,uCol),clamp(al,0.0,1.0));}',
+    // a ball of fire: rolling flames all over it running back the way it came (object +Y points backwards), white hot
+    // in the middle where it faces the camera, torn into tongues at its outline
+    fire: 'uniform vec3 uCol,uDeep;uniform float uSeed,uAlpha;void main(){' + F +
+      'float b=vP.y;float n=fb(vec3(vP.x*2.2,vP.z*2.2,b*2.4-uTime*9.0+uSeed)),n2=fb(vec3(vP.x*4.8,vP.z*4.8,b*5.0-uTime*15.0+uSeed));' +
+      'float fl=n*0.6+n2*0.4;float t=0.16+pow(f,2.0)*0.38+fl*0.34-b*0.1;' +
+      'float al=smoothstep(0.28,0.58,fl+f*0.4)*(0.45+0.4*f)*uAlpha;' +
+      'gl_FragColor=vec4(ramp3(t-uBright*0.18,uDeep,uCol),clamp(al,0.0,1.0));}',
+    // ice: a clear blue crystal, each flat face lit a little differently, a cold light drifting inside it, white at its
+    // edges with a hard glint; drawn over the picture (not added as light) so it reads on snow as well
+    ice: 'uniform vec3 uCol,uDeep;uniform float uAlpha,uSeed;void main(){vec3 N=normalize(vWN);' + F +
+      'float rim=pow(1.0-f,2.0),facet=0.5+0.5*dot(N,normalize(vec3(0.4,0.8,0.45)));' +
+      'float glint=pow(max(dot(reflect(-normalize(vV),normalize(vN)),normalize(vec3(0.25,0.55,0.8))),0.0),20.0);' +
+      'float inner=fb(vP*vec3(3.0,1.1,3.0)+vec3(0.0,-uTime*2.0,uSeed));' +
+      'vec3 c=mix(uDeep,uCol,facet*0.75+inner*0.35);c=mix(c,vec3(1.0),clamp(rim*0.7+glint,0.0,1.0));' +
+      'float al=(0.45+0.35*facet+rim*0.5+glint)*uAlpha;gl_FragColor=vec4(c,clamp(al,0.0,1.0));}',
     // the white-hot air in front of a falling rock: a cap (half ball, pole into the wind) that streams back
     sheath: 'uniform vec3 uCol;uniform float uAlpha;void main(){' + F +
       'float n=fb(vec3(vP.x*3.0,vP.z*3.0,vP.y*5.0+uTime*16.0));float front=smoothstep(0.0,1.0,vP.y);' +
@@ -192,6 +207,7 @@
       rocks: [rockGeo(1.3, 3, 0.34, 0.85), rockGeo(4.1, 3, 0.38, 0.8), rockGeo(7.7, 3, 0.32, 0.9)],
       chips: [rockGeo(2.2, 1, 0.42, 0.7), rockGeo(5.5, 1, 0.45, 0.8), rockGeo(9.1, 1, 0.38, 0.75)],
       puff: new T.SphereGeometry(1, 18, 14),
+      crystal: (function () { var g = new T.LatheGeometry([new T.Vector2(0, -0.42), new T.Vector2(0.8, -0.22), new T.Vector2(1, 0.02), new T.Vector2(0.62, 0.55), new T.Vector2(0, 1)], 6).toNonIndexed(); g.computeVertexNormals(); return g; })(),
       // the ring of thrown dirt: narrow at the ground (uv.y 0), wide at its top
       curtain: (function () { var g = new T.CylinderGeometry(1, 0.42, 1, 56, 6, true); g.translate(0, 0.5, 0); return g; })()
     };
@@ -215,6 +231,7 @@
     }
     // one outline material for every falling stone; one pool for the lit rock chips
     var LINE = new T.MeshBasicMaterial({ color: 0x170d0a, side: T.BackSide }); LINE.userData.keep = true;
+    var ICE_LINE = new T.MeshBasicMaterial({ color: 0x17407a, side: T.BackSide }); ICE_LINE.userData.keep = true;
     function chipMat(hot) { var l = pool.chip, m = l && l.pop(); if (!m) { m = new T.MeshLambertMaterial({ color: 0x4a3a36 }); m.userData.poolKey = 'chip'; } m.emissive.setHex(hot); return m; }
     function add(mesh, o) {
       o = o || {}; mesh.renderOrder = o.order === undefined ? 6 : o.order; mesh.frustumCulled = false; group.add(mesh);
@@ -282,6 +299,7 @@
       var geo = GEO.rocks[(Math.random() * 3) | 0];
       var body = add(new T.Mesh(geo, mat(FS.rock, { uHot: { value: C(o.hot || 0xff8a2b) }, uDir: { value: vd.clone() }, uBase: { value: C(o.base || 0x5e4f48) }, uHeat: { value: 1 } }, { solid: true })), { order: 5 });
       var line = add(new T.Mesh(geo, LINE), { order: 5 });
+      body.mesh.name = 'core3d rock';
       var cap = add(new T.Mesh(GEO.dome, mat(FS.sheath, { uCol: { value: C(o.col || 0xffb030) }, uAlpha: { value: 1 } })), { order: 6 });
       var tail = add(new T.Mesh(GEO.cone, mat(FS.tail, { uCol: { value: C(o.col || 0xffb030) }, uSeed: { value: Math.random() * 9 }, uAlpha: { value: 1 } })), { order: 6 });
       var glow = orb({ col: o.col || 0xffb030, deep: o.hot || 0xff6a1a, alpha: 0.26, order: 6 });
@@ -311,6 +329,76 @@
         },
         kill: function () { drop(body); drop(line); drop(cap); drop(tail); drop(blaze); drop(blaze2); glow.kill(); }
       };
+    }
+    // ---------- a fireball: rolling fire round a white-hot heart, flames streaming back off it, a fire tail and a little
+    // smoke; it all points the way it flies. set() it every frame like a painted head; kill() when it lands ----------
+    function fireball(o) {
+      var size = o.size || 0.3, col = o.col || 0xff7a2b, vd = new T.Vector3(0, -1, 0), back = new T.Vector3(), qb = new T.Quaternion(), puffT = 0, at = new T.Vector3();
+      var glow = orb({ col: col, deep: 0xff4a10, alpha: 0.18, order: 6 });
+      var ball = add(new T.Mesh(GEO.ball, mat(FS.fire, { uCol: { value: C(col) }, uDeep: { value: C(0x8a1a08) }, uSeed: { value: Math.random() * 9 }, uAlpha: { value: 1 } })), { order: 7 });
+      var heart = orb({ col: o.hot || 0xfff2c0, deep: col, alpha: 0.6, order: 8 });
+      var flames = add(new T.Mesh(GEO.ball, mat(FS.blaze, { uCol: { value: C(col) }, uSeed: { value: Math.random() * 9 }, uAlpha: { value: 0.85 } })), { order: 7 });
+      var tail = add(new T.Mesh(GEO.cone, mat(FS.tail, { uCol: { value: C(col) }, uSeed: { value: Math.random() * 9 }, uAlpha: { value: 1 } })), { order: 6 });
+      ball.mesh.name = 'core3d fire';   // (checks find the 3D bodies by this name)
+      return {
+        set: function (pos, vel, dt) {
+          var sp = vel.length(); if (sp > 1e-4) vd.copy(vel).multiplyScalar(1 / sp);
+          back.copy(vd).negate(); qb.setFromUnitVectors(Y, back);
+          glow.set(pos, size * 2.0); heart.set(pos, size * 0.45);
+          ball.mesh.position.copy(pos); ball.mesh.quaternion.copy(qb); ball.mesh.scale.set(size, size * 1.12, size);
+          flames.mesh.position.copy(pos).addScaledVector(back, size * 0.45); flames.mesh.quaternion.copy(qb); flames.mesh.scale.set(size * 1.35, size * 2.1, size * 1.35);
+          var len = Math.max(1.4, Math.min(4.5, sp * 0.2)) * size / 0.3;
+          tail.mesh.position.copy(pos).addScaledVector(back, size * 0.3); tail.mesh.quaternion.copy(qb); tail.mesh.scale.set(size * 0.95, len, size * 0.95);
+          puffT -= dt || 0;
+          if (puffT <= 0) { puffT = 0.05; at.copy(pos).addScaledVector(back, size * (1.6 + Math.random())); puff(at, { s0: size * 0.25, s1: size * 0.65, life: 0.55, vel: back.clone().multiplyScalar(0.5).add(new T.Vector3(0, 0.3, 0)), alpha: 0.35, order: 4 }); }
+        },
+        kill: function () { glow.kill(); drop(ball); heart.kill(); drop(flames); drop(tail); }
+      };
+    }
+    // ---------- an ice spear: a long clear crystal with a dark blue outline, a cold glow round it and frost mist left
+    // along its way. set(pos, vel, dt, grow): its middle at pos, its point along vel, grow 0..1 while it forms ----------
+    function iceSpear(o) {
+      var len = o.size || 1, col = o.col || 0x9fe4ff, deep = o.deep || 0x2a6cff, vd = new T.Vector3(0, 1, 0), q = new T.Quaternion(), spin = 0, mistT = 0, at = new T.Vector3();
+      var glow = orb({ col: col, deep: deep, alpha: 0.35, order: 6 });
+      var body = add(new T.Mesh(GEO.crystal, mat(FS.ice, { uCol: { value: C(col) }, uDeep: { value: C(deep) }, uAlpha: { value: 0.88 }, uSeed: { value: Math.random() * 9 } }, { normal: true })), { order: 7 });
+      var line = add(new T.Mesh(GEO.crystal, ICE_LINE), { order: 7 });
+      body.mesh.name = 'core3d ice';
+      return {
+        set: function (pos, vel, dt, grow) {
+          var g = grow === undefined ? 1 : Math.max(0.001, grow), sp = vel.length(); if (sp > 1e-4) vd.copy(vel).multiplyScalar(1 / sp);
+          spin += (dt || 0) * 4; q.setFromUnitVectors(Y, vd).multiply(new T.Quaternion().setFromAxisAngle(Y, spin));
+          var L = len * g, r = len * 0.13 * g;
+          body.mesh.position.copy(pos).addScaledVector(vd, -L * 0.3); body.mesh.quaternion.copy(q); body.mesh.scale.set(r, L, r);
+          line.mesh.position.copy(body.mesh.position); line.mesh.quaternion.copy(q); line.mesh.scale.set(r * 1.18, L * 1.04, r * 1.18);
+          glow.set(pos, L * 0.42);
+          mistT -= dt || 0;
+          // frost mist only while it flies (not while it forms, when vel is just where it aims)
+          if (grow === undefined && sp > 1 && mistT <= 0) { mistT = 0.04; at.copy(pos).addScaledVector(vd, -L * (0.5 + Math.random() * 0.4)); puff(at, { s0: r * 0.7, s1: r * 1.8, life: 0.45, vel: new T.Vector3(0, 0.2, 0), dark: 0x8fc0e8, light: 0xf0faff, alpha: 0.2, order: 4 }); }
+        },
+        kill: function () { glow.kill(); drop(body); drop(line); }
+      };
+    }
+    // ---------- ice bursting up out of the ground round a spot: crystals shoot up leaning outward, stand a moment, then
+    // sink back into the ground (size: how far they spread; n: how many) ----------
+    function iceSpikes(pos, o) {
+      o = o || {}; var R = o.size || 1, n = o.n || 7, col = o.col || 0x9fe4ff, life = 1.0;
+      for (var i = 0; i < n; i++) {
+        (function (i) {
+          var a = i / n * 6.283 + Math.random() * 0.4, d = i === 0 ? 0 : R * (0.35 + Math.random() * 0.3), h = R * (i === 0 ? 1.25 : 0.6 + Math.random() * 0.45), w = h * 0.2;
+          var tilt = new T.Quaternion().setFromAxisAngle(new T.Vector3(Math.sin(a), 0, -Math.cos(a)), i === 0 ? 0 : 0.35 + Math.random() * 0.3);
+          var body = add(new T.Mesh(GEO.crystal, mat(FS.ice, { uCol: { value: C(col) }, uDeep: { value: C(0x2a6cff) }, uAlpha: { value: 0.9 }, uSeed: { value: Math.random() * 9 } }, { normal: true })), { order: 5, life: life });
+          var line = add(new T.Mesh(GEO.crystal, ICE_LINE), { order: 5, life: life });
+          body.mesh.name = 'spike3d';
+          var x = pos.x + Math.cos(a) * d, z = pos.z + Math.sin(a) * d * 0.8, delay = i === 0 ? 0 : 0.02 + Math.random() * 0.06;
+          body.upd = function (dt, t) {
+            var k = Math.max(0, t - delay), up = ease(k / 0.1), sink = Math.max(0, (t - life * 0.68) / (life * 0.32));
+            // sinks all the way under the ground (tip and tilted edge too) before it goes, so it never vanishes in the air
+            var hh = h * Math.max(0.001, up), y = hh * 0.42 - sink * hh * 1.5;
+            [body, line].forEach(function (p, j) { p.mesh.position.set(x, y, z); p.mesh.quaternion.copy(tilt); p.mesh.scale.set(w * (j ? 1.18 : 1), hh * (j ? 1.04 : 1), w * (j ? 1.18 : 1)); });
+          };
+          body.upd(0, 0);
+        })(i);
+      }
     }
     // ---------- where a rock is about to land: the ground darkens under it and is lit by its fire ----------
     function mark(o) {
@@ -444,13 +532,13 @@
       warmed[sig] = true;
       var far = new T.Vector3(0, -40, 0), vel = new T.Vector3(1, -3, 0), start = parts.length;
       beam({ col: 0xffffff, deep: 0x8866ff, r: 0.1 }).set(far, far.clone().add(vel), 1); orb({ col: 0xffffff }).set(far, 1, 1); moon({}).set(far, 1, 0);
-      rock({ size: 0.3 }).set(far, vel, 0.05); mark({}).set(far, 0.5, 1); impact(far, { size: 1, chips: 3 }); blast(far, { size: 1, flash: true });
+      rock({ size: 0.3 }).set(far, vel, 0.05); fireball({ size: 0.3 }).set(far, vel, 0.05); iceSpear({ size: 1 }).set(far, vel, 0.05); iceSpikes(far, { n: 2 }); mark({}).set(far, 0.5, 1); impact(far, { size: 1, chips: 3 }); blast(far, { size: 1, flash: true });
       var h = hole({ pos: far }); h.set(1, 1, 0); h.lens.dead = true; puff(far, {}); chip(far, 1, 0xff7a1a, false);
       sc.renderer.compile(sc.scene, sc.camera);
       for (var i = parts.length - 1; i >= start; i--) drop(parts[i]);
       parts.length = start;
       if (sc.warmLens) sc.warmLens();
     }
-    return { beam: beam, orb: orb, moon: moon, rock: rock, mark: mark, impact: impact, puff: puff, blast: blast, chip: chip, hole: hole, update: update, clear: clear, warm: warm, setBright: function (v) { bright = !!v; }, count: function () { return parts.length; } };
+    return { beam: beam, orb: orb, moon: moon, rock: rock, fireball: fireball, iceSpear: iceSpear, iceSpikes: iceSpikes, mark: mark, impact: impact, puff: puff, blast: blast, chip: chip, hole: hole, update: update, clear: clear, warm: warm, setBright: function (v) { bright = !!v; }, count: function () { return parts.length; } };
   };
 })(this);
