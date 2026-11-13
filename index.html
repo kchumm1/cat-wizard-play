@@ -1242,15 +1242,14 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 
 <style>/* app only: clear the iPhone notch, no long-press menus */
 #hud{padding-top:calc(4px + var(--cap,0px) + env(safe-area-inset-top,0px))}
-html.sa{--cap:0px}
-html.sa #stage::after{content:"";position:absolute;left:0;right:0;top:0;height:calc(env(safe-area-inset-top,0px) + var(--cap) + 10px);pointer-events:none;background:linear-gradient(180deg,#F1E8D8 0,#F1E8D8 calc(100% - 10px),rgba(241,232,216,0))}
+html.sa{--cap:calc(-1 * clamp(0px, (env(safe-area-inset-top,0px) - 30px) * .5, 16px))}
 html.sa #quick{top:calc(102px + var(--cap) + env(safe-area-inset-top,0px))}
 html.sa #buffs{top:calc(102px + var(--cap) + env(safe-area-inset-top,0px))}
 html.sa #dunHud{top:calc(96px + var(--cap) + env(safe-area-inset-top,0px))}
 html.sa #sheet,html.sa #sheet.tall{height:calc(100% - var(--tabh) - 108px - var(--cap) - env(safe-area-inset-top,0px) - max(2px,env(safe-area-inset-bottom,0px) - 16px))}
 #app{-webkit-touch-callout:none}
 #app{position:fixed;top:0;bottom:0;left:0;right:0;height:auto}
-html,body{background:#F1E8D8}
+html,body{background:#0f1330}
 html.fullh,html.fullh body{height:var(--apph)}
 html.fullh #app{position:relative;top:auto;bottom:auto;left:auto;right:auto;height:100%}
 html.fullh .modal,html.fullh #gachaFx,html.fullh .flashbg{position:absolute;bottom:auto;height:var(--apph)}
