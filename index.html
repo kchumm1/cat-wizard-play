@@ -1031,7 +1031,7 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 .appver{font:400 13px var(--display);color:var(--gold);white-space:nowrap}
 /* ==CREAM-START== design pack 2026-11-14 (cream #F1EADF, card #FFF9F0, champagne #BDA16B, sage #8A9D87, brown text #443C35):
    the training sheet (#sheet.cream, ui.js openTab sets it only for the 훈련 tab) and the top stage bar. Same layout, softer look. */
-#sheet.cream{--cr-card:#FFF9F0;--cr-ch:#BDA16B;--cr-line:#E4D6BC;--cr-ink:#443C35;--cr-mut:#857767;background:#F1EADF;color:var(--cr-ink);box-shadow:0 -6px 22px rgba(40,30,20,.3),inset 0 1.5px 0 #fffdf8}
+#sheet.cream{--panel:#FFF9F0;--panel-2:#F3E8D3;--card:linear-gradient(180deg,#FFFCF6,#FFF6E9);--cut:inset 0 0 0 1.5px #E4D6BC,0 2px 0 rgba(150,120,70,.14);--ol:#E6D8BD;--text:#443C35;--muted:#7a6d60;--faint:#8f8272;--line:#E4D6BC;--gold-soft:#9a7428;--gem-soft:#3f6a8a;--sel-grad:linear-gradient(180deg,#D2B57C,#B79A5E);--sel-ink:#fffaf0;--cr-card:#FFF9F0;--cr-ch:#BDA16B;--cr-line:#E4D6BC;--cr-ink:#443C35;--cr-mut:#857767;background:#F1EADF;color:var(--cr-ink);box-shadow:0 -6px 22px rgba(40,30,20,.3),inset 0 1.5px 0 #fffdf8}
 #sheet.cream .sheet-head::before{background:rgba(68,60,53,.2)}
 #sheet.cream .sheet-head b{font:400 23px var(--display);color:var(--cr-ink);text-shadow:none}
 #sheet.cream .sheet-head b .ico{filter:none}
@@ -1142,6 +1142,60 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 #tabs button[aria-selected=true]{color:#8d6c2c;background:radial-gradient(55% 62% at 50% 62%,rgba(205,176,122,.28),transparent)}
 #tabs button[aria-selected=true] img.ico{filter:drop-shadow(0 3px 2px rgba(92,67,48,.4)) drop-shadow(0 0 6px rgba(205,176,122,.65))}
 #tabs button[aria-selected=true]::after{background:#BDA16B}
+/* ---- every menu screen is cream now (index.html gives #sheet the class for good): the theme colours are swapped inside
+   the sheet above, and here is what still had white text or a dark box of its own ---- */
+#sheet.cream{--gold:#a8822e;--gem:#2f7fb0}
+#sheet.cream b[style*="#fff"],#sheet.cream span[style*="#fff"]{color:var(--cr-ink)!important}
+#sheet.cream .note b,#sheet.cream .codexbar b,#sheet.cream .shards b,#sheet.cream .sghead b{color:#4f8a3c}
+#sheet.cream .shards b,#sheet.cream .dsel b,#sheet.cream .dmgval,#sheet.cream .appver,#sheet.cream .gacha-head .lvl,#sheet.cream .slotpick em{color:#9a7428}
+#sheet.cream .sglv b,#sheet.cream .prod .amt,#sheet.cream .pull span{color:#2f6f93}
+#sheet.cream .deff{color:#4f8a3c}
+#sheet.cream .sktier{color:var(--cr-ink);text-shadow:none}
+#sheet.cream .sktier b{color:#fffaf0;background:linear-gradient(180deg,#D2B57C,#B79A5E);box-shadow:inset 0 0 0 1px #A88A50}
+#sheet.cream .sktier small{color:var(--cr-mut)}
+#sheet.cream .pull b,#sheet.cream .pack .name,#sheet.cream .ccard b,#sheet.cream .binfo .eff,#sheet.cream th{color:var(--cr-ink)}
+#sheet.cream .ccard .cdesc,#sheet.cream td{color:#6e6255}
+#sheet.cream .pull.big{background:linear-gradient(180deg,#F6DFA6,#E4BE6F);box-shadow:inset 0 0 0 1.5px #C9A562,0 3px 0 #B8975A}
+#sheet.cream .pull.big b,#sheet.cream .pull.big span,#sheet.cream .pull.big small{color:#4d3b1f}
+#sheet.cream .pack .picon,#sheet.cream .dung .dicon{background:radial-gradient(circle at 50% 38%,#FFFDF8,#F1E6D2);box-shadow:inset 0 0 0 1.5px #E6D7BB}
+#sheet.cream .notice{background:#FBEAE6;color:#8a3a40;box-shadow:inset 0 0 0 1.5px #EBC3BE}
+#sheet.cream .jump,#sheet.cream #panel>.jump{background:linear-gradient(180deg,#F1EADF 80%,rgba(241,234,223,0))}
+#sheet.cream .jump button{color:#6d6052;background:var(--cr-card);box-shadow:inset 0 0 0 1.5px var(--cr-line),0 2px 0 rgba(150,120,70,.14)}
+#sheet.cream .dmgset input[type=range]{accent-color:#B79A5E;background:transparent}
+#sheet.cream .sgcell.empty{background:#F3EBDD;box-shadow:inset 0 0 0 1.5px #E4D6BC}
+#sheet.cream .sgcell.empty::before{box-shadow:inset 0 0 0 2px #E1D3B8}
+#sheet.cream .sgcell.lockd{background:#EEE6D8;box-shadow:inset 0 0 0 1px #E0D4C0;color:#a39684}
+#sheet.cream .runering{background:radial-gradient(circle,#FFF9EE 0 30%,#F4EAD8 31% 66%,transparent 67%);box-shadow:inset 0 0 0 1.5px #E4D6BC}
+#sheet.cream .rcore{background:radial-gradient(circle,#FFFDF6,#F4E8D0);box-shadow:inset 0 0 0 2px var(--cr-ch)}
+#sheet.cream .rcore b{color:var(--cr-ink)}
+#sheet.cream .rune b{background:#FFF9F0;color:var(--cr-ink);text-shadow:none}
+#sheet.cream .srow.boss{background:linear-gradient(90deg,#FBE8E2,var(--cr-card) 70%)}
+#sheet.cream .srow .sgo{color:#9a7428}
+/* popups (offline gold, job change, confirm) use the same cream card */
+#modalCard{--panel:#FFF9F0;--panel-2:#F3E8D3;--text:#443C35;--muted:#7a6d60;--ol:#E6D8BD;--gold:#a8822e;--gem:#2f7fb0;background:#F1EADF;color:#443C35;box-shadow:inset 0 0 0 1.5px #CDB07A,0 0 0 1px rgba(92,67,48,.3),0 10px 30px rgba(20,15,10,.45)}
+#modalCard h2{color:#443C35;text-shadow:none}
+#modalCard .btn{border:0;background:linear-gradient(180deg,#A3B39E,#8A9D87);color:#fbfaf3;box-shadow:inset 0 0 0 1px #7b8e77,0 2px 0 #73856f}
+#modalCard .btn.pri{background:linear-gradient(180deg,#FBEBC0,#EDCF85);color:#4d3b1f;box-shadow:inset 0 0 0 1.5px #C9A562,0 3px 0 #B8975A}
+/* little notes in the middle of the screen */
+#toast{background:linear-gradient(180deg,#FFFBF3,#F5ECDC);color:#443C35;box-shadow:inset 0 0 0 1.5px #CDB07A,0 0 0 1px rgba(92,67,48,.28),0 4px 12px rgba(40,30,20,.3)}
+/* battle screen, bottom: goal line, preset buttons, the four skill slots and the surge gauge; top: potion timers and boss */
+#quest,#pre button,#buffs span{background:linear-gradient(180deg,#FFFBF3,#F5ECDC);box-shadow:inset 0 0 0 1.5px #CDB07A,0 0 0 1px rgba(92,67,48,.28),0 2px 6px rgba(40,30,20,.25);color:#443C35}
+#quest b{color:#fffaf0;background:linear-gradient(180deg,#D2B57C,#B79A5E)}
+#pre button{color:#7a6d60}
+#pre button[aria-pressed=true]{background:linear-gradient(180deg,#FBE7A6,#EDCB72);color:#4d3b1f;box-shadow:inset 0 0 0 1.5px #C9A562,0 2px 0 #B8975A}
+#slots .sk{background:radial-gradient(circle at 50% 32%,#FFFDF8,#F1E6D2 80%);box-shadow:0 0 0 1px rgba(92,67,48,.3),inset 0 0 0 2.5px color-mix(in srgb,var(--c,#888) 80%,#fff),0 3px 0 #CDB07A,0 3px 8px rgba(40,30,20,.25)}
+#slots .sk.now{box-shadow:0 0 0 1px rgba(92,67,48,.3),inset 0 0 0 3px #fff,0 3px 0 #CDB07A,0 0 18px var(--c)}
+#slots .sk b{background:#FFF9F0;color:#443C35}
+#surgeGauge{background:#ECE5D1;box-shadow:inset 0 0 0 1.2px #D6C8A6,0 0 0 1px rgba(92,67,48,.25)}
+#surgeGauge b{color:#fffaf0;text-shadow:0 1px 2px rgba(40,30,20,.8)}
+#hud .place.stg,#bossbox,#retry{border:0}
+#bossbox{box-shadow:inset 0 0 0 1.5px #CDB07A,0 0 0 1px rgba(92,67,48,.28),0 3px 8px rgba(40,30,20,.28);background:linear-gradient(180deg,#FFFBF3,#F5ECDC);color:#443C35}
+#bossName{color:#443C35}
+#bossTime{color:#8a5a2a}
+#bossbox .bar{background:#ECE5D1;box-shadow:inset 0 0 0 1.2px #D6C8A6,inset 0 2px 0 rgba(120,100,60,.12)}
+#bossbox .bar i{background:linear-gradient(180deg,#F6B8A0,#E58C74 60%,#D5735E);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -1.5px 0 rgba(120,40,20,.22)}
+#retry{background:linear-gradient(180deg,#FFFBF3,#F5ECDC);color:#5c4330;box-shadow:inset 0 0 0 1.5px #CDB07A,0 0 0 1px rgba(92,67,48,.28),0 3px 8px rgba(40,30,20,.3);-webkit-text-stroke:0}
+#banner{color:#6b4a2a;-webkit-text-stroke:6px #FFF6E4;text-shadow:0 3px 8px rgba(40,30,20,.45)}
 /* ==CREAM-END== */
 /* ==THEME-END== */
 @media (prefers-reduced-motion:reduce){#killBar i,.ico .orb,.sk.now .ico,.rlines .flow,.rcore.lit,.isg,.gart .gimg,.gart .gstaff,.gshine::after{animation:none!important}}
@@ -1170,7 +1224,7 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
     <div id="qrow"><div id="quest"><b>목표</b><span id="questTxt"></span></div><div id="pre" role="group" aria-label="스킬 프리셋"></div></div>
     <div id="surgeGauge" aria-label="마력 폭주 게이지"><i id="surgeFill"></i><b>폭주</b></div><div class="slots" id="slots"></div>
   </div>
-  <section id="sheet" aria-label="메뉴"><div class="sheet-head"><b id="sheetTitle">강화</b><button id="sheetClose">닫기</button></div><main id="panel" aria-live="polite"></main></section>
+  <section id="sheet" class="cream" aria-label="메뉴"><div class="sheet-head"><b id="sheetTitle">강화</b><button id="sheetClose">닫기</button></div><main id="panel" aria-live="polite"></main></section>
   <nav id="tabs" role="tablist">
     <button role="tab" data-tab="battle" aria-selected="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 4.5 9 15"/><path d="M19.5 4.5h-4.2M19.5 4.5v4.2"/><path d="m6.2 12.6 5.2 5.2"/><path d="M8.6 15.4 4.5 19.5"/></svg><span>전투</span></button>
     <button role="tab" data-tab="up" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V6"/><path d="m6.5 11.5 5.5-5.5 5.5 5.5"/><path d="M5 21h14"/></svg><span>훈련</span></button>
@@ -1187,7 +1241,13 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 <div id="toast"></div>
 
 <style>/* app only: clear the iPhone notch, no long-press menus */
-#hud{padding-top:calc(4px + env(safe-area-inset-top,0px))}
+#hud{padding-top:calc(4px + var(--cap,0px) + env(safe-area-inset-top,0px))}
+html.sa{--cap:24px}
+html.sa #stage::after{content:"";position:absolute;left:0;right:0;top:0;height:calc(env(safe-area-inset-top,0px) + var(--cap));pointer-events:none;background:linear-gradient(180deg,#F1E8D8 0,#F1E8D8 calc(100% - var(--cap)),rgba(241,232,216,0))}
+html.sa #quick{top:calc(102px + var(--cap) + env(safe-area-inset-top,0px))}
+html.sa #buffs{top:calc(102px + var(--cap) + env(safe-area-inset-top,0px))}
+html.sa #dunHud{top:calc(96px + var(--cap) + env(safe-area-inset-top,0px))}
+html.sa #sheet,html.sa #sheet.tall{height:calc(100% - var(--tabh) - 108px - var(--cap) - env(safe-area-inset-top,0px) - max(2px,env(safe-area-inset-bottom,0px) - 16px))}
 #app{-webkit-touch-callout:none}
 #app{position:fixed;top:0;bottom:0;left:0;right:0;height:auto}
 html,body{background:#F1E8D8}
@@ -1196,9 +1256,9 @@ html.fullh #app{position:relative;top:auto;bottom:auto;left:auto;right:auto;heig
 html.fullh .modal,html.fullh #gachaFx,html.fullh .flashbg{position:absolute;bottom:auto;height:var(--apph)}
 html.shortv #tabs{padding-bottom:4px}
 html.shortv #skillbar,html.shortv #sheet{bottom:calc(var(--tabh) + 4px)}
-html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108px - env(safe-area-inset-top,0px) - 4px)}
+html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108px - var(--cap,0px) - env(safe-area-inset-top,0px) - 4px)}
 </style>
-<script>(function(){var sa=navigator.standalone||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches);if(!sa)return;var d=document.documentElement;function typing(){var a=document.activeElement;return a&&/^(INPUT|TEXTAREA)$/.test(a.tagName);}function fit(){var inside=false;try{inside=localStorage.getItem("cw-bottom")==="inside";}catch(e){}var land=window.innerWidth>window.innerHeight,h=land?Math.min(screen.width,screen.height):Math.max(screen.width,screen.height),gap=h-window.innerHeight;var stretch=!inside&&gap>4&&gap<=120;if(stretch){d.style.setProperty("--apph",h+"px");d.classList.add("fullh");}else d.classList.remove("fullh");d.classList.toggle("shortv",!stretch&&gap>=30&&gap<=120);if(window.scrollY&&!typing())window.scrollTo(0,0);}window.__cwFit=fit;fit();addEventListener("resize",function(){setTimeout(fit,60);});addEventListener("orientationchange",function(){setTimeout(fit,250);});addEventListener("scroll",function(){if(window.scrollY&&!typing())window.scrollTo(0,0);},{passive:true});addEventListener("focusout",function(){setTimeout(function(){if(!typing())window.scrollTo(0,0);},200);});})();</script>
+<script>(function(){var sa=navigator.standalone||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches);if(!sa)return;document.documentElement.classList.add("sa");var d=document.documentElement;function typing(){var a=document.activeElement;return a&&/^(INPUT|TEXTAREA)$/.test(a.tagName);}function fit(){var inside=false;try{inside=localStorage.getItem("cw-bottom")==="inside";}catch(e){}var land=window.innerWidth>window.innerHeight,h=land?Math.min(screen.width,screen.height):Math.max(screen.width,screen.height),gap=h-window.innerHeight;var stretch=!inside&&gap>4&&gap<=120;if(stretch){d.style.setProperty("--apph",h+"px");d.classList.add("fullh");}else d.classList.remove("fullh");d.classList.toggle("shortv",!stretch&&gap>=30&&gap<=120);if(window.scrollY&&!typing())window.scrollTo(0,0);}window.__cwFit=fit;fit();addEventListener("resize",function(){setTimeout(fit,60);});addEventListener("orientationchange",function(){setTimeout(fit,250);});addEventListener("scroll",function(){if(window.scrollY&&!typing())window.scrollTo(0,0);},{passive:true});addEventListener("focusout",function(){setTimeout(function(){if(!typing())window.scrollTo(0,0);},200);});})();</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="js/num.js"></script>
 <script src="js/data.js"></script>
