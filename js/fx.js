@@ -620,7 +620,7 @@
             sparks(p, [0xffffff, 0xffd060, 0xff8a2b], N(big ? 40 : 20, c), 8.5, { size: 0.18, up: 2.8, stretch: 0.12 });
             for (var fk = 0; fk < N(big ? 14 : 5, c); fk++) E({ pos: p.clone().add(V(0, 0.2, 0)), vel: V(rr(-6, 6), rr(3, 8), rr(-4, 4)), frame: 'flame', color: [0xffe080, 0xff7a1a, 0xc8301a], size: [rr(0.3, 0.55) * cs, 0.08], life: rr(0.6, 1.0), grav: 10, drag: 0.5, spin: rr(-5, 5), fadeOut: 0.3 });
             sc.flash(big ? 'rgba(255,200,120,0.75)' : 'rgba(255,170,80,0.28)', big ? 0.6 : 0.1);
-            if (big) { fieldWave(gp2, 0xffb040, 0.9, 0xff7a1a); fieldWave(gp2, 0xff6a1a, 1.1); sc.slowmo(0.28, 0.35); sc.hitStop(0.1); }
+            if (big) { fieldWave(gp2, 0xffb040, 0.9, 0xff7a1a); fieldWave(gp2, 0xff6a1a, 1.1); sc.slowmo(0.45, 0.45, true); }
             sc.light(p, 0xffa040, big ? 3.2 : 2.4, 0.4); sc.shake(big ? 0.8 : 0.2); sc.punch(big ? 0.14 : 0.03);
             if (mob) c.hit(mob, frac, 0.9);
           } });
