@@ -280,8 +280,13 @@
       var pn = (s.diff ? '<u>' + CW.diffOf(s).name + '</u>' : '') + '<span class="rmark">' + mark + '</span><b data-t="' + R.name + '">' + R.name + '</b><i>' + CW.stageLabel(s.stage) + '</i>';
       if (pn !== lastPlace) {
         lastPlace = pn; $('placeName').innerHTML = pn;
-        // the band behind the iPhone clock takes the colour of this region's field (home-screen app only, tools/build-site.cjs)
-        if (CW.ICO.regionTop) document.documentElement.style.setProperty('--capc', CW.ICO.regionTop(info.region));
+        // the clock area above the home-screen app takes the colour of this region's field, and the field fades from it
+        // (tools/build-site.cjs): the phone paints that area in the page's theme colour
+        if (CW.ICO.regionTop) {
+          var capc = CW.ICO.regionTop(info.region), tc = document.querySelector('meta[name="theme-color"]');
+          document.documentElement.style.setProperty('--capc', capc);
+          if (tc) tc.setAttribute('content', capc);
+        }
       }
       $('goldTxt').textContent = fmt(s.gold); $('gemTxt').textContent = fmt(s.gems);
       $('lvTxt').textContent = 'Lv.' + s.level; $('xpBar').style.width = (s.level >= DATA.balance.levelMax ? 100 : Math.min(100, s.xp / CW.xpNeed(s.level) * 100)) + '%';
@@ -427,8 +432,9 @@
         '<div class="row"><div class="info"><div class="name">처음부터 다시 하기</div><div class="desc">모든 진행이 지워져요</div></div><button class="btn" data-set="reset">다시 하기</button></div>' +
         '<div class="row"><div class="info"><div class="name">게임 버전</div><div class="desc">새 버전이 나오면 앱을 다시 열 때 바뀌어요</div></div><b class="appver" id="appVer">' + appVersion() + '</b></div>' +
         lastErrorRow() + hitchRow() +
-        // only in the iPhone home-screen app, where the page may be stretched to the screen (tools/build-site.cjs)
-        (root.__cwFit ? '<div class="row"><div class="info"><div class="name">아래 메뉴</div><div class="desc">아래 메뉴가 잘리면 안쪽으로 바꿔 주세요</div></div><button class="btn" data-set="bottomFit">' + (bottomInside() ? '안쪽' : '맨 아래') + '</button></div>' : '') +
+        // only in an iPhone home-screen app whose page lies under the clock (an icon added the old way), where the page
+        // may be stretched to the screen (tools/build-site.cjs)
+        (root.__cwFit && document.documentElement.classList.contains('under') ? '<div class="row"><div class="info"><div class="name">아래 메뉴</div><div class="desc">아래 메뉴가 잘리면 안쪽으로 바꿔 주세요</div></div><button class="btn" data-set="bottomFit">' + (bottomInside() ? '안쪽' : '맨 아래') + '</button></div>' : '') +
         '<div class="row"><div class="info"><div class="name">화면 높이</div><div class="desc" id="scrInfo">' + screenInfo() + '</div></div></div>' +
         (G.storageOk() ? '' : '<p class="note">이 브라우저에서는 저장이 안 돼요. 창을 닫으면 진행이 사라져요.</p>') + '</div>';
       var diffs = '<h3>난이도</h3><div class="note" style="margin:-4px 0 8px">10-31 늑대 왕을 이기면 다음 난이도가 열려요. 보스 체력이 엄청 커지고 몬스터가 더 많이 몰려와요.</div><div class="list">' + DATA.difficulties.map(function (df, i) {
