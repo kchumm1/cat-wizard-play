@@ -1077,7 +1077,11 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 #app{-webkit-touch-callout:none}
 #app{position:fixed;top:0;bottom:0;left:0;right:0;height:auto}
 html,body{background:#0f1330}
+html.fullh,html.fullh body{height:var(--apph)}
+html.fullh #app{position:relative;top:auto;bottom:auto;left:auto;right:auto;height:100%}
+html.fullh .modal,html.fullh #gachaFx,html.fullh .flashbg{position:absolute;bottom:auto;height:var(--apph)}
 </style>
+<script>(function(){var sa=navigator.standalone||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches);if(!sa)return;var d=document.documentElement;function typing(){var a=document.activeElement;return a&&/^(INPUT|TEXTAREA)$/.test(a.tagName);}function fit(){var inside=false;try{inside=localStorage.getItem("cw-bottom")==="inside";}catch(e){}var land=window.innerWidth>window.innerHeight,h=land?Math.min(screen.width,screen.height):Math.max(screen.width,screen.height),gap=h-window.innerHeight;if(!inside&&gap>4&&gap<=120){d.style.setProperty("--apph",h+"px");d.classList.add("fullh");}else d.classList.remove("fullh");if(window.scrollY&&!typing())window.scrollTo(0,0);}window.__cwFit=fit;fit();addEventListener("resize",function(){setTimeout(fit,60);});addEventListener("orientationchange",function(){setTimeout(fit,250);});addEventListener("scroll",function(){if(window.scrollY&&!typing())window.scrollTo(0,0);},{passive:true});addEventListener("focusout",function(){setTimeout(function(){if(!typing())window.scrollTo(0,0);},200);});})();</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="js/num.js"></script>
 <script src="js/data.js"></script>

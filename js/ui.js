@@ -419,6 +419,8 @@
         '<div class="row"><div class="info"><div class="name">진행 옮기기</div><div class="desc">다른 기기(아이폰·갤럭시)로 옮길 때: 코드를 복사해서 다른 기기의 "코드 넣기"에 붙여요</div></div><div class="sbtns"><button class="btn" data-act="savecopy">코드 복사</button><button class="btn" data-act="savepaste">코드 넣기</button></div></div>' +
         '<div class="row"><div class="info"><div class="name">처음부터 다시 하기</div><div class="desc">모든 진행이 지워져요</div></div><button class="btn" data-set="reset">다시 하기</button></div>' +
         '<div class="row"><div class="info"><div class="name">게임 버전</div><div class="desc">새 버전이 나오면 앱을 다시 열 때 바뀌어요</div></div><b class="appver" id="appVer">' + appVersion() + '</b></div>' +
+        // only in the iPhone home-screen app, where the page may be stretched to the screen (tools/build-site.cjs)
+        (root.__cwFit ? '<div class="row"><div class="info"><div class="name">아래 메뉴</div><div class="desc">아래 메뉴가 잘리면 안쪽으로 바꿔 주세요</div></div><button class="btn" data-set="bottomFit">' + (bottomInside() ? '안쪽' : '맨 아래') + '</button></div>' : '') +
         '<div class="row"><div class="info"><div class="name">화면 높이</div><div class="desc" id="scrInfo">' + screenInfo() + '</div></div></div>' +
         (G.storageOk() ? '' : '<p class="note">이 브라우저에서는 저장이 안 돼요. 창을 닫으면 진행이 사라져요.</p>') + '</div>';
       var diffs = '<h3>난이도</h3><div class="note" style="margin:-4px 0 8px">10-31 늑대 왕을 이기면 다음 난이도가 열려요. 보스 체력이 엄청 커지고 몬스터가 더 많이 몰려와요.</div><div class="list">' + DATA.difficulties.map(function (df, i) {
@@ -428,6 +430,7 @@
       var jump = '<div class="jump">' + ['난이도', '전직', '사냥터', '상점', '패키지', '설정'].map(function (t, i) { return '<button data-jump="' + i + '">' + t + '</button>'; }).join('') + '</div>';
       return jump + diffs + tiers + regions + shop + settings;
     }
+    function bottomInside() { try { return localStorage.getItem('cw-bottom') === 'inside'; } catch (e) { return false; } }
     // the heights this phone reports (to find out why the bottom is cut on some iPhones): what is visible, the page,
     // the whole screen, the safe gaps at the top and bottom, and how tall the game really is
     function screenInfo() {
@@ -577,6 +580,10 @@
         if (d.set === 'sound') G.setSetting('sound', !st.sound);
         if (d.set === 'pixel') G.setSetting('pixel', !st.pixel);
         if (d.set === 'autoBoss') G.setSetting('autoBoss', st.autoBoss === false);
+        if (d.set === 'bottomFit') {
+          try { if (bottomInside()) localStorage.removeItem('cw-bottom'); else localStorage.setItem('cw-bottom', 'inside'); } catch (e) {}
+          if (root.__cwFit) root.__cwFit(); root.dispatchEvent(new Event('resize'));
+        }
         if (d.set === 'quality') G.setSetting('quality', { auto: 'high', high: 'mid', mid: 'low', low: 'auto' }[st.quality]);
         if (d.set === 'reset') confirmBox('처음부터 다시 하기', '정말 모든 진행을 지울까요? 되돌릴 수 없어요.', '지우기', function () { confirmBox('한 번 더 확인', '진행, 장비, 다이아가 모두 사라져요.', '정말 지우기', G.reset); });
         renderPanel(true);
