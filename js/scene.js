@@ -823,7 +823,17 @@
       if (o === null) { lenses.length = 0; return; }
       if (lenses.indexOf(o) < 0) { lenses.push(o); if (lenses.length > 2) lenses.shift(); }
     }
+    // build the bending pass's program while the game loads (the texture itself is made the first time it is needed)
+    function warmLens() { lensMatReady(); renderer.compile(lensScene, lensCam); }
+    function lensMatReady() {
+      if (lensMat) return;
+      lensMat = new T.ShaderMaterial({ uniforms: { tDiffuse: { value: null }, uC: { value: [new T.Vector2(), new T.Vector2()] }, uP: { value: [new T.Vector4(), new T.Vector4()] }, uAspect: { value: 1 } },
+        vertexShader: 'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.0,1.0);}', fragmentShader: LENS_FS, depthTest: false, depthWrite: false });
+      lensScene = new T.Scene(); var q = new T.Mesh(new T.PlaneGeometry(2, 2), lensMat); q.frustumCulled = false; lensScene.add(q);
+      lensCam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    }
     function lensReady() {
+      lensMatReady();
       renderer.getDrawingBufferSize(lensBuf);
       var w = Math.max(1, lensBuf.x | 0), h = Math.max(1, lensBuf.y | 0);
       if (!lensRT || lensRT.width !== w || lensRT.height !== h) {
@@ -832,12 +842,6 @@
         lensRT = new RT(w, h, { minFilter: T.LinearFilter, magFilter: T.LinearFilter, format: T.RGBAFormat });
         // the scene is written into the texture exactly as it would be onto the screen, so it looks the same
         if (T.sRGBEncoding) lensRT.texture.encoding = T.sRGBEncoding;
-      }
-      if (!lensMat) {
-        lensMat = new T.ShaderMaterial({ uniforms: { tDiffuse: { value: null }, uC: { value: [new T.Vector2(), new T.Vector2()] }, uP: { value: [new T.Vector4(), new T.Vector4()] }, uAspect: { value: 1 } },
-          vertexShader: 'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.0,1.0);}', fragmentShader: LENS_FS, depthTest: false, depthWrite: false });
-        lensScene = new T.Scene(); var q = new T.Mesh(new T.PlaneGeometry(2, 2), lensMat); q.frustumCulled = false; lensScene.add(q);
-        lensCam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1);
       }
     }
     function render() {
@@ -867,7 +871,7 @@
       castPulse: function () { heroGlow = 1; }, heroState: function () { return HB; }, heroFaceTo: heroFaceTo, heroCheer: heroCheer, setViewShift: setViewShift,
       spawnMob: spawnMob, hitMob: hitMob, killMob: killMob, clearMobs: clearMobs, mobs: function () { return mobs; }, mobPos: mobPos, mobTop: mobTop,
       setTierAura: setTierAura, damageText: damageText, screenPos: screenPos, flash: flash, dim: dim, shake: shake, punch: camPunch, light: light,
-      hitStop: hitStop, slowmo: slowmo, scaleDt: scaleDt, update: update, render: render, lens: lens,
+      hitStop: hitStop, slowmo: slowmo, scaleDt: scaleDt, update: update, render: render, lens: lens, warmLens: warmLens,
       setPixel: setPixel, setDamageStyle: setDamageStyle, setQuality: setQuality, getQuality: function () { return quality; }
     };
   }

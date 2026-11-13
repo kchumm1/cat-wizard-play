@@ -196,16 +196,35 @@
       curtain: (function () { var g = new T.CylinderGeometry(1, 0.42, 1, 56, 6, true); g.translate(0, 0.5, 0); return g; })()
     };
     function C(hex) { return new T.Color(hex); }
+    // Materials are kept and handed out again, never thrown away. When the last material of a kind is thrown away three.js
+    // deletes its compiled program, and building it again on the next cast stalls the frame (for a long time on iPhone
+    // Safari). A material is reused only for the same shader and side (what makes a different program); its uniform
+    // values are copied in, its blending and depth set again.
+    var pool = {};
     function mat(fs, uni, o, vs) {
       o = o || {}; var paint = bright && !o.keepAdd; uni.uTime = { value: time }; uni.uBright = { value: paint ? 1 : 0 };
-      return new T.ShaderMaterial({ uniforms: uni, vertexShader: vs || VS, fragmentShader: VARY + NOISE + '\n' + fs, transparent: !o.solid, depthWrite: !!(o.solid || o.depthWrite),
-        depthTest: o.depthTest !== false, blending: o.normal || o.solid || paint ? T.NormalBlending : T.AdditiveBlending, side: o.side || T.FrontSide });
+      var blending = o.normal || o.solid || paint ? T.NormalBlending : T.AdditiveBlending, side = o.side || T.FrontSide, depthTest = o.depthTest !== false, depthWrite = !!(o.solid || o.depthWrite);
+      var key = (vs ? 'tube' : 'std') + '|' + side + '|' + (o.solid ? 1 : 0) + '|' + fs, list = pool[key], m = list && list.pop();
+      if (m) {
+        for (var k in uni) { var d = m.uniforms[k]; if (!d) continue; var v = uni[k].value; if (v && v.copy && d.value && d.value.copy) d.value.copy(v); else d.value = v; }
+        m.blending = blending; m.depthTest = depthTest; m.depthWrite = depthWrite; m.transparent = !o.solid;
+        return m;
+      }
+      m = new T.ShaderMaterial({ uniforms: uni, vertexShader: vs || VS, fragmentShader: VARY + NOISE + '\n' + fs, transparent: !o.solid, depthWrite: depthWrite, depthTest: depthTest, blending: blending, side: side });
+      m.userData.poolKey = key; return m;
     }
+    // one outline material for every falling stone; one pool for the lit rock chips
+    var LINE = new T.MeshBasicMaterial({ color: 0x170d0a, side: T.BackSide }); LINE.userData.keep = true;
+    function chipMat(hot) { var l = pool.chip, m = l && l.pop(); if (!m) { m = new T.MeshLambertMaterial({ color: 0x4a3a36 }); m.userData.poolKey = 'chip'; } m.emissive.setHex(hot); return m; }
     function add(mesh, o) {
       o = o || {}; mesh.renderOrder = o.order === undefined ? 6 : o.order; mesh.frustumCulled = false; group.add(mesh);
       var p = { mesh: mesh, upd: o.upd || null, t: 0, life: o.life || 1e9, dead: false }; parts.push(p); return p;
     }
-    function drop(p) { if (!p || p.dead) return; p.dead = true; if (p.mesh.parent) p.mesh.parent.remove(p.mesh); if (p.mesh.material) p.mesh.material.dispose(); }
+    function drop(p) {
+      if (!p || p.dead) return; p.dead = true; if (p.mesh.parent) p.mesh.parent.remove(p.mesh);
+      var m = p.mesh.material; if (!m || m.userData.keep) return;
+      if (m.userData.poolKey) (pool[m.userData.poolKey] = pool[m.userData.poolKey] || []).push(m); else m.dispose();
+    }
     function U(p) { return p.mesh.material.uniforms; }
     function ease(x) { x = Math.max(0, Math.min(1, x)); return 1 - Math.pow(1 - x, 3); }
 
@@ -262,7 +281,7 @@
       var size = o.size || 0.3, tilt = new T.Vector3(Math.random(), Math.random(), Math.random()).normalize(), spin = 0, vd = new T.Vector3(0, -1, 0), back = new T.Vector3(), q = new T.Quaternion(), qb = new T.Quaternion(), puffT = 0, at = new T.Vector3();
       var geo = GEO.rocks[(Math.random() * 3) | 0];
       var body = add(new T.Mesh(geo, mat(FS.rock, { uHot: { value: C(o.hot || 0xff8a2b) }, uDir: { value: vd.clone() }, uBase: { value: C(o.base || 0x5e4f48) }, uHeat: { value: 1 } }, { solid: true })), { order: 5 });
-      var line = add(new T.Mesh(geo, new T.MeshBasicMaterial({ color: 0x170d0a, side: T.BackSide })), { order: 5 });
+      var line = add(new T.Mesh(geo, LINE), { order: 5 });
       var cap = add(new T.Mesh(GEO.dome, mat(FS.sheath, { uCol: { value: C(o.col || 0xffb030) }, uAlpha: { value: 1 } })), { order: 6 });
       var tail = add(new T.Mesh(GEO.cone, mat(FS.tail, { uCol: { value: C(o.col || 0xffb030) }, uSeed: { value: Math.random() * 9 }, uAlpha: { value: 1 } })), { order: 6 });
       var glow = orb({ col: o.col || 0xffb030, deep: o.hot || 0xff6a1a, alpha: 0.26, order: 6 });
@@ -360,7 +379,7 @@
       for (var i = 0; i < (o.chips === undefined ? 7 : o.chips); i++) chip(pos, R, o.hot || 0xff7a1a);
     }
     function chip(pos, R, hot, smoky) {
-      var m = new T.Mesh(GEO.chips[(Math.random() * 3) | 0], new T.MeshLambertMaterial({ color: 0x4a3a36, emissive: hot })), a = Math.random() * 6.283, sp = (2 + Math.random() * 3.5) * Math.sqrt(R);
+      var m = new T.Mesh(GEO.chips[(Math.random() * 3) | 0], chipMat(hot)), a = Math.random() * 6.283, sp = (2 + Math.random() * 3.5) * Math.sqrt(R);
       var v = new T.Vector3(Math.cos(a) * sp, (3 + Math.random() * 4) * Math.sqrt(R), Math.sin(a) * sp * 0.75), ax = new T.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize(), s = (0.05 + Math.random() * 0.07) * Math.sqrt(R), ang = 0, bounced = 0, life = 0.9 + Math.random() * 0.4, trail = 0;
       m.position.set(pos.x, 0.15, pos.z); m.scale.setScalar(s);
       var p = add(m, {
@@ -415,6 +434,23 @@
       }
     }
     function clear() { parts.forEach(drop); parts.length = 0; if (sc.lens) sc.lens(null); }
-    return { beam: beam, orb: orb, moon: moon, rock: rock, mark: mark, impact: impact, puff: puff, blast: blast, chip: chip, hole: hole, update: update, clear: clear, setBright: function (v) { bright = !!v; }, count: function () { return parts.length; } };
+    // Build every program before it is needed. A compiled program also depends on the scene (whether it has fog, and of
+    // which kind), so this is done again whenever that changes (fx.setRegion calls it); the same scene state is skipped.
+    // Only the parts made here are dropped again, and their materials go into the pool, so the programs stay.
+    var warmed = {};
+    function warm() {
+      var f = sc.scene.fog, sig = f ? (f.isFogExp2 ? 'exp2' : 'linear') : 'none';
+      if (warmed[sig] || !sc.renderer || !sc.renderer.compile) return;
+      warmed[sig] = true;
+      var far = new T.Vector3(0, -40, 0), vel = new T.Vector3(1, -3, 0), start = parts.length;
+      beam({ col: 0xffffff, deep: 0x8866ff, r: 0.1 }).set(far, far.clone().add(vel), 1); orb({ col: 0xffffff }).set(far, 1, 1); moon({}).set(far, 1, 0);
+      rock({ size: 0.3 }).set(far, vel, 0.05); mark({}).set(far, 0.5, 1); impact(far, { size: 1, chips: 3 }); blast(far, { size: 1, flash: true });
+      var h = hole({ pos: far }); h.set(1, 1, 0); h.lens.dead = true; puff(far, {}); chip(far, 1, 0xff7a1a, false);
+      sc.renderer.compile(sc.scene, sc.camera);
+      for (var i = parts.length - 1; i >= start; i--) drop(parts[i]);
+      parts.length = start;
+      if (sc.warmLens) sc.warmLens();
+    }
+    return { beam: beam, orb: orb, moon: moon, rock: rock, mark: mark, impact: impact, puff: puff, blast: blast, chip: chip, hole: hole, update: update, clear: clear, warm: warm, setBright: function (v) { bright = !!v; }, count: function () { return parts.length; } };
   };
 })(this);

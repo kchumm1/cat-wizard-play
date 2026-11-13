@@ -15,6 +15,7 @@
     var vx = CW.createVfx(sc.scene, sc.camera);
     // real 3D parts (js/fx3d.js) for the spells whose body should have a shape: the laser, the meteors, the black hole
     var P3 = CW.createFx3d(sc);
+    P3.warm();
     var staffCol = 0xffe14a;
     var timers = [], ticks = [], time = 0, dustCol = 0xd8c8a8, idleT = 0, crackleT = 0, tierNow = 1;
     function after(t, fn) { timers.push({ at: time + Math.max(0, t), fn: fn }); }
@@ -1016,7 +1017,9 @@
     }
     // too many pictures on screen: the one furthest through its life makes room for the new one (a fresh spell never vanishes)
     function picRoom() { if (pics.length < 30) return; var bi = 0, bk = -1; for (var i = 0; i < pics.length; i++) { var k = pics[i].t / pics[i].life; if (k > bk) { bk = k; bi = i; } } var q = pics[bi]; if (q.onLand && !q.landed) { q.landed = true; q.onLand(); } picDrop(q); pics.splice(bi, 1); }
-    function picDrop(p) { [p.a, p.g].forEach(function (sp) { if (sp.parent) sp.parent.remove(sp); sp.material.dispose(); }); p.dead = true; }
+    // the sprite materials are not disposed: disposing the last one deletes the compiled sprite program, and rebuilding it
+    // on the next picture stalls the frame (they are small and collected by the browser)
+    function picDrop(p) { [p.a, p.g].forEach(function (sp) { if (sp.parent) sp.parent.remove(sp); }); p.dead = true; }
     // a picture that rides a projectile: call set(pos, vel, dt) every frame, kill() when it lands
     function picHead(name, h, artAng, cx, cy) {
       var tex = picLoad(name); if (!tex || !tex.image || picHeads.length >= 20) return null;
@@ -1261,7 +1264,7 @@
     }
     function setQuality(q) { vx.setQuality(q); }
     function setBright(v) { vx.setBright(v); P3.setBright(v); }
-    function setRegion(regionData) { dustCol = new T.Color(regionData.ground).lerp(new T.Color(0xffffff), 0.45).getHex(); }
+    function setRegion(regionData) { dustCol = new T.Color(regionData.ground).lerp(new T.Color(0xffffff), 0.45).getHex(); P3.warm(); }
     function clear() { epoch++; timers.length = 0; ticks.length = 0; vx.clear(); P3.clear(); picClear(); sc.mobs().forEach(function (m) { m.pull = undefined; m.pullZ = undefined; m.lift = undefined; }); }
     return { setStaffColor: function (c) { staffCol = c; }, setCostume: function (f) { cosFx = f; cosAcc = 0; }, cast: cast, update: update, setQuality: setQuality, setBright: setBright, setRegion: setRegion, clear: clear, count: vx.count,
       impact: impact, levelUp: levelUp, bossEnter: bossEnter, coinPop: coinPop, burst: function (pos, col) { impact(pos, col, 0.8); }, vfx: vx };
