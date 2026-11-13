@@ -278,7 +278,11 @@
       var s = G.state, info = CW.stageInfo(s.stage), R = DATA.regions[info.region];
       var mark = CW.ICO.region ? CW.ICO.region(info.region) : '';   // the region's own little mark (design-cream.js)
       var pn = (s.diff ? '<u>' + CW.diffOf(s).name + '</u>' : '') + '<span class="rmark">' + mark + '</span><b data-t="' + R.name + '">' + R.name + '</b><i>' + CW.stageLabel(s.stage) + '</i>';
-      if (pn !== lastPlace) { lastPlace = pn; $('placeName').innerHTML = pn; }
+      if (pn !== lastPlace) {
+        lastPlace = pn; $('placeName').innerHTML = pn;
+        // the band behind the iPhone clock takes the colour of this region's field (home-screen app only, tools/build-site.cjs)
+        if (CW.ICO.regionTop) document.documentElement.style.setProperty('--capc', CW.ICO.regionTop(info.region));
+      }
       $('goldTxt').textContent = fmt(s.gold); $('gemTxt').textContent = fmt(s.gems);
       $('lvTxt').textContent = 'Lv.' + s.level; $('xpBar').style.width = (s.level >= DATA.balance.levelMax ? 100 : Math.min(100, s.xp / CW.xpNeed(s.level) * 100)) + '%';
       var boss = G.boss(), sub = '', kp;

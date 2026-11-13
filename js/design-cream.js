@@ -58,8 +58,13 @@
   ];
   var MORE = sticker('<path d="M16 3 19 13 29 16 19 19 16 29 13 19 3 16 13 13Z"/>', '#ecc77a');   // regions added later
   function regionMark(i) { return '<svg viewBox="0 0 32 32" aria-hidden="true">' + (MARKS[i] || MORE) + '</svg>'; }
+  // The colour at the very top of each region's battle field (measured 2026-11-14: middle of the top 62pt over three stages).
+  // In the iPhone home-screen app a solid band of it sits behind the clock (tools/build-site.cjs #topcap): an iPhone then fills
+  // the clock area with that colour instead of laying its blurred glass over the top of the game.
+  var TOP = ['#729d57', '#537a4f', '#9c935b', '#bfd0dc', '#3c2927', '#2d4986', '#5c675a', '#aa9675', '#363560', '#2e232f'];
+  function regionTop(i) { return TOP[i] || '#2e232f'; }
 
-  var api = { MAP: MAP, regionMark: regionMark };
+  var api = { MAP: MAP, regionMark: regionMark, regionTop: regionTop };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   var CW = root.CW, I = CW && CW.ICO; if (!I) return;
   var B = CW.ART_BASE || 'art/';
@@ -70,4 +75,5 @@
   I.cur = function (k) { return MAP.cur[k] ? img(MAP.cur[k], 'icur tr') : cur0(k); };
   I.pic = function (name, cls) { return MAP.pic[name] ? img(MAP.pic[name], (cls || '') + ' tr') : pic0(name, cls); };
   I.region = regionMark;
+  I.regionTop = regionTop;
 })(this);
