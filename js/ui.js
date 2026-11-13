@@ -355,16 +355,21 @@
           '</div><div class="btns" style="margin:8px 0 4px"><button class="btn pri" data-act="autoskill">센 스킬로 자동 배치</button><button class="btn" data-act="skillall">일괄 강화</button></div>' +
           '<div class="note">스킬 보유 효과: 모든 스킬 피해 +' + pct(CW.skillOwnedStats(s).skillDmg) + ' (강화 1단계마다 +' + pct(DATA.balance.skillOwnedPer) + ')</div>' +
         '<div class="note">' + (selSlot >= 0 ? (selSlot + 1) + '번 칸을 골랐어요. 아래에서 넣을 스킬을 누르세요.' : '칸을 고르지 않고 넣으면 빈 칸(없으면 4번 칸)에 들어가요.') + '</div>';
-      var list = DATA.skills.map(function (sk) {
+      var row = function (sk) {
         var locked = sk.tier > s.tier, at = s.slots.indexOf(sk.id), lv = CW.skillLevel(s, sk.id), max = lv >= DATA.balance.skillMaxLv, cost = CW.skillUpCost(sk, lv);
         var dmg = sk.mult * (1 + DATA.balance.skillLvBonus * lv), next = sk.mult * (1 + DATA.balance.skillLvBonus * (lv + 1));
         var act = locked ? '<span class="note">' + sk.tier + '차 전직</span>'
           : (at >= 0 ? '<button class="btn" data-unslot="' + at + '">' + (at + 1) + '번 빼기</button>' : '<button class="btn pri" data-eq="' + sk.id + '">' + (selSlot >= 0 ? (selSlot + 1) + '번에 넣기' : '넣기') + '</button>');
         var up = locked ? '' : '<button class="buy ' + (max || s.gold < cost ? 'off' : '') + '" data-sup="' + sk.id + '">' + (max ? '최대' : '강화 <i class="coin"></i>' + fmt(cost)) + '</button>';
-        return '<div class="row skrow" style="' + (locked ? 'opacity:.55' : '') + '"><div class="sk" style="--c:#' + new THREE.Color(sk.color).getHexString() + ';width:52px;height:52px">' + CW.ICO.skill(sk.id) + '</div><div class="info"><div class="name">' + sk.name + '<span class="lv">' + (locked ? sk.tier + '차' : '+' + lv) + '</span></div><div class="desc">피해 ×' + (Math.round(dmg * 100) / 100) + (!max && !locked ? ' → ×' + (Math.round(next * 100) / 100) : '') + ' · ' + (sk.targets >= 99 ? '모든 몬스터' : '몬스터 ' + sk.targets) + (sk.status ? ' · ' + STATUS[sk.status] : '') + '</div>' +
+        return '<div class="row skrow" style="' + (locked ? 'opacity:.55' : '') + '"><div class="sk" style="--c:#' + new THREE.Color(sk.color).getHexString() + ';width:52px;height:52px">' + CW.ICO.skill(sk.id) + '</div><div class="info"><div class="name">' + sk.name + '<span class="lv">' + (locked ? sk.tier + '차' : '+' + lv) + '</span></div><div class="desc">피해 ×' + (Math.round(dmg * 100) / 100) + (!max && !locked ? ' → ×' + (Math.round(next * 100) / 100) : '') + ' · ' + (sk.targets >= 99 ? '모든 몬스터' : '몬스터 ' + sk.targets) + (sk.splash ? ' · 주변 ' + Math.round(sk.splash * 100) + '%' : '') + (sk.status ? ' · ' + STATUS[sk.status] : '') + '</div>' + (sk.how ? '<div class="desc how">' + sk.how + '</div>' : '') +
           '<div class="skbtns"><button class="btn" data-prev="' + sk.id + '">보기</button>' + act + up + '</div></div></div>';
+      };
+      // one block per job tier: its name, then the skills that tier brings
+      var list = DATA.tiers.map(function (t, i) {
+        var n = i + 1, open = n <= s.tier;
+        return '<div class="sktier' + (open ? '' : ' lock') + '"><b>' + n + '차</b><span>' + t.name + '</span>' + (open ? '' : '<small>' + (n - 1) + '-31 보스를 이기면 열려요</small>') + '</div>' + DATA.skills.filter(function (sk) { return sk.tier === n; }).map(row).join('');
       }).join('');
-      return top + '<h3>스킬 목록 · 강화</h3><div class="note" style="margin:-4px 0 8px">강화할 때마다 그 스킬 피해가 ' + Math.round(DATA.balance.skillLvBonus * 100) + '%씩 늘어요 (최대 +' + DATA.balance.skillMaxLv + '). 강화할수록 연출도 커져요.</div><div class="list">' + list + '</div>';
+      return top + '<h3>스킬 목록 · 강화</h3><div class="note" style="margin:-4px 0 8px">전직할 때마다 그 차수의 스킬 네 가지가 열려요. 피해 배수는 한 번 쓸 때 몬스터 한 마리가 받는 전체 피해예요(여러 번에 나눠 맞아도 합은 같아요). 강화할 때마다 그 스킬 피해가 ' + Math.round(DATA.balance.skillLvBonus * 100) + '%씩 늘어요 (최대 +' + DATA.balance.skillMaxLv + ').</div><div class="list">' + list + '</div>';
     }
     function gearPanel() {
       if (gearSub === 'relic') return subTabs() + relicPanel();
@@ -390,7 +395,7 @@
       var s = G.state;
       var tiers = '<h3>전직</h3><div class="list">' + DATA.tiers.map(function (t, i) {
         var n = i + 1, done = s.tier >= n, sk = t.skill && CW.skillById(t.skill);
-        return '<div class="row" style="' + (done ? '' : 'opacity:.6') + '"><div class="info"><div class="name">' + n + '차 ' + t.name + (s.tier === n ? '<span class="lv">지금</span>' : '') + '</div><div class="desc">' + (n === 1 ? '처음부터' : (n - 1) + '-31 보스를 이기면') + (sk ? ' · 새 스킬 ' + sk.name : ' · 시작 스킬 4개') + '</div></div></div>';
+        return '<div class="row" style="' + (done ? '' : 'opacity:.6') + '"><div class="info"><div class="name">' + n + '차 ' + t.name + (s.tier === n ? '<span class="lv">지금</span>' : '') + '</div><div class="desc">' + (n === 1 ? '처음부터' : (n - 1) + '-31 보스를 이기면') + ' · 스킬 ' + DATA.skills.filter(function (x) { return x.tier === n; }).length + '개' + (sk ? ' (' + sk.name + ' 등)' : '') + '</div></div></div>';
       }).join('') + '</div>';
       var frontier = Math.min(309, s.best + 1);
       var regions = '<h3>사냥터</h3><div class="note" style="margin:-4px 0 8px">지나온 지역에서 다시 사냥할 수 있어요.</div><div class="btns">' + DATA.regions.map(function (r, i) {
@@ -570,7 +575,7 @@
     function showTierUp(tier, skill) {
       var t = DATA.tiers[tier - 1];
       $('flashbg').classList.remove('go'); void $('flashbg').offsetWidth; $('flashbg').classList.add('go');
-      modal('<h2 style="color:var(--gold)">' + tier + '차 전직!</h2><div class="big">' + t.name + '</div>' + (skill ? '<p>새 스킬 <b style="color:#fff">' + skill.name + '</b>을(를) 얻었어요. 스킬 칸에 넣어 두었어요.</p>' : '') + '<p>끼워 둔 스킬이 더 화려해져요.</p>', [{ label: '좋아요', pri: true }]);
+      modal('<h2 style="color:var(--gold)">' + tier + '차 전직!</h2><div class="big">' + t.name + '</div>' + (skill ? '<p>새 스킬 <b style="color:#fff">' + skill.name + '</b>을(를) 얻어 스킬 칸에 넣어 두었어요.</p>' + (function () { var more = DATA.skills.filter(function (x) { return x.tier === tier && x.id !== skill.id; }); return more.length ? '<p>같은 계열 스킬 <b style="color:#fff">' + more.map(function (x) { return x.name; }).join(' · ') + '</b>도 열렸어요. 스킬 메뉴에서 골라 끼워 보세요.</p>' : ''; })() : '') + '<p>끼워 둔 스킬이 더 화려해져요.</p>', [{ label: '좋아요', pri: true }]);
     }
     function showGacha(items) {
       var fx = $('gachaFx'), best = Math.max.apply(null, items.map(function (i) { return i.grade; }));

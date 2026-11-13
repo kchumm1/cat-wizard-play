@@ -254,7 +254,7 @@
       var rb = { slot: slot, pts: o.pts ? o.pts.slice() : [], w: o.w || 0.1, col: hexArr(o.color === undefined ? 0xffffff : o.color, o.hot), core: o.core === undefined ? 0.8 : o.core,
         a: o.alpha === undefined ? 1 : o.alpha, mode: o.mode || 'static', life: o.life || 0.3, t: -(o.delay || 0), maxPts: Math.min(RP, o.maxPts || RP), minDist: o.minDist || 0.035,
         shrink: o.shrink || 40, acc: 0, detached: false, flicker: o.flicker || 0, regen: o.regen || null, regenEvery: o.regenEvery || 0.05, ra: 0, regenUntil: o.regenUntil === undefined ? 0.6 : o.regenUntil,
-        sweep: !!o.sweep, taper: o.taper || (o.mode === 'trail' ? 'tail' : 'both'), widthFn: o.widthFn || null, upd: o.upd || null, dead: false };
+        sweep: !!o.sweep, taper: o.taper || (o.mode === 'trail' ? 'tail' : 'both'), widthFn: o.widthFn || null, upd: o.upd || null, dead: false, hold: !!o.hold };
       rb.head = function (p) {
         var last = rb.pts[rb.pts.length - 1];
         if (!last || last.distanceToSquared(p) > rb.minDist * rb.minDist) { rb.pts.push(p.clone()); if (rb.pts.length > rb.maxPts) rb.pts.shift(); }
@@ -287,7 +287,8 @@
         if (n < 2) { for (var z = 0; z < RP * 2; z++) rCol[(base + z) * 4 + 3] = 0; continue; }
         var k = rb.mode === 'trail' ? 0 : Math.min(1, rb.t / rb.life);
         var A = rb.a;
-        if (rb.mode !== 'trail') A *= (k < 0.08 ? k / 0.08 : 1) * (k > 0.45 ? Math.max(0, (1 - k) / 0.55) : 1);
+        // hold: a ribbon that is steered every frame (a beam, a whirl) keeps its full brightness until it is removed
+        if (rb.mode !== 'trail' && !rb.hold) A *= (k < 0.08 ? k / 0.08 : 1) * (k > 0.45 ? Math.max(0, (1 - k) / 0.55) : 1);
         if (rb.flicker) A *= 1 - rb.flicker * (Math.random() < 0.35 ? 1 : 0);
         var headU = 1, tailU = 0;
         if (rb.sweep) { headU = Math.min(1, k / 0.32); tailU = Math.max(0, (k - 0.22) / 0.78); }

@@ -975,6 +975,13 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 #bossbox{padding:5px 9px 7px;border-radius:13px;gap:4px}.boss-top{font-size:12px}#bossbox .bar{height:10px}
 #retry{padding:5px 15px;font:400 13px var(--impact);box-shadow:0 0 0 2px var(--ol),0 3px 0 var(--ol),0 0 10px rgba(255,90,70,.5)}
 #quick{top:calc(116px + env(safe-area-inset-top,0px))}
+/* skill list: a heading for each job tier, and one line under each skill saying what it does */
+.sktier{display:flex;align-items:center;gap:8px;margin:10px 0 -2px;font:400 16px var(--display);color:#fff;text-shadow:0 2px 0 var(--ol)}
+.sktier:first-child{margin-top:0}
+.sktier b{font:400 13px var(--impact);color:#1a1230;background:var(--gold);border-radius:9px;padding:3px 8px;box-shadow:0 0 0 2px var(--ol);text-shadow:none}
+.sktier small{margin-left:auto;font:400 11.5px var(--body);color:var(--muted);text-shadow:none}
+.sktier.lock{opacity:.6}
+.row .desc.how{color:#e9e2ff}
 /* ==THEME-END== */
 @media (prefers-reduced-motion:reduce){#killBar i,.ico .orb,.sk.now .ico,.rlines .flow,.rcore.lit,.isg,.gart .gimg,.gart .gstaff,.gshine::after{animation:none!important}}
 </style>
@@ -1049,9 +1056,11 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 <script src="js/scene.js"></script>
 <script src="js/vfx.js"></script>
 <script src="js/fx.js"></script>
+<script src="js/fx-more.js"></script>
 <script src="js/sound.js"></script>
 <script src="js/icons.js"></script>
 <script src="js/icons-more.js"></script>
+<script src="js/icons-skills.js"></script>
 <script src="js/art-icons.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>
