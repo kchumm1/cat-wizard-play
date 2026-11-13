@@ -283,7 +283,8 @@
       $('bossbox').classList.toggle('on', !!boss);
       $('killBar').style.display = boss ? 'none' : '';
       if (boss) {
-        $('bossName').textContent = (info.isRegionBoss ? '전직 시험 · ' : '') + boss.name;
+        // "전직 시험" only while beating it still gives a new job (progress.js isTierTrial), not after the job is reached
+        $('bossName').textContent = (CW.isTierTrial(s, s.stage) ? '전직 시험 · ' : '') + boss.name;
         $('bossTime').textContent = Math.max(0, boss.time).toFixed(1) + '초';
         $('bossHp').style.width = Math.max(0, boss.mob.hp / boss.mob.maxHp * 100) + '%';
       } else {
@@ -482,7 +483,7 @@
         var res = { id: info.isBoss ? CW.stageBoss(i).art : reg.monsters[(n * 5) % reg.monsters.length], tint: null };
         var img = G.thumb(res.id), gold = CW.stageGold(tmp) * st.goldMul / 3, xp = CW.killXp(tmp) / 3;
         rows += '<button class="srow' + (i === here ? ' here' : '') + (info.isBoss ? ' boss' : '') + '" data-sgo="' + i + '" data-sd="' + d + '"' + (lock ? ' disabled' : '') + '>' +
-          '<span class="sname"><small>' + DATA.difficulties[d].name + '</small>' + CW.stageLabel(i) + (info.isRegionBoss ? ' 전직 시험' : info.isBoss ? ' 보스' : '') + '</span>' +
+          '<span class="sname"><small>' + DATA.difficulties[d].name + '</small>' + CW.stageLabel(i) + (CW.isTierTrial(s, i) ? ' 전직 시험' : info.isRegionBoss ? ' 지역 보스' : info.isBoss ? ' 보스' : '') + '</span>' +
           '<span class="smon">' + (img ? '<img src="' + img + '" alt="" style="' + (res.tint ? 'filter:hue-rotate(' + (R * 36) + 'deg)' : '') + '">' : '') + '</span>' +
           '<span class="srew"><i class="coin"></i>' + fmt(gold) + '</span><span class="srew"><b class="xpdot"></b>' + fmt(xp) + '</span>' +
           (info.isBoss ? '<span class="srew"><i class="gem"></i>' + fmt(CW.bossGems(i, !(s.firstClear || {})[CW.clearKey({ diff: d }, i)]) * DATA.difficulties[d].gemMul) + '</span>' : '<span class="srew muted">체력 ' + fmt(CW.stageMonsterHp(tmp) / 3) + '</span>') +

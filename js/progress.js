@@ -31,17 +31,18 @@
     if (stageInfo(state.stage).isBoss) { state.bossTry = true; return 'boss'; }
     return 'next';
   }
+  // the job a region boss leads to (regions 1-8 -> jobs 2-9; regions 9 and 10 lead to none)
+  function trialTier(i) { var info = stageInfo(i); return info.isRegionBoss && info.region < 8 ? info.region + 2 : 0; }
+  // a job trial: beating this boss would still raise the tier (shown as "전직 시험"; once the job is reached it is a
+  // plain region boss)
+  function isTierTrial(state, i) { return trialTier(i) > (state.tier || 1); }
   function onBossResult(state, won) {
     state.bossTry = false;
     state.kills = 0;
     if (!won) { state.stage = Math.max(0, state.stage - 1); state.farming = true; return { cleared: false, tierUp: null, final: false }; }
-    var info = stageInfo(state.stage);
+    var tierUp = isTierTrial(state, state.stage) ? trialTier(state.stage) : null;
     state.best = Math.max(state.best, state.stage);
-    var tierUp = null;
-    if (info.isRegionBoss && info.region < 8) {
-      var t = info.region + 2;
-      if (t > state.tier) { state.tier = t; tierUp = t; }
-    }
+    if (tierUp) state.tier = tierUp;
     var final = state.stage === LAST, unlocked = null;
     var nd = (state.diff || 0) + 1;
     if (final && DATA.difficulties && nd < DATA.difficulties.length && nd > (state.diffUnlocked || 0)) { state.diffUnlocked = nd; unlocked = nd; }
@@ -81,5 +82,5 @@
     state.farming = state.stage <= state.best;
     return true;
   }
-  return { clearKey: clearKey, setDifficulty: setDifficulty, stageLabel: stageLabel, stageInfo: stageInfo, stageBoss: stageBoss, onKill: onKill, onBossResult: onBossResult, retryBoss: retryBoss, onHidden: onHidden, goStage: goStage, LAST_STAGE: LAST };
+  return { clearKey: clearKey, setDifficulty: setDifficulty, stageLabel: stageLabel, stageInfo: stageInfo, stageBoss: stageBoss, isTierTrial: isTierTrial, onKill: onKill, onBossResult: onBossResult, retryBoss: retryBoss, onHidden: onHidden, goStage: goStage, LAST_STAGE: LAST };
 });
