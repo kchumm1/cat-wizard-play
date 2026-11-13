@@ -457,16 +457,10 @@
     }
 
     // ---------- time control (hit-stop / slow motion) ----------
-    // slowmo(sec, s, ease): ease = the speed comes back to normal smoothly over the time instead of jumping back at the
-    // end (a slow part that ends with a jump, or a freeze, reads as the game stuttering on a phone)
-    var stopT = 0, slowT = 0, slowS = 1, slowAll = 1, slowEase = false, lastStop = -9;
-    function hitStop(sec) { if (time - lastStop < 0.22) return; lastStop = time; stopT = Math.max(stopT, sec); }
-    function slowmo(sec, s, ease) { slowT = Math.max(slowT, sec); slowAll = slowT; slowS = s; slowEase = !!ease; }
-    function scaleDt(dt) {
-      if (stopT > 0) { stopT -= dt; return dt * 0.04; }
-      if (slowT > 0) { var k = slowEase ? slowT / slowAll : 1; slowT -= dt; return dt * (1 - (1 - slowS) * k * k); }
-      return dt;
-    }
+    // js/timescale.js: hits and big skills only dip the speed and let it come back smoothly; the game never freezes
+    // (a freeze, or a slow part ending with a jump, reads as the game stopping on a phone)
+    var timeScale = CW.createTimeScale();
+    var hitStop = timeScale.hitStop, slowmo = timeScale.slowmo, scaleDt = timeScale.scaleDt;
 
 
     var tmpC = new T.Color();

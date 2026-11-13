@@ -419,6 +419,7 @@
         '<div class="row"><div class="info"><div class="name">진행 옮기기</div><div class="desc">다른 기기(아이폰·갤럭시)로 옮길 때: 코드를 복사해서 다른 기기의 "코드 넣기"에 붙여요</div></div><div class="sbtns"><button class="btn" data-act="savecopy">코드 복사</button><button class="btn" data-act="savepaste">코드 넣기</button></div></div>' +
         '<div class="row"><div class="info"><div class="name">처음부터 다시 하기</div><div class="desc">모든 진행이 지워져요</div></div><button class="btn" data-set="reset">다시 하기</button></div>' +
         '<div class="row"><div class="info"><div class="name">게임 버전</div><div class="desc">새 버전이 나오면 앱을 다시 열 때 바뀌어요</div></div><b class="appver" id="appVer">' + appVersion() + '</b></div>' +
+        lastErrorRow() +
         // only in the iPhone home-screen app, where the page may be stretched to the screen (tools/build-site.cjs)
         (root.__cwFit ? '<div class="row"><div class="info"><div class="name">아래 메뉴</div><div class="desc">아래 메뉴가 잘리면 안쪽으로 바꿔 주세요</div></div><button class="btn" data-set="bottomFit">' + (bottomInside() ? '안쪽' : '맨 아래') + '</button></div>' : '') +
         '<div class="row"><div class="info"><div class="name">화면 높이</div><div class="desc" id="scrInfo">' + screenInfo() + '</div></div></div>' +
@@ -431,6 +432,14 @@
       return jump + diffs + tiers + regions + shop + settings;
     }
     function bottomInside() { try { return localStorage.getItem('cw-bottom') === 'inside'; } catch (e) { return false; } }
+    // the last error the game kept going through (main.js noteError), only when there was one: to find what broke
+    function lastErrorRow() {
+      var r = null; try { r = JSON.parse(localStorage.getItem('cw-lasterr') || 'null'); } catch (e) {}
+      if (!r || !r.t) return '';
+      var d = new Date(r.t), p2 = function (v) { return (v < 10 ? '0' : '') + v; };
+      return '<div class="row"><div class="info"><div class="name">최근 오류</div><div class="desc">' + (d.getMonth() + 1) + '/' + d.getDate() + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes()) + ' · ' +
+        esc(r.msg || '') + (r.at ? ' · ' + esc(r.at) : '') + ' (게임은 계속 돌아가요. 멈춤이 또 있으면 이 줄을 캡처해 보내 주세요)</div></div></div>';
+    }
     // the heights this phone reports (to find out why the bottom is cut on some iPhones): what is visible, the page,
     // the whole screen, the safe gaps at the top and bottom, and how tall the game really is
     function screenInfo() {

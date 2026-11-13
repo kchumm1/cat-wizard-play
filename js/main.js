@@ -437,24 +437,39 @@
     castT -= dt;
     if (castT <= 0 && !preview) castNext();
   }
+  // an error is kept (at most one every 10 s) so settings can show it ("최근 오류"), the game goes on
+  var errAt = 0;
+  function noteError(e) {
+    if (root.console) console.error(e);
+    var n = Date.now(); if (n - errAt < 10000) return; errAt = n;
+    var at = (String(e && e.stack || '').split('\n').filter(function (l) { return /\.js/.test(l); })[0] || '').trim();
+    try { localStorage.setItem('cw-lasterr', JSON.stringify({ t: n, msg: String(e && e.message || e).slice(0, 160), at: at.slice(0, 160) })); } catch (x) {}
+  }
+  root.addEventListener('error', function (ev) { noteError(ev.error || ev.message); });
   var last = performance.now();
   function frame(now) {
+    // the next frame is asked for first, and each part runs on its own: one error used to end the game loop for good
+    // (the picture stood still until the app was reopened)
+    requestAnimationFrame(frame);
     var rdt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
     if (ready) {
       coinBox = null;
       var gdt = sc.scaleDt(rdt) * FAST;
-      tick(gdt); fx.update(gdt); sc.update(gdt, rdt);
-      updateCoins(rdt);
-      lookT -= rdt; if (lookT <= 0) { lookT = 0.25; applyLook(); }
-      gained.t += rdt; if (gained.t >= 1) { ui.gainLog(gained); gained.gold = gained.xp = gained.gems = gained.dmg = 0; gained.t = 0; gained.more.length = 0; }
-      uiT += rdt; panelT += rdt; saveT += rdt;
-      if (uiT > 0.1) { uiT = 0; ui.hud(); if (nowSlot !== lastSlot) { lastSlot = nowSlot; ui.slots(); } }
-      if (panelT > 0.3) { panelT = 0; ui.renderPanel(); }
-      if (saveT > 5) { saveT = 0; save(); }
-      watchFps(rdt);
+      try { tick(gdt); } catch (e) { noteError(e); }
+      try { fx.update(gdt); } catch (e) { noteError(e); }
+      try { sc.update(gdt, rdt); } catch (e) { noteError(e); }
+      try {
+        updateCoins(rdt);
+        lookT -= rdt; if (lookT <= 0) { lookT = 0.25; applyLook(); }
+        gained.t += rdt; if (gained.t >= 1) { ui.gainLog(gained); gained.gold = gained.xp = gained.gems = gained.dmg = 0; gained.t = 0; gained.more.length = 0; }
+        uiT += rdt; panelT += rdt; saveT += rdt;
+        if (uiT > 0.1) { uiT = 0; ui.hud(); if (nowSlot !== lastSlot) { lastSlot = nowSlot; ui.slots(); } }
+        if (panelT > 0.3) { panelT = 0; ui.renderPanel(); }
+        if (saveT > 5) { saveT = 0; save(); }
+        watchFps(rdt);
+      } catch (e) { noteError(e); }
     }
-    sc.render();
-    requestAnimationFrame(frame);
+    try { sc.render(); } catch (e) { noteError(e); }
   }
 
   // ---------- leaving and coming back ----------
