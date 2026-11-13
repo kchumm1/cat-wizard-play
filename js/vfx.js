@@ -182,8 +182,15 @@
       var name = o.sys || 'add';
       if ((name === 'add' && bright && !o.white) || name === 'col') name = 'addB';
       if (name === 'gadd' && bright && !o.white) name = 'gnorm';
-      var L = layers[name]; if (L.list.length >= L.cap) return null;
-      var p = pool.pop() || {};
+      // Full: rather than dropping the new part (which made a fresh spell vanish when older ones filled the screen),
+      // take over the short-lived part that is closest to fading out. Parts that are held on purpose (long life) stay.
+      var L = layers[name], p = null;
+      if (L.list.length >= L.cap) {
+        var best = -1, bk = 0.3;
+        for (var j = 0; j < L.list.length; j++) { var q = L.list[j]; if (q.life < 20 && !q.dead && q.t >= 0) { var kk = q.t / q.life; if (kk > bk) { bk = kk; best = j; } } }
+        if (best < 0) return null;
+        p = L.list[best];
+      } else { p = pool.pop() || {}; L.list.push(p); }
       var pos = o.pos; p.x = pos.x; p.y = pos.y; p.z = pos.z;
       var v = o.vel; p.vx = v ? v.x : 0; p.vy = v ? v.y : 0; p.vz = v ? v.z : 0;
       p.t = -(o.delay || 0); p.life = o.life || 0.5;
@@ -196,7 +203,7 @@
       p.a = o.alpha === undefined ? 1 : o.alpha; p.fin = o.fadeIn || 0; p.fout = o.fadeOut === undefined ? 0.55 : o.fadeOut;
       p.drag = o.drag || 0; p.grav = o.grav || 0; p.upd = o.upd || null; p.data = o.data || null;
       p.flick = o.flicker || 0; p.dead = false; p.L = L; p.k = 0;
-      L.list.push(p); return p;
+      return p;
     }
     function kill(p) { if (p) p.dead = true; }
 
@@ -250,7 +257,13 @@
     function ribbon(o) {
       var B = o.solid || bright ? batches.solid : batches.glow;
       var slot = -1; for (var i = 0; i < B.RN; i++) if (!B.ribs[i]) { slot = i; break; }
-      if (slot < 0) return null;
+      // full: take the slot of the finished-looking line that is furthest through its life (held beams and live trails stay)
+      if (slot < 0) {
+        var bk = 0.35;
+        for (var j = 0; j < B.RN; j++) { var r0 = B.ribs[j]; if (!r0 || r0.hold || (r0.mode === 'trail' && !r0.detached)) continue; var kk = r0.mode === 'trail' ? 0.9 : r0.t / r0.life; if (kk > bk) { bk = kk; slot = j; } }
+        if (slot < 0) return null;
+        B.ribs[slot].dead = true;
+      }
       var rb = { slot: slot, pts: o.pts ? o.pts.slice() : [], w: o.w || 0.1, col: hexArr(o.color === undefined ? 0xffffff : o.color, o.hot), core: o.core === undefined ? 0.8 : o.core,
         a: o.alpha === undefined ? 1 : o.alpha, mode: o.mode || 'static', life: o.life || 0.3, t: -(o.delay || 0), maxPts: Math.min(RP, o.maxPts || RP), minDist: o.minDist || 0.035,
         shrink: o.shrink || 40, acc: 0, detached: false, flicker: o.flicker || 0, regen: o.regen || null, regenEvery: o.regenEvery || 0.05, ra: 0, regenUntil: o.regenUntil === undefined ? 0.6 : o.regenUntil,

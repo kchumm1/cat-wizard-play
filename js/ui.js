@@ -418,6 +418,7 @@
         '<div class="row"><div class="info"><div class="name">화질</div><div class="desc">버벅이면 낮춰 보세요</div></div><button class="btn" data-set="quality">' + ({ auto: '자동', high: '높음', mid: '보통', low: '낮음' })[st.quality] + '</button></div>' +
         '<div class="row"><div class="info"><div class="name">진행 옮기기</div><div class="desc">다른 기기(아이폰·갤럭시)로 옮길 때: 코드를 복사해서 다른 기기의 "코드 넣기"에 붙여요</div></div><div class="sbtns"><button class="btn" data-act="savecopy">코드 복사</button><button class="btn" data-act="savepaste">코드 넣기</button></div></div>' +
         '<div class="row"><div class="info"><div class="name">처음부터 다시 하기</div><div class="desc">모든 진행이 지워져요</div></div><button class="btn" data-set="reset">다시 하기</button></div>' +
+        '<div class="row"><div class="info"><div class="name">게임 버전</div><div class="desc">새 버전이 나오면 앱을 다시 열 때 바뀌어요</div></div><b class="appver" id="appVer">' + appVersion() + '</b></div>' +
         (G.storageOk() ? '' : '<p class="note">이 브라우저에서는 저장이 안 돼요. 창을 닫으면 진행이 사라져요.</p>') + '</div>';
       var diffs = '<h3>난이도</h3><div class="note" style="margin:-4px 0 8px">10-31 늑대 왕을 이기면 다음 난이도가 열려요. 보스 체력이 엄청 커지고 몬스터가 더 많이 몰려와요.</div><div class="list">' + DATA.difficulties.map(function (df, i) {
         var open = i <= (s.diffUnlocked || 0), now = i === (s.diff || 0);
@@ -425,6 +426,18 @@
       }).join('') + '</div>';
       var jump = '<div class="jump">' + ['난이도', '전직', '사냥터', '상점', '패키지', '설정'].map(function (t, i) { return '<button data-jump="' + i + '">' + t + '</button>'; }).join('') + '</div>';
       return jump + diffs + tiers + regions + shop + settings;
+    }
+    // the version this phone is running: the offline copy of the site is stored under "cw-<version>"
+    var appVer = '';
+    function appVersion() {
+      if (!appVer && root.caches && caches.keys) {
+        appVer = '확인 중';
+        caches.keys().then(function (ks) {
+          var k = ks.filter(function (x) { return /^cw-[0-9a-f]+$/.test(x); })[0];
+          appVer = k ? k.slice(3) : '개발판'; var el = document.getElementById('appVer'); if (el) el.textContent = appVer;
+        }).catch(function () { appVer = '개발판'; });
+      }
+      return appVer || '개발판';
     }
     var MAP_Y = [0, 0, 2, 26, 25, 32, 59, 59, 71, 100];   // where each region's island sits on the map picture
     function stagePanel() {

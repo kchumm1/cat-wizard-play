@@ -1022,10 +1022,12 @@
       var sp = new T.Sprite(new T.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false, opacity: 0, blending: add ? T.AdditiveBlending : T.NormalBlending }));
       sp.center.set(cx === undefined ? 0.5 : cx, cy === undefined ? 0.14 : cy); sp.renderOrder = add ? 41 : 40; (sc.fxGroup || sc.scene).add(sp); return sp;
     }
+    // too many pictures on screen: the one furthest through its life makes room for the new one (a fresh spell never vanishes)
+    function picRoom() { if (pics.length < 30) return; var bi = 0, bk = -1; for (var i = 0; i < pics.length; i++) { var k = pics[i].t / pics[i].life; if (k > bk) { bk = k; bi = i; } } var q = pics[bi]; if (q.onLand && !q.landed) { q.landed = true; q.onLand(); } picDrop(q); pics.splice(bi, 1); }
     function picDrop(p) { [p.a, p.g].forEach(function (sp) { if (sp.parent) sp.parent.remove(sp); sp.material.dispose(); }); p.dead = true; }
     // a picture that rides a projectile: call set(pos, vel, dt) every frame, kill() when it lands
     function picHead(name, h, artAng, cx, cy) {
-      var tex = picLoad(name); if (!tex || !tex.image || picHeads.length >= 14) return null;
+      var tex = picLoad(name); if (!tex || !tex.image || picHeads.length >= 20) return null;
       var p = { a: picSprite(tex, false, cx, cy), g: picSprite(tex, true, cx, cy) }, w = h * tex.image.width / tex.image.height, t = 0, pa = V(), pb = V();
       picHeads.push(p);
       return {
@@ -1043,13 +1045,13 @@
     }
     // a picture that plays on the spot (ground point or monster)
     function picAt(name, at, h, move, cy) {
-      var tex = picLoad(name); if (!tex || !tex.image || pics.length >= 26) return;
+      var tex = picLoad(name); if (!tex || !tex.image) return; picRoom();
       var p = { a: picSprite(tex, false, 0.5, cy), g: picSprite(tex, true, 0.5, cy), t: 0, life: PIC_LIFE[move] || 0.6, h: h, w: h * tex.image.width / tex.image.height, x: at.x, y: 0.04, z: at.z + 0.25, move: move, seed: Math.random() * 6.28 };
       pics.push(p); picPose(p);
     }
     // a picture that drops out of the sky, sticks where it lands for a moment, then sinks away
     function picFall(name, land, h, time, hold, onLand) {
-      var tex = picLoad(name); if (!tex || !tex.image || pics.length >= 26) { if (onLand) onLand(); return; }
+      var tex = picLoad(name); if (!tex || !tex.image) { if (onLand) onLand(); return; } picRoom();
       var p = { a: picSprite(tex, false, 0.5, 0.06), g: picSprite(tex, true, 0.5, 0.06), t: 0, life: time + hold, fallT: time, h: h, w: h * tex.image.width / tex.image.height, x: land.x, y: 0.02, z: land.z + 0.1, move: 'fall', seed: Math.random() * 6.28, side: rr(0.9, 2.2), tilt: rr(-0.14, 0.14), onLand: onLand };
       pics.push(p); picPose(p);
     }
