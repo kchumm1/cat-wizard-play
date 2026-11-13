@@ -446,12 +446,23 @@
     try { localStorage.setItem('cw-lasterr', JSON.stringify({ t: n, msg: String(e && e.message || e).slice(0, 160), at: at.slice(0, 160) })); } catch (x) {}
   }
   root.addEventListener('error', function (ev) { noteError(ev.error || ev.message); });
+  // hitches: a frame that came more than 0.1 s after the one before while the game is on screen. Settings shows how many
+  // in the last minute ("화면 멈칫"), so a phone that lags can tell us what we cannot measure from here.
+  var hitches = [];
+  function noteHitch(ms) { var n = Date.now(); hitches.push({ t: n, ms: ms }); while (hitches.length && (n - hitches[0].t > 60000 || hitches.length > 200)) hitches.shift(); }
+  G.hitches = function () {
+    var n = Date.now(), k = 0, worst = 0;
+    hitches.forEach(function (h) { if (n - h.t <= 60000) { k++; worst = Math.max(worst, h.ms); } });
+    return { n: k, worst: worst };
+  };
   var last = performance.now();
   function frame(now) {
     // the next frame is asked for first, and each part runs on its own: one error used to end the game loop for good
     // (the picture stood still until the app was reopened)
     requestAnimationFrame(frame);
-    var rdt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+    var gap = now - last;
+    if (ready && gap > 100 && gap < 5000 && !document.hidden) noteHitch(gap);
+    var rdt = Math.min(0.05, Math.max(0, gap / 1000)); last = now;
     if (ready) {
       coinBox = null;
       var gdt = sc.scaleDt(rdt) * FAST;
