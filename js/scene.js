@@ -484,7 +484,7 @@
     // js/timescale.js: hits and big skills only dip the speed and let it come back smoothly; the game never freezes
     // (a freeze, or a slow part ending with a jump, reads as the game stopping on a phone)
     var timeScale = CW.createTimeScale();
-    var hitStop = timeScale.hitStop, slowmo = timeScale.slowmo, scaleDt = timeScale.scaleDt;
+    var hitStop = timeScale.hitStop, slowmo = timeScale.slowmo, climax = timeScale.climax, scaleDt = timeScale.scaleDt;
 
 
     var tmpC = new T.Color();
@@ -898,7 +898,7 @@
       castPulse: function () { heroGlow = 1; }, heroState: function () { return HB; }, heroFaceTo: heroFaceTo, heroCheer: heroCheer, setViewShift: setViewShift,
       spawnMob: spawnMob, hitMob: hitMob, killMob: killMob, clearMobs: clearMobs, mobs: function () { return mobs; }, mobPos: mobPos, mobTop: mobTop,
       setTierAura: setTierAura, damageText: damageText, screenPos: screenPos, flash: flash, dim: dim, shake: shake, punch: camPunch, light: light,
-      hitStop: hitStop, slowmo: slowmo, scaleDt: scaleDt, update: update, render: render, lens: lens, warmLens: warmLens,
+      hitStop: hitStop, slowmo: slowmo, climax: climax, scaleDt: scaleDt, update: update, render: render, lens: lens, warmLens: warmLens,
       setPixel: setPixel, setDamageStyle: setDamageStyle, setQuality: setQuality, getQuality: function () { return quality; }
     };
   }

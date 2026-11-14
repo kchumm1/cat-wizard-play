@@ -20,8 +20,21 @@
     // slow motion at speed s; one that was meant to hold and then jump back (ease false) gets a longer smooth return,
     // so about the same amount of slow motion is seen
     function slowmo(sec, s, ease) { dip(1 - s, ease ? sec : sec * 1.6); }
+    // the one big moment of a skill (the black hole bursting): time nearly stands still at first, then comes back
+    // smoothly (flat at the start, unlike a dip). Never a full stop, and at most one every 1.5 s, so it cannot turn
+    // back into the game that keeps stopping.
+    var lastClimax = -9, climaxes = [];
+    function climax(depth, dur) {
+      if (!(depth > 0) || !(dur > 0) || clock - lastClimax < 1.5) return;
+      lastClimax = clock; climaxes.push({ d: Math.min(0.92, depth), t: dur, all: dur });
+    }
     function scaleDt(dt) {
       var deficit = 0;
+      for (var c = climaxes.length - 1; c >= 0; c--) {
+        var X = climaxes[c], e = 1 - X.t / X.all, cv = X.d * (1 - e * e * (3 - 2 * e));
+        if (cv > deficit) deficit = cv;
+        X.t -= dt; if (X.t <= 0) climaxes.splice(c, 1);
+      }
       for (var i = dips.length - 1; i >= 0; i--) {
         var D = dips[i], k = D.t / D.all, v = D.d * k * k;
         if (v > deficit) deficit = v;
@@ -30,7 +43,7 @@
       clock += dt;
       return dt * (1 - deficit);
     }
-    return { hitStop: hitStop, slowmo: slowmo, scaleDt: scaleDt };
+    return { hitStop: hitStop, slowmo: slowmo, climax: climax, scaleDt: scaleDt };
   }
   return { createTimeScale: createTimeScale };
 });
