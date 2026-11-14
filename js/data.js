@@ -394,6 +394,8 @@
       goldBase: 3, goldGrowth: 1.2,
       // on a harder difficulty a monster gives at most 1/goldCapKills of the next attack level (economy.js stageGold)
       goldCapKills: 400,
+      // a plain monster pays this share of its gold and experience (user 2026-11-15: too much came in) — not bosses, not dungeons
+      killPay: 0.8,
       bossGemsBase: 10, bossGemsPerRegion: 6, regionBossGems: 25, firstClearMul: 2,
       atkBase: 10, atkPerLevel: 0, atkCompound: 1.05,
       speedPerLevel: 0.01, critPerLevel: 0.005, critDmgBase: 1.5, critDmgPerLevel: 0.02,

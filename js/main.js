@@ -154,9 +154,9 @@
     var pos = sc.mobPos(mob);
     if (mob.boss && boss && boss.mob === mob) { bossWin(pos); return; }
     if (dun) { dun.kills++; if (dun.kind === 'gold') { fx.coinPop(pos, 4); flyCoins(pos, 2); } else fx.coinPop(pos, 2); snd.play('kill'); return; }
-    var gold = CW.stageGold(state, undefined, st.goldMul) * st.goldMul / CROWD;
+    var gold = CW.stageGold(state, undefined, st.goldMul) * st.goldMul / CROWD * DATA.balance.killPay;
     state.gold += gold; fx.coinPop(pos, 3); flyCoins(pos, 2); snd.play('kill');
-    var kx = CW.killXp(state) / CROWD * st.xpMul;
+    var kx = CW.killXp(state) / CROWD * st.xpMul * DATA.balance.killPay;
     gained.gold += gold; gained.xp += kx;
     onLevel(CW.gainXp(state, kx));
     if (state.bossTry) return;

@@ -72,7 +72,7 @@
     if (sec < 1) return { seconds: 0, gold: 0, gems: 0, xp: 0 };
     var gold = econ.goldPerSecond(state) * sec * DATA.balance.offlineRate;
     var gems = Math.floor(sec / 1800) * (1 + Math.floor(Math.max(0, state.best) / 31));
-    var xp = econ.killsPerSecond(state) * sec * DATA.balance.offlineRate * lvl.killXp(state) * (econ.stats(state).xpMul || 1);
+    var xp = econ.killsPerSecond(state) * sec * DATA.balance.offlineRate * lvl.killXp(state) * (econ.stats(state).xpMul || 1) * DATA.balance.killPay;
     return { seconds: sec, gold: gold, gems: gems, xp: xp };
   }
   function buy(state, i) {

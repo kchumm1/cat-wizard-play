@@ -202,7 +202,7 @@
   function killsPerSecond(state, st) { st = st || stats(state); return Math.max(0.02, Math.min(dps(state, st) / stageMonsterHp(state), 2.5)); }
   function goldPerSecond(state) {
     var st = stats(state);
-    return cap(killsPerSecond(state, st) * stageGold(state, undefined, st.goldMul) * st.goldMul);
+    return cap(killsPerSecond(state, st) * stageGold(state, undefined, st.goldMul) * st.goldMul * B.killPay);
   }
   return {
     stageMonsterHp: stageMonsterHp, stageBossHp: stageBossHp, stageGold: stageGold, diffOf: diffOf,
