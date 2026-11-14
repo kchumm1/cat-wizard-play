@@ -5,7 +5,7 @@
   var BONES = ['head', 'armL', 'armR', 'legL', 'legR', 'tail', 'wingL', 'wingR'];
   // e: [cx, cy, rx, ry]  p: [px, py]
   var RIGS = {
-    hero: { head: { e: [615, 360, 370, 330], p: [610, 650] }, armL: { e: [285, 640, 150, 330], p: [430, 760] }, armR: { e: [835, 660, 105, 120], p: [740, 750] },
+    hero: { head: { e: [615, 360, 370, 330], p: [610, 650] }, armL: { cap: [245, 470, 400, 990, 78, 24, 30, 0.25], cap2: [110, 540, 260, 520, 62, 22], p: [330, 745] }, armR: { e: [835, 660, 105, 120], p: [740, 750] },
       legL: { e: [470, 1085, 100, 105], p: [485, 960] }, legR: { e: [715, 1085, 95, 105], p: [700, 960] }, tail: { e: [935, 1005, 125, 135], p: [820, 1065] } },
     'hero-cheese': { head: { e: [630, 400, 400, 370], p: [630, 690] }, armL: { e: [285, 690, 150, 260], p: [440, 770] }, armR: { e: [805, 830, 95, 100], p: [735, 775] },
       legL: { e: [515, 1175, 100, 85], p: [530, 1065] }, legR: { e: [730, 1175, 100, 85], p: [715, 1065] }, tail: { e: [930, 900, 110, 170], p: [835, 1000] } },
@@ -33,15 +33,52 @@
     B7: { head: { e: [640, 420, 260, 270], p: [640, 650] }, legL: { e: [440, 1075, 100, 70], p: [470, 1000] }, legR: { e: [820, 1075, 100, 70], p: [790, 1000] },
       wingL: { e: [195, 600, 250, 380], p: [430, 560] }, wingR: { e: [1060, 600, 250, 380], p: [830, 560] } }
   };
-  ['cos1', 'cos2', 'cos3', 'cos4', 'cos5', 'cos6', 'cos7', 'cos8', 'cos9', 'cos10', 'cos11', 'cos12', 'cos13', 'cos14', 'cos15', 'cos16', 'cos17', 'cos18'].forEach(function (id) { RIGS[id] = RIGS.costume; });
+  // each costume picture holds its staff a little differently: its own staff strip [top x, top y, foot x, foot y, head radius,
+  // fade, shaft radius, head share of the length], turned at the paw that holds it [x, y] — measured on the pictures (2026-11-15)
+  var STAFF = {
+    cos1: [[180, 240, 390, 1060, 118, 26, 34, 0.42], [300, 740]],
+    cos2: [[230, 330, 360, 1000, 108, 26, 32, 0.32], [320, 760]],
+    cos3: [[180, 430, 370, 1020, 118, 26, 32, 0.35], [300, 760]],
+    cos4: [[215, 420, 360, 1060, 112, 26, 32, 0.32], [290, 760]],
+    cos5: [[175, 420, 390, 1040, 108, 26, 34, 0.33], [290, 750]],
+    cos6: [[200, 380, 360, 1060, 106, 26, 34, 0.36], [290, 740]],
+    cos7: [[210, 400, 400, 1030, 90, 26, 34, 0.3], [320, 750]],
+    cos8: [[200, 400, 440, 1050, 85, 26, 34, 0.3], [340, 730]],
+    cos9: [[220, 390, 380, 1040, 110, 26, 34, 0.33], [320, 750]],
+    cos10: [[180, 380, 410, 1060, 140, 28, 34, 0.35], [320, 740]],
+    cos11: [[140, 150, 330, 1120, 100, 26, 34, 0.32], [240, 740]],
+    cos12: [[150, 150, 380, 1080, 112, 26, 38, 0.42], [300, 690]],
+    cos13: [[190, 150, 330, 1080, 70, 26, 34, 0.35], [280, 690]],
+    cos14: [[230, 280, 380, 1060, 85, 26, 34, 0.35], [290, 760]],
+    cos15: [[150, 400, 410, 1040, 112, 26, 34, 0.36], [300, 730]],
+    cos16: [[150, 300, 390, 1060, 125, 28, 34, 0.35], [285, 725]],
+    cos17: [[150, 120, 360, 1060, 90, 26, 34, 0.35], [260, 720]],
+    cos18: [[180, 300, 400, 1060, 130, 28, 34, 0.4], [290, 740]]
+  };
+  // fwd: these staffs are long and stand close to the face, so they tip only a quarter as far toward the monsters (and
+  // rise by lift as they do); measured: about 20 degrees forward already reaches the head
+  var STAFF2 = { cos10: [250, 300, 60, 640, 62, 24], cos14: [225, 330, 95, 500, 72, 24], cos15: [130, 560, 110, 770, 34, 20] };   // scythe blade, feather plume, hanging tassel
+  Object.keys(STAFF).forEach(function (id) { var o = {}; for (var k in RIGS.costume) o[k] = RIGS.costume[k]; o.armL = { cap: STAFF[id][0], cap2: STAFF2[id], p: STAFF[id][1], fwd: 0.25, lift: 0.05 }; RIGS[id] = o; });
   var SIZE = 1254;
   function smooth(a, b, x) { var t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
+  // A staff strip: [x1, y1, x2, y2, head radius, fade, shaft radius, head share of the length]: fully moved within the radius
+  // of the line (wide at the head end, narrow along the shaft), fading out over 'fade' pixels
+  function capWeight(c, px, py) {
+    var lx = c[2] - c[0], ly = c[3] - c[1], tq = Math.max(0, Math.min(1, ((px - c[0]) * lx + (py - c[1]) * ly) / (lx * lx + ly * ly)));
+    var qx = px - (c[0] + lx * tq), qy = py - (c[1] + ly * tq);
+    var rad = c[6] === undefined ? c[4] : c[6] + (c[4] - c[6]) * Math.max(0, 1 - tq / (c[7] || 0.35));
+    return 1 - smooth(rad, rad + c[5], Math.sqrt(qx * qx + qy * qy));
+  }
   // Weight of every bone at one point of the picture (u right, v up from the feet, both 0..1 of the cropped art).
   function weightsAt(rig, crop, u, v) {
     var px = rig && rig.frac ? u : crop.x0 + u * crop.cw, py = rig && rig.frac ? 1 - v : crop.y0 + (1 - v) * crop.ch, out = new Array(8), sum = 0;
     for (var i = 0; i < 8; i++) {
       var b = rig && rig[BONES[i]]; out[i] = 0;
       if (!b) continue;
+      if (b.cap) {
+        // a capsule around a line (a staff), and a second one for a hooked head (cap2): the larger pull wins
+        out[i] = Math.max(capWeight(b.cap, px, py), b.cap2 ? capWeight(b.cap2, px, py) : 0); sum += out[i]; continue;
+      }
       var dx = (px - b.e[0]) / b.e[2], dy = (py - b.e[1]) / b.e[3], d = Math.sqrt(dx * dx + dy * dy);
       out[i] = 1 - smooth(0.55, 1.0, d); sum += out[i];
     }

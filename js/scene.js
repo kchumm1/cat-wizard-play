@@ -157,7 +157,7 @@
     // one shared mesh per picture, 1 unit tall; each vertex knows how much every bone moves it
     function rigGeometry(art) {
       var key = art.id || 'x'; if (geoCache[key]) return geoCache[key];
-      var geo = new T.PlaneGeometry(art.aspect, 1, 14, 22); geo.translate(0, 0.5, 0);
+      var fine = !!(art.rig && art.rig.armL && art.rig.armL.cap), geo = new T.PlaneGeometry(art.aspect, 1, fine ? 48 : 14, fine ? 72 : 22); geo.translate(0, 0.5, 0);
       var n = geo.attributes.position.count, uv = geo.attributes.uv.array, w0 = new Float32Array(n * 4), w1 = new Float32Array(n * 4);
       if (art.rig && art.crop && CW.rigWeightsAt) for (var i = 0; i < n; i++) {
         var ws = CW.rigWeightsAt(art.rig, art.crop, uv[i * 2], uv[i * 2 + 1]);
@@ -214,7 +214,11 @@
       an.hd.target = (P.head || 0) - (P.hurt || 0) * 0.24 + ch * Math.sin(t * 7.5) * 0.1;
       stepSpring(an.aR, dt); stepSpring(an.aL, dt); stepSpring(an.hd, dt);
       A[0] = an.hd.x + Math.sin(t * 1.7 + d.seed) * 0.05 + wk * s * 0.07; TT[0].set(0, br * 0.012 - wk * Math.abs(s) * 0.012);
-      A[1] = an.aL.x + wk * s * 0.3 + br * 0.04 - air * 0.4;
+      // the staff arm: a long staff (most costumes) only tips a little toward the monsters, or it would cross the face (fwd),
+      // and rises a little as it does (lift); backward it swings freely
+      var sr = d.rig && d.rig.armL, sa = an.aL.x, fwd = sr && sr.fwd !== undefined ? sr.fwd : 1;
+      A[1] = (sa > 0 ? sa * fwd : sa) + wk * s * 0.3 + br * 0.04 - air * 0.4;
+      if (sr && sr.lift) TT[1].set(0, Math.max(0, sa) * sr.lift);
       A[2] = an.aR.x + wk * s * 0.3 - br * 0.04 + air * 0.4;
       A[3] = wk * s * 0.32 - air * 0.3; TT[3].set(0, Math.max(0, s) * 0.075 * wk + air * 0.04);
       A[4] = wk * s * 0.32 + air * 0.3; TT[4].set(0, Math.max(0, -s) * 0.075 * wk + air * 0.04);
@@ -257,17 +261,24 @@
     // a* = anticipation (lean/crouch), r* = release kick, hb/hs = pose kept for a moment after release,
     // aR/rR = paw arm (+ up, - out toward the monsters), aL/rL = staff arm (- lifts the staff over the head).
     var POSES = {
-      thrust: { ab: -0.14, as: -0.06, ax: -0.05, rb: 3.4, rs: 2.4, rl: 0.4, rx: 1.9, hb: 0.07, hs: 0, aR: 0.55, rR: -1.05, aL: 0.12, rL: -0.25, kick: 1.5 },
-      raise: { ab: -0.03, as: -0.12, ax: 0, rb: 1.0, rs: 4.8, rl: 2.7, rx: 0, hb: 0, hs: 0.07, aR: -0.2, rR: 0.95, aL: 0.2, rL: -0.65, kick: 0.5 },
-      swipe: { ab: -0.17, as: -0.05, ax: -0.1, rb: 5.2, rs: 1.6, rl: 0.8, rx: 4.6, hb: 0.15, hs: 0, aR: 1.0, rR: -1.35, aL: 0.1, rL: -0.35, kick: -1.9 },
-      toss: { ab: -0.19, as: -0.09, ax: -0.04, rb: 4.2, rs: 3.2, rl: 0.9, rx: 1.0, hb: 0.08, hs: 0, aR: 1.15, rR: -0.95, aL: -0.15, rL: 0.15, kick: 1.0 },
-      spin: { ab: 0, as: -0.12, ax: 0, rb: 0.5, rs: 3.4, rl: 2.2, rx: 0, hb: 0, hs: 0.05, hop: 3.1, aR: 0.3, rR: 0.9, aL: 0.3, rL: -0.75 }
+      thrust: { ab: -0.14, as: -0.06, ax: -0.03, rb: 2.4, rs: 2.0, rl: 0.4, rx: 0.8, hb: 0.06, hs: 0, aR: 0.55, rR: -1.05, aL: -0.35, rL: 0.7, kick: 0.6 },
+      raise: { ab: -0.03, as: -0.12, ax: 0, rb: 1.0, rs: 4.0, rl: 2.4, rx: 0, hb: 0, hs: 0.07, aR: -0.2, rR: 0.95, aL: -0.3, rL: 0.8, kick: 0.2, hold: 0.55 },
+      swipe: { ab: -0.17, as: -0.05, ax: -0.05, rb: 3.6, rs: 1.4, rl: 0.8, rx: 2.0, hb: 0.12, hs: 0, aR: 1.0, rR: -1.35, aL: -0.45, rL: 0.8, kick: -0.9 },
+      toss: { ab: -0.19, as: -0.09, ax: -0.03, rb: 3.0, rs: 2.6, rl: 0.9, rx: 0.6, hb: 0.07, hs: 0, aR: 1.15, rR: -0.95, aL: -0.35, rL: 0.65, kick: 0.4 },
+      spin: { ab: 0, as: -0.12, ax: 0, rb: 0.5, rs: 3.0, rl: 2.0, rx: 0, hb: 0, hs: 0.05, hop: 3.1, aR: 0.3, rR: 0.9, aL: -0.3, rL: 0.85 },
+      // the big moment of a spell (2026-11-15): the staff comes down hard as it bursts, the body ducks into it
+      slam: { ab: 0.04, as: 0.05, ax: 0, rb: 3.0, rs: -2.6, rl: -0.6, rx: 1.0, hb: 0.08, hs: -0.06, aR: 0.2, rR: -0.9, aL: -0.15, rL: 1.15, kick: 0.3 }
     };
     var pose = null, heroGlow = 0, heroGlowCol = new T.Color();
     function heroPose(type, antic, color) {
       pose = { P: POSES[type] || POSES.thrust, t: 0, a: Math.max(0.03, antic || 0.12), rel: false };
       if (color !== undefined) { heroGlowCol.setHex(color); }
       HB.lock = Math.max(HB.lock, (antic || 0.12) + 0.14);
+    }
+    var beatT = -9;
+    function heroBeat() {
+      if (!hero || (pose && !pose.rel) || time - beatT < 0.35) return;
+      beatT = time; heroPose('slam', 0.03);
     }
     function heroGlowPulse(color, amt) { heroGlowCol.setHex(color); heroGlow = Math.max(heroGlow, amt === undefined ? 1 : amt); }
     var ghosts = [];
@@ -503,7 +514,7 @@
     function flash(color, amount) { flashEl.style.background = color; flashA = Math.max(flashA, Math.min(0.42, amount)); }
     function dim(amount, dur) { dimTarget = Math.max(dimTarget, Math.min(0.32, amount)); dimT = Math.max(dimT, dur || 0.5); }
     var trauma = 0, punchV = 0, punch = 0, kick = new T.Vector3(), pan = { x: 0, z: 0 };
-    function shake(a) { trauma = Math.min(1, trauma + a * 1.8); }
+    function shake(a) { trauma = Math.min(1, trauma + a * 1.8); if (a >= 0.5) heroBeat(); }
     function camPunch(a, dir) { punchV += a * 14; if (dir) kick.add(dir.clone().multiplyScalar(a * 0.3)); }
 
     // ---------- lights from spells (tint the billboards) ----------
@@ -524,7 +535,10 @@
     // js/timescale.js: hits and big skills only dip the speed and let it come back smoothly; the game never freezes
     // (a freeze, or a slow part ending with a jump, reads as the game stopping on a phone)
     var timeScale = CW.createTimeScale();
-    var hitStop = timeScale.hitStop, slowmo = timeScale.slowmo, climax = timeScale.climax, scaleDt = timeScale.scaleDt;
+    // a spell's slow motion and its single big moment are where it bursts: the wizard's staff comes down right then
+    var hitStop = timeScale.hitStop, scaleDt = timeScale.scaleDt;
+    function slowmo() { heroBeat(); return timeScale.slowmo.apply(null, arguments); }
+    function climax() { heroBeat(); return timeScale.climax.apply(null, arguments); }
 
 
     var tmpC = new T.Color();
@@ -733,10 +747,11 @@
               if (P.hop && HB.y <= 0.01) HB.vy = P.hop;
               hd.anim.aR.v += (P.rR - P.aR) * 9; hd.anim.aL.v += (P.rL - P.aL) * 7;
               heroGlow = Math.max(heroGlow, 0.8);
+              if (hooks.swing) hooks.swing(heroGlowCol.getHex());
             }
-            var kk = Math.min(1, (pose.t - pose.a) / 0.42); rest.bend += P.hb * (1 - kk) * fs; rest.sq += P.hs * (1 - kk);
+            var kk = Math.min(1, Math.max(0, pose.t - pose.a - (P.hold || 0)) / 0.42); rest.bend += P.hb * (1 - kk) * fs; rest.sq += P.hs * (1 - kk);
             arms.armR = P.rR * (1 - kk * kk); arms.armL = P.rL * (1 - kk * kk);
-            if (pose.t > pose.a + 0.6) pose = null;
+            if (pose.t > pose.a + (P.hold || 0) + 0.6) pose = null;
           }
         }
         var stepped = animRig(hero, dt, arms);
@@ -934,7 +949,7 @@
     size();
     return {
       THREE: T, scene: scene, camera: camera, renderer: renderer, fxGroup: fxGroup, glow: GLOW, hooks: hooks,
-      size: size, setRegion: setRegion, setHero: setHero, setHeroTexture: setHeroTexture, setCostumeFx: setCostumeFx, heroTip: heroTip, heroPaw: heroPaw, heroCenter: heroCenter, heroPose: heroPose, heroGlow: heroGlowPulse, ghost: ghost,
+      size: size, setRegion: setRegion, setHero: setHero, setHeroTexture: setHeroTexture, setCostumeFx: setCostumeFx, heroTip: heroTip, heroPaw: heroPaw, heroCenter: heroCenter, heroPose: heroPose, heroBeatAt: function () { return beatT; }, heroGlow: heroGlowPulse, ghost: ghost,
       castPulse: function () { heroGlow = 1; }, heroState: function () { return HB; }, heroFaceTo: heroFaceTo, heroCheer: heroCheer, setViewShift: setViewShift,
       spawnMob: spawnMob, hitMob: hitMob, killMob: killMob, clearMobs: clearMobs, mobs: function () { return mobs; }, mobPos: mobPos, mobTop: mobTop,
       setTierAura: setTierAura, damageText: damageText, screenPos: screenPos, flash: flash, dim: dim, shake: shake, punch: camPunch, light: light,

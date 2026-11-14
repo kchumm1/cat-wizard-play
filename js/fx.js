@@ -1190,6 +1190,19 @@
     sc.hooks.land = function (pos, boss) { dust(pos, Math.max(1, Math.round((boss ? 6 : 2) * vx.quality())), boss ? 1.6 : 0.8); if (boss) gRing(pos, 0xffffff, 1.4, 0.35); };
     sc.hooks.step = function (pos, boss) { if (boss) { dust(pos, N(3), 1.1); gRing(pos, 0xffffff, 0.9, 0.25); } else if (Math.random() < 0.45) dust(pos, 1, 0.45); };
     // a monster claws at the wizard: slash marks fly at it and its magic barrier ripples
+    // the staff swing (scene, at a cast's release): the star leaves a short arc of light in the spell's colour
+    // the staff swing (scene, at a cast's release): an arc of light from where the star is, over the head, to the front —
+    // larger than the staff itself turns (the picture can only bend so far), so the swing reads as a full stroke
+    sc.hooks.swing = function (col) {
+      var tip = sc.heroTip(), c = sc.heroCenter(); c.y += 0.1;
+      var dx = tip.x - c.x, dy = tip.y - c.y, R = Math.max(0.35, Math.sqrt(dx * dx + dy * dy)) * 1.1, a0 = Math.atan2(dy, dx), turn = (dx < 0 ? -1 : 1) * 2.3, t = 0, T = 0.13;
+      var a = vx.ribbon({ solid: true, mode: 'trail', w: 0.1, color: deep(col), core: 0.85, alpha: 0.95, maxPts: 18, shrink: 70, minDist: 0.02 }),
+        h = vx.ribbon({ mode: 'trail', w: 0.26, color: col, core: 0, alpha: 0.3, maxPts: 18, shrink: 70, minDist: 0.02 });
+      tick(function (dt) {
+        t += dt; var k = Math.min(1, t / T), e = 1 - (1 - k) * (1 - k), ang = a0 + turn * e, p = V(c.x + Math.cos(ang) * R, c.y + Math.sin(ang) * R, c.z + 0.08);
+        if (a) a.head(p); if (h) h.head(p); if (k < 1) return false; if (a) a.detach(); if (h) h.detach(); return true;
+      });
+    };
     sc.hooks.swipe = function (mob) {
       var p = sc.mobPos(mob), H = sc.heroCenter(), mid = p.clone().lerp(H, 0.6), B = mob.boss ? 1.9 : 1;
       for (var i = 0; i < 3; i++) E({ pos: mid.clone().add(V(0, (i - 1) * 0.15 * B, 0.25)), frame: 'crescent', color: [0xffffff, mob.boss ? 0xff4f6a : 0xffb0d0], size: [0.35 * B, 0.75 * B], rot: 2.5 + (i - 1) * 0.12, life: 0.2, ease: 1, delay: i * 0.03, fadeOut: 0.5 });
