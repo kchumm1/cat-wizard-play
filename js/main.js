@@ -153,7 +153,7 @@
     var bx = CW.bossXp(state) * st.xpMul, shards = CW.addShards(state, CW.stageInfo(stage).isRegionBoss);
     var mana = Math.round(CW.manaForBoss(stage, CW.stageInfo(stage).isRegionBoss) * CW.diffOf(state).gemMul); state.mana = (state.mana || 0) + mana;
     var isRB = CW.stageInfo(stage).isRegionBoss, rstone = CW.runeStoneForBoss(state, isRB); state.runeStone = (state.runeStone || 0) + rstone;
-    var sigs = CW.sigilDrop(state, isRB);
+    var sigs = CW.sigilDrop(state, isRB), runeGot = CW.runeDrop(state, isRB);
     gained.gold += gold; gained.gems += gems; gained.xp += bx;
     onLevel(CW.gainXp(state, bx));
     var res = CW.onBossResult(state, true);
@@ -164,6 +164,8 @@
     if (shards) gained.more.push({ t: '신기 조각 +' + shards, c: '#ffd24a' });
     if (rstone) gained.more.push({ t: '룬석 +' + rstone, c: '#d8b8ff' });
     if (sigs.length) gained.more.push({ t: '신성력 ' + sigs.map(function (x) { return DATA.grades[x.grade].name; }).join('·'), c: '#8ff59a' });
+    if (runeGot.length) gained.more.push({ t: '룬 ' + runeGot.map(function (x) { return DATA.hiGrades[x.grade].name + ' ' + CW.runeById(x.kind).name; }).join('·'), c: '#c9a8ff' });
+    if (runeGot.overflow) gained.more.push({ t: '룬 가방이 꽉 차 룬석 +' + CW.fmt(runeGot.overflow), c: '#c9a8ff' });
     gained.t = 1;
     if (res.tierUp) pendingTier.push({ tier: res.tierUp, at: 1.1 });
     if (res.final) setTimeout(function () {
@@ -252,7 +254,7 @@
     dun = null; clearField(true); restT = 0.6; ui.dunHud(null);
     snd.play('win'); ui.banner('던전 완료!'); save();
     var lines = d.kind === 'mana' ? '<p>골렘에게 준 피해 <b>' + CW.fmt(d.dmg) + '</b> (Lv.' + r.level + ')</p><p style="color:#8fd8ff;font:400 22px var(--display)">마력석 +' + CW.fmt(r.mana) + '</p>'
-      : '<p>잡은 몬스터 <b>' + d.kills + '마리</b></p><p style="color:' + (d.kind === 'gold' ? 'var(--gold)' : d.kind === 'rune' ? '#d8b8ff' : 'var(--gem)') + ';font:400 22px var(--display)">' + (d.kind === 'gold' ? '골드 +' + CW.fmt(r.gold) : d.kind === 'rune' ? '룬석 +' + CW.fmt(r.runeStone) : '다이아 +' + CW.fmt(r.gems)) + '</p>';
+      : '<p>잡은 몬스터 <b>' + d.kills + '마리</b></p><p style="color:' + (d.kind === 'gold' ? 'var(--gold)' : d.kind === 'rune' ? '#d8b8ff' : 'var(--gem)') + ';font:400 22px var(--display)">' + (d.kind === 'gold' ? '골드 +' + CW.fmt(r.gold) : d.kind === 'rune' ? '룬석 +' + CW.fmt(r.runeStone) + (r.got && r.got.length ? ' · 룬 ' + r.got.length + '개' : '') + (r.overflow ? ' · 가방이 꽉 차 룬석 +' + CW.fmt(r.overflow) : '') : '다이아 +' + CW.fmt(r.gems)) + '</p>';
     ui.modal('<h2>' + d.def.name + '</h2>' + lines + '<p class="note">남은 입장권 ' + CW.ticketsLeft(state, d.kind, Date.now()) + '장 · 기록이 좋으면 소탕으로 같은 보상을 바로 받을 수 있어요.</p>', [{ label: '좋아요', pri: true }]);
   }
 
@@ -330,6 +332,13 @@
     runeGradeUp: function (id) { var ok = CW.runeGradeUp(state, id); if (ok) { refreshStats(); snd.play('tier'); fx.levelUp(state.tier, 0xb58cff, true); save(); } return ok; },
     buyPack: function (id) { var got = CW.buyPack(state, id); if (got !== false) { refreshStats(); snd.play('win'); save(); } return got; },
     runeUp: function (id) { var ok = CW.runeUp(state, id); if (ok) { refreshStats(); snd.play('click'); } return ok; },
+    runeEquipToggle: function (id) { var ok = CW.runeIsWorn(state, id) ? CW.runeUnequip(state, id) : CW.runeEquip(state, id); if (!ok) return 'full'; refreshStats(); snd.play('click'); save(); return 'ok'; },
+    runeLock: function (id) { var ok = CW.runeLock(state, id); if (ok) save(); return ok; },
+    runeDismantle: function (id) { var n = CW.runeDismantle(state, id); if (n) { refreshStats(); save(); } return n; },
+    runeDismantleAll: function () { var n = CW.runeDismantleAll(state); if (n) { refreshStats(); snd.play('win'); save(); } return n; },
+    runeFuse: function (id) { var it = CW.runeFuse(state, id); if (it) { refreshStats(); snd.play('win'); save(); } return it; },
+    runeSummon: function (n) { var r = CW.runeSummon(state, n); if (r) { refreshStats(); snd.play('pull'); save(); } return r; },
+    runeEquipBest: function () { CW.runeEquipBest(state); refreshStats(); save(); },
     sigilSet: function (i) { var ok = CW.sigilSet(state, i); if (ok) { refreshStats(); save(); } return ok; },
     sigilEquipToggle: function (id) {
       var ok = CW.equipped(state).indexOf(id) >= 0 ? CW.sigilUnequip(state, id) : CW.sigilEquip(state, id);

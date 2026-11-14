@@ -208,20 +208,32 @@
       { id: 'rWind', name: '바람 룬', stat: 'surgeRate', per: 0.004, icon: '🍃', color: '#5fe39a' },
       { id: 'rEarth', name: '대지 룬', stat: 'bossDmg', per: 0.03, icon: '🪨', color: '#c99a5b' },
       { id: 'rLight', name: '빛의 룬', stat: 'superDmg', per: 0.02, icon: '☀️', color: '#ffe14a' },
-      { id: 'rDark', name: '어둠 룬', stat: 'skillDmg', per: 0.03, icon: '🌑', color: '#a77bff' }
+      { id: 'rDark', name: '어둠 룬', stat: 'skillDmg', per: 0.03, icon: '🌑', color: '#a77bff' },
+      // 2026-11-14: runes are items now; four new kinds carry the 초월 stats
+      { id: 'rBolt', name: '천둥 룬', stat: 'hyperDmg', per: 0.02, icon: '⚡', color: '#5ff4ff' },
+      { id: 'rNebula', name: '성운 룬', stat: 'megaDmg', per: 0.02, icon: '🌌', color: '#ff4fa8' },
+      { id: 'rComet', name: '혜성 룬', stat: 'alphaDmg', per: 0.015, icon: '☄️', color: '#7dff6a' },
+      { id: 'rOrigin', name: '태초 룬', stat: 'finalPct', per: 0.01, icon: '🌟', color: '#ffffff' }
     ],
     // each rune has a grade (hiGrades): the level cap is lvPerGrade × (grade + 1), promoting needs the cap and rune stones,
     // and each grade adds gradeStep to the rune's effect
     runeConf: { unlockTier: 3, costBase: 3, costGrowth: 1.045, lvPerGrade: 20, gradeStep: 0.25, gradeCostBase: 150, gradeCostGrowth: 2.4,
-      resEvery: 10, resFinal: 0.15, bossStone: 1, regionStone: 6, dungeonPerKill: 0.6 },
+      resEvery: 10, resFinal: 0.15, bossStone: 1, regionStone: 6, dungeonPerKill: 0.6,
+      // rune items (2026-11-14): seven slots, a bag, drops, summons; three of a kind and grade fuse into the next grade
+      slots: 7, cap: 100, kindWeight: [13, 13, 13, 13, 13, 13, 6, 6, 6, 4], dropRate: 0.25, regionDrops: 2, dungeonPerRune: 20,
+      summon: { 5: 200, 10: 380 }, summonTable: [40, 32, 18, 7, 2.4, 0.5, 0.1, 0, 0, 0, 0],
+      dropTable: [[70, 25, 5, 0, 0, 0, 0, 0, 0, 0, 0], [50, 32, 14, 4, 0, 0, 0, 0, 0, 0, 0], [35, 33, 20, 9, 3, 0, 0, 0, 0, 0, 0], [25, 30, 25, 13, 6, 1, 0, 0, 0, 0, 0]],
+      dismantleBase: [10, 24, 58, 138, 332, 796, 1911, 4586, 11007, 26417, 63400] },
     // sigils (신성력): random gems with a grade, a quality and one stat; only equipped ones count
     sigilStats: [
       { stat: 'superRate', base: 0.004, icon: '✴️' }, { stat: 'ultraRate', base: 0.003, icon: '💫' }, { stat: 'hyperRate', base: 0.002, icon: '🌀' },
       { stat: 'megaRate', base: 0.0015, icon: '🌟' }, { stat: 'critDmg', base: 0.15, icon: '🗡️' }, { stat: 'superDmg', base: 0.12, icon: '⚡' },
       { stat: 'skillDmg', base: 0.08, icon: '📜' }, { stat: 'bossDmg', base: 0.08, icon: '👹' }, { stat: 'weakDmg', base: 0.08, icon: '🎯' },
-      { stat: 'surgeDmg', base: 0.12, icon: '💥' }, { stat: 'atkPct', base: 0.1, icon: '🐾' }
+      { stat: 'surgeDmg', base: 0.12, icon: '💥' }, { stat: 'atkPct', base: 0.1, icon: '🐾' },
+      // 초월 crit damages (2026-11-14)
+      { stat: 'hyperDmg', base: 0.08, icon: '🌀' }, { stat: 'megaDmg', base: 0.06, icon: '🌟' }, { stat: 'alphaDmg', base: 0.04, icon: '☄️' }
     ],
-    sigilConf: { unlockTier: 5, cap: 60, slotsBase: 4, slotsPer: 10, slotsMax: 12, lvCostBase: 20, lvCostGrowth: 1.09, lvFinal: 0.04, lvMax: 300,
+    sigilConf: { unlockTier: 5, cap: 150, slotsBase: 4, slotsPer: 10, slotsMax: 20, lvCostBase: 20, lvCostGrowth: 1.09, lvFinal: 0.04, lvMax: 300,
       dropRate: 0.3, regionDrops: 2, summon: { 5: 200, 10: 380 },
       gradeMul: [1, 2.2, 4.8, 10, 22, 48, 100, 210, 450, 950, 2000], stones: [2, 5, 12, 30, 75, 180, 420, 1000, 2400, 5600, 13000],
       dropTable: [[70, 25, 5, 0, 0, 0, 0, 0, 0, 0, 0], [50, 32, 14, 4, 0, 0, 0, 0, 0, 0, 0], [35, 33, 20, 9, 3, 0, 0, 0, 0, 0, 0], [25, 30, 25, 13, 6, 1, 0, 0, 0, 0, 0]],
@@ -321,7 +333,7 @@
       hpBase: 30, hpGrowth: 1.12, regionStep: 1, bossMul: 9, regionBossMul: 22,
       // difficulty modes keep the walls they had before 초월 (2026-11-14)
       diffWallMul: [1,19169.38,5566798.08,22820341.73,178880696.24,1691557414.71,8489733214.33,95531878018.25,176986468430.32,294004021895.86],
-      wallMul: [1,18089.69,8530996.34,37137183.19,355464724.47,567601558.3,64002674168.89,2705046173297.78,1807507375601.2,2938387926397.42], wallShare: 0.7,
+      wallMul: [1,18089.69,10335053.86,96503451.56,762058875.2,1750507849.35,12374981423.27,359382769354.56,247984443986.51,710772058448.84], wallShare: 0.7,
       goldBase: 3, goldGrowth: 1.2,
       bossGemsBase: 10, bossGemsPerRegion: 6, regionBossGems: 25, firstClearMul: 2,
       atkBase: 10, atkPerLevel: 0, atkCompound: 1.05,

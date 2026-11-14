@@ -1201,6 +1201,11 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 #bossbox .bar i{background:linear-gradient(180deg,#F6B8A0,#E58C74 60%,#D5735E);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -1.5px 0 rgba(120,40,20,.22)}
 #retry{background:linear-gradient(180deg,#FFFBF3,#F5ECDC);color:#5c4330;box-shadow:inset 0 0 0 1.5px #CDB07A,0 0 0 1px rgba(92,67,48,.28),0 3px 8px rgba(40,30,20,.3);-webkit-text-stroke:0}
 #banner{color:#6b4a2a;-webkit-text-stroke:6px #FFF6E4;text-shadow:0 3px 8px rgba(40,30,20,.45)}
+/* rune ring with seven slots (2026-11-14) */
+.runering.r7 .rune{transform:rotate(calc(var(--i) * 51.4286deg)) translateY(-104px) rotate(calc(var(--i) * -51.4286deg))}
+.runering.r7 .rune.empty{display:flex;align-items:center;justify-content:center;border:2px dashed #CDB98F;border-radius:50%;width:52px;height:52px;margin:-26px 0 0 -26px;color:#9a8566;font-size:11px}
+.runering.r7 .rune.empty span{font:400 10px/1 var(--ui,inherit)!important;white-space:nowrap;letter-spacing:0}
+.rcell .irune{width:44px;height:44px}
 /* ==CREAM-END== */
 /* ==THEME-END== */
 @media (prefers-reduced-motion:reduce){#killBar i,.ico .orb,.sk.now .ico,.rlines .flow,.rcore.lit,.isg,.gart .gimg,.gart .gstaff,.gshine::after{animation:none!important}}

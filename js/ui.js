@@ -65,7 +65,7 @@
         '<div class="codexbar"><span>장비 초월 통합 성급 (★' + ns + ')</span><b>모든 피해 +' + pct(ns * BG.starFinal) + '</b></div>' +
         '<p class="note">같은 장비 ' + DATA.bagConf.mergeCount + '개 → 한 단계 위(I→II→III→IV→다음 등급 I). 가진 장비는 모두 보유 효과를 줘요. 최대 레벨이 된 장비는 같은 장비를 써서 초월할 수 있어요: 별마다 효과 +' + pct(BG.starMul) + ', 최대 레벨 +' + BG.starLv + '.</p>';
     }
-    var selDiff = -1, selRegion = -1, gearSub = 'gear', upMul = 1, trainSub = 'grow', selTalent = null, selRune = null, fxRune = null, selSigil = null, sgFilter = -1;
+    var selDiff = -1, selRegion = -1, gearSub = 'gear', upMul = 1, trainSub = 'grow', selTalent = null, selRune = null, fxRune = null, rnFilter = 'all', selSigil = null, sgFilter = -1;
     function mmss(sec) { sec = Math.ceil(sec); return Math.floor(sec / 60) + ':' + ('0' + sec % 60).slice(-2); }
     function alchPanel() {
       var s = G.state, AC = DATA.alchConf, now = Date.now();
@@ -204,19 +204,49 @@
       }).join('');
       return '<h3>별의 삼신기</h3>' + head + '<div class="dlist">' + cards + '</div>';
     }
+    // ---------- runes (2026-11-14): seven worn runes in the ring, the bag below; pick one to level, promote, wear, lock, fuse ----------
+    function runeCell(s, it) {
+      var k = CW.runeById(it.kind), worn = CW.runeIsWorn(s, it.id);
+      return '<button class="sgcell rcell' + (selRune === it.id ? ' sel' : '') + (worn ? ' eq' : '') + '" data-rpick="' + it.id + '" style="--gc:' + hc(it.grade) + '"><span class="tg">' + hn(it.grade) + '</span>' + CW.ICO.rune(it.kind, k.color, it.grade, hc(it.grade)) +
+        (it.lock ? '<span class="lk">🔒</span>' : '') + '<span class="q">Lv.' + it.lv + '</span></button>';
+    }
     function runePanel() {
-      var s = G.state, RC = DATA.runeConf, open = CW.runeOpen(s), res = CW.runeResonance(s);
-      if (!selRune) selRune = DATA.runes[0].id;
-      var r = CW.runeById(selRune), lv = CW.runeLv(s, r.id), cost = CW.runeCost(lv), rg = CW.runeGrade(s, r.id), cap = CW.runeCap(s, r.id), top = rg >= DATA.hiGrades.length - 1, full = lv >= cap, gcost = CW.runeGradeCost(rg);
-      var head = '<div class="manaline"><span>' + CW.ICO.cur('rune') + ' 룬석 <b>' + fmt(s.runeStone || 0) + '</b></span><small class="note">' + (open ? '보스·던전 「룬의 신전」에서 얻어요' : RC.unlockTier + '차 전직 후에 열려요') + '</small></div>';
-      var ring = '<div class="runering">' + DATA.runes.map(function (x, i) {
-        var xg = CW.runeGrade(s, x.id);
-        return '<button class="rune' + (x.id === selRune ? ' sel' : '') + (fxRune === x.id ? ' up' : '') + (CW.runeLv(s, x.id) ? '' : ' zero') + '" data-rpick="' + x.id + '" style="--rc:' + x.color + ';--rg:' + hc(xg) + ';--i:' + i + '" aria-label="' + x.name + ' ' + hn(xg) + '"><i class="rgn">' + hn(xg) + '</i>' + CW.ICO.rune(x.id, x.color, xg, hc(xg)) + '<b>Lv.' + CW.runeLv(s, x.id) + '</b></button>';
-      }).join('') + '<svg class="rlines" viewBox="0 0 200 200" aria-hidden="true">' + DATA.runes.map(function (x, i) { var a = i * Math.PI / 3 - Math.PI / 2, lv = CW.runeLv(s, x.id); return '<line x1="100" y1="100" x2="' + (100 + Math.cos(a) * 69).toFixed(1) + '" y2="' + (100 + Math.sin(a) * 69).toFixed(1) + '" stroke="' + x.color + '" stroke-width="' + (lv ? 3 : 1.5) + '" opacity="' + (lv ? 0.85 : 0.25) + '"' + (lv ? ' class="flow"' : '') + '/>'; }).join('') + '<circle cx="100" cy="100" r="68" fill="none" stroke="#8a7ad0" stroke-width="1.5" stroke-dasharray="2 6" opacity=".6"/></svg><div class="rcore' + (res ? ' lit' : '') + '"><small>룬 공명</small><b>' + res + '단계</b><span>모든 피해 +' + pct(res * RC.resFinal) + '</span></div></div>';
-      var detail = '<div class="row"><div class="ricon" style="background:radial-gradient(circle,' + r.color + '55,#1a1030);box-shadow:inset 0 0 0 2px ' + r.color + '">' + CW.ICO.rune(r.id, r.color, rg, hc(rg)) + '</div><div class="info"><div class="name"><span style="color:' + hc(rg) + '">' + hn(rg) + '</span> ' + r.name + ' <span class="lv">Lv.' + lv + '/' + cap + '</span></div><div class="desc">' + bonusText(r.stat, CW.runeValue(s, r)) + ' (등급 보너스 +' + pct(rg * RC.gradeStep) + ')</div></div>' +
-        (full && !top ? '<button class="buy gemb' + (!open || (s.runeStone || 0) < gcost ? ' off' : '') + '" data-rgrade="' + r.id + '"><small>' + hn(rg + 1) + '(으)로 승급</small><span>' + CW.ICO.cur('rune') + ' ' + fmt(gcost) + '</span></button>'
-          : '<button class="buy' + (!open || full || (s.runeStone || 0) < cost ? ' off' : '') + '" data-rune="' + r.id + '">' + (full ? '최대' : CW.ICO.cur('rune') + ' ' + fmt(cost)) + '</button>') + '</div>';
-      return head + ring + detail + '<p class="note">가장 낮은 룬이 ' + ((res + 1) * RC.resEvery) + '레벨이 되면 공명 ' + (res + 1) + '단계 (모든 피해 +' + pct(RC.resFinal) + ' 더). 등급마다 최대 레벨이 ' + RC.lvPerGrade + '씩 늘고, 최대 레벨에서 룬석으로 승급해요 (' + hn(0) + ' → ' + hn(DATA.hiGrades.length - 1) + '). 버튼을 꾹 누르면 계속 올라가요.</p>';
+      var s = G.state, RC = DATA.runeConf, open = CW.runeOpen(s), res = CW.runeResonance(s), bag = CW.runeBag(s), n = RC.slots;
+      if (selRune && !CW.runeItem(s, selRune)) selRune = null;
+      if (!selRune) { var w0 = CW.runeEquipped(s)[0]; selRune = w0 ? w0.id : (bag.items[0] && bag.items[0].id) || null; }
+      var head = '<div class="manaline"><span>' + CW.ICO.cur('rune') + ' 룬석 <b>' + fmt(s.runeStone || 0) + '</b></span><small class="note">' + (open ? '장착 ' + CW.runeEquipped(s).length + '/' + n + ' · 가방 ' + bag.items.length + '/' + RC.cap : RC.unlockTier + '차 전직 후에 열려요') + '</small></div>';
+      var ring = '<div class="runering r7">' + bag.eq.map(function (id, i) {
+        var it = id && CW.runeItem(s, id);
+        if (!it) return '<div class="rune empty" style="--i:' + i + '"><span>빈 칸</span></div>';
+        var k = CW.runeById(it.kind);
+        return '<button class="rune' + (it.id === selRune ? ' sel' : '') + (fxRune === it.id ? ' up' : '') + (it.lv ? '' : ' zero') + '" data-rpick="' + it.id + '" style="--rc:' + k.color + ';--rg:' + hc(it.grade) + ';--i:' + i + '" aria-label="' + k.name + ' ' + hn(it.grade) + '"><i class="rgn">' + hn(it.grade) + '</i>' + CW.ICO.rune(it.kind, k.color, it.grade, hc(it.grade)) + '<b>Lv.' + it.lv + '</b></button>';
+      }).join('') + '<svg class="rlines" viewBox="0 0 200 200" aria-hidden="true">' + bag.eq.map(function (id, i) {
+        var it = id && CW.runeItem(s, id), a = i * 2 * Math.PI / n - Math.PI / 2, lv = it ? it.lv : 0, col = it ? CW.runeById(it.kind).color : '#8a7ad0';
+        return '<line x1="100" y1="100" x2="' + (100 + Math.cos(a) * 69).toFixed(1) + '" y2="' + (100 + Math.sin(a) * 69).toFixed(1) + '" stroke="' + col + '" stroke-width="' + (lv ? 3 : 1.5) + '" opacity="' + (lv ? 0.85 : 0.25) + '"' + (lv ? ' class="flow"' : '') + '/>';
+      }).join('') + '<circle cx="100" cy="100" r="68" fill="none" stroke="#8a7ad0" stroke-width="1.5" stroke-dasharray="2 6" opacity=".6"/></svg><div class="rcore' + (res ? ' lit' : '') + '"><small>룬 공명</small><b>' + res + '단계</b><span>모든 피해 +' + pct(res * RC.resFinal) + '</span></div></div>';
+      var it = selRune && CW.runeItem(s, selRune), detail = '';
+      if (it) {
+        var k = CW.runeById(it.kind), cap = CW.runeCap(it), cost = CW.runeCost(it.lv), top = it.grade >= DATA.hiGrades.length - 1, full = it.lv >= cap, gcost = CW.runeGradeCost(it.grade);
+        var worn = CW.runeIsWorn(s, it.id), freeIt = !worn && !it.lock;
+        var same = bag.items.filter(function (x) { return x !== it && x.kind === it.kind && x.grade === it.grade && !x.lock && !CW.runeIsWorn(s, x.id); }).length;
+        detail = '<div class="row"><div class="ricon" style="background:radial-gradient(circle,' + k.color + '55,#1a1030);box-shadow:inset 0 0 0 2px ' + k.color + '">' + CW.ICO.rune(it.kind, k.color, it.grade, hc(it.grade)) + '</div><div class="info"><div class="name"><span style="color:' + hc(it.grade) + '">' + hn(it.grade) + '</span> ' + k.name + ' <span class="lv">Lv.' + it.lv + '/' + cap + '</span></div><div class="desc">' + bonusText(k.stat, CW.runeValue(it)) + ' (등급 보너스 +' + pct(it.grade * RC.gradeStep) + ')' + (worn ? '' : ' · 장착하면 적용') + '</div></div>' +
+          (full && !top ? '<button class="buy gemb' + (!open || (s.runeStone || 0) < gcost ? ' off' : '') + '" data-rgrade="' + it.id + '"><small>' + hn(it.grade + 1) + '(으)로 승급</small><span>' + CW.ICO.cur('rune') + ' ' + fmt(gcost) + '</span></button>'
+            : '<button class="buy' + (!open || full || (s.runeStone || 0) < cost ? ' off' : '') + '" data-rune="' + it.id + '">' + (full ? '최대' : CW.ICO.cur('rune') + ' ' + fmt(cost)) + '</button>') + '</div>' +
+          '<div class="sgbtns"><button class="btn' + (worn ? ' on' : '') + '" data-reqp="' + it.id + '">' + (worn ? '해제' : '장착') + '</button><button class="btn' + (it.lock ? ' on' : '') + '" data-rlock="' + it.id + '">' + (it.lock ? '잠금 풀기' : '잠금') + '</button>' +
+          '<button class="btn' + (freeIt ? '' : ' off') + '" data-rdis="' + it.id + '">분해 ' + CW.ICO.cur('rune') + fmt(CW.runeDismantleValue(it)) + '</button><button class="btn' + (same >= 2 && !top && freeIt ? '' : ' off') + '" data-rfuse="' + it.id + '">합성 ' + Math.min(3, same + 1) + '/3</button></div>' +
+          '<span class="note">' + (top ? '가장 높은 등급이에요' : '같은 ' + k.name + ' ' + hn(it.grade) + ' 3개 → ' + hn(it.grade + 1) + ' ' + k.name) + '</span>';
+      }
+      var filt = '<div class="kindtabs">' + ['all'].concat(DATA.runes.map(function (x) { return x.id; })).map(function (kid) { var kk = CW.runeById(kid); return '<button role="tab" aria-selected="' + (rnFilter === kid) + '" data-rkf="' + kid + '"' + (kk ? ' style="color:' + kk.color + '"' : '') + '>' + (kk ? kk.name.replace(' 룬', '').replace('의', '') : '전체') + '</button>'; }).join('') + '</div>';
+      var inv = bag.items.filter(function (x) { return rnFilter === 'all' || x.kind === rnFilter; }).sort(function (a, c) { return CW.runePower(c) - CW.runePower(a); }).map(function (x) { return runeCell(s, x); }).join('');
+      var acts = '<div class="btns bagacts"><button class="btn pri" data-act="rbest">추천 장착</button><button class="btn" data-act="rdisall">잠금 안 한 것 모두 분해</button></div>' +
+        '<div class="pulls sgpulls">' + [5, 10].map(function (m) { return '<button class="pull' + (!open || s.gems < RC.summon[m] ? ' off' : '') + '" data-rsum="' + m + '"><b>룬 ' + m + '회 소환</b><span><i class="gem"></i>' + RC.summon[m] + '</span></button>'; }).join('') + '</div>';
+      return head + ring + detail + acts + filt + '<div class="sggrid inv">' + (inv || '<p class="note">룬이 없어요. 보스를 잡거나 소환해 보세요.</p>') + '</div>' +
+        '<p class="note">끼운 룬 중 가장 낮은 레벨이 ' + ((res + 1) * RC.resEvery) + '이 되면 공명 ' + (res + 1) + '단계 (모든 피해 +' + pct(RC.resFinal) + ' 더). 빈 칸은 공명에 안 들어가요. 등급마다 최대 레벨이 ' + RC.lvPerGrade + '씩 늘고, 최대 레벨에서 룬석으로 승급해요. 같은 종류·같은 등급 3개를 합성하면 한 등급 위 룬이 나와요. 버튼을 꾹 누르면 계속 올라가요.</p>';
+    }
+    function showRunes(list) {
+      var best = Math.max.apply(null, list.map(function (x) { return x.grade; }));
+      modal('<h2 style="color:' + hc(best) + '">' + (best >= 5 ? hn(best) + ' 룬!' : '룬 ' + list.length + '개') + '</h2><div class="sggrid got">' + list.slice().sort(function (a, c) { return c.grade - a.grade; }).map(function (x) { return runeCell(G.state, x); }).join('') + '</div>',
+        [{ label: '닫기' }, { label: '한 번 더', pri: true, fn: function () { var r = G.runeSummon(list.length); if (!r) toast('다이아가 부족하거나 가방이 꽉 찼어요'); else { showRunes(r); renderPanel(true); hud(); } } }]);
     }
     function sgCell(it, eqd) {
       return '<button class="sgcell' + (selSigil === it.id ? ' sel' : '') + (eqd ? ' eq' : '') + '" data-sg="' + it.id + '" style="--gc:' + hc(it.grade) + '"><span class="tg">' + hn(it.grade) + '</span>' + CW.ICO.sigil(it.stat, it.grade, hc(it.grade), it.q) +
@@ -584,7 +614,15 @@
       else if (d.btr) { var eb = G.state.bag[d.btr]; if (G.transcend(d.btr)) { toast(CW.gearName(d.btr) + ' 초월 ★' + G.state.bag[d.btr].star + '!'); banner('초월 성공!'); } else toast(!eb ? '아직 없는 장비예요' : (eb.star || 0) >= DATA.bagConf.starMax ? '이미 최고 초월이에요' : eb.lv < CW.maxLevel(d.btr, eb.star) ? '최대 레벨까지 올려야 해요' : eb.n <= CW.transcendCost(G.state, d.btr).copies ? '같은 장비가 더 필요해요' : '골드가 부족해요'); renderPanel(true); hud(); }
       else if (d.brew) { if (G.brew(d.brew)) toast(CW.potionById(d.brew).name + '을(를) 만들었어요!'); else toast('골드가 부족해요'); renderPanel(true); hud(); }
       else if (d.rpick) { selRune = d.rpick; renderPanel(true); }
-      else if (d.rgrade) { var rg2 = CW.runeGrade(G.state, d.rgrade); if (G.runeGradeUp(d.rgrade)) { toast(CW.runeById(d.rgrade).name + ' → ' + hn(rg2 + 1) + '!'); banner(hn(rg2 + 1) + ' 룬!'); } else toast('룬석이 부족해요'); fxRune = d.rgrade; renderPanel(true); fxRune = null; }
+      else if (d.rgrade) { var ri = CW.runeItem(G.state, d.rgrade), rg2 = ri ? ri.grade : 0; if (G.runeGradeUp(d.rgrade)) { toast(CW.runeById(ri.kind).name + ' → ' + hn(rg2 + 1) + '!'); banner(hn(rg2 + 1) + ' 룬!'); } else toast('룬석이 부족해요'); fxRune = d.rgrade; renderPanel(true); fxRune = null; }
+      else if (d.reqp) { var res0 = CW.runeResonance(G.state); if (G.runeEquipToggle(d.reqp) === 'full') toast('룬 칸이 모두 찼어요. 먼저 하나를 해제해 주세요'); else { var res1 = CW.runeResonance(G.state); if (res1 < res0) toast('룬 공명이 ' + res0 + '단계 → ' + res1 + '단계로 내려갔어요 (끼운 룬 중 가장 낮은 레벨 기준)'); } renderPanel(true); }
+      else if (d.rlock) { G.runeLock(d.rlock); renderPanel(true); }
+      else if (d.rdis) { var rn = G.runeDismantle(d.rdis); if (rn) { toast('룬석 +' + fmt(rn)); selRune = null; } else toast('장착했거나 잠근 룬은 분해할 수 없어요'); renderPanel(true); }
+      else if (d.rfuse) { var rf = G.runeFuse(d.rfuse); if (rf) { selRune = rf.id; toast(hn(rf.grade) + ' ' + CW.runeById(rf.kind).name + '이(가) 나왔어요!'); banner(hn(rf.grade) + ' 룬!'); } else toast('같은 룬 3개가 필요해요'); renderPanel(true); }
+      else if (d.rsum) { var rs = G.runeSummon(+d.rsum); if (!rs) toast('다이아가 부족하거나 가방이 꽉 찼어요'); else { showRunes(rs); renderPanel(true); hud(); } }
+      else if (d.rkf) { rnFilter = d.rkf; renderPanel(true); }
+      else if (d.act === 'rbest') { G.runeEquipBest(); toast('가장 좋은 룬으로 장착했어요'); renderPanel(true); }
+      else if (d.act === 'rdisall') { confirmBox('모두 분해', '잠금하지 않고 장착하지 않은 룬을 모두 룬석으로 바꿀까요?', '분해하기', function () { var rn2 = G.runeDismantleAll(); toast(rn2 ? '룬석 +' + fmt(rn2) : '분해할 룬이 없어요'); selRune = null; renderPanel(true); }); }
       else if (d.pack) { var pk = CW.packById(d.pack); confirmBox('연습용 구매', pk.name + ' (' + pk.won.toLocaleString('ko-KR') + '원)<br><b>실제 결제 없음 · 연습용</b><br>누르면 바로 들어와요.', '받기', function () { var got = G.buyPack(d.pack); if (got === false) toast('신성력 가방에 자리가 부족해요 (최대 ' + DATA.sigilConf.cap + '개)'); else if (got.length) showSigils(got, true); else toast(pk.name + '을(를) 받았어요'); renderPanel(true); hud(); }); }
       else if (d.sg) { selSigil = selSigil === d.sg ? null : d.sg; renderPanel(true); }
       else if (d.sgset !== undefined) { G.sigilSet(+d.sgset); toast((+d.sgset + 1) + '번 신성력 세트'); renderPanel(true); }

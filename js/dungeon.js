@@ -24,7 +24,7 @@
     var E = dep('economy');
     if (kind === 'gold') return { gold: (res.kills || 0) * E.stageGold(at(state)) * E.stats(state).goldMul * C.goldPerKill };
     if (kind === 'gem') return { gems: Math.min(C.gemCap, Math.floor((res.kills || 0) * C.gemPerKill)) };
-    if (kind === 'rune') return { runeStone: Math.round((res.kills || 0) * DATA.runeConf.dungeonPerKill * (1 + Math.floor(Math.max(0, state.best) / 31) * 0.4) * (1 + (state.diff || 0))) };
+    if (kind === 'rune') { var rr = { runeStone: Math.round((res.kills || 0) * DATA.runeConf.dungeonPerKill * (1 + Math.floor(Math.max(0, state.best) / 31) * 0.4) * (1 + (state.diff || 0))) }, nr = Math.floor((res.kills || 0) / DATA.runeConf.dungeonPerRune); if (nr) rr.runes = nr; return rr; }
     var L = golemLevel(state, res.dmg || 0);
     return { mana: L ? Math.round(dep('training').manaForBoss(Math.max(0, state.best), false) * L * (1 + C.manaLvMul * L)) : 0, level: L };
   }
@@ -33,7 +33,7 @@
     var d = dstate(state, Date.now()), old = d.best[kind];
     if (!old || value(dungeonReward(state, kind, res)) > value(dungeonReward(state, kind, old))) d.best[kind] = { kills: res.kills || 0, dmg: res.dmg || 0 };
   }
-  function applyReward(state, r) { state.gold += r.gold || 0; state.gems += r.gems || 0; state.mana = (state.mana || 0) + (r.mana || 0); state.runeStone = (state.runeStone || 0) + (r.runeStone || 0); }
+  function applyReward(state, r) { state.gold += r.gold || 0; state.gems += r.gems || 0; state.mana = (state.mana || 0) + (r.mana || 0); state.runeStone = (state.runeStone || 0) + (r.runeStone || 0); if (r.runes) { r.got = dep('runes').runeGive(state, r.runes); r.overflow = r.got.overflow; } }
   function sweep(state, kind, now) {
     var b = state.dungeon && state.dungeon.best && state.dungeon.best[kind];
     if (!b || !useTicket(state, kind, now)) return null;

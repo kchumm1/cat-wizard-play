@@ -77,7 +77,12 @@
     rWind: 'M19 29h17a5 5 0 1 0-5-5M19 37h23a5 5 0 1 1-5 5',
     rEarth: 'M18 43l10-18 5 8 4-5 9 15z',
     rLight: 'M32 26a6 6 0 1 0 .01 0zM32 16v4M32 44v4M16 32h4M44 32h4M21 21l3 3M40 40l3 3M43 21l-3 3M24 40l-3 3',
-    rDark: 'M37 19a13 13 0 1 0 8 20a11 11 0 0 1-8-20z'
+    rDark: 'M37 19a13 13 0 1 0 8 20a11 11 0 0 1-8-20z',
+    // 2026-11-14 rune kinds: thunder bolt, nebula swirl, comet with a tail, origin four-point star
+    rBolt: 'M35 16L22 34h9l-3 14 14-19h-9z',
+    rNebula: 'M32 32m-3 0a3 3 0 1 0 6 0a8 8 0 0 0-14-1a12 12 0 0 0 22 6',
+    rComet: 'M38 26a6 6 0 1 0 .01 0zM33 31L18 46M30 27L19 35M36 35L28 47',
+    rOrigin: 'M32 15l4 13 13 4-13 4-4 13-4-13-13-4 13-4z'
   };
   var CORNERS = [[32, 9], [50, 19], [50, 45], [32, 55], [14, 45], [14, 19]];
   function rune(id, color, grade, gcol) {
@@ -98,6 +103,10 @@
     hyperRate: function () { return star(32, 34, 9.5, 4.6, 6); }, megaRate: function () { return star(32, 34, 9.5, 5.4, 8); },
     critDmg: function () { return 'M41 24l1 6-9 9-3-3 9-9zM26 34l6 6-2 2-2-2-4 4-2-2 4-4-2-2z'; },
     superDmg: function () { return 'M36 23l-9 12h5l-3 10 10-13h-5z'; },
+    // 초월 crit damages (2026-11-14): two, three and four bolts
+    hyperDmg: function () { return 'M31 23l-7 10h4l-2 9 8-11h-4zM42 23l-7 10h4l-2 9 8-11h-4z'; },
+    megaDmg: function () { return 'M27 22l-6 9h4l-2 8 7-10h-4zM36 24l-6 9h4l-2 8 7-10h-4zM45 22l-6 9h4l-2 8 7-10h-4z'; },
+    alphaDmg: function () { return star(32, 34, 10, 4.2, 4) + star(32, 34, 6, 2.6, 4, 45); },
     skillDmg: function () { return star(30, 36, 9, 3, 4) + star(39.5, 26.5, 4.5, 1.6, 4); },
     bossDmg: function () { return 'M21 26c0 9 4 14 11 14s11-5 11-14c-3 4-5 5-8 5h-6c-3 0-5-1-8-5zM28 35a1.6 1.6 0 1 0 .01 0zM36 35a1.6 1.6 0 1 0 .01 0z'; },
     atkPct: function () { return 'M32 32c4 0 7 3 7 6.5S36 44 32 44s-7-2-7-5.5S28 32 32 32zM25 27a2.7 2.7 0 1 0 .01 0zM32 24a2.7 2.7 0 1 0 .01 0zM39 27a2.7 2.7 0 1 0 .01 0z'; }
