@@ -172,7 +172,7 @@
       { id: 'tRift', name: '차원 파열', row: 3, stat: 'ultimateDmg', per: 0.1, max: 5, icon: '🌀' },
       { id: 'tOrigin', name: '태초의 섭리', row: 3, stat: 'finalPct', per: 0.05, max: 5, icon: '🌟' }
     ],
-    talentConf: { levelsPerPoint: 20, rowLevel: [10, 120, 300, 500], rowNeed: [0, 8, 13, 18] },
+    talentConf: { levelsPerPoint: 20, rowLevel: [10, 120, 300, 300], rowNeed: [0, 8, 13, 14] },
     marks: [
       { id: 'mStar', name: '별의 징표', stat: 'atkPct', per: 0.04, icon: '⭐' },
       { id: 'mClaw', name: '발톱의 징표', stat: 'critRate', per: 0.001, icon: '🐾' },
@@ -264,17 +264,17 @@
       alphaCrit: { name: '알파 크리티컬 확률', costBase: 2e29, costGrowth: 1.14, max: 100, need: ['ultimateCrit', 50] },
       alphaDmg: { name: '알파 크리티컬 데미지', costBase: 1e29, costGrowth: 1.1, max: 300, need: ['ultimateCrit', 50] },
       // 초월 (2026-11-14): open when the stat before is maxed; adds = bonus per level (same keys as gear/relic bonuses).
-      // costBase = the needed stat's last level cost.
+      // costBase = the needed stat's last level cost. judge/origin/doomClaw/elemRule open inside the main story (user 2026-11-14).
       catEye: { name: '고양이의 눈빛', costBase: 3.25e9, costGrowth: 1.1, max: 200, need: ['crit', 140], adds: { superDmg: 0.02 }, ascend: true },
       manaBurst: { name: '마력 해방', costBase: 8.6e11, costGrowth: 1.1, max: 200, need: ['superCrit', 100], adds: { hyperDmg: 0.02 }, ascend: true },
       resonance: { name: '극한 공명', costBase: 8.6e16, costGrowth: 1.1, max: 200, need: ['ultraCrit', 100], adds: { megaDmg: 0.02 }, ascend: true },
       rift: { name: '차원 파열', costBase: 6.45e21, costGrowth: 1.1, max: 200, need: ['hyperCrit', 100], adds: { ultimateDmg: 0.02 }, ascend: true },
       arcane: { name: '비전 폭발', costBase: 4.3e25, costGrowth: 1.1, max: 200, need: ['megaCrit', 100], adds: { alphaDmg: 0.02 }, ascend: true },
-      judge: { name: '왕의 심판', costBase: 2.15e30, costGrowth: 1.1, max: 200, need: ['ultimateCrit', 100], adds: { bossDmg: 0.01 }, ascend: true },
-      origin: { name: '태초의 섭리', costBase: 8.6e34, costGrowth: 1.1, max: 200, need: ['alphaCrit', 100], adds: { finalPct: 0.005 }, ascend: true },
+      judge: { name: '왕의 심판', costBase: 2.23e26, costGrowth: 1.1, max: 200, need: ['ultimateCrit', 30], adds: { bossDmg: 0.01 }, ascend: true },
+      origin: { name: '태초의 섭리', costBase: 2e29, costGrowth: 1.1, max: 200, need: ['alphaCrit', 1], adds: { finalPct: 0.005 }, ascend: true },
       haste: { name: '시간 가속', costBase: 1.2e8, costGrowth: 1.1, max: 200, need: ['speed', 100], adds: { skillDmg: 0.01 }, ascend: true },
-      doomClaw: { name: '파멸의 발톱', costBase: 1.19e32, costGrowth: 1.1, max: 200, need: ['megaDmg', 300], adds: { bossDmg: 0.01 }, ascend: true },
-      elemRule: { name: '원소 지배', costBase: 5.95e36, costGrowth: 1.1, max: 200, need: ['ultimateDmg', 300], adds: { weakDmg: 0.01, surgeDmg: 0.02 }, ascend: true }
+      doomClaw: { name: '파멸의 발톱', costBase: 7.35e25, costGrowth: 1.1, max: 200, need: ['megaDmg', 150], adds: { bossDmg: 0.01 }, ascend: true },
+      elemRule: { name: '원소 지배', costBase: 2.67e26, costGrowth: 1.1, max: 200, need: ['ultimateDmg', 50], adds: { weakDmg: 0.01, surgeDmg: 0.02 }, ascend: true }
     },
     slots: [
       { id: 'hat', kind: 'hat', name: '마법 모자', stat: 'critRate' },
@@ -321,7 +321,7 @@
       hpBase: 30, hpGrowth: 1.12, regionStep: 1, bossMul: 9, regionBossMul: 22,
       // difficulty modes keep the walls they had before 초월 (2026-11-14)
       diffWallMul: [1,19169.38,5566798.08,22820341.73,178880696.24,1691557414.71,8489733214.33,95531878018.25,176986468430.32,294004021895.86],
-      wallMul: [1,18089.69,8530996.34,37137183.19,355464724.47,567601558.3,64002674168.89,2705046173297.78,1731058590696.22,1760499825374.36], wallShare: 0.7,
+      wallMul: [1,18089.69,8530996.34,37137183.19,355464724.47,567601558.3,64002674168.89,2705046173297.78,1807507375601.2,2938387926397.42], wallShare: 0.7,
       goldBase: 3, goldGrowth: 1.2,
       bossGemsBase: 10, bossGemsPerRegion: 6, regionBossGems: 25, firstClearMul: 2,
       atkBase: 10, atkPerLevel: 0, atkCompound: 1.05,
