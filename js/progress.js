@@ -40,6 +40,7 @@
     state.bossTry = false;
     state.kills = 0;
     if (!won) { state.stage = Math.max(0, state.stage - 1); state.farming = true; return { cleared: false, tierUp: null, final: false }; }
+    state.bossWins = (state.bossWins || 0) + 1; if (state.diff >= 1) state.slayerWin = true;
     var tierUp = isTierTrial(state, state.stage) ? trialTier(state.stage) : null;
     state.best = Math.max(state.best, state.stage);
     if (tierUp) state.tier = tierUp;

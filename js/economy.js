@@ -62,7 +62,20 @@
   }
   var BONUS_KEYS = ['weakDmg', 'surgeDmg', 'surgeRate', 'finalPct', 'atk', 'atkPct', 'critRate', 'critDmg', 'goldMul', 'skillDmg', 'speed', 'bossDmg', 'normalDmg', 'xpMul', 'superRate', 'superDmg', 'ultraRate', 'ultraDmg', 'hyperRate', 'hyperDmg', 'megaRate', 'megaDmg', 'ultimateRate', 'ultimateDmg', 'alphaRate', 'alphaDmg', 'potion', 'potionGold', 'potionXp'];
   // every source of bonuses (gear, relics, costumes, star items, skill collection) adds into one object
-  var SOURCES = [['gear', 'gearStats'], ['relics', 'relicStats'], ['costume', 'costumeStats'], ['divine', 'divineStats'], ['skills', 'skillOwnedStats'], ['training', 'trainingStats'], ['runes', 'runeStats'], ['sigil', 'sigilStats'], ['alchemy', 'alchemyStats']];
+  var SOURCES = [['gear', 'gearStats'], ['relics', 'relicStats'], ['costume', 'costumeStats'], ['divine', 'divineStats'], ['skills', 'skillOwnedStats'], ['training', 'trainingStats'], ['runes', 'runeStats'], ['sigil', 'sigilStats'], ['alchemy', 'alchemyStats'], ['titles', 'titleStats']];
+  // the bonus of every source on its own (for the stat window); growth = the 초월 lines; total = what stats() uses
+  function bonusBySource(state) {
+    var parts = {}, total = {}; BONUS_KEYS.forEach(function (k) { total[k] = 0; });
+    SOURCES.forEach(function (src) {
+      var m = dep(src[0]); if (!m || !m[src[1]]) return;
+      var b = m[src[1]](state) || {}, p = {};
+      for (var k in b) if (total[k] !== undefined && isFinite(b[k])) { p[k] = b[k]; total[k] += b[k]; }
+      parts[src[0]] = p;
+    });
+    var ub = upgradeBonus(state), g = {}; for (var k in ub) if (total[k] !== undefined) { g[k] = ub[k]; total[k] += ub[k]; }
+    parts.growth = g;
+    return { parts: parts, total: total };
+  }
   function gearBonus(state) {
     var r = {}; BONUS_KEYS.forEach(function (k) { r[k] = 0; });
     SOURCES.forEach(function (src) {
@@ -184,7 +197,7 @@
   return {
     stageMonsterHp: stageMonsterHp, stageBossHp: stageBossHp, stageGold: stageGold, diffOf: diffOf,
     monsterHp: monsterHp, bossHp: bossHp, monsterGold: monsterGold, bossGems: bossGems,
-    isWeak: isWeak, regionOf: regionOf, surgeTick: surgeTick, surgeFactor: surgeFactor, weakFactor: weakFactor, upgradeBonus: upgradeBonus, upgradeCostN: upgradeCostN, tryUpgradeN: tryUpgradeN, upgradeOpen: upgradeOpen, upgradeNeed: upgradeNeed, rollCrit: rollCrit, critFactor: critFactor, upgradeCost: upgradeCost, tryUpgrade: tryUpgrade, stats: stats, hitDamage: hitDamage,
+    isWeak: isWeak, regionOf: regionOf, surgeTick: surgeTick, surgeFactor: surgeFactor, weakFactor: weakFactor, upgradeBonus: upgradeBonus, bonusBySource: bonusBySource, upgradeCostN: upgradeCostN, tryUpgradeN: tryUpgradeN, upgradeOpen: upgradeOpen, upgradeNeed: upgradeNeed, rollCrit: rollCrit, critFactor: critFactor, upgradeCost: upgradeCost, tryUpgrade: tryUpgrade, stats: stats, hitDamage: hitDamage,
     dps: dps, bossDps: bossDps, killsPerSecond: killsPerSecond, goldPerSecond: goldPerSecond, skillById: skillById,
     isRegionBoss: isRegionBoss, isMiniBoss: isMiniBoss
   };

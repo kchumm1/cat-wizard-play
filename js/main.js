@@ -13,7 +13,12 @@
   var art = {}, ready = false, rot = CW.rotation(state), castT = 0.6, nowSlot = -1, boss = null, spawnT = 0, st = CW.stats(state);
   var thumbs = null, region = -1, preview = null, pendingTier = [], saveT = 0, uiT = 0, panelT = 0, lastSlot = -2, restT = 0;
 
-  function refreshStats() { st = CW.stats(state); }
+  function refreshStats() {
+    st = CW.stats(state);
+    // titles earned along the way (2026-11-14)
+    var got = CW.titleCheck ? CW.titleCheck(state) : [];
+    if (got.length && typeof ui !== 'undefined' && ui && ui.toast) got.forEach(function (id) { ui.toast('타이틀 「' + CW.titleById(id).name + '」 획득! 프로필을 눌러 달 수 있어요'); });
+  }
   // equipment changes the wizard's picture (hat/robe colour, jewellery, staff glow)
   var lastLook = null;
   var gained = { gold: 0, xp: 0, gems: 0, dmg: 0, t: 0, more: [] };
@@ -352,6 +357,7 @@
     sigilEquipBest: function () { CW.sigilEquipBest(state); refreshStats(); save(); },
     sigilLvUp: function () { var ok = CW.sigilLvUp(state); if (ok) { refreshStats(); snd.play('click'); } return ok; },
     rollPotential: function (k) { var ok = CW.rollPotential(state, k); if (ok) { refreshStats(); snd.play('pull'); save(); } return ok; },
+    titleWear: function (id) { var ok = CW.titleWear(state, id); if (ok) { refreshStats(); snd.play('click'); save(); } return ok; },
     potLock: function (k, i) { var ok = CW.potLock(state, k, i); if (ok) { snd.play('click'); save(); } return ok; },
     talentUp: function (id) { var ok = CW.talentUp(state, id); if (ok) { refreshStats(); snd.play('click'); save(); } return ok; },
     talentReset: function () { CW.talentReset(state); refreshStats(); save(); },

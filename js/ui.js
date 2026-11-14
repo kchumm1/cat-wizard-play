@@ -157,7 +157,7 @@
       el.className = 'on';
       el.innerHTML = '<b>' + run.name + '</b><span>' + Math.max(0, run.t).toFixed(1) + '초</span><span>' + (run.kind === 'mana' ? '피해 ' + fmt(run.dmg) + ' · 골렘 Lv.' + run.level : '처치 ' + run.kills) + '</span>';
     }
-    var STAT_KO = { megaRate: '메가 크리티컬 확률', megaDmg: '메가 크리티컬 피해', ultimateRate: '얼티밋 크리티컬 확률', ultimateDmg: '얼티밋 크리티컬 피해', alphaRate: '알파 크리티컬 확률', alphaDmg: '알파 크리티컬 피해', atkPct: '공격력', critRate: '치명타 확률', critDmg: '치명타 피해', superRate: '슈퍼 크리티컬 확률', superDmg: '슈퍼 크리티컬 피해', ultraRate: '울트라 크리티컬 확률', ultraDmg: '울트라 크리티컬 피해', hyperRate: '하이퍼 크리티컬 확률', hyperDmg: '하이퍼 크리티컬 피해', bossDmg: '보스 피해', normalDmg: '일반 몬스터 피해', skillDmg: '스킬 피해', goldMul: '골드 획득', xpMul: '경험치 획득', speed: '공격 속도', weakDmg: '약점 피해', surgeDmg: '폭주 피해', surgeRate: '폭주 충전 속도', finalPct: '모든 피해' };
+    var STAT_KO = { atk: '기본 공격력', potion: '분노의 물약', potionGold: '황금 물약', potionXp: '지혜의 물약', megaRate: '메가 크리티컬 확률', megaDmg: '메가 크리티컬 피해', ultimateRate: '얼티밋 크리티컬 확률', ultimateDmg: '얼티밋 크리티컬 피해', alphaRate: '알파 크리티컬 확률', alphaDmg: '알파 크리티컬 피해', atkPct: '공격력', critRate: '치명타 확률', critDmg: '치명타 피해', superRate: '슈퍼 크리티컬 확률', superDmg: '슈퍼 크리티컬 피해', ultraRate: '울트라 크리티컬 확률', ultraDmg: '울트라 크리티컬 피해', hyperRate: '하이퍼 크리티컬 확률', hyperDmg: '하이퍼 크리티컬 피해', bossDmg: '보스 피해', normalDmg: '일반 몬스터 피해', skillDmg: '스킬 피해', goldMul: '골드 획득', xpMul: '경험치 획득', speed: '공격 속도', weakDmg: '약점 피해', surgeDmg: '폭주 피해', surgeRate: '폭주 충전 속도', finalPct: '모든 피해' };
     function bonusText(stat, v) { return (STAT_KO[stat] || stat) + ' +' + pct(v); }
     function subTabs() {
       return '<div class="subtabs n6" role="tablist">' + [['gear', '장비'], ['relic', '유물'], ['costume', '코스튬'], ['divine', '삼신기'], ['sigil', '신성력'], ['rune', '룬']].map(function (t) {
@@ -344,7 +344,8 @@
       if (bt !== lastBuffs) { lastBuffs = bt; $('buffs').innerHTML = bt; }
       var tier = DATA.tiers[s.tier - 1];
       var next = s.tier < 9 ? (s.tier) + '-31 보스를 이기면 ' + (s.tier + 1) + '차' : (s.best >= 309 ? '마왕 토벌 완료!' : '최종 목표 10-31 늑대 왕');
-      $('tierTag').textContent = s.tier + '차 ' + tier.name; if ($('questTxt').textContent !== next) $('questTxt').textContent = next;
+      var wornT = CW.titleWorn ? CW.titleWorn(s) : 'tNovice';
+      $('tierTag').textContent = wornT !== 'tNovice' ? '「' + CW.titleById(wornT).name + '」' : s.tier + '차 ' + tier.name; if ($('questTxt').textContent !== next) $('questTxt').textContent = next;
     }
     function slots() {
       var s = G.state, now = G.castingSlot();
@@ -731,6 +732,41 @@
       logLines = add.concat(logLines).slice(0, Math.max(4, add.length));
       $('gainlog').innerHTML = logLines.map(function (l, i) { return '<div style="opacity:' + Math.max(0.4, 1 - i * 0.15) + '">' + l + '</div>'; }).join('');
     }
+    // ---------- stat window (2026-11-14): tap the profile; final stats in groups, each opens to where it comes from; titles ----------
+    var SRC_KO = { growth: '성장(초월)', gear: '장비', relics: '유물', costume: '코스튬', divine: '삼신기', skills: '스킬 모음', training: '훈련', runes: '룬', sigil: '신성력', alchemy: '물약', titles: '타이틀' };
+    function statRow(label, value, keys, by) {
+      var parts = [];
+      Object.keys(by.parts).forEach(function (src) {
+        keys.forEach(function (k) { var v = by.parts[src][k]; if (v) parts.push('<li><span>' + (SRC_KO[src] || src) + (keys.length > 1 ? ' · ' + (STAT_KO[k] || k) : '') + '</span><b>' + CW.bonusAmount(k, v) + '</b></li>'); });
+      });
+      if (!parts.length) return '<div class="strow"><span>' + label + '</span><b>' + value + '</b></div>';
+      return '<details class="strow"><summary><span>' + label + '</span><b>' + value + '</b></summary><ul>' + parts.join('') + '</ul></details>';
+    }
+    function statWindow() {
+      var s = G.state, st = CW.stats(s), by = CW.bonusBySource(s), tier = DATA.tiers[s.tier - 1], worn = CW.titleWorn(s), owned = CW.titlesOwned(s);
+      var x = function (v) { return '×' + (Math.round(v * 100) / 100); };
+      var crit = [['치명타', 'critRate', 'critDmg'], ['슈퍼', 'superRate', 'superDmg'], ['울트라', 'ultraRate', 'ultraDmg'], ['하이퍼', 'hyperRate', 'hyperDmg'], ['메가', 'megaRate', 'megaDmg'], ['얼티밋', 'ultimateRate', 'ultimateDmg'], ['알파', 'alphaRate', 'alphaDmg']]
+        .map(function (c) { return statRow(c[0] + ' 크리티컬', pct(st[c[1]] || 0) + ' · ' + x(st[c[2]] || 0), [c[1], c[2]], by); }).join('');
+      var titles = DATA.titles.map(function (t) {
+        var have = owned.indexOf(t.id) >= 0, on = worn === t.id;
+        var eff = t.bonus ? Object.keys(t.bonus).map(function (k) { return (STAT_KO[k] || k) + ' ' + CW.bonusAmount(k, t.bonus[k]); }).join(' · ') : '효과 없음';
+        return '<button class="ttl' + (on ? ' on' : '') + (have ? '' : ' lock') + '" data-title="' + t.id + '"' + (have ? '' : ' disabled') + '><b>' + (have ? '' : '🔒 ') + t.name + '</b><small>' + (have ? eff : CW.titleNeedText(t)) + '</small></button>';
+      }).join('');
+      return '<div class="statwin"><div class="sthead"><b>' + $('nick').textContent + '</b><span>Lv.' + s.level + ' · ' + s.tier + '차 ' + tier.name + '</span><span class="sttitle">「' + CW.titleById(worn).name + '」</span></div>' +
+        '<div class="stpow"><small>전투력 (초당 피해)</small><b>' + fmt(CW.dps(s, st)) + '</b><small>보스 ' + fmt(CW.bossDps(s, st)) + '</small></div>' +
+        '<h4>공격</h4>' + statRow('공격력', fmt(st.atk), ['atk', 'atkPct'], by) + statRow('공격 속도', x(st.speedMul), ['speed'], by) + statRow('스킬 피해', x(st.skillDmg * st.mastery), ['skillDmg'], by) +
+        statRow('보스 피해', x(st.bossDmg), ['bossDmg'], by) + statRow('모든 피해', x(st.finalMul), ['finalPct', 'potion'], by) +
+        '<h4>크리티컬</h4>' + crit +
+        '<h4>특수</h4>' + statRow('약점 피해', x(st.weakMul), ['weakDmg'], by) + statRow('폭주 피해', x(st.surgeMul), ['surgeDmg', 'surgeRate'], by) +
+        statRow('골드 획득', x(st.goldMul), ['goldMul', 'potionGold'], by) + statRow('경험치 획득', x(st.xpMul), ['xpMul', 'potionXp'], by) +
+        '<p class="note">줄을 누르면 어디서 얼마나 붙었는지 볼 수 있어요.</p><h4>타이틀</h4><div class="ttls">' + titles + '</div></div>';
+    }
+    function openStats() { modal(statWindow(), [{ label: '닫기', pri: true }]); }
+    document.querySelector('#hud .prof').addEventListener('click', function () { G.sound('click'); openStats(); });
+    $('modalCard').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-title]'); if (!b) return;
+      if (G.titleWear(b.dataset.title)) { toast('타이틀 「' + CW.titleById(b.dataset.title).name + '」을(를) 달았어요'); openStats(); hud(); }
+    });
     return { surgeGauge: surgeGauge, dunHud: dunHud, gainLog: gainLog, openTab: openTab, hud: hud, slots: slots, renderPanel: renderPanel, toast: toast, banner: banner, showOffline: showOffline, showTierUp: showTierUp, showGacha: showGacha, modal: modal, currentTab: function () { return tab; } };
   }
   CW.createUI = createUI;

@@ -1206,6 +1206,24 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 .runering.r7 .rune.empty{display:flex;align-items:center;justify-content:center;border:2px dashed #CDB98F;border-radius:50%;width:52px;height:52px;margin:-26px 0 0 -26px;color:#9a8566;font-size:11px}
 .runering.r7 .rune.empty span{font:400 10px/1 var(--ui,inherit)!important;white-space:nowrap;letter-spacing:0}
 .rcell .irune{width:44px;height:44px}
+/* stat window and titles (2026-11-14) */
+#hud .prof{cursor:pointer;pointer-events:auto}
+.statwin{text-align:left;max-height:62vh;overflow:auto;margin:-4px -4px 6px;padding:0 4px}
+.statwin .sthead{display:flex;flex-direction:column;align-items:center;gap:2px;margin-bottom:8px}
+.statwin .sthead b{font-size:18px;color:#443C35}.statwin .sthead span{font-size:12px;color:#8a7a66}.statwin .sttitle{color:#a8822e!important;font-weight:700}
+.statwin .stpow{display:flex;flex-direction:column;align-items:center;background:#F3E8D3;border-radius:12px;padding:8px;margin-bottom:6px}
+.statwin .stpow b{font-size:22px;color:#443C35}.statwin .stpow small{font-size:11px;color:#8a7a66}
+.statwin h4{margin:10px 0 4px;font-size:13px;color:#a8822e}
+.statwin .strow{border-bottom:1px solid #EFE3CC;font-size:13px;color:#443C35}
+.statwin .strow>summary,.statwin div.strow{display:flex;justify-content:space-between;padding:6px 2px;list-style:none;cursor:pointer}
+.statwin .strow>summary::-webkit-details-marker{display:none}
+.statwin details.strow>summary span::after{content:" ▾";color:#b9a685;font-size:11px}
+.statwin .strow ul{margin:0 0 6px;padding:6px 8px;background:#FBF4E6;border-radius:8px;list-style:none}
+.statwin .strow li{display:flex;justify-content:space-between;font-size:12px;color:#6b5d4e;padding:2px 0}
+.statwin .ttls{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.statwin .ttl{display:flex;flex-direction:column;align-items:flex-start;padding:8px;border-radius:10px;border:1px solid #E4D6BC;background:#FFF9F0;text-align:left}
+.statwin .ttl b{font-size:13px;color:#443C35}.statwin .ttl small{font-size:11px;color:#8a7a66}
+.statwin .ttl.on{border-color:#C9A65A;background:#F3E2B8}.statwin .ttl.lock{opacity:.55}
 /* potential line locks (2026-11-14) */
 .potline{display:flex;align-items:center;justify-content:space-between;gap:6px}
 .plock{flex:none;width:30px;height:26px;border-radius:8px;border:1px solid #E4D6BC;background:#FFF9F0;font-size:14px;line-height:1;padding:0}
@@ -1293,6 +1311,7 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script src="js/training.js"></script>
 <script src="js/dungeon.js"></script>
 <script src="js/runes.js"></script>
+<script src="js/titles.js"></script>
 <script src="js/sigil.js"></script>
 <script src="js/alchemy.js"></script>
 <script src="js/packs.js"></script>

@@ -14,6 +14,14 @@
       { name: '은하', sky: 0x120f2a, ground: 0x2a2650, accent: 0xb58cff, monsters: ['c17', 'c18', 'g01', 'g02', 's07', 's08', 's09'], minis: ['b19', 'b45', 'b33', 'b38'], weak: ['sun', 'void'], boss: { art: 'b09', name: '우주 뱀' } },
       { name: '마왕성', sky: 0x1e1530, ground: 0x3a2a50, accent: 0xff3b5c, monsters: ['c19', 'c20', 'k03', 'k05', 'k07', 'k09', 'g06', 'g07', 'g08', 'g09', 'g10', 's10'], minis: ['b11', 'b39', 'b40'], weak: ['sun', 'star'], boss: { art: 'b10', name: '늑대 왕' } }
     ],
+    // titles (2026-11-14): earned by playing, one worn (js/titles.js); bonus = what the worn title adds
+    titles: [
+      { id: 'tNovice', name: '견습 냥법사', need: { kind: 'start' } },
+      { id: 'tBoss', name: '보스 사냥꾼', need: { kind: 'boss', n: 100 }, bonus: { bossDmg: 0.05 } },
+      { id: 'tRune', name: '룬의 주인', need: { kind: 'runes', n: 7 }, bonus: { finalPct: 0.03 } },
+      { id: 'tStar', name: '별을 삼킨 자', need: { kind: 'tier', n: 9 }, bonus: { hyperDmg: 0.2 } },
+      { id: 'tSlayer', name: '슬레이어', need: { kind: 'slayer' }, bonus: { finalPct: 0.1 } }
+    ],
     // After the last boss, a harder difficulty opens: stages start again at 1-1 with far tougher monsters
     difficulties: [
       { name: '일반', hpMul: 1, bossMul: 1, extraMobs: 0, gemMul: 1 },
