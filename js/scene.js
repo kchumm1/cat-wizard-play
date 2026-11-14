@@ -154,13 +154,16 @@
     // ---------- billboards with puppet bones ----------
     function rr(a, b) { return a + Math.random() * (b - a); }
     var geoCache = {};
-    // one shared mesh per picture, 1 unit tall; each vertex knows how much every bone moves it
-    function rigGeometry(art) {
-      var key = art.id || 'x'; if (geoCache[key]) return geoCache[key];
+    // one shared mesh per picture, 1 unit tall; each vertex knows how much every bone moves it.
+    // mode 'body' / 'staff': the wizard drawn as two pictures (staff-split.js) — the body without the staff bone, and the
+    // staff, which moves with the staff bone only, as one stiff piece
+    function rigGeometry(art, mode) {
+      var key = (art.id || 'x') + (mode ? '|' + mode : ''); if (geoCache[key]) return geoCache[key];
       var fine = !!(art.rig && art.rig.armL && art.rig.armL.cap), geo = new T.PlaneGeometry(art.aspect, 1, fine ? 48 : 14, fine ? 72 : 22); geo.translate(0, 0.5, 0);
       var n = geo.attributes.position.count, uv = geo.attributes.uv.array, w0 = new Float32Array(n * 4), w1 = new Float32Array(n * 4);
       if (art.rig && art.crop && CW.rigWeightsAt) for (var i = 0; i < n; i++) {
-        var ws = CW.rigWeightsAt(art.rig, art.crop, uv[i * 2], uv[i * 2 + 1]);
+        var ws = mode === 'staff' ? [0, 1, 0, 0, 0, 0, 0, 0] : CW.rigWeightsAt(art.rig, art.crop, uv[i * 2], uv[i * 2 + 1]);
+        if (mode === 'body') ws = ws.slice(), ws[1] = 0;
         for (var j = 0; j < 4; j++) { w0[i * 4 + j] = ws[j]; w1[i * 4 + j] = ws[j + 4]; }
       }
       geo.setAttribute('aW0', new T.BufferAttribute(w0, 4)); geo.setAttribute('aW1', new T.BufferAttribute(w1, 4));
@@ -216,9 +219,10 @@
       A[0] = an.hd.x + Math.sin(t * 1.7 + d.seed) * 0.05 + wk * s * 0.07; TT[0].set(0, br * 0.012 - wk * Math.abs(s) * 0.012);
       // the staff arm: a long staff (most costumes) only tips a little toward the monsters, or it would cross the face (fwd),
       // and rises a little as it does (lift); backward it swings freely
-      var sr = d.rig && d.rig.armL, sa = an.aL.x, fwd = sr && sr.fwd !== undefined ? sr.fwd : 1;
+      // (when the staff is its own picture in front of the body it swings fully: it no longer drags the face along)
+      var sr = d.rig && d.rig.armL, sa = an.aL.x, fwd = d.split ? 1 : sr && sr.fwd !== undefined ? sr.fwd : 1;
       A[1] = (sa > 0 ? sa * fwd : sa) + wk * s * 0.3 + br * 0.04 - air * 0.4;
-      if (sr && sr.lift) TT[1].set(0, Math.max(0, sa) * sr.lift);
+      if (sr && sr.lift && !d.split) TT[1].set(0, Math.max(0, sa) * sr.lift); else TT[1].set(0, 0);
       A[2] = an.aR.x + wk * s * 0.3 - br * 0.04 + air * 0.4;
       A[3] = wk * s * 0.32 - air * 0.3; TT[3].set(0, Math.max(0, s) * 0.075 * wk + air * 0.04);
       A[4] = wk * s * 0.32 + air * 0.3; TT[4].set(0, Math.max(0, -s) * 0.075 * wk + air * 0.04);
@@ -230,19 +234,41 @@
     }
     function setHero(art) {
       if (hero) heroGroup.remove(hero);
-      hero = billboard(art, HERO_H); hero.userData.seed = 0.5; heroGroup.add(hero); cos.aura = null; if (cos.fx) attachAura();
+      hero = billboard(art, HERO_H); hero.userData.seed = 0.5; hero.userData.art = art; heroGroup.add(hero); cos.aura = null; if (cos.fx) attachAura();
       ghosts.forEach(function (gh) { heroGroup.remove(gh.mesh); }); ghosts.length = 0;
       for (var i = 0; i < 3; i++) {
         var gm = new T.Mesh(hero.userData.body.geometry, bbMaterial(art.tex)); gm.renderOrder = 2; gm.visible = false; gm.scale.setScalar(HERO_H); gm.rotation.x = -TILT;
         gm.material.depthWrite = false; heroGroup.add(gm); ghosts.push({ mesh: gm, t: 1, life: 0.35 });
       }
     }
-    // swap the hero's picture (equipment changes how the wizard looks)
-    function setHeroTexture(tex) {
+    // a second, stiff piece drawn just in front of a billboard: the staff cut out of its picture (sharing every setting
+    // of the body — bones, bend, flash, tint — but its own picture)
+    function staffPiece(body, art, map) {
+      var su = {}, bu = body.material.uniforms; for (var k in bu) su[k] = bu[k];
+      su.map = { value: map };
+      var sm = new T.Mesh(rigGeometry(art, 'staff'), new T.ShaderMaterial({ uniforms: su, vertexShader: BB_VS, fragmentShader: BB_FS, transparent: true, depthWrite: body.material.depthWrite, side: T.DoubleSide }));
+      sm.renderOrder = body.renderOrder + 1; sm.position.z = 0.004; body.add(sm);
+      return sm;
+    }
+    // swap the hero's picture (equipment changes how the wizard looks).
+    // split = { body, staff } (staff-split.js): the staff cut out of the picture is drawn as its own piece just in front of
+    // the body and turns stiffly at the paw, so the wizard can really swing it (2026-11-15). The afterimages do the same.
+    function setHeroTexture(tex, split) {
       if (!hero) return;
-      var old = hero.userData.u.map.value; hero.userData.u.map.value = tex;
-      ghosts.forEach(function (gh) { gh.mesh.material.uniforms.map.value = tex; });
-      if (old && old !== tex && old._look) old.dispose();
+      var d = hero.userData, art = d.art, old = [d.u.map.value, d.staffMesh && d.staffMesh.material.uniforms.map.value, d.fullTex];
+      var on = !!(split && art && art.rig);
+      d.body.geometry = rigGeometry(art, on ? 'body' : null);
+      if (cos.aura) cos.aura.geometry = d.body.geometry;
+      d.u.map.value = on ? split.body : tex; d.fullTex = tex; d.split = on;
+      if (on && !d.staffMesh) d.staffMesh = staffPiece(d.body, art, split.staff);
+      if (d.staffMesh) { d.staffMesh.visible = on; if (on) d.staffMesh.material.uniforms.map.value = split.staff; }
+      ghosts.forEach(function (gh) {
+        gh.mesh.geometry = d.body.geometry; gh.mesh.material.uniforms.map.value = on ? split.body : tex;
+        if (on && !gh.staff) gh.staff = staffPiece(gh.mesh, art, split.staff);
+        if (gh.staff) { gh.staff.visible = on; if (on) gh.staff.material.uniforms.map.value = split.staff; }
+      });
+      var now = [d.u.map.value, d.staffMesh && d.staffMesh.material.uniforms.map.value, tex];
+      old.forEach(function (o) { if (o && o._look && now.indexOf(o) < 0) o.dispose(); });
     }
     var HERO_H = 1.02, CUTE = HERO_H / 1.45, TILT = 0.6, COS_T = Math.cos(TILT), SIN_T = Math.sin(TILT);
     auraGroup.scale.setScalar(CUTE);

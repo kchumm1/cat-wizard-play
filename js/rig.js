@@ -46,25 +46,39 @@
     cos8: [[200, 400, 440, 1050, 85, 26, 34, 0.3], [340, 730]],
     cos9: [[220, 390, 380, 1040, 110, 26, 34, 0.33], [320, 750]],
     cos10: [[180, 380, 410, 1060, 140, 28, 34, 0.35], [320, 740]],
-    cos11: [[140, 150, 330, 1120, 100, 26, 34, 0.32], [240, 740]],
+    cos11: [[140, 150, 330, 1120, 122, 26, 34, 0.36], [240, 740]],
     cos12: [[150, 150, 380, 1080, 112, 26, 38, 0.42], [300, 690]],
     cos13: [[190, 150, 330, 1080, 70, 26, 34, 0.35], [280, 690]],
     cos14: [[230, 280, 380, 1060, 85, 26, 34, 0.35], [290, 760]],
     cos15: [[150, 400, 410, 1040, 112, 26, 34, 0.36], [300, 730]],
     cos16: [[150, 300, 390, 1060, 125, 28, 34, 0.35], [285, 725]],
     cos17: [[150, 120, 360, 1060, 90, 26, 34, 0.35], [260, 720]],
-    cos18: [[180, 300, 400, 1060, 130, 28, 34, 0.4], [290, 740]]
+    cos18: [[180, 300, 400, 1060, 150, 28, 34, 0.46], [290, 740]]
   };
   // fwd: these staffs are long and stand close to the face, so they tip only a quarter as far toward the monsters (and
   // rise by lift as they do); measured: about 20 degrees forward already reaches the head
-  var STAFF2 = { cos10: [250, 300, 60, 640, 62, 24], cos14: [225, 330, 95, 500, 72, 24], cos15: [130, 560, 110, 770, 34, 20] };   // scythe blade, feather plume, hanging tassel
-  Object.keys(STAFF).forEach(function (id) { var o = {}; for (var k in RIGS.costume) o[k] = RIGS.costume[k]; o.armL = { cap: STAFF[id][0], cap2: STAFF2[id], p: STAFF[id][1], fwd: 0.25, lift: 0.05 }; RIGS[id] = o; });
+  var STAFF2 = { cos1: [190, 230, 200, 520, 125, 26], cos2: [110, 300, 220, 400, 85, 24], cos11: [150, 90, 160, 440, 92, 26], cos18: [175, 470, 175, 470, 150, 26], cos10: [250, 300, 55, 650, 78, 26], cos14: [225, 330, 95, 500, 72, 24], cos15: [130, 560, 110, 770, 34, 20] };   // scythe blade, feather plume, hanging tassel
+  // points on parts of a staff's head that lie against the hat in the same colours, so the staff picture keeps them
+  // when the staff is cut out of the costume picture (staff-split.js)
+  var STAFF_SEEDS = {
+    cos3: [[250, 350], [271, 402], [283, 470]],
+    cos4: [[230, 266], [268, 297], [322, 405]],
+    cos5: [[240, 320], [285, 400], [300, 470], [295, 540]],
+    cos6: [[150, 245], [215, 238], [255, 330], [280, 380]],
+    cos7: [[310, 380], [320, 440], [300, 490]],
+    cos8: [[275, 440], [285, 500]],
+    cos9: [[320, 320], [335, 360]],
+    cos11: [[265, 150], [280, 260], [300, 340], [290, 420], [312, 330]],
+    cos13: [[285, 200], [288, 300], [290, 380]],
+    cos17: [[225, 199], [248, 268], [271, 345], [279, 414]]
+  };
+  Object.keys(STAFF).forEach(function (id) { var o = {}; for (var k in RIGS.costume) o[k] = RIGS.costume[k]; o.armL = { cap: STAFF[id][0], cap2: STAFF2[id], p: STAFF[id][1], seeds: STAFF_SEEDS[id], fwd: 0.25, lift: 0.05 }; RIGS[id] = o; });
   var SIZE = 1254;
   function smooth(a, b, x) { var t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
   // A staff strip: [x1, y1, x2, y2, head radius, fade, shaft radius, head share of the length]: fully moved within the radius
   // of the line (wide at the head end, narrow along the shaft), fading out over 'fade' pixels
   function capWeight(c, px, py) {
-    var lx = c[2] - c[0], ly = c[3] - c[1], tq = Math.max(0, Math.min(1, ((px - c[0]) * lx + (py - c[1]) * ly) / (lx * lx + ly * ly)));
+    var lx = c[2] - c[0], ly = c[3] - c[1], ll = lx * lx + ly * ly, tq = ll < 1 ? 0 : Math.max(0, Math.min(1, ((px - c[0]) * lx + (py - c[1]) * ly) / ll));   // a disc when both ends are the same point
     var qx = px - (c[0] + lx * tq), qy = py - (c[1] + ly * tq);
     var rad = c[6] === undefined ? c[4] : c[6] + (c[4] - c[6]) * Math.max(0, 1 - tq / (c[7] || 0.35));
     return 1 - smooth(rad, rad + c[5], Math.sqrt(qx * qx + qy * qy));
@@ -76,8 +90,10 @@
       var b = rig && rig[BONES[i]]; out[i] = 0;
       if (!b) continue;
       if (b.cap) {
-        // a capsule around a line (a staff), and a second one for a hooked head (cap2): the larger pull wins
-        out[i] = Math.max(capWeight(b.cap, px, py), b.cap2 ? capWeight(b.cap2, px, py) : 0); sum += out[i]; continue;
+        // a capsule around a line (a staff), plus more strips or discs for a wide or hooked head (cap2: one or a list): the larger pull wins
+        var wv = capWeight(b.cap, px, py), ex = b.cap2 ? (Array.isArray(b.cap2[0]) ? b.cap2 : [b.cap2]) : [];
+        for (var q = 0; q < ex.length; q++) wv = Math.max(wv, capWeight(ex[q], px, py));
+        out[i] = wv; sum += out[i]; continue;
       }
       var dx = (px - b.e[0]) / b.e[2], dy = (py - b.e[1]) / b.e[3], d = Math.sqrt(dx * dx + dy * dy);
       out[i] = 1 - smooth(0.55, 1.0, d); sum += out[i];

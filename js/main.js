@@ -53,8 +53,17 @@
     if (!base) { needArt(cl.art); base = art.hero; }
     if (base.id !== heroArtId) { heroArtId = base.id; sc.setHero(base); }
     l.outfit = base.id === 'hero' ? cl.outfit : null; l.fx = cl.fx;
-    var tex = new T.CanvasTexture(CW.paintHero(base, l)); tex.minFilter = T.LinearMipmapLinearFilter; if (T.sRGBEncoding) tex.encoding = T.sRGBEncoding; tex._look = true;
+    function mk(cv) { var t = new T.CanvasTexture(cv); t.minFilter = T.LinearMipmapLinearFilter; if (T.sRGBEncoding) t.encoding = T.sRGBEncoding; t._look = true; return t; }
+    var painted = CW.paintHero(base, l), tex = mk(painted);
     sc.setHeroTexture(tex); fx.setStaffColor(CW.staffColor(l));
+    // The staff is cut out of the picture so the wizard can swing it (staff-split.js); a costume picture is cut once, the
+    // plain wizard once per look (its hat, cape and gems are painted on). Cutting takes a moment (most on a phone), so the
+    // whole picture shows first and the cut one takes over a little later, unless the look has changed again by then.
+    if (CW.splitStaff && base.rig && base.rig.armL && base.rig.armL.cap && base.crop) setTimeout(function () {
+      if (lastLook !== key) return;
+      try { var parts = CW.splitStaff(painted, base.crop, base.rig, base.id === 'hero' ? 'hero|' + CW.lookKey(l) : base.id); sc.setHeroTexture(tex, { body: mk(parts.body), staff: mk(parts.staff) }); }
+      catch (e) { /* the whole picture stays */ }
+    }, 60);
     if (cl.id !== lastCos) { lastCos = cl.id; sc.setCostumeFx(cl.fx); fx.setCostume(cl.fx); }
     if (!first && !silent) { fx.levelUp(state.tier, CW.staffColor(l), true); ui.toast('모습이 바뀌었어요'); }
   }
