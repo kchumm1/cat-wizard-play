@@ -1213,13 +1213,18 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 .statwin .sthead b{font-size:18px;color:#443C35}.statwin .sthead span{font-size:12px;color:#8a7a66}.statwin .sttitle{color:#a8822e!important;font-weight:700}
 .statwin .stpow{display:flex;flex-direction:column;align-items:center;background:#F3E8D3;border-radius:12px;padding:8px;margin-bottom:6px}
 .statwin .stpow b{font-size:22px;color:#443C35}.statwin .stpow small{font-size:11px;color:#8a7a66}
-.statwin h4{margin:10px 0 4px;font-size:13px;color:#a8822e}
+.statwin h4{margin:12px 0 2px;font-size:13px;color:#a8822e}
 .statwin .strow{border-bottom:1px solid #EFE3CC;font-size:13px;color:#443C35}
-.statwin .strow>summary,.statwin div.strow{display:flex;justify-content:space-between;padding:6px 2px;list-style:none;cursor:pointer}
+.statwin .stl,.statwin .strow li{display:grid;grid-template-columns:1fr 64px 84px;column-gap:8px;align-items:center}
+.statwin .stl{min-height:34px;padding:0 4px;list-style:none;cursor:pointer}
+.statwin .stl span{font-size:14px;color:#443C35}.statwin .stl b{text-align:right;font-size:14px;font-weight:700;color:#443C35;font-variant-numeric:tabular-nums;white-space:nowrap}
+.statwin .stl b.w2{grid-column:2/4}
+.statwin h4{display:grid;grid-template-columns:1fr 64px 84px;column-gap:8px;padding:0 4px}.statwin h4 small{grid-column:2/4;display:grid;grid-template-columns:64px 84px;column-gap:8px}.statwin h4 em{font-style:normal;text-align:right;font-size:11px;color:#b9a685}
 .statwin .strow>summary::-webkit-details-marker{display:none}
-.statwin details.strow>summary span::after{content:" ▾";color:#b9a685;font-size:11px}
-.statwin .strow ul{margin:0 0 6px;padding:6px 8px;background:#FBF4E6;border-radius:8px;list-style:none}
-.statwin .strow li{display:flex;justify-content:space-between;font-size:12px;color:#6b5d4e;padding:2px 0}
+.statwin details.strow>summary span::after{content:"›";display:inline-block;margin-left:6px;color:#c9b48a;font-size:13px;transition:transform .15s}
+.statwin details[open].strow>summary span::after{transform:rotate(90deg)}
+.statwin .strow ul{margin:0 0 6px;padding:4px 4px;background:#FBF4E6;border-radius:8px;list-style:none}
+.statwin .strow li{min-height:24px;font-size:12px;color:#6b5d4e}.statwin .strow li i{font-style:normal;text-align:right;color:#a8977d}.statwin .strow li b{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
 .statwin .ttls{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .statwin .ttl{display:flex;flex-direction:column;align-items:flex-start;padding:8px;border-radius:10px;border:1px solid #E4D6BC;background:#FFF9F0;text-align:left}
 .statwin .ttl b{font-size:13px;color:#443C35}.statwin .ttl small{font-size:11px;color:#8a7a66}

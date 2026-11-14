@@ -734,29 +734,32 @@
     }
     // ---------- stat window (2026-11-14): tap the profile; final stats in groups, each opens to where it comes from; titles ----------
     var SRC_KO = { growth: '성장(초월)', gear: '장비', relics: '유물', costume: '코스튬', divine: '삼신기', skills: '스킬 모음', training: '훈련', runes: '룬', sigil: '신성력', alchemy: '물약', titles: '타이틀' };
-    function statRow(label, value, keys, by) {
+    // one line = label | value (| second value): the same three columns everywhere, so the numbers line up;
+    // its parts (where it comes from) use the same columns: source | what | amount
+    function statRow(label, value, keys, by, value2, short) {
       var parts = [];
       Object.keys(by.parts).forEach(function (src) {
-        keys.forEach(function (k) { var v = by.parts[src][k]; if (v) parts.push('<li><span>' + (SRC_KO[src] || src) + (keys.length > 1 ? ' · ' + (STAT_KO[k] || k) : '') + '</span><b>' + CW.bonusAmount(k, v) + '</b></li>'); });
+        keys.forEach(function (k, i) { var v = by.parts[src][k]; if (v) parts.push('<li><span>' + (SRC_KO[src] || src) + '</span><i>' + (short ? short[i] : '') + '</i><b>' + CW.bonusAmount(k, v) + '</b></li>'); });
       });
-      if (!parts.length) return '<div class="strow"><span>' + label + '</span><b>' + value + '</b></div>';
-      return '<details class="strow"><summary><span>' + label + '</span><b>' + value + '</b></summary><ul>' + parts.join('') + '</ul></details>';
+      var cells = '<span>' + label + '</span>' + (value2 === undefined ? '<b class="w2">' + value + '</b>' : '<b>' + value + '</b><b>' + value2 + '</b>');
+      if (!parts.length) return '<div class="strow"><div class="stl">' + cells + '</div></div>';
+      return '<details class="strow"><summary class="stl">' + cells + '</summary><ul>' + parts.join('') + '</ul></details>';
     }
     function statWindow() {
       var s = G.state, st = CW.stats(s), by = CW.bonusBySource(s), tier = DATA.tiers[s.tier - 1], worn = CW.titleWorn(s), owned = CW.titlesOwned(s);
       var x = function (v) { return '×' + (Math.round(v * 100) / 100); };
       var crit = [['치명타', 'critRate', 'critDmg'], ['슈퍼', 'superRate', 'superDmg'], ['울트라', 'ultraRate', 'ultraDmg'], ['하이퍼', 'hyperRate', 'hyperDmg'], ['메가', 'megaRate', 'megaDmg'], ['얼티밋', 'ultimateRate', 'ultimateDmg'], ['알파', 'alphaRate', 'alphaDmg']]
-        .map(function (c) { return statRow(c[0] + ' 크리티컬', pct(st[c[1]] || 0) + ' · ' + x(st[c[2]] || 0), [c[1], c[2]], by); }).join('');
+        .map(function (c) { return statRow(c[0], pct(st[c[1]] || 0), [c[1], c[2]], by, x(st[c[2]] || 0), ['확률', '피해']); }).join('');
       var titles = DATA.titles.map(function (t) {
         var have = owned.indexOf(t.id) >= 0, on = worn === t.id;
         var eff = t.bonus ? Object.keys(t.bonus).map(function (k) { return (STAT_KO[k] || k) + ' ' + CW.bonusAmount(k, t.bonus[k]); }).join(' · ') : '효과 없음';
         return '<button class="ttl' + (on ? ' on' : '') + (have ? '' : ' lock') + '" data-title="' + t.id + '"' + (have ? '' : ' disabled') + '><b>' + (have ? '' : '🔒 ') + t.name + '</b><small>' + (have ? eff : CW.titleNeedText(t)) + '</small></button>';
       }).join('');
-      return '<div class="statwin"><div class="sthead"><b>' + $('nick').textContent + '</b><span>Lv.' + s.level + ' · ' + s.tier + '차 ' + tier.name + '</span><span class="sttitle">「' + CW.titleById(worn).name + '」</span></div>' +
+      return '<div class="statwin"><div class="sthead"><b>' + $('nick').textContent + '</b><span>Lv.' + s.level + '</span><span class="sttitle">「' + CW.titleById(worn).name + '」</span></div>' +
         '<div class="stpow"><small>전투력 (초당 피해)</small><b>' + fmt(CW.dps(s, st)) + '</b><small>보스 ' + fmt(CW.bossDps(s, st)) + '</small></div>' +
-        '<h4>공격</h4>' + statRow('공격력', fmt(st.atk), ['atk', 'atkPct'], by) + statRow('공격 속도', x(st.speedMul), ['speed'], by) + statRow('스킬 피해', x(st.skillDmg * st.mastery), ['skillDmg'], by) +
+        '<h4>공격</h4>' + statRow('공격력', fmt(st.atk), ['atkPct'], by) + statRow('공격 속도', x(st.speedMul), ['speed'], by) + statRow('스킬 피해', x(st.skillDmg * st.mastery), ['skillDmg'], by) +
         statRow('보스 피해', x(st.bossDmg), ['bossDmg'], by) + statRow('모든 피해', x(st.finalMul), ['finalPct', 'potion'], by) +
-        '<h4>크리티컬</h4>' + crit +
+        '<h4>크리티컬<small><em>확률</em><em>배율</em></small></h4>' + crit +
         '<h4>특수</h4>' + statRow('약점 피해', x(st.weakMul), ['weakDmg'], by) + statRow('폭주 피해', x(st.surgeMul), ['surgeDmg', 'surgeRate'], by) +
         statRow('골드 획득', x(st.goldMul), ['goldMul', 'potionGold'], by) + statRow('경험치 획득', x(st.xpMul), ['xpMul', 'potionXp'], by) +
         '<p class="note">줄을 누르면 어디서 얼마나 붙었는지 볼 수 있어요.</p><h4>타이틀</h4><div class="ttls">' + titles + '</div></div>';
