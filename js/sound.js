@@ -32,10 +32,47 @@
     legend: function () { [523, 659, 784].forEach(function (f) { tone(f, 0.9, 'triangle', 0.14, 1); }); tone(1568, 0.6, 'sine', 0.1, 1.2, 0.2); },
     click: function () { tone(900, 0.04, 'sine', 0.06); }
   };
+  // ---------- recorded sounds (2026-11-15): sfx/<group>-<n>.m4a, free CC0 packs (js/sfx-map.js says which skill uses which) ----------
+  var bufs = {}, loading = false, voices = 0, lastPick = {}, MAX_VOICES = 10;
+  function loadAll() {
+    if (loading || !ctx || !CW.SFX_GROUPS) return; loading = true;
+    Object.keys(CW.SFX_GROUPS).forEach(function (g) {
+      bufs[g] = [];
+      for (var i = 1; i <= CW.SFX_GROUPS[g]; i++) (function (g) {
+        fetch('sfx/' + g + '-' + i + '.m4a').then(function (r) { return r.arrayBuffer(); })
+          .then(function (a) { return new Promise(function (ok, bad) { ctx.decodeAudioData(a, ok, bad); }); })
+          .then(function (b) { bufs[g].push(b); }).catch(function () { });
+      })(g);
+    });
+  }
+  // one variant of a group, not the same one twice in a row, slightly different pitch each time; vol 0..1
+  function sample(g, vol, gap) {
+    var list = bufs[g]; if (!list || !list.length || voices >= MAX_VOICES) return false;
+    var now = performance.now(); if (last['s:' + g] && now - last['s:' + g] < (gap || 70)) return true; last['s:' + g] = now;
+    var k = Math.floor(Math.random() * list.length); if (list.length > 1 && k === lastPick[g]) k = (k + 1) % list.length; lastPick[g] = k;
+    var s = ctx.createBufferSource(), gn = ctx.createGain();
+    s.buffer = list[k]; s.playbackRate.value = 0.94 + Math.random() * 0.12; gn.gain.value = vol === undefined ? 1 : vol;
+    s.connect(gn); gn.connect(master); voices++; s.onended = function () { voices--; }; s.start();
+    if (CW.sound.onSample) CW.sound.onSample(g, k, vol);   // test hook (a video with sound)
+    return true;
+  }
+  function skillCast(id) {
+    if (!enabled || !ctx || ctx.state !== 'running') return;
+    var e = CW.SKILL_SFX && CW.SKILL_SFX[id]; if (e && e.cast) sample(e.cast, 0.7, 120);
+  }
+  function skillHit(id) {
+    if (!enabled || !ctx || ctx.state !== 'running') return;
+    var e = CW.SKILL_SFX && CW.SKILL_SFX[id]; if (!e) return;
+    e.hit.forEach(function (g, i) { sample(g, i ? 0.6 : 0.95, 80); });
+  }
   function play(name) {
     if (!enabled || !ctx || ctx.state !== 'running') return;
+    if (name === 'cast') return;   // the skill's own cast sound plays from the effects (skillCast)
+    // the plain hit and kill sounds are recordings now, quiet (no synth tick or beep)
+    if (CW.BASIC && (name === 'hit' || name === 'kill')) { sample(CW.BASIC[name], name === 'hit' ? 0.25 : 0.32, 60); return; }
     var now = performance.now(); if (last[name] && now - last[name] < 45) return; last[name] = now;
     try { SOUNDS[name] && SOUNDS[name](); } catch (e) { }
   }
-  CW.sound = { init: init, play: play, setEnabled: function (v) { enabled = !!v; } };
+  var init0 = init; init = function () { init0(); loadAll(); };
+  CW.sound = { init: init, play: play, skillCast: skillCast, skillHit: skillHit, setEnabled: function (v) { enabled = !!v; } };
 })(this);

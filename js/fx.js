@@ -1188,10 +1188,12 @@
           if (c.sk.targets >= 99) { if (!released) picture(c, c.center, true); } else picture(c, mob, false);
           spellContact(c, mob, power, !released); decorated.push(mob); released = true;
         }
+        if (CW.sound && CW.sound.skillHit) CW.sound.skillHit(c.sk.id);   // the landing sound: meteors boom as each one hits
         hitFn(mob, frac, power);
       };
       if (PIC_MOVE[skill.id]) picLoad(skill.id);   // only the skills that still lay a painted picture on the hit
       spellCharge(c);
+      if (CW.sound && CW.sound.skillCast) CW.sound.skillCast(skill.id);   // the skill's own sound (js/sfx-map.js)
       var H = sc.heroCenter();
       // casting circle: two rune rings under the feet, sparks rising, a coloured seal at the paw
       if (!c.noCircle) E({ sys: 'gadd', pos: V(H.x, 0.045, H.z), frame: 'circle', color: c.col, size: [0.3, 1.2 + 0.03 * lv], ease: 2, life: c.D(0.55), spin: 3, fadeIn: 0.1, fadeOut: 0.5, alpha: 0.95 });

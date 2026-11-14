@@ -1,0 +1,4 @@
+Skill sounds in sfx/ (made by tools/make-sfx.cjs, 2026-11-15) come from three free packs, all CC0 (public domain,
+https://creativecommons.org/publicdomain/zero/1.0/ — no attribution needed; credited here anyway):
+- "Sci-fi Sounds" and "Impact Sounds" by Kenney (www.kenney.nl)
+- "Basic Spell Impacts [Free/CC0]" by lentikula (lentikula.itch.io)
