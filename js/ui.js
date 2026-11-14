@@ -585,7 +585,7 @@
         '<div class="note" style="margin:6px 0 8px">' + reg.name + ' · 판을 누르면 그곳으로 가요</div><div class="note slegend"><i class="coin"></i> 골드 <b class="xpdot"></b> 경험치 <b class="hpdot"></b> 체력 · 몬스터 한 마리 (보스 판은 보스를 이겼을 때)</div>';
       var rows = '';
       for (var n = 0; n < 31; n++) {
-        var i = R * 31 + n, info = CW.stageInfo(i), lock = !open || i > frontier, tmp = { stage: i, diff: d };
+        var i = R * 31 + n, info = CW.stageInfo(i), lock = !open || i > frontier, tmp = { stage: i, diff: d, up: s.up };
         var res = { id: info.isBoss ? CW.stageBoss(i).art : reg.monsters[(n * 5) % reg.monsters.length], tint: null };
         // the same numbers the game uses (stage-rewards.js): one monster, or the boss and what beating it gives
         var img = G.thumb(res.id), rw = CW.stageRewards(tmp, st, !(s.firstClear || {})[CW.clearKey({ diff: d }, i)]);

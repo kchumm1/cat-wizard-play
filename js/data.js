@@ -373,6 +373,8 @@
       diffWallMul: [1,19169.38,5566798.08,22820341.73,178880696.24,1691557414.71,8489733214.33,95531878018.25,176986468430.32,294004021895.86],
       wallMul: [1,18089.69,10335053.86,96503451.56,762058875.2,1750507849.35,12374981423.27,359382769354.56,247984443986.51,710772058448.84], wallShare: 0.7,
       goldBase: 3, goldGrowth: 1.2,
+      // on a harder difficulty a monster gives at most 1/goldCapKills of the next attack level (economy.js stageGold)
+      goldCapKills: 400,
       bossGemsBase: 10, bossGemsPerRegion: 6, regionBossGems: 25, firstClearMul: 2,
       atkBase: 10, atkPerLevel: 0, atkCompound: 1.05,
       speedPerLevel: 0.01, critPerLevel: 0.005, critDmgBase: 1.5, critDmgPerLevel: 0.02,

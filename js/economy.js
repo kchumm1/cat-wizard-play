@@ -22,7 +22,17 @@
   function diffOf(state) { return (DATA.difficulties && DATA.difficulties[state.diff || 0]) || { hpMul: 1, bossMul: 1, gemMul: 1, extraMobs: 0 }; }
   function stageMonsterHp(state, i) { i = i === undefined ? state.stage || 0 : i; return cap(monsterHp(i + SPAN * (state.diff || 0)) * diffOf(state).hpMul); }
   function stageBossHp(state, i) { i = i === undefined ? state.stage || 0 : i; return cap(bossHp(i, state.diff ? B.diffWallMul : null) * Math.pow(B.hpGrowth, SPAN * (state.diff || 0)) * diffOf(state).bossMul); }
-  function stageGold(state, i) { i = i === undefined ? state.stage || 0 : i; return cap(monsterGold(i + SPAN * (state.diff || 0))); }
+  // Gold a monster gives. On a harder difficulty (2026-11-14) at most 1/goldCapKills of the player's next attack level:
+  // gold grows ×1.2 a stage, and sweeping the easy first stages of a new difficulty gave hundreds of attack levels in a
+  // few days (measured 584 -> 934 in three days on 슬레이어 킹). With the cap an attack level always takes about
+  // goldCapKills monsters there. Normal difficulty is as it was (its pace is tuned, tests/balance).
+  // goldMul: the player's gold bonus the caller multiplies by afterwards — the cap is on the gold really received.
+  function stageGold(state, i, goldMul) {
+    i = i === undefined ? state.stage || 0 : i;
+    var g = cap(monsterGold(i + SPAN * (state.diff || 0)));
+    if (!state.diff || !state.up || !B.goldCapKills) return g;
+    return Math.min(g, upgradeCost('atk', state.up.atk || 0) / B.goldCapKills / Math.max(1, goldMul || 1));
+  }
   function bossGems(i, first) {
     var region = Math.floor(i / 31);
     var g = isRegionBoss(i) ? B.regionBossGems * (1 + region * 0.5) : B.bossGemsBase + region * B.bossGemsPerRegion;
@@ -192,7 +202,7 @@
   function killsPerSecond(state, st) { st = st || stats(state); return Math.max(0.02, Math.min(dps(state, st) / stageMonsterHp(state), 2.5)); }
   function goldPerSecond(state) {
     var st = stats(state);
-    return cap(killsPerSecond(state, st) * stageGold(state) * st.goldMul);
+    return cap(killsPerSecond(state, st) * stageGold(state, undefined, st.goldMul) * st.goldMul);
   }
   return {
     stageMonsterHp: stageMonsterHp, stageBossHp: stageBossHp, stageGold: stageGold, diffOf: diffOf,

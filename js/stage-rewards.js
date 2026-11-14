@@ -10,8 +10,8 @@
   function stageRewards(state, st, firstClear) {
     var E = dep('./economy.js'), L = dep('./level.js'), P = dep('./progress.js'), i = state.stage, d = state.diff || 0;
     var boss = P.stageInfo(i).isBoss, gm = (st && st.goldMul) || 1, xm = (st && st.xpMul) || 1;
-    if (boss) return { boss: true, hp: E.stageBossHp(state), gold: E.stageGold(state) * BOSS_GOLD * gm, xp: L.bossXp(state) * xm, gems: E.bossGems(i, !!firstClear) * ((DATA.difficulties[d] || {}).gemMul || 1) };
-    return { boss: false, hp: E.stageMonsterHp(state) / CROWD, gold: E.stageGold(state) * gm / CROWD, xp: L.killXp(state) / CROWD * xm, gems: 0 };
+    if (boss) return { boss: true, hp: E.stageBossHp(state), gold: E.stageGold(state, undefined, gm) * BOSS_GOLD * gm, xp: L.bossXp(state) * xm, gems: E.bossGems(i, !!firstClear) * ((DATA.difficulties[d] || {}).gemMul || 1) };
+    return { boss: false, hp: E.stageMonsterHp(state) / CROWD, gold: E.stageGold(state, undefined, gm) * gm / CROWD, xp: L.killXp(state) / CROWD * xm, gems: 0 };
   }
   return { stageRewards: stageRewards, CROWD: CROWD, BOSS_GOLD: BOSS_GOLD };
 });

@@ -138,7 +138,7 @@
     var pos = sc.mobPos(mob);
     if (mob.boss && boss && boss.mob === mob) { bossWin(pos); return; }
     if (dun) { dun.kills++; if (dun.kind === 'gold') { fx.coinPop(pos, 4); flyCoins(pos, 2); } else fx.coinPop(pos, 2); snd.play('kill'); return; }
-    var gold = CW.stageGold(state) * st.goldMul / CROWD;
+    var gold = CW.stageGold(state, undefined, st.goldMul) * st.goldMul / CROWD;
     state.gold += gold; fx.coinPop(pos, 3); flyCoins(pos, 2); snd.play('kill');
     var kx = CW.killXp(state) / CROWD * st.xpMul;
     gained.gold += gold; gained.xp += kx;
@@ -153,7 +153,7 @@
   function bossWin(pos) {
     var stage = state.stage, key = CW.clearKey(state, stage), first = !state.firstClear[key];
     var gems = CW.bossGems(stage, first) * CW.diffOf(state).gemMul; state.firstClear[key] = true; state.gems += gems;
-    var gold = CW.stageGold(state, stage) * CW.BOSS_GOLD * st.goldMul; state.gold += gold;
+    var gold = CW.stageGold(state, stage, st.goldMul) * CW.BOSS_GOLD * st.goldMul; state.gold += gold;
     flyCoins(pos, 8);
     var bx = CW.bossXp(state) * st.xpMul, shards = CW.addShards(state, CW.stageInfo(stage).isRegionBoss);
     var mana = Math.round(CW.manaForBoss(stage, CW.stageInfo(stage).isRegionBoss) * CW.diffOf(state).gemMul); state.mana = (state.mana || 0) + mana;

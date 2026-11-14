@@ -17,12 +17,12 @@
     if (!dungeonOpen(state) || !kindOpen(state, kind) || ticketsLeft(state, kind, now) <= 0) return false;
     var d = dstate(state, now); d.used[kind] = (d.used[kind] || 0) + 1; return true;
   }
-  function at(state) { return { stage: Math.max(0, state.best), diff: state.diff || 0, best: state.best }; }
+  function at(state) { return { stage: Math.max(0, state.best), diff: state.diff || 0, best: state.best, up: state.up }; }
   function golemHp(state, lv) { return dep('economy').stageMonsterHp(at(state)) * C.golemHpMul * Math.pow(C.golemGrowth, lv); }
   function golemLevel(state, dmg) { var L = 0; while (L < 200 && dmg >= golemHp(state, L)) L++; return L; }
   function dungeonReward(state, kind, res) {
     var E = dep('economy');
-    if (kind === 'gold') return { gold: (res.kills || 0) * E.stageGold(at(state)) * E.stats(state).goldMul * C.goldPerKill };
+    if (kind === 'gold') return { gold: (res.kills || 0) * E.stageGold(at(state), undefined, E.stats(state).goldMul) * E.stats(state).goldMul * C.goldPerKill };
     if (kind === 'gem') return { gems: Math.min(C.gemCap, Math.floor((res.kills || 0) * C.gemPerKill)) };
     if (kind === 'rune') { var rr = { runeStone: Math.round((res.kills || 0) * DATA.runeConf.dungeonPerKill * (1 + Math.floor(Math.max(0, state.best) / 31) * 0.4) * (1 + (state.diff || 0))) }, nr = Math.floor((res.kills || 0) / DATA.runeConf.dungeonPerRune); if (nr) rr.runes = nr; return rr; }
     var L = golemLevel(state, res.dmg || 0);
