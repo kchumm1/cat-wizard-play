@@ -343,7 +343,7 @@
       var now = Date.now(), bt = DATA.potions.map(function (p) { var l = CW.buffLeft(s, p.id, now); return l ? '<span>' + mi('potion', p) + mmss(l) + '</span>' : ''; }).join('');
       if (bt !== lastBuffs) { lastBuffs = bt; $('buffs').innerHTML = bt; }
       var tier = DATA.tiers[s.tier - 1];
-      var next = s.tier < 9 ? (s.tier) + '-31 보스를 이기면 ' + (s.tier + 1) + '차' : (s.best >= 309 ? '마왕 토벌 완료!' : '최종 목표 10-31 늑대 왕');
+      var next = s.tier < DATA.tiers.length ? (s.tier) + '-31 보스를 이기면 ' + (s.tier + 1) + '차' : (s.best >= 309 ? '마왕 토벌 완료!' : '최종 목표 10-31 늑대 왕');
       var wornT = CW.titleWorn ? CW.titleWorn(s) : 'tNovice';
       var tTxt = wornT !== 'tNovice' ? CW.titleById(wornT).name : s.tier + '차 ' + tier.name; if ($('tierTag').textContent !== tTxt) $('tierTag').textContent = tTxt; $('tierTag').classList.toggle('ttl', wornT !== 'tNovice'); if ($('questTxt').textContent !== next) $('questTxt').textContent = next;
     }

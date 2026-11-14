@@ -39,7 +39,9 @@
       { name: '달빛 냥법사', skill: 'moonLaser', aura: 2 },
       { name: '태양 냥법사', skill: 'solarBurst', aura: 3 },
       { name: '은하 냥법사', skill: 'blackHole', aura: 3 },
-      { name: '전설의 대마법냥', skill: 'elementNova', aura: 4 }
+      { name: '전설의 대마법냥', skill: 'elementNova', aura: 4 },
+      // 10th job and on: legendary beasts (10 phoenix; dragon, sky whale and white tiger to come), in elemental spirit style
+      { name: '불사조 냥법사', skill: 'phoenixDive', aura: 4 }
     ],
     // Every job tier brings four skills of its own kind (the first job has its four starters plus three).
     // mult = the whole damage one monster takes from one cast, however many hits it arrives in.
@@ -92,7 +94,12 @@
       { id: 'elementNova', name: '원소 합체 궁극기', tier: 9, el: 'all', dur: 1.0, mult: 7, targets: 99, shape: 'nova', status: null, color: 0xffffff, how: '원소를 모아 화면 전체를 터뜨려요' },
       { id: 'elementStorm', name: '원소 폭풍', tier: 9, el: 'all', dur: 0.9, mult: 6.3, targets: 99, shape: 'elemStorm', status: null, color: 0xffe0f0, how: '다섯 원소가 번갈아 쏟아져요' },
       { id: 'prismBeam', name: '오색 광선', tier: 9, el: 'all', dur: 0.9, mult: 9.5, targets: 1, shape: 'prism', status: null, color: 0xfff0ff, how: '다섯 빛줄기를 한 곳에 모아 터뜨려요' },
-      { id: 'elementWheel', name: '원소의 수레바퀴', tier: 9, el: 'all', dur: 0.8, mult: 6.0, targets: 99, shape: 'wheel', status: null, color: 0xe8f0ff, how: '원소 구슬이 돌며 화면 끝까지 퍼져요' }
+      { id: 'elementWheel', name: '원소의 수레바퀴', tier: 9, el: 'all', dur: 0.8, mult: 6.0, targets: 99, shape: 'wheel', status: null, color: 0xe8f0ff, how: '원소 구슬이 돌며 화면 끝까지 퍼져요' },
+      // 10차 불사조: the user's painted phoenix flies in each of them (js/fx-beasts.js)
+      { id: 'phoenixDive', name: '불사조 강림', tier: 10, el: 'fire', dur: 1.0, mult: 8.4, targets: 99, shape: 'phoenixDive', status: null, color: 0xff7a2a, how: '불사조가 날아와 무리를 쓸고 불타올라요' },
+      { id: 'featherRain', name: '불꽃 깃털비', tier: 10, el: 'fire', dur: 0.95, mult: 7.6, targets: 99, shape: 'featherRain', status: null, color: 0xffa040, how: '날갯짓 한 번에 불타는 깃털이 쏟아져요' },
+      { id: 'rebirthFlame', name: '재탄생의 불꽃', tier: 10, el: 'fire', dur: 0.95, mult: 12.5, targets: 1, splash: 0.3, shape: 'rebirth', status: null, color: 0xff5a1a, how: '불기둥 속에서 불사조가 다시 태어나 터뜨려요' },
+      { id: 'phoenixWings', name: '불사조 날개', tier: 10, el: 'fire', dur: 0.9, mult: 7.9, targets: 99, shape: 'phoenixWings', status: null, color: 0xff8a3a, how: '등에 돋은 불사조 날개로 불바람을 두 번 보내요' }
     ],
     // relics: each copy raises the level; per = bonus per level (fractions, 0.05 = +5%)
     relics: [

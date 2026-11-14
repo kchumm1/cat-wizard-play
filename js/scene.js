@@ -385,7 +385,7 @@
     function mobTop(mob) { var g = mob.group, h = g.userData.h * 0.92; return new T.Vector3(g.position.x, h * COS_T + g.position.y, g.position.z - h * SIN_T + 0.15); }
 
     // ---------- tier aura ----------
-    var AURA = [null, 0xff6a2b, 0x9fd8ff, 0xbfefff, 0xffe14a, 0xe6e6ff, 0xffd84a, 0xb04bff, 0xffffff];
+    var AURA = [null, 0xff6a2b, 0x9fd8ff, 0xbfefff, 0xffe14a, 0xe6e6ff, 0xffd84a, 0xb04bff, 0xffffff, 0xff8a3a];
     var aura = { ring: null, orbs: [], wings: [], crown: null };
     function setTierAura(tier) {
       while (auraGroup.children.length) auraGroup.remove(auraGroup.children[0]);

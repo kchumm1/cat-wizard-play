@@ -41,7 +41,7 @@
     // the play field as the camera sees it: spells may now spread over all of it
     var FC = V(0, 0, -0.4);
     // skills drawn without any rune ring (the 'circle' picture): the user found the magic circles in element storm tacky
-    var NO_CIRCLE = { elementStorm: 1 };
+    var NO_CIRCLE = { elementStorm: 1, phoenixDive: 1, featherRain: 1, rebirthFlame: 1, phoenixWings: 1 };
     function fieldPt(y) { var z = rr(-4.3, 3.4); return V(rr(-1, 1) * (1.9 + (3.8 - z) * 0.15), y || 0, z); }
     // n spots scattered over the whole field, one after another
     function fieldPops(c, n, t0, gap, fn) { for (var i = 0; i < n; i++) (function (i) { after(c.D(t0 + i * gap + rr(0, gap)), function () { fn(fieldPt(0), i); }); })(i); }
@@ -1130,11 +1130,15 @@
     }
     function picClear() { pics.forEach(picDrop); pics.length = 0; picHeads.forEach(picDrop); picHeads.length = 0; }
     // the rest of the skills live in js/fx-more.js and are built from the same parts
-    if (CW.fxMore) CW.fxMore({ T: T, sc: sc, vx: vx, V: V, rr: rr, rdir: rdir, pick: pick, STAY: STAY, sway: sway, deep: deep, E: E, N: N, after: after, tick: tick, FC: FC, UPC: UPC, above: above,
+    var KIT = { T: T, sc: sc, vx: vx, V: V, rr: rr, rdir: rdir, pick: pick, STAY: STAY, sway: sway, deep: deep, E: E, N: N, after: after, tick: tick, FC: FC, UPC: UPC, above: above,
       fieldPt: fieldPt, fieldPops: fieldPops, fieldWave: fieldWave, fieldRain: fieldRain, flare: flare, glow: glow, sparks: sparks, embers: embers, smoke: smoke, fire: fire, trailFire: trailFire, shock: shock, ring: ring, gRing: gRing, gGlow: gGlow,
       scorch: scorch, dust: dust, circle: circle, seal: seal, converge: converge, impact: impact, muzzle: muzzle, heavy: heavy, homing: homing, explosion: explosion, spiralTo: spiralTo, spiralIn: spiralIn,
       P3: P3, liveMobs: liveMobs, gp: gp, near: near, share: share, volley: volley, ringHits: ringHits, passHits: passHits, skyBolt: skyBolt, zapHit: zapHit, beamOf: beamOf, picHead: picHead, picAt: picAt, picFall: picFall,
-      dustCol: function () { return dustCol; } }, S);
+      dustCol: function () { return dustCol; } };
+    if (CW.fxMore) CW.fxMore(KIT, S);
+    // the legendary beasts (js/fx-beasts.js): their own flights, updated and cleared with the rest
+    var BEASTS = CW.fxBeasts ? CW.fxBeasts(KIT) : null;
+    if (BEASTS) for (var bk in BEASTS.shapes) S[bk] = BEASTS.shapes[bk];
     var epoch = 0;
     function tint(base, tier) { var col = new T.Color(base); if (tier >= 5) col.lerp(new T.Color(0xffffff), 0.12); return col.getHex(); }
     function cast(skill, tier, targets, hit, speedMul, lv) {
@@ -1282,16 +1286,17 @@
         crackleT = 0;
         sc.mobs().forEach(function (m) { if (m.shocked > 0 && Math.random() < 0.7) { var q = sc.mobPos(m); vx.lightning(q.clone().add(rdir(0.4)), q.clone().add(rdir(0.4)), { w: 0.035, color: 0x9fd8ff, life: 0.09, branches: 0, segs: 5, amp: 0.3 }); } });
       }
+      if (BEASTS) BEASTS.update(dt);
       vx.update(dt); P3.update(dt);
     }
     function setQuality(q) { vx.setQuality(q); }
     function setBright(v) { vx.setBright(v); P3.setBright(v); }
     function setRegion(regionData) { dustCol = new T.Color(regionData.ground).lerp(new T.Color(0xffffff), 0.45).getHex(); P3.warm(); warmPics(); }
-    function clear() { epoch++; timers.length = 0; ticks.length = 0; vx.clear(); P3.clear(); picClear(); sc.mobs().forEach(function (m) { m.pull = undefined; m.pullZ = undefined; m.lift = undefined; }); }
+    function clear() { epoch++; timers.length = 0; ticks.length = 0; vx.clear(); P3.clear(); picClear(); if (BEASTS) BEASTS.clear(); sc.mobs().forEach(function (m) { m.pull = undefined; m.pullZ = undefined; m.lift = undefined; }); }
     return { setStaffColor: function (c) { staffCol = c; }, setCostume: function (f) { cosFx = f; cosAcc = 0; }, cast: cast, update: update, setQuality: setQuality, setBright: setBright, setRegion: setRegion, clear: clear, count: vx.count,
       impact: impact, levelUp: levelUp, bossEnter: bossEnter, coinPop: coinPop, burst: function (pos, col) { impact(pos, col, 0.8); }, vfx: vx,
       // for checks: 3D parts alive, and painted heads alive (only those of the given pictures when names are given)
-      count3d: function () { return P3.count(); }, spikeTops: function () { return P3.spikeTops(); }, batchSmoke: function (v) { P3.setBatchSmoke(v); }, smoke3d: function () { return P3.smoke(); }, batchChips: function (v) { P3.setBatchChips(v); }, watch: function (fn) { watcher = fn || null; }, picCount: function (names) { return picHeads.filter(function (h) { return !names || names.indexOf(h.name) >= 0; }).length; } };
+      count3d: function () { return P3.count(); }, beasts: function () { return BEASTS ? BEASTS.count() : 0; }, spikeTops: function () { return P3.spikeTops(); }, batchSmoke: function (v) { P3.setBatchSmoke(v); }, smoke3d: function () { return P3.smoke(); }, batchChips: function (v) { P3.setBatchChips(v); }, watch: function (fn) { watcher = fn || null; }, picCount: function (names) { return picHeads.filter(function (h) { return !names || names.indexOf(h.name) >= 0; }).length; } };
   }
   CW.createFx = createFx;
 })(this);

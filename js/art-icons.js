@@ -6,7 +6,7 @@
   var SKILLS = ['starShot', 'magicClaw', 'furBomb', 'sparkRing', 'fireball', 'chainLightning', 'iceStorm', 'meteorRain', 'moonLaser', 'solarBurst', 'blackHole', 'elementNova',
     'pawStamp', 'yarnBall', 'starDust', 'flamePillar', 'flameWave', 'inferno', 'thunderStrike', 'stormCloud', 'ballLightning', 'iceLance', 'frostNova', 'glacierSpikes',
     'cometStrike', 'starBarrage', 'constellation', 'crescentWave', 'moonFall', 'moonOrbs', 'sunSpear', 'sunArrows', 'coronaRing', 'voidRift', 'gravityCrush', 'darkStar',
-    'elementStorm', 'prismBeam', 'elementWheel'];
+    'elementStorm', 'prismBeam', 'elementWheel', 'phoenixDive', 'featherRain', 'rebirthFlame', 'phoenixWings'];
   var MISC = ['tab:battle', 'tab:up', 'tab:skill', 'tab:gear', 'tab:gacha', 'tab:dungeon', 'tab:more', 'talent:tSkill', 'talent:tBoss', 'talent:tCrit',
     'potion:rage', 'potion:luck', 'potion:wisdom', 'mark:mStar', 'mark:mClaw', 'mark:mMoon', 'mark:mComet', 'mark:mCrown', 'dungeon:gold', 'dungeon:mana', 'dungeon:gem', 'dungeon:rune'];
   var RUNES = ['rFire', 'rWave', 'rWind', 'rEarth', 'rLight', 'rDark'];

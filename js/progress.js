@@ -31,8 +31,8 @@
     if (stageInfo(state.stage).isBoss) { state.bossTry = true; return 'boss'; }
     return 'next';
   }
-  // the job a region boss leads to (regions 1-8 -> jobs 2-9; regions 9 and 10 lead to none)
-  function trialTier(i) { var info = stageInfo(i); return info.isRegionBoss && info.region < 8 ? info.region + 2 : 0; }
+  // the job a region boss leads to (regions 1-9 -> jobs 2-10; region 10, the last boss, leads to none)
+  function trialTier(i) { var info = stageInfo(i); return info.isRegionBoss && info.region < 9 ? info.region + 2 : 0; }
   // a job trial: beating this boss would still raise the tier (shown as "전직 시험"; once the job is reached it is a
   // plain region boss)
   function isTierTrial(state, i) { return trialTier(i) > (state.tier || 1); }
