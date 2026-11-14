@@ -551,7 +551,23 @@
       }
       return appVer || '개발판';
     }
-    var MAP_Y = [0, 0, 2, 26, 25, 32, 59, 59, 71, 100];   // where each region's island sits on the map picture
+    // The whole map picture (art/ui-map.webp, 382x492) with a button on each island (2026-11-14): an open island goes
+    // straight to that hunting ground on the difficulty shown, and its painted lock is covered with the picture's own
+    // star medal (art/ui-map-open.webp, cut from island 1, which is painted open); a closed island keeps its painted
+    // lock. LOCKS: the centre of each painted lock, in % of the picture (measured by matching the lock; the castle, the
+    // 10th, has none painted, so the lock medal art/ui-map-lock.webp is put on it while it is closed).
+    var LOCKS = [[19.63, 18.09], [50.79, 16.87], [82.72, 24.19], [18.32, 40.45], [49.21, 39.63], [81.94, 45.93], [18.32, 65.04], [49.48, 65.04], [79.58, 70.93], [62.8, 88.0]];
+    function worldMap(d, open, frontier, here) {
+      var hereR = here >= 0 ? CW.stageInfo(here).region : -1;
+      return '<div class="wmap">' + LOCKS.map(function (p, i) {
+        var on = open && i * 31 <= frontier, at = 'left:' + p[0] + '%;top:' + p[1] + '%';
+        // the island goes to the furthest stage reached in it that is not a boss (x-29), or the front line in it
+        var dest = Math.min(frontier, i * 31 + 28);
+        var medal = on ? '<i class="wmedal' + (i === hereR ? ' cur' : '') + '" style="' + at + '"></i>' : i === 9 ? '<i class="wmedal shut" style="' + at + '"></i>' : '';
+        return medal + '<button class="wisle" style="' + at + '" aria-label="' + DATA.regions[i].name + '" ' +
+          (on ? 'data-sgo="' + dest + '" data-sd="' + d + '"' : 'data-wlock="' + (open ? i : -1) + '"') + '></button>';
+      }).join('') + '</div>';
+    }
     function stagePanel() {
       var s = G.state, d = selDiff < 0 ? (s.diff || 0) : selDiff, R = selRegion < 0 ? CW.stageInfo(s.stage).region : selRegion;
       var best = d === (s.diff || 0) ? s.best : ((s.diffBest || {})[d] ? s.diffBest[d].best : -1), frontier = Math.min(309, best + 1), here = d === (s.diff || 0) ? s.stage : -1;
@@ -561,8 +577,9 @@
         '<div class="note dnote">' + (open ? '보스 체력 ×' + fmt(DATA.difficulties[d].bossMul) + ' · 몬스터 +' + DATA.difficulties[d].extraMobs + '마리 · 다이아 ×' + DATA.difficulties[d].gemMul
           : '앞 난이도의 10-31 늑대 왕을 이기면 열려요') + '</div>' +
         (open ? '<button class="btn pri dgo" data-sgo="' + frontier + '" data-sd="' + d + '">' + (d === (s.diff || 0) ? '도전 중인 판으로' : DATA.difficulties[d].name + ' 도전 중인 판으로') + ' (' + CW.stageLabel(frontier) + ')</button>' : '') +
+        worldMap(d, open, frontier, here) +
         '<div class="rsel">' + DATA.regions.map(function (r, i) { return '<button class="rchip' + (i === R ? ' on' : '') + (i * 31 > frontier ? ' lock' : '') + '" data-rsel="' + i + '">' + (i + 1) + '</button>'; }).join('') + '</div>' +
-        '<div class="artban ab-map" aria-hidden="true" style="background-position:50% ' + MAP_Y[R] + '%"><b>' + reg.name + '</b></div><div class="note" style="margin:6px 0 8px">판을 누르면 그곳으로 가요</div>';
+        '<div class="note" style="margin:6px 0 8px">' + reg.name + ' · 판을 누르면 그곳으로 가요</div>';
       var rows = '';
       for (var n = 0; n < 31; n++) {
         var i = R * 31 + n, info = CW.stageInfo(i), lock = !open || i > frontier, tmp = { stage: i, diff: d };
@@ -641,6 +658,7 @@
       else if (d.sup) { if (G.skillUp(d.sup)) toast(CW.skillById(d.sup).name + ' +' + CW.skillLevel(G.state, d.sup) + ' 강화!'); else toast(CW.skillLevel(G.state, d.sup) >= DATA.balance.skillMaxLv ? '최대 강화예요' : '골드가 부족해요'); renderPanel(true); hud(); slots(); }
       else if (d.dsel !== undefined) { var nd = ((selDiff < 0 ? (G.state.diff || 0) : selDiff) + +d.dsel + DATA.difficulties.length) % DATA.difficulties.length; selDiff = nd; selRegion = 0; renderPanel(true); }
       else if (d.rsel !== undefined) { selRegion = +d.rsel; renderPanel(true); }
+      else if (d.wlock !== undefined) { toast(+d.wlock < 1 ? '이 난이도는 아직 잠겨 있어요' : DATA.regions[+d.wlock - 1].name + ' 지역 보스를 이기면 열려요'); }
       else if (d.sgo !== undefined) { if (G.goStageIn(+d.sd, +d.sgo)) { toast(CW.stageLabel(+d.sgo) + '(으)로 이동했어요'); selDiff = selRegion = -1; openTab('battle'); } }
       else if (d.diff !== undefined) { var dd = +d.diff; if (dd > G.state.diffUnlocked) toast('앞 난이도의 10-31 늑대 왕을 이기면 열려요'); else confirmBox(DATA.difficulties[dd].name + ' 난이도', '이 난이도의 진행으로 옮길까요? 다른 난이도의 진행은 그대로 남아요.', '옮기기', function () { G.setDifficulty(dd); renderPanel(true); hud(); }); }
       else if (d.bkind) { bagKind = d.bkind; selKey = null; renderPanel(true); }

@@ -655,6 +655,13 @@ details.fold{margin:14px 0 4px}
 details.fold>summary{cursor:pointer;font:700 13px var(--body);opacity:.7;padding:8px 2px}
 .dnote{text-align:center;margin:4px 0 8px}
 .dgo{display:block;width:100%;margin:0 0 10px}
+/* the map (stage panel): the whole picture, a button on each island */
+.wmap{position:relative;width:100%;aspect-ratio:382/492;max-width:420px;margin:2px auto 10px;border-radius:18px;background:url(art/ui-map.webp) 0 0/100% 100% no-repeat;box-shadow:0 0 0 2px var(--ol),0 4px 0 var(--ol)}
+.wisle{position:absolute;width:30%;height:21%;transform:translate(-50%,-70%);background:none;border:0;padding:0;-webkit-tap-highlight-color:transparent}
+.wmedal{position:absolute;width:9.4%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:url(art/ui-map-open.webp) 50% 50%/100% 100% no-repeat;pointer-events:none}
+.wmedal.shut{background-image:url(art/ui-map-lock.webp)}
+.wmedal.cur{animation:wcur 1.2s ease-in-out infinite}
+@keyframes wcur{50%{box-shadow:0 0 14px 5px rgba(255,236,140,.9)}}
 /* ---------- breathing room: wider gaps and bigger touch targets on a phone ---------- */
 :root{--tabh:72px}
 #hud{padding-top:12px;gap:10px}
