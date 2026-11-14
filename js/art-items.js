@@ -44,7 +44,7 @@
   };
 
   // ---------- runes ----------
-  var RUNES = ['rFire', 'rWave', 'rWind', 'rEarth', 'rLight', 'rDark'], rune0 = I.rune;
+  var RUNES = ['rFire', 'rWave', 'rWind', 'rEarth', 'rLight', 'rDark', 'rBolt', 'rNebula', 'rComet', 'rOrigin'], rune0 = I.rune; // the last four: tools/make-new-runes.py
   I.rune = function (id, color, grade, gcol) {
     if (RUNES.indexOf(id) < 0) return rune0(id, color, grade, gcol);
     var t = grade >= 8 ? 3 : grade >= 4 ? 2 : 1;

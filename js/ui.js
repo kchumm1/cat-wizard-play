@@ -45,14 +45,15 @@
       var k = selKey, p = CW.parseKey(k), e = s.bag[k], lv = e ? e.lv : 0, star = e ? e.star || 0 : 0, max = CW.maxLevel(k, star), stat = DATA.kindStat[p.kind], worn = s.equip[p.kind] === k, cost = CW.levelCost(k, lv);
       var BG = DATA.bagConf, trc = CW.transcendCost(s, k), stars = ''; for (var si = 0; si < BG.starMax; si++) stars += '<i class="' + (si < star ? 'on' : '') + '">★</i>';
       var trOk = e && star < BG.starMax && lv >= max && e.n > trc.copies && s.gold >= trc.gold;
-      var pot = e && e.pot ? e.pot.map(function (pl) { var t = potTag(pl.q || 0); return '<p style="color:' + t[1] + '">' + t[0] + ' - ' + (STAT_KO[pl.stat] || pl.stat) + ' +' + pct(pl.val) + '</p>'; }).join('') : '<p class="note">잠재력 없음 · 다이아로 열 수 있어요 (장착 중일 때 적용)</p>';
+      // each line has a lock: locked lines stay when the potential is rolled again (2026-11-14)
+      var pot = e && e.pot ? e.pot.map(function (pl, i) { var t = potTag(pl.q || 0); return '<p class="potline" style="color:' + t[1] + '"><span>' + t[0] + ' - ' + (STAT_KO[pl.stat] || pl.stat) + ' ' + CW.bonusAmount(pl.stat, pl.val) + '</span><button class="plock' + (pl.lock ? ' on' : '') + '" data-plock="' + k + '|' + i + '" aria-pressed="' + !!pl.lock + '" aria-label="이 줄 ' + (pl.lock ? '잠금 풀기' : '잠그기') + '">' + (pl.lock ? '🔒' : '🔓') + '</button></p>'; }).join('') + '<p class="note">🔒 잠근 줄은 다시 돌려도 그대로예요 (잠근 줄마다 💎' + DATA.potConf.cost + ' 더)</p>' : '<p class="note">잠재력 없음 · 다이아로 열 수 있어요 (장착 중일 때 적용)</p>';
       var top = '<div class="bagtop">' + bagCell(k, true) + '<div class="binfo"><b style="color:' + gc(p.grade) + '">' + CW.gearName(k) + '</b><span class="gstars">' + stars + '</span><span class="note">Lv.' + lv + ' / ' + max + (e ? '' : ' · 아직 없어요') + '</span>' +
         '<div class="eff"><small>장착 효과</small>' + statLine(stat, CW.mainValue(p.kind, p.t, lv, star)) + '</div><div class="eff"><small>보유 효과</small>' + statLine(stat, CW.ownedValue(p.kind, p.t, lv, star)) + '</div><div class="potbox"><small>잠재력</small>' + pot + '</div></div></div>' +
         '<div class="bagbtns"><button class="buy' + (!e || lv >= max || s.gold < cost ? ' off' : '') + '" data-blv="' + k + '">' + (lv >= max ? '최대 레벨' : '<small>레벨업</small><span><i class="coin"></i>' + fmt(cost) + '</span>') + '</button>' +
         '<button class="btn' + (e && e.n >= DATA.bagConf.mergeCount && p.t < T - 1 ? '' : ' off') + '" data-bmerge="' + k + '">합성 ' + (e ? e.n : 0) + '/' + DATA.bagConf.mergeCount + '</button>' +
         '<button class="btn' + (worn ? ' on' : '') + (e ? '' : ' off') + '" data-bequip="' + k + '">' + (worn ? '장착 중' : '장착') + '</button>' +
         '<button class="btn tr' + (trOk ? '' : ' off') + '" data-btr="' + k + '">' + (star >= BG.starMax ? '초월 완료 ★' + star : '초월 ★' + star + '→' + (star + 1) + '<small>최대 레벨 · 같은 장비 ' + trc.copies + '개 · <i class="coin"></i>' + fmt(trc.gold) + '</small>') + '</button>' +
-        '<button class="btn' + (e ? '' : ' off') + '" data-bpot="' + k + '">잠재력 💎' + DATA.potConf.cost + '</button></div>';
+        '<button class="btn' + (e ? '' : ' off') + '" data-bpot="' + k + '">잠재력 💎' + (e ? CW.potCost(s, k) : DATA.potConf.cost) + '</button></div>';
       var kinds = '<div class="kindtabs" role="tablist">' + DATA.kinds.map(function (kd) {
         var w = s.equip[kd], g = w ? CW.parseKey(w).grade : -1;
         return '<button role="tab" aria-selected="' + (kd === bagKind) + '" data-bkind="' + kd + '">' + KIND_SHORT[kd] + (g >= 0 ? '<i style="background:' + gc(g) + '"></i>' : '') + '</button>';
@@ -143,7 +144,7 @@
           var left = CW.ticketsLeft(s, d.id, now), best = s.dungeon && s.dungeon.best && s.dungeon.best[d.id];
           var bestTxt = best ? (d.id === 'mana' ? '최고 피해 ' + fmt(best.dmg) : '최고 ' + best.kills + '마리') : '기록 없음';
           var rw = best ? CW.dungeonReward(s, d.id, best) : null;
-          var rwTxt = rw ? (rw.gold ? '골드 +' + fmt(rw.gold) : rw.gems ? '다이아 +' + fmt(rw.gems) : rw.runeStone ? '룬석 +' + fmt(rw.runeStone) : '마력석 +' + fmt(rw.mana)) : '';
+          var rwTxt = rw ? (rw.gold ? '골드 +' + fmt(rw.gold) : rw.gems ? '다이아 +' + fmt(rw.gems) : rw.runeStone ? '룬석 +' + fmt(rw.runeStone) + (rw.runes ? ' · 룬 ' + rw.runes + '개' : '') : '마력석 +' + fmt(rw.mana)) : '';
           if (!CW.kindOpen(s, d.id)) return '<div class="dung dg-' + d.id + ' lockd"><div class="dicon">' + mi('dungeon', d) + '</div><div class="info"><div class="dname">' + d.name + '</div><div class="note">' + d.desc + '</div><div class="note">' + d.unlockTier + '차 전직 후에 열려요</div></div></div>';
           return '<div class="dung dg-' + d.id + '"><div class="dicon">' + mi('dungeon', d) + '</div><div class="info"><div class="dname">' + d.name + '</div><div class="note">' + d.desc + '</div><div class="note">입장권 <b style="color:#fff">' + left + '/' + DATA.dungeonConf.tickets + '</b> · ' + bestTxt + (rwTxt ? ' (' + rwTxt + ')' : '') + '</div></div>' +
             '<div class="dbtns"><button class="buy' + (left && !run ? '' : ' off') + '" data-dgo="' + d.id + '">입장</button><button class="btn' + (left && best && !run ? '' : ' off') + '" data-dsw="' + d.id + '">소탕</button></div></div>';
@@ -593,7 +594,7 @@
       else if (d.act === 'treset') { G.talentReset(); toast('특성을 초기화했어요'); renderPanel(true); }
       else if (d.act === 'rankup') { var rr2 = CW.rankReady(G.state); if (G.rankUp()) toast(DATA.rankConf.names[G.state.rank] + '(으)로 승급!'); else toast(rr2.why === 'marks' ? '기본 징표 6개를 최대로 올려야 해요' : rr2.why === 'level' ? '계정 레벨 ' + rr2.need + '이 필요해요' : rr2.why === 'mana' ? '마력석이 부족해요' : '더 올릴 수 없어요'); renderPanel(true); }
       else if (d.dgo) { var r3 = G.dungeon(d.dgo); if (r3 === 'busy') toast('보스전이나 던전이 끝난 뒤에 들어갈 수 있어요'); else if (r3 === 'ticket') toast('오늘 입장권을 다 썼어요'); }
-      else if (d.dsw) { var r4 = G.sweep(d.dsw); if (!r4) toast('입장권이 없거나 아직 기록이 없어요'); else toast('소탕! ' + (r4.gold ? '골드 +' + fmt(r4.gold) : r4.gems ? '다이아 +' + fmt(r4.gems) : r4.runeStone ? '룬석 +' + fmt(r4.runeStone) : '마력석 +' + fmt(r4.mana))); renderPanel(true); hud(); }
+      else if (d.dsw) { var r4 = G.sweep(d.dsw); if (!r4) toast('입장권이 없거나 아직 기록이 없어요'); else toast('소탕! ' + (r4.gold ? '골드 +' + fmt(r4.gold) : r4.gems ? '다이아 +' + fmt(r4.gems) : r4.runeStone ? '룬석 +' + fmt(r4.runeStone) + (r4.got && r4.got.length ? ' · 룬 ' + r4.got.length + '개' : '') + (r4.overflow ? ' · 가방이 꽉 차 룬석 +' + fmt(r4.overflow) : '') : '마력석 +' + fmt(r4.mana))); renderPanel(true); hud(); }
       else if (d.jump !== undefined) { var jh = panel.querySelectorAll('h3')[+d.jump]; if (jh) panel.scrollTop += jh.getBoundingClientRect().top - panel.getBoundingClientRect().top - 46; }
       else if (d.gsub) { gearSub = d.gsub; panel.scrollTop = 0; renderPanel(true); }
       else if (d.relic) { var rr = G.summonRelics(+d.relic); if (!rr) toast('다이아가 부족해요'); else { showRelics(rr); renderPanel(true); hud(); } }
@@ -637,6 +638,7 @@
       else if (d.bkey) { selKey = d.bkey; renderPanel(true); }
       else if (d.bmerge) { if (G.merge(d.bmerge)) toast(CW.gearName(CW.keyOf(CW.parseKey(d.bmerge).kind, CW.parseKey(d.bmerge).t + 1)) + ' 획득!'); else toast('같은 장비 ' + DATA.bagConf.mergeCount + '개가 필요해요'); renderPanel(true); }
       else if (d.bequip) { if (G.equipKey(d.bequip)) toast(CW.gearName(d.bequip) + ' 장착'); else toast('아직 없는 장비예요'); renderPanel(true); }
+      else if (d.plock) { var pk = d.plock.split('|'); if (!G.potLock(pk[0], +pk[1])) toast('한 줄은 꼭 남겨 둬야 해요'); renderPanel(true); }
       else if (d.bpot) { if (!G.state.bag[d.bpot]) toast('아직 없는 장비예요'); else if (G.rollPotential(d.bpot)) toast('잠재력이 바뀌었어요'); else toast('다이아가 부족해요'); renderPanel(true); hud(); }
       else if (d.act === 'best') { G.equipBest(); toast('가장 높은 장비로 장착했어요'); renderPanel(true); }
       else if (d.act === 'merge') { var n = G.mergeAll(); toast(n ? '장비 ' + n + '개를 합성했어요' : '합성할 장비가 없어요'); renderPanel(true); }

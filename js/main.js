@@ -352,6 +352,7 @@
     sigilEquipBest: function () { CW.sigilEquipBest(state); refreshStats(); save(); },
     sigilLvUp: function () { var ok = CW.sigilLvUp(state); if (ok) { refreshStats(); snd.play('click'); } return ok; },
     rollPotential: function (k) { var ok = CW.rollPotential(state, k); if (ok) { refreshStats(); snd.play('pull'); save(); } return ok; },
+    potLock: function (k, i) { var ok = CW.potLock(state, k, i); if (ok) { snd.play('click'); save(); } return ok; },
     talentUp: function (id) { var ok = CW.talentUp(state, id); if (ok) { refreshStats(); snd.play('click'); save(); } return ok; },
     talentReset: function () { CW.talentReset(state); refreshStats(); save(); },
     markUp: function (id) { var ok = CW.markUp(state, id); if (ok) { refreshStats(); snd.play('click'); } return ok; },

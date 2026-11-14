@@ -1117,10 +1117,14 @@
       picAt(id, at, h, move);
       if (move === 'burst') heavy(big ? 1 : 0.5); else if (move === 'slash') { sc.hitStop(0.03); sc.shake(0.05); } else if (move === 'strike') sc.shake(0.06);
     }
+    // walks a copy: a landing picture's onLand can add pictures (picRoom drops one) or end the fight (clear empties the list),
+    // and the live list then shifts under the loop (2026-11-14: "reading 't' of undefined")
     function picTick(dt) {
-      for (var i = pics.length - 1; i >= 0; i--) {
-        var p = pics[i]; p.t += dt;
-        if (p.t >= p.life) { picDrop(p); pics.splice(i, 1); continue; }
+      var list = pics.slice();
+      for (var i = list.length - 1; i >= 0; i--) {
+        var p = list[i]; if (p.dead) continue;
+        p.t += dt;
+        if (p.t >= p.life) { picDrop(p); var at = pics.indexOf(p); if (at >= 0) pics.splice(at, 1); continue; }
         picPose(p);
       }
     }

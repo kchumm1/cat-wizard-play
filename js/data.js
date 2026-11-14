@@ -195,7 +195,9 @@
     surgeConf: { charge: 10, mul: 4 },
     potConf: { cost: 40, lines: 3, gradeMul: 0.6, stats: [
       { stat: 'atkPct', min: 0.05, max: 0.2 }, { stat: 'critRate', min: 0.005, max: 0.02 }, { stat: 'critDmg', min: 0.1, max: 0.4 },
-      { stat: 'superRate', min: 0.004, max: 0.015 }, { stat: 'bossDmg', min: 0.05, max: 0.2 }, { stat: 'skillDmg', min: 0.05, max: 0.2 }, { stat: 'weakDmg', min: 0.05, max: 0.2 }] },
+      { stat: 'superRate', min: 0.004, max: 0.015 }, { stat: 'bossDmg', min: 0.05, max: 0.2 }, { stat: 'skillDmg', min: 0.05, max: 0.2 }, { stat: 'weakDmg', min: 0.05, max: 0.2 },
+      // 초월 crit damages (2026-11-14)
+      { stat: 'hyperDmg', min: 0.05, max: 0.2 }, { stat: 'megaDmg', min: 0.04, max: 0.15 }, { stat: 'alphaDmg', min: 0.03, max: 0.1 }] },
     gearCodex: { gradePoints: 5, per: 0.002 },
     // bag: subMul = power step between I~IV of one grade; ownedFrac = owned effect as a share of the worn effect
     // starMax/starLv/starMul/starFinal: transcend stars (each needs max level and copies of the same item)
@@ -249,7 +251,7 @@
       { id: 'gold', name: '황금 고양이 굴', desc: '30초 동안 몰려오는 황금 몬스터를 잡은 만큼 골드', icon: '💰', time: 30 },
       { id: 'mana', name: '마력의 탑', desc: '30초 동안 마력 골렘에게 준 피해만큼 마력석', icon: '🔷', time: 30 },
       { id: 'gem', name: '보석 동굴', desc: '30초 동안 잡은 보석 몬스터만큼 다이아', icon: '💎', time: 30 },
-      { id: 'rune', name: '룬의 신전', desc: '30초 동안 잡은 룬 정령만큼 룬석', icon: '🔮', time: 30, unlockTier: 3 }
+      { id: 'rune', name: '룬의 신전', desc: '30초 동안 잡은 룬 정령만큼 룬석, 20마리마다 룬 1개', icon: '🔮', time: 30, unlockTier: 3 }
     ],
     dungeonConf: { tickets: 3, unlockTier: 2, goldPerKill: 5, gemPerKill: 1, gemCap: 150, golemHpMul: 40, golemGrowth: 1.6, manaLvMul: 0.25 },
     relicSummon: { cost: { 5: 150, 10: 280, 100: 2500 }, divineRate: 0.08, maxLv: 100, divineMaxLv: 50, refund: 8 },

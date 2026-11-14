@@ -66,13 +66,24 @@
   function bestKey(state, kind) { for (var t = tierCount() - 1; t >= 0; t--) if (owned(state, keyOf(kind, t))) return keyOf(kind, t); return null; }
   function equipBest(state) { DATA.kinds.forEach(function (kind) { state.equip[kind] = bestKey(state, kind); }); }
 
+  // potential lines can be locked (2026-11-14): a roll keeps the locked lines and redraws the rest; each lock adds the base cost,
+  // and at least one line always stays open
+  function locks(e) { return ((e && e.pot) || []).filter(function (pl) { return pl.lock; }).length; }
+  function potCost(state, k) { return DATA.potConf.cost * (1 + locks(state.bag && state.bag[k])); }
+  function potLock(state, k, i) {
+    var e = owned(state, k) && state.bag[k], pl = e && e.pot && e.pot[i]; if (!pl) return false;
+    if (!pl.lock && locks(e) >= e.pot.length - 1) return false;
+    pl.lock = !pl.lock; return true;
+  }
   function rollPotential(state, k, rng) {
     rng = rng || Math.random;
     var P = DATA.potConf;
-    if (!owned(state, k) || !(state.gems >= P.cost)) return false;
-    state.gems -= P.cost;
-    var e = state.bag[k], g = parseKey(k).grade; e.pot = [];
+    if (!owned(state, k)) return false;
+    var cost = potCost(state, k); if (!(state.gems >= cost)) return false;
+    state.gems -= cost;
+    var e = state.bag[k], g = parseKey(k).grade, old = e.pot || []; e.pot = [];
     for (var i = 0; i < P.lines; i++) {
+      if (old[i] && old[i].lock) { e.pot.push(old[i]); continue; }
       var sp = P.stats[Math.min(P.stats.length - 1, Math.floor(rng() * P.stats.length))], q = rng();
       e.pot.push({ stat: sp.stat, val: (sp.min + q * (sp.max - sp.min)) * (1 + g * P.gradeMul), q: q });
     }
@@ -120,5 +131,5 @@
   function gearCodexSync() {}
   return { tierCount: tierCount, keyOf: keyOf, parseKey: parseKey, validKey: validKey, roman: roman, gearName: gearName, addItem: addItem, owned: owned, bagCount: bagCount, bagLevel: bagLevel,
     tierMul: tierMul, mainValue: mainValue, ownedValue: ownedValue, maxLevel: maxLevel, levelCost: levelCost, levelUp: levelUp, merge: merge, mergeAll: mergeAll,
-    transcendCost: transcendCost, transcend: transcend, gearStars: gearStars, equip: equip, unequip: unequip, bestKey: bestKey, equipBest: equipBest, rollPotential: rollPotential, gearTotalLevel: gearTotalLevel, gearStats: gearStats, migrateBag: migrateBag, gearCodexSync: gearCodexSync };
+    transcendCost: transcendCost, transcend: transcend, gearStars: gearStars, equip: equip, unequip: unequip, bestKey: bestKey, equipBest: equipBest, rollPotential: rollPotential, potCost: potCost, potLock: potLock, gearTotalLevel: gearTotalLevel, gearStats: gearStats, migrateBag: migrateBag, gearCodexSync: gearCodexSync };
 });
