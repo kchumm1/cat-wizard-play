@@ -239,12 +239,17 @@
     }
     // the resonance after a change to the worn runes (worked out on the real bag, then put back)
     function runeResAfter(s, slot, id) { var b = CW.runeBag(s), old = b.eq[slot]; b.eq[slot] = id; var r = CW.runeResonance(s); b.eq[slot] = old; return r; }
+    // how the number is made: "Lv.101 × 3% = +303%" / "고대 등급이라 ×2.25 = +681.8% (레벨 1마다 +6.8%)"
+    function runeCalc(it) {
+      var b = CW.runeBreakdown(it);
+      return 'Lv.' + b.lv + ' × ' + pct(b.per) + ' = +' + pct(b.base) + (b.mul > 1 ? '<br>' + hn(it.grade) + ' 등급이라 ×' + (Math.round(b.mul * 100) / 100) + ' = +' + pct(b.value) : '') + ' <small>(레벨 1마다 +' + pct(b.per * b.mul) + ')</small>';
+    }
     function runeCmp(s, it) {
       var c = CW.runeCompare(s, it.id), b = CW.runeBag(s), RC = DATA.runeConf, k = CW.runeById(it.kind), nm = STAT_KO[k.stat] || k.stat, v = CW.runeValue(it), res = CW.runeResonance(s), sum = {};
       if (!c) return '';
       CW.runeEquipped(s).forEach(function (x) { var kk = CW.runeById(x.kind); sum[kk.stat] = (sum[kk.stat] || 0) + CW.runeValue(x); });
       var tot = sum[k.stat] || 0, resLine = function (r2) { return r2 === res ? '' : cmpLine('룬 공명 (모든 피해)', res * RC.resFinal, r2 * RC.resFinal, function (x) { return Math.round(x / RC.resFinal) + '단계'; }); };
-      if (c.mode === 'worn') return '<div class="cmp"><p class="cmphead">지금 끼고 있어요</p><p class="cmpnote">장착 효과 ' + nm + ' +' + pct(tot) + ' 중 이 룬이 +' + pct(v) + '</p></div>';
+      if (c.mode === 'worn') return '<div class="cmp"><p class="cmphead">지금 끼고 있어요</p><p class="cmpnote">' + (Math.abs(tot - v) < 1e-9 ? nm + ' +' + pct(v) + '는 전부 이 룬에서 나와요 (이 효과를 주는 룬은 이것 하나)' : '끼고 있는 룬의 ' + nm + ' 합계 +' + pct(tot) + ' 중 이 룬이 +' + pct(v)) + '</p></div>';
       if (c.mode === 'free') return '<div class="cmp"><p class="cmphead">빈 칸이 있어서 끼면 더해져요</p>' + cmpLine(nm, tot, tot + v) + resLine(runeResAfter(s, b.eq.indexOf(null), it.id)) + '</div>';
       var t = c.target, tk = CW.runeById(t.kind), tv = CW.runeValue(t), tn = STAT_KO[tk.stat] || tk.stat, slot = b.eq.indexOf(t.id), fullHead = cmpFullHead(runeWorse(s, it, c));
       var row = cmpRow(c.mode === 'same' ? '지금 낀 것 · 같은 룬 중 가장 약한 것' : '지금 낀 것 · 가장 약한 것', CW.ICO.rune(t.kind, tk.color, t.grade, hc(t.grade)), hc(t.grade), hn(t.grade) + ' ' + tk.name + ' Lv.' + t.lv, tn + ' +' + pct(tv));
@@ -274,6 +279,12 @@
       var s = G.state, RC = DATA.runeConf, open = CW.runeOpen(s), res = CW.runeResonance(s), bag = CW.runeBag(s), n = RC.slots;
       if (selRune && !CW.runeItem(s, selRune)) selRune = null;
       var head = '<div class="manaline"><span>' + CW.ICO.cur('rune') + ' 룬석 <b>' + fmt(s.runeStone || 0) + '</b></span><small class="note">' + (open ? '장착 ' + CW.runeEquipped(s).length + '/' + n + ' · 가방 ' + bag.items.length + '/' + RC.cap : RC.unlockTier + '차 전직 후에 열려요') + '</small></div>';
+      // how the resonance step is counted, under the ring
+      function resNote() {
+        var worn = CW.runeEquipped(s); if (!worn.length) return '';
+        var minLv = Math.min.apply(null, worn.map(function (x) { return x.lv; })), next = (res + 1) * RC.resEvery;
+        return '<p class="note rres">룬 공명: 끼고 있는 룬 중 가장 낮은 레벨(Lv.' + minLv + ')로 정해져요. ' + RC.resEvery + '레벨마다 1단계, 단계마다 모든 피해 +' + pct(RC.resFinal) + (minLv < next ? ' · 다음 단계는 낀 룬이 모두 Lv.' + next + ' 이상' : '') + '</p>';
+      }
       var ring = '<div class="runering r7">' + bag.eq.map(function (id, i) {
         var it = id && CW.runeItem(s, id);
         if (!it) return '<div class="rune empty" style="--i:' + i + '"><span>빈 칸</span></div>';
@@ -282,14 +293,14 @@
       }).join('') + '<svg class="rlines" viewBox="0 0 200 200" aria-hidden="true">' + bag.eq.map(function (id, i) {
         var it = id && CW.runeItem(s, id), a = i * 2 * Math.PI / n - Math.PI / 2, lv = it ? it.lv : 0, col = it ? CW.runeById(it.kind).color : '#8a7ad0';
         return '<line x1="100" y1="100" x2="' + (100 + Math.cos(a) * 69).toFixed(1) + '" y2="' + (100 + Math.sin(a) * 69).toFixed(1) + '" stroke="' + col + '" stroke-width="' + (lv ? 3 : 1.5) + '" opacity="' + (lv ? 0.85 : 0.25) + '"' + (lv ? ' class="flow"' : '') + '/>';
-      }).join('') + '<circle cx="100" cy="100" r="68" fill="none" stroke="#8a7ad0" stroke-width="1.5" stroke-dasharray="2 6" opacity=".6"/></svg><div class="rcore' + (res ? ' lit' : '') + '"><small>룬 공명</small><b>' + res + '단계</b><span>모든 피해 +' + pct(res * RC.resFinal) + '</span></div></div>';
+      }).join('') + '<circle cx="100" cy="100" r="68" fill="none" stroke="#8a7ad0" stroke-width="1.5" stroke-dasharray="2 6" opacity=".6"/></svg><div class="rcore' + (res ? ' lit' : '') + '"><small>룬 공명</small><b>' + res + '단계</b><span>모든 피해 +' + pct(res * RC.resFinal) + '</span></div></div>' + resNote();
       var it = selRune && CW.runeItem(s, selRune), detail = '';
       if (it) {
         var k = CW.runeById(it.kind), cap = CW.runeCap(it), cost = CW.runeCost(it.lv), top = it.grade >= DATA.hiGrades.length - 1, full = it.lv >= cap, gcost = CW.runeGradeCost(it.grade);
         var worn = CW.runeIsWorn(s, it.id), freeIt = !worn && !it.lock;
         var same = bag.items.filter(function (x) { return x !== it && x.kind === it.kind && x.grade === it.grade && !x.lock && !CW.runeIsWorn(s, x.id); }).length;
         var rc = CW.runeCompare(s, it.id), swapTo = !worn && rc && rc.full && rc.target;
-        detail = '<div class="row"><div class="ricon" style="background:radial-gradient(circle,' + k.color + '55,#1a1030);box-shadow:inset 0 0 0 2px ' + k.color + '">' + CW.ICO.rune(it.kind, k.color, it.grade, hc(it.grade)) + '</div><div class="info"><div class="name"><span style="color:' + hc(it.grade) + '">' + hn(it.grade) + '</span> ' + k.name + ' <span class="lv">Lv.' + it.lv + '/' + cap + '</span></div><div class="desc">' + bonusText(k.stat, CW.runeValue(it)) + ' (등급 보너스 +' + pct(it.grade * RC.gradeStep) + ')' + (worn ? '' : ' · 장착하면 적용') + '</div></div>' +
+        detail = '<div class="row"><div class="ricon" style="background:radial-gradient(circle,' + k.color + '55,#1a1030);box-shadow:inset 0 0 0 2px ' + k.color + '">' + CW.ICO.rune(it.kind, k.color, it.grade, hc(it.grade)) + '</div><div class="info"><div class="name"><span style="color:' + hc(it.grade) + '">' + hn(it.grade) + '</span> ' + k.name + ' <span class="lv">Lv.' + it.lv + '/' + cap + '</span></div><div class="desc">' + bonusText(k.stat, CW.runeValue(it)) + (worn ? '' : ' · 장착하면 적용') + '</div><div class="desc rcalc">' + runeCalc(it) + '</div></div>' +
           (full && !top ? '<button class="buy gemb' + (!open || (s.runeStone || 0) < gcost ? ' off' : '') + '" data-rgrade="' + it.id + '"><small>' + hn(it.grade + 1) + '(으)로 승급</small><span>' + CW.ICO.cur('rune') + ' ' + fmt(gcost) + '</span></button>'
             : '<button class="buy' + (!open || full || (s.runeStone || 0) < cost ? ' off' : '') + '" data-rune="' + it.id + '">' + (full ? '최대' : CW.ICO.cur('rune') + ' ' + fmt(cost)) + '</button>') + '</div>' +
           runeCmp(s, it) +
@@ -469,6 +480,7 @@
             (sk ? '<button class="slotout" data-out="' + i + '" aria-label="' + (i + 1) + '번 칸 비우기">빼기</button>' : '') + '</div>';
         }).join('') + '</div><div class="presets"><span class="note">프리셋</span>' + [0, 1, 2].map(function (i) { return '<button class="btn' + ((s.preset || 0) === i ? ' on' : '') + '" data-preset="' + i + '" aria-pressed="' + ((s.preset || 0) === i) + '">' + (i + 1) + '</button>'; }).join('') +
           '</div><div class="btns" style="margin:8px 0 4px"><button class="btn pri" data-act="autoskill">센 스킬로 자동 배치</button><button class="btn" data-act="skillall">일괄 강화</button></div>' +
+          '<div class="note">스킬 칸의 피해는 지금 내 능력치로 한 번 썼을 때 몬스터 한 마리가 받는 피해예요(치명타·약점·폭주 전). 보스에게는 보스 피해만큼 더 들어가요.</div>' +
           '<div class="note">스킬 보유 효과: 모든 스킬 피해 +' + pct(CW.skillOwnedStats(s).skillDmg) + ' (강화 1단계마다 +' + pct(DATA.balance.skillOwnedPer) + ')</div>' +
         '<div class="note">' + (selSlot >= 0 ? (selSlot + 1) + '번 칸을 골랐어요. 아래에서 넣을 스킬을 누르세요.' : '칸을 고르지 않고 넣으면 빈 칸(없으면 4번 칸)에 들어가요.') + '</div>';
       var row = function (sk) {
@@ -477,7 +489,9 @@
         var act = locked ? '<span class="note">' + sk.tier + '차 전직</span>'
           : (at >= 0 ? '<button class="btn" data-unslot="' + at + '">' + (at + 1) + '번 빼기</button>' : '<button class="btn pri" data-eq="' + sk.id + '">' + (selSlot >= 0 ? (selSlot + 1) + '번에 넣기' : '넣기') + '</button>');
         var up = locked ? '' : '<button class="buy ' + (max || s.gold < cost ? 'off' : '') + '" data-sup="' + sk.id + '">' + (max ? '최대' : '강화 <i class="coin"></i>' + gh(cost)) + '</button>';
-        return '<div class="row skrow" style="' + (locked ? 'opacity:.55' : '') + '"><div class="sk" style="--c:#' + new THREE.Color(sk.color).getHexString() + ';width:52px;height:52px">' + CW.ICO.skill(sk.id) + '</div><div class="info"><div class="name">' + sk.name + '<span class="lv">' + (locked ? sk.tier + '차' : '+' + lv) + '</span></div><div class="desc">피해 ×' + (Math.round(dmg * 100) / 100) + (!max && !locked ? ' → ×' + (Math.round(next * 100) / 100) : '') + ' · ' + (sk.targets >= 99 ? '모든 몬스터' : '몬스터 ' + sk.targets) + (sk.splash ? ' · 주변 ' + Math.round(sk.splash * 100) + '%' : '') + (sk.status ? ' · ' + STATUS[sk.status] : '') + '</div>' + (sk.how ? '<div class="desc how">' + sk.how + '</div>' : '') +
+        return '<div class="row skrow" style="' + (locked ? 'opacity:.55' : '') + '"><div class="sk" style="--c:#' + new THREE.Color(sk.color).getHexString() + ';width:52px;height:52px">' + CW.ICO.skill(sk.id) + '</div><div class="info"><div class="name">' + sk.name + '<span class="lv">' + (locked ? sk.tier + '차' : '+' + lv) + '</span></div><div class="desc skwho"><b>' + CW.skillTargetText(CW.targetCount(sk, false)) + '</b>' + (sk.splash ? ' · 옆 몬스터에게도 ' + Math.round(sk.splash * 100) + '%' : '') + (sk.status ? ' · ' + STATUS[sk.status] : '') + '</div>' +
+          '<div class="desc skdmg">한 마리에게 <b>' + fmt(CW.skillDamageAt(s, sk, lv)) + '</b>' + (!max && !locked ? ' → 다음 강화 ' + fmt(CW.skillDamageAt(s, sk, lv + 1)) : '') + '</div>' +
+          '<div class="desc sklv">강화 0단계 ' + fmt(CW.skillDamageAt(s, sk, 0)) + ' · ' + DATA.balance.skillMaxLv + '단계(최대) ' + fmt(CW.skillDamageAt(s, sk, DATA.balance.skillMaxLv)) + ' <small>(피해 ×' + (Math.round(dmg * 100) / 100) + ')</small></div>' + (sk.how ? '<div class="desc how">' + sk.how + '</div>' : '') +
           '<div class="skbtns"><button class="btn" data-prev="' + sk.id + '">보기</button>' + act + up + '</div></div></div>';
       };
       // one block per job tier: its name, then the skills that tier brings
