@@ -80,7 +80,9 @@
   // Normal monsters come in crowds: each one has a third of a stage monster's health and gold,
   // and every three of them count as one kill toward the stage.
   var CROWD = CW.CROWD, smallKills = 0, wave = { left: 0, t: 0 };
-  function crowdMax() { var q = sc.getQuality(), extra = CW.diffOf(state).extraMobs; return q === 'low' ? 7 + Math.round(extra / 2) : q === 'mid' ? 10 + Math.round(extra * 0.75) : 14 + extra; }
+  function crowdMax() { return CW.crowdCap(sc.getQuality(), CW.diffOf(state).extraMobs); }
+  // dungeons keep the field size they had before monsters were split finer (2026-11-15): they pay by the number of kills
+  function dunCap() { var q = sc.getQuality(), extra = CW.diffOf(state).extraMobs; return q === 'low' ? 7 + Math.round(extra / 2) : q === 'mid' ? 10 + Math.round(extra * 0.75) : 14 + extra; }
   // each wave brings two to four kinds of the region's monsters, taking turns so every kind keeps showing up
   var waveKinds = [], kindTurn = 0;
   function pickKinds(R) {
@@ -205,7 +207,7 @@
     // nearest first, leaning toward the ones the wizard already faces so it does not keep turning round
     var H = sc.heroState(), dist = function (m) { var dx = m.x - H.x, dz = m.z - H.z; return (dx * dx + dz * dz) * (dx * H.faceT < -0.3 ? 1.8 : 1); };
     var list = aliveMobs().filter(function (m) { return m.arrived; }).sort(function (a, b) { return dist(a) - dist(b); });
-    return list.slice(0, skill.targets);
+    return list.slice(0, CW.targetCount(skill, !!dun));
   }
   function castNext() {
     var peek = aliveMobs().filter(function (m) { return m.arrived; });
@@ -228,7 +230,7 @@
   function spawnDun() {
     var info = CW.stageInfo(Math.max(0, state.best)), R = DATA.regions[info.region];
     var a = mobArt(R.monsters[Math.floor(Math.random() * R.monsters.length)], R.monsters[0]); if (!a) return;
-    var hp = CW.stageMonsterHp({ stage: Math.max(0, state.best), diff: state.diff || 0 }) / CROWD * 0.6;
+    var hp = CW.stageMonsterHp({ stage: Math.max(0, state.best), diff: state.diff || 0 }) / CW.DUN_CROWD * 0.6;
     sc.spawnMob({ art: a, tint: dun.kind === 'gold' ? 0xffd84a : dun.kind === 'rune' ? 0xc49bff : 0x8ff0ff, height: fitHeight(a, 0.88 + Math.random() * 0.14), hp: hp, entry: Math.random() < 0.7 ? 'run' : 'leap' });
   }
   function dungeonStart(kind) {
@@ -249,7 +251,7 @@
     dun.t -= dt;
     if (dun.kind !== 'mana') {
       var alive = aliveMobs().length;
-      dun.sp -= dt; if (dun.sp <= 0 && alive < crowdMax() + 4) { spawnDun(); dun.sp = 0.06 + Math.random() * 0.08; }
+      dun.sp -= dt; if (dun.sp <= 0 && alive < dunCap() + 4) { spawnDun(); dun.sp = 0.06 + Math.random() * 0.08; }
     }
     if (dun.t <= 0) dungeonEnd();
   }
@@ -467,8 +469,9 @@
       startBoss();
     } else {
       var alive = aliveMobs().length;
-      if (wave.left <= 0 && alive <= Math.floor(crowdMax() * 0.35)) { wave.left = crowdMax() - alive; wave.t = 0.2; }
-      if (wave.left > 0) { wave.t -= dt; if (wave.t <= 0) { spawnNormal(); wave.left--; wave.t = 0.05 + Math.random() * 0.12; } }
+      if (wave.left <= 0 && alive <= Math.floor(crowdMax() * CW.REFILL_AT)) { wave.left = crowdMax() - alive; wave.t = 0.2; }
+      wave.left = CW.waveRoom(wave.left, crowdMax(), alive);   // the quality dropped mid-wave: fill only up to the new field size
+      if (wave.left > 0) { wave.t -= dt; if (wave.t <= 0) { spawnNormal(); wave.left--; wave.t = (0.05 + Math.random() * 0.12) * 3 / CROWD; } }   // smaller monsters come that much faster: the same health per second walks in as when three made a stage (2026-11-15)
     }
     if (preview) { preview.t += dt; if (preview.t > 1.5) preview = null; }
     castT -= dt;

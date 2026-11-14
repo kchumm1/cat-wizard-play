@@ -405,13 +405,17 @@
     };
     S.bounceBomb = function (c) {
       var mob = c.targets[0]; if (!mob) return;
+      var left = c.targets.slice();   // every target takes exactly one blast: near ones from the first, far ones when the bomb bounces on to them
       sc.heroPose('toss', c.D(0.12), c.col);
-      after(c.D(0.12), function () {
-        var start = sc.heroPaw(), t = 0, dur = c.D(0.5), hops = [0.45, 0.78, 1], hh = [1.0, 0.45, 0.2], seg = -1, lastPos = start.clone();
-        var ball = E({ sys: 'norm', pos: start, frame: 'fluff', color: 0xfff1dc, size: 0.58 * c.s, life: 30, upd: STAY, fadeOut: 1 });
-        var shade = E({ sys: 'norm', pos: start, frame: 'fluff', color: c.col, size: 0.46 * c.s, life: 30, upd: STAY, fadeOut: 1, alpha: 0.55 });
-        var fuse = E({ pos: start, frame: 'flare', color: [0xffffff, 0xffb040], size: 0.32 * c.s, life: 30, upd: STAY, fadeOut: 1, spin: 9, flicker: 0.5 });
+      after(c.D(0.12), function () { hop(sc.heroPaw(), mob, c.D(0.5), [1.0, 0.45, 0.2], true); });
+      // the bomb flies from `start` to the monster in three bounces and goes off where it lands
+      function hop(start, mob, dur, hh, big) {
+        var t = 0, hops = [0.45, 0.78, 1], seg = -1, lastPos = start.clone(), sz = big ? 1 : 0.8;
+        var ball = E({ sys: 'norm', pos: start, frame: 'fluff', color: 0xfff1dc, size: 0.58 * c.s * sz, life: 30, upd: STAY, fadeOut: 1 });
+        var shade = E({ sys: 'norm', pos: start, frame: 'fluff', color: c.col, size: 0.46 * c.s * sz, life: 30, upd: STAY, fadeOut: 1, alpha: 0.55 });
+        var fuse = E({ pos: start, frame: 'flare', color: [0xffffff, 0xffb040], size: 0.32 * c.s * sz, life: 30, upd: STAY, fadeOut: 1, spin: 9, flicker: 0.5 });
         tick(function (dt) {
+          if (c.epoch !== epoch) { vx.kill(ball); vx.kill(shade); vx.kill(fuse); return true; }
           t += dt / dur; var k = Math.min(1, t), end = sc.mobPos(mob); end.y = 0.26 * c.s;
           var s2 = k < hops[0] ? 0 : k < hops[1] ? 1 : 2, a = s2 ? hops[s2 - 1] : 0, u = (k - a) / (hops[s2] - a);
           if (s2 !== seg) {
@@ -422,14 +426,25 @@
           var y = (s2 === 0 ? start.y + (end.y - start.y) * u : end.y) + Math.sin(u * Math.PI) * hh[s2];
           var squash = u < 0.12 || u > 0.9 ? 0.72 : 1.08;
           [ball, shade].forEach(function (p) { if (p) { p.x = x; p.y = y; p.z = z; p.ar = squash; p.rot -= dt * 12; } });
-          if (fuse) { fuse.x = x + 0.13 * c.s; fuse.y = y + 0.3 * c.s; fuse.z = z + 0.05; }
+          if (fuse) { fuse.x = x + 0.13 * c.s * sz; fuse.y = y + 0.3 * c.s * sz; fuse.z = z + 0.05; }
           if (dt > 0 && Math.random() < dt * 30) E({ pos: V(x + 0.13 * c.s, y + 0.3 * c.s, z), vel: rdir(1).add(V(0, 1.3, 0)), frame: 'dot', color: [0xffe080, 0xff6a2b], size: [0.06, 0], life: 0.3, grav: 3 });
           lastPos.set(x, y, z);
-          if (k >= 1) { vx.kill(ball); vx.kill(shade); vx.kill(fuse); boom(V(x, 0.45 * c.s, z)); return true; }
+          if (k >= 1) { vx.kill(ball); vx.kill(shade); vx.kill(fuse); land2(V(x, 0.45 * c.s, z), mob, big); return true; }
         });
-      });
-      function boom(p) {
-        var P = 1.4 * c.s;
+      }
+      // the blast takes the monster it landed on and the targets standing close; if any target is left farther away, the
+      // bomb bounces on to the nearest of them and goes off again (a smaller blast)
+      function land2(p, mob, big) {
+        var R = 1.7 * c.s, hitNow = left.filter(function (m) { return m === mob || ((m.x - p.x) * (m.x - p.x) + (m.z - p.z) * (m.z - p.z) < R * R); });
+        left = left.filter(function (m) { return hitNow.indexOf(m) < 0; });
+        boom(p, big, hitNow);
+        var rest = left.filter(function (m) { return m.alive; });
+        if (!rest.length) { left.forEach(function (m) { c.hit(m, 1, 1.4); }); left = []; return; }   // the fallen ones: c.hit sends them on to someone standing
+        var next = near(rest, p.x, p.z);
+        after(c.D(0.06), function () { hop(V(p.x, 0.3 * c.s, p.z), next, c.D(0.34), [0.7, 0.3, 0.12], false); });
+      }
+      function boom(p, big, list) {
+        var P = (big ? 1.4 : 1.05) * c.s;
         sc.hitStop(0.05);
         fieldWave(p, 0xffc070, 0.6, c.col);
         // fluff blown over the whole field, drifting down slowly
@@ -443,12 +458,12 @@
         sparks(p, [0xffd080, 0xffffff], N(12, c), 5.5, { size: 0.22 });
         shock(p, 0xffd9a0, 2.2 * P, 0.35); gRing(p, 0xffc070, 2.4 * P, 0.45); scorch(p, 1.6 * P); gGlow(p, 0xff9040, 2 * P, 0.4);
         sc.light(p, 0xff9a40, 1.6, 0.35); heavy(1.3);
-        c.targets.slice(0, 2).forEach(function (m) { c.hit(m, 1, 1.4); });
+        list.forEach(function (m) { c.hit(m, 1, 1.4); });
       }
     };
     S.orbitRing = function (c) {
       sc.heroPose('spin', c.D(0.08), c.col);
-      var center = sc.heroCenter(), n = 6, orbs = [], t = 0, launch = c.D(0.34), R = 1.25, hits = share(c.targets.slice(0, 3), n);
+      var center = sc.heroCenter(), n = 6, orbs = [], t = 0, launch = c.D(0.34), R = 1.25, hits = share(c.targets, n);
       circle(V(center.x, 0, center.z), c.col, 1.7 * c.s, c.D(0.7), { spin: 3 });
       for (var i = 0; i < n; i++) orbs.push({ a0: i * Math.PI / 3, pos: center.clone(),
         rib: vx.ribbon({ solid: true, mode: 'trail', w: 0.1 * c.s, color: c.deep, core: 0.8, maxPts: 14, shrink: 70 }),
@@ -480,7 +495,7 @@
       });
     };
     S.fireball = function (c) {
-      var list = c.targets.slice(0, 2); if (!list.length) return;
+      var list = c.targets.slice(); if (!list.length) return;
       sc.heroPose('thrust', c.D(0.18), 0xff8a3a);
       var tip = c.from;
       seal(tip.clone().add(V(0.3, 0.05, 0.1)), 0xff8a3a, 0.95 * c.s, c.D(0.32));
@@ -520,7 +535,7 @@
       for (var k = 0; k < 2; k++) after(c.D(0.05 + k * 0.08), function () { if (!mob.alive) return; var q2 = sc.mobPos(mob); vx.lightning(q2.clone().add(rdir(0.45)), q2.clone().add(rdir(0.45)), { w: 0.045, color: col, life: 0.1, branches: 0, segs: 5, amp: 0.3 }); });
     }
     S.chain = function (c) {
-      var list = c.pool().slice(0, 4); if (!list.length) return;
+      var list = c.pool(); if (!list.length) return;
       sc.heroPose('raise', c.D(0.13), c.col);
       sc.dim(0.28, c.D(0.6));
       for (var i = 0; i < 3; i++) after(c.D(i * 0.04), function () { var t2 = sc.heroPaw(); vx.lightning(t2, t2.clone().add(rdir(0.5)), { w: 0.05, color: c.col, life: 0.12, branches: 0, segs: 6, amp: 0.25 }); });
@@ -1147,11 +1162,13 @@
         D: function (t) { return t / sp; }, deep: deep(tint(skill.color, tier)), from: sc.heroPaw(), targets: targets.slice(), hit: hit || function () { } };
       c.center = crowdCenter(c.targets);
       c.epoch = epoch;
+      // how many this cast may hit: the caller already chose (more on the field, the old count in dungeons — CW.targetCount)
+      c.cap = skill.targets >= 99 ? skill.targets : Math.max(1, c.targets.length);
       // the monsters this cast may hit right now: wide spells take whoever is on the field at that moment
       c.pool = function () {
         if (skill.targets >= 99) return liveMobs();
         var a = c.targets.filter(function (m) { return m.alive; });
-        return a.length ? a : liveMobs().slice(0, skill.targets);
+        return a.length ? a : liveMobs().slice(0, Math.max(1, c.cap));
       };
       // monsters standing next to the one that was hit take a share (skill.splash) of the damage
       // (part: when the skill lands in several hits, the share of the whole that this hit carries)
@@ -1183,7 +1200,40 @@
       if (!c.noCircle) seal(c.from.clone().add(V(0, 0, 0.1)), c.col, 0.55 * c.s, c.D(0.3));
       if (lv >= 10) E({ pos: H.clone().add(V(0, 0.2, 0.05)), frame: 'glow', color: c.col, size: [1.6, 0.4], life: c.D(0.4), alpha: 0.35 });
       if (tier >= 4) after(c.D(0.12), function () { sc.ghost(c.col); });
-      (S[skill.shape] || S.bolt3)(c);
+      var shape = S[skill.shape] || S.bolt3;
+      // monsters are split finer than the skill data (CW.hitCount): a one-monster spell strikes each of its targets in turn,
+      // the same picture 0.09 s apart; a target that fell in the meantime gives way to one still standing that no copy aims at
+      if (skill.targets === 1 && c.targets.length > 1) {
+        var aimed = c.targets.slice(), splashed = [];   // splashed: [monster, share taken] across the copies
+        aimed.forEach(function (m0, i) {
+          var go = function () {
+            if (c.epoch !== epoch) return;
+            // a fallen target gives way to the free monster nearest to where it stood (one that has arrived, if any has)
+            var free = liveMobs().filter(function (x) { return aimed.indexOf(x) < 0; }), came = free.filter(function (x) { return x.arrived; });
+            var m = m0.alive ? m0 : near(came.length ? came : free, m0.x, m0.z);
+            if (!m) return;
+            if (m !== m0) aimed[i] = m;
+            var ci = Object.assign({}, c, { targets: [m], center: crowdCenter([m]), avoid: function (x) { return aimed.some(function (y, j) { return j !== i && y === x; }); }, claim: function (x) { aimed[i] = x; } });
+            ci.pool = function () { return m.alive ? [m] : liveMobs().slice(0, 1); };
+            // splash spares the other aimed monsters (each takes its own whole hit), and a monster in reach of two copies
+            // takes at most one splash share in all
+            ci.splash = function (mob, radius, power, part) {
+              if (!skill.splash || !mob) return;
+              var x = mob.x, z = mob.z;
+              liveMobs().forEach(function (o) {
+                if (o === mob || aimed.indexOf(o) >= 0 || (o.x - x) * (o.x - x) + (o.z - z) * (o.z - z) >= radius * radius) return;
+                var rec = splashed.filter(function (r) { return r[0] === o; })[0]; if (!rec) { rec = [o, 0]; splashed.push(rec); }
+                var amt = Math.min(skill.splash * (part || 1), skill.splash - rec[1]); if (amt <= 1e-6) return;
+                rec[1] += amt; c.hit(o, amt, power || 0.8);
+              });
+            };
+            shape(ci);
+            // a shape that opts out of the shared hit effects (c.plain, prism and rebirth) sets it on its copy; c.hit reads c
+            if (ci.plain) c.plain = true;
+          };
+          if (i) after(c.D(0.09 * i), go); else go();
+        });
+      } else shape(c);
     }
 
     // ---------- reactions outside skills ----------

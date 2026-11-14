@@ -59,7 +59,7 @@
     };
     // Rolling yarn: a ball of yarn is bowled along the ground from monster to monster, bonking each one and leaving its thread behind.
     S.roll = function (c) {
-      var list = c.pool().slice(0, 4); if (!list.length) return;
+      var list = c.pool(); if (!list.length) return;
       sc.heroPose('toss', c.D(0.1), c.col);
       // with fewer monsters it comes back round, so every bonk still counts
       var k = Math.max(1, Math.ceil(4 / list.length)), seq = []; for (var r = 0; r < k; r++) seq = seq.concat(list);
@@ -111,7 +111,7 @@
     // =================================================================== 2차: 불
     // Fire pillars: the ground glows and cracks under three monsters, then a column of fire comes up out of each crack.
     S.pillars = function (c) {
-      var list = c.pool().slice(0, 3); if (!list.length) return;
+      var list = c.pool(); if (!list.length) return;
       sc.heroPose('raise', c.D(0.14), 0xff8a3a);
       list.forEach(function (mob, i) {
         var g0 = gp(mob);
@@ -223,7 +223,7 @@
     };
     // Ball lightning: a crackling orb hops from monster to monster, zapping each one it lands on.
     S.orb = function (c) {
-      var list = c.pool().slice(0, 5); if (!list.length) return;
+      var list = c.pool(); if (!list.length) return;
       sc.heroPose('thrust', c.D(0.12), c.col);
       var k = Math.max(1, Math.ceil(5 / list.length)), seq = []; for (var r = 0; r < k; r++) seq = seq.concat(list);
       after(c.D(0.12), function () {
@@ -301,7 +301,7 @@
     // Glacier spikes: the staff is slammed down and cracks run along the ground to four monsters, small spikes shooting up
     // all the way, and a great spike comes up under each of them.
     S.spikes = function (c) {
-      var list = c.pool().slice(0, 4); if (!list.length) return;
+      var list = c.pool(); if (!list.length) return;
       sc.heroPose('swipe', c.D(0.12), c.col);
       after(c.D(0.12), function () {
         var H = sc.heroCenter(), G0 = V(H.x, 0, H.z);
@@ -472,9 +472,9 @@
     };
     // Moon orbs: five small moons rise around the wizard and each one fires its own thin beam into a monster.
     S.moonOrbs = function (c) {
-      var list = c.pool().slice(0, 5); if (!list.length) return;
+      var list = c.pool(); if (!list.length) return;
       sc.heroPose('raise', c.D(0.16), c.col); sc.dim(0.35, c.D(0.9));
-      var H = sc.heroCenter(), shots = share(list, 5);
+      var H = sc.heroCenter(), shots = share(list, Math.max(5, list.length));
       shots.forEach(function (h, i) {
         var a = -0.5 + i * 0.55 + 0.4, O = V(H.x + Math.cos(a + 1.2) * 1.25, H.y + 0.9 + Math.sin(a + 1.2) * 0.55, H.z - 0.2), parts = null;
         after(c.D(i * 0.03), function () {
@@ -895,11 +895,12 @@
         var h0 = sc.heroCenter(), d = function (m) { var q = mp(m); return Math.hypot(q.x - h0.x, q.z - h0.z); };
         if (mob.boss && onScreen(mp(mob))) return;
         if (onScreen(mp(mob)) && d(mob) >= 2.4) return;
-        var seen = liveMobs().filter(function (m) { return onScreen(mp(m)); });
+        // a copy of a one-monster cast (fx.js) leaves the monsters the other copies aim at alone
+        var seen = liveMobs().filter(function (m) { return onScreen(mp(m)) && !(c.avoid && c.avoid(m)); });
         if (!seen.length) return;
         var sx = function (m) { return Math.abs(mp(m).project(sc.camera).x); };
         seen.sort(function (a, b) { return Math.abs(d(a) - 3.8) + sx(a) * 3 - Math.abs(d(b) - 3.8) - sx(b) * 3; });
-        mob = seen[0];
+        mob = seen[0]; if (c.claim) c.claim(mob);
       })();
       c.plain = true;
       sc.heroPose('thrust', c.D(0.3), 0xffffff); sc.dim(0.55, c.D(1.25));
