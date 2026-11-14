@@ -63,7 +63,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .xpbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#9ff0ff,#7fe3ff);border-radius:inherit}
 .wallet{display:flex;gap:6px}
 .chip{display:flex;align-items:center;gap:6px;white-space:nowrap;background:rgba(20,12,40,.62);backdrop-filter:blur(6px);border-radius:999px;padding:5px 11px 5px 6px;font:400 15px var(--display);font-variant-numeric:tabular-nums}
-.coin{width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff6c0,#ffcf4a 45%,#c98a12);box-shadow:inset 0 -2px 0 #a86f08}
+.coin{width:18px;height:18px;background:url(art/ic-gold.webp) 50% 50%/contain no-repeat}
 .gem{width:16px;height:16px;transform:rotate(45deg);border-radius:3px;background:linear-gradient(135deg,#e6fbff,#7fe3ff 50%,#3a8fd8);box-shadow:inset -2px -2px 0 #2a6fb0}
 .bar{height:8px;border-radius:99px;background:rgba(255,255,255,.18);overflow:hidden;width:100%}
 .bar i{display:block;height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,#ffe58a,#ff9fd0);transition:width .15s}
@@ -79,7 +79,9 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 #gainlog div{display:flex;align-items:center;gap:5px}
 #gainlog .coin{width:14px;height:14px}
 #gainlog .gem{width:12px;height:12px}
-.xpdot{display:inline-block;width:13px;height:13px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#e8fbff,#9a6cff 55%,#4a2aa8)}
+.xpdot{display:inline-block;width:14px;height:14px;background:url(art/ic-xp.webp) 50% 50%/contain no-repeat}
+.gdot{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:middle}
+.hpdot{display:inline-block;width:11px;height:11px;flex:none;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffd0d0,#ff5a6a 55%,#b0203a)}
 /* Skill bar */
 #skillbar{position:absolute;left:0;right:0;bottom:calc(62px + env(safe-area-inset-bottom,0px));z-index:3;display:flex;align-items:center;gap:10px;padding:18px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px));background:linear-gradient(180deg,rgba(26,18,48,0),rgba(26,18,48,.82) 45%);pointer-events:none}
 #skillbar .slots{pointer-events:auto}
@@ -258,7 +260,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .rchip.on{background:linear-gradient(180deg,#ffe58a,#ffbe2e);color:#3a2400;box-shadow:0 0 0 2px #fff}
 .rchip.lock{opacity:.4}
 .slist{display:flex;flex-direction:column;gap:6px}
-.srow{display:grid;grid-template-columns:minmax(0,1.3fr) 44px repeat(2,minmax(0,1fr)) minmax(0,1fr) 44px;align-items:center;gap:6px;background:var(--panel);border-radius:14px;padding:6px 8px;text-align:left;min-height:56px}
+.srow{display:grid;grid-template-columns:minmax(0,1fr) 44px minmax(0,1.9fr) 38px;align-items:center;gap:6px;background:var(--panel);border-radius:14px;padding:6px 8px;text-align:left;min-height:56px}
 .srow.here{box-shadow:0 0 0 2px var(--gold)}
 .srow.boss{background:linear-gradient(90deg,#3a1d3a,var(--panel))}
 .srow[disabled]{opacity:.45}
@@ -266,7 +268,11 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .sname small{display:block;font:700 10px var(--body);color:var(--muted)}
 .smon img{width:40px;height:40px;object-fit:contain}
 .srew{display:flex;align-items:center;gap:3px;font:700 11px var(--body);font-variant-numeric:tabular-nums;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.srew .coin{width:13px;height:13px;flex:none}.srew .gem{width:11px;height:11px;flex:none}.srew .xpdot{width:12px;height:12px;flex:none}
+.srew .coin{width:16px;height:16px;flex:none}.srew .gem{width:11px;height:11px;flex:none}.srew .xpdot{width:15px;height:15px;flex:none}
+/* gold and experience on one line, the health under them: wide enough that no number is cut */
+.srews{display:grid;grid-template-columns:1fr 1fr;gap:3px 8px;min-width:0}.srews .srew.hp{grid-column:1/3}
+.sname small .gem{display:inline-block;width:9px;height:9px;margin:0 2px 0 3px;vertical-align:0}
+.slegend{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:-4px 0 8px}.slegend .coin,.slegend .xpdot{display:inline-block;width:15px;height:15px}
 .srew.muted{color:var(--muted)}
 .sgo{font:400 13px var(--display);color:var(--gold);text-align:center}
 /* Skill tab */
@@ -1075,7 +1081,7 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 #sheet.cream .buy.gemb{background:linear-gradient(180deg,#EEF3E9,#D5E1CF);color:#34432f;box-shadow:inset 0 0 0 1.5px #9AAE95,0 3px 0 #869a81}
 #sheet.cream .buy.off,#sheet.cream .buy.gemb.off{background:#F0E9DD;color:#ad9f8f;box-shadow:inset 0 0 0 1.5px #E3D8C6,0 3px 0 #DDD1BD}
 #sheet.cream .buy.off img{filter:grayscale(.5) opacity(.7)}
-#sheet.cream .coin{width:20px;height:20px;border-radius:0;background:url(art/tr-currency-gold.webp) 50% 50%/contain no-repeat;box-shadow:none}
+#sheet.cream .coin{width:20px;height:20px;border-radius:0;background:url(art/ic-gold.webp) 50% 50%/contain no-repeat;box-shadow:none}
 #sheet.cream .buy span{display:inline-flex;align-items:center;gap:4px}#sheet.cream .buy span .coin{display:inline-block;flex:none}
 #sheet.cream .buy .icur,#sheet.cream .manaline .icur{width:1.2em;height:1.2em}
 #sheet.cream .btn{border:0;background:linear-gradient(180deg,#A3B39E,#8A9D87);color:#fbfaf3;box-shadow:inset 0 0 0 1px #7b8e77,0 2px 0 #73856f;font-family:var(--display)}
@@ -1328,6 +1334,7 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script src="js/level.js"></script>
 <script src="js/look.js"></script>
 <script src="js/progress.js"></script>
+<script src="js/stage-rewards.js"></script>
 <script src="js/skills.js"></script>
 <script src="js/gear.js"></script>
 <script src="js/gacha.js"></script>

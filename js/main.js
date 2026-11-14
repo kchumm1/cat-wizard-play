@@ -79,7 +79,7 @@
   }
   // Normal monsters come in crowds: each one has a third of a stage monster's health and gold,
   // and every three of them count as one kill toward the stage.
-  var CROWD = 3, smallKills = 0, wave = { left: 0, t: 0 };
+  var CROWD = CW.CROWD, smallKills = 0, wave = { left: 0, t: 0 };
   function crowdMax() { var q = sc.getQuality(), extra = CW.diffOf(state).extraMobs; return q === 'low' ? 7 + Math.round(extra / 2) : q === 'mid' ? 10 + Math.round(extra * 0.75) : 14 + extra; }
   // each wave brings two to four kinds of the region's monsters, taking turns so every kind keeps showing up
   var waveKinds = [], kindTurn = 0;
@@ -153,7 +153,7 @@
   function bossWin(pos) {
     var stage = state.stage, key = CW.clearKey(state, stage), first = !state.firstClear[key];
     var gems = CW.bossGems(stage, first) * CW.diffOf(state).gemMul; state.firstClear[key] = true; state.gems += gems;
-    var gold = CW.stageGold(state, stage) * 8 * st.goldMul; state.gold += gold;
+    var gold = CW.stageGold(state, stage) * CW.BOSS_GOLD * st.goldMul; state.gold += gold;
     flyCoins(pos, 8);
     var bx = CW.bossXp(state) * st.xpMul, shards = CW.addShards(state, CW.stageInfo(stage).isRegionBoss);
     var mana = Math.round(CW.manaForBoss(stage, CW.stageInfo(stage).isRegionBoss) * CW.diffOf(state).gemMul); state.mana = (state.mana || 0) + mana;
