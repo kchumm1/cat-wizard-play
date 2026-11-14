@@ -121,6 +121,24 @@
     var out = []; out.overflow = 0; for (var i = 0; i < n; i++) rollRune(state, C.summonTable, rng, out);
     return out;
   }
+  // what a selected rune stands against (2026-11-15): itself if worn; else the weakest worn rune of the same kind; else,
+  // when no slot is empty, the weakest worn rune; else nothing (an empty slot is waiting)
+  function runeCompare(state, id) {
+    var it = runeItem(state, id); if (!it) return null;
+    var worn = runeEquipped(state), full = runeBag(state).eq.indexOf(null) < 0;
+    if (isWorn(state, id)) return { mode: 'worn', target: null, full: full };
+    var weak = function (a, c) { return runePower(a) - runePower(c); };
+    var same = worn.filter(function (x) { return x.kind === it.kind; }).sort(weak);
+    if (same.length) return { mode: 'same', target: same[0], full: full };
+    if (full) return { mode: 'weakest', target: worn.slice().sort(weak)[0] || null, full: full };
+    return { mode: 'free', target: null, full: full };
+  }
+  // the new rune goes into the old one's slot
+  function runeSwap(state, oldId, newId) {
+    var b = runeBag(state), i = b.eq.indexOf(oldId);
+    if (i < 0 || !runeItem(state, newId) || isWorn(state, newId)) return false;
+    b.eq[i] = newId; return true;
+  }
   function runeResonance(state) {
     var worn = runeEquipped(state); if (!worn.length) return 0;
     var min = Infinity; worn.forEach(function (it) { min = Math.min(min, it.lv); });
@@ -133,7 +151,7 @@
     var res = runeResonance(state); if (res) b.finalPct = (b.finalPct || 0) + res * C.resFinal;
     return b;
   }
-  return { runeById: runeById, runeOpen: runeOpen, runeBag: runeBag, runeItem: runeItem, runeIsWorn: isWorn, runeEquipped: runeEquipped, runeCap: runeCap, runeCost: runeCost,
+  return { runeById: runeById, runeOpen: runeOpen, runeBag: runeBag, runeItem: runeItem, runeIsWorn: isWorn, runeEquipped: runeEquipped, runeCompare: runeCompare, runeSwap: runeSwap, runeCap: runeCap, runeCost: runeCost,
     runeGradeCost: runeGradeCost, runeValue: runeValue, runePower: runePower, runeAdd: runeAdd, runeEquip: runeEquip, runeUnequip: runeUnequip, runeEquipBest: runeEquipBest, runeUseful: runeUseful,
     runeLock: runeLock, runeUp: runeUp, runeGradeUp: runeGradeUp, runeFuse: runeFuse, runeDismantleValue: runeDismantleValue, runeDismantle: runeDismantle,
     runeDismantleAll: runeDismantleAll, runeDrop: runeDrop, runeGive: runeGive, runeSummon: runeSummon, runeResonance: runeResonance, runeStoneForBoss: runeStoneForBoss, runeStats: runeStats };

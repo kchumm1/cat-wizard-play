@@ -30,7 +30,7 @@
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
   function createUI(G) {
-    var tab = 'battle', selSlot = -1, lastPanel = '', toastT = 0, lastBuffs = '';
+    var tab = 'battle', selSlot = -1, lastPanel = '', toastT = 0, lastBuffs = '', dockHtml = '';
     var TITLES = { dungeon: '던전', up: '훈련', skill: '스킬', gear: '장비', gacha: '뽑기', more: '더보기', stage: '스테이지 선택' };
     var bagKind = 'staff', selKey = null;
     var KIND_SHORT = { hat: '모자', staff: '지팡이', robe: '로브', belt: '벨트', necklace: '목걸이', ear: '귀걸이', ring: '반지' };
@@ -208,6 +208,45 @@
       }).join('');
       return '<h3>별의 삼신기</h3>' + head + '<div class="dlist">' + cards + '</div>';
     }
+    // ---------- the selected 신성력/룬 next to what is worn (2026-11-15, user: show what I wear at once when I tap one) ----------
+    // A change line: a stat's total now and after, with the difference in green (more) or red (less).
+    function cmpLine(name, from, to, fmtv) {
+      var d = to - from, f = fmtv || function (v) { return '+' + pct(v); };
+      return '<p class="cmpline"><span>' + name + '</span><b>' + f(from) + '<i>→</i>' + f(to) + '</b><em class="' + (d > 1e-12 ? 'up' : d < -1e-12 ? 'down' : '') + '">' + (Math.abs(d) < 1e-12 ? '같음' : (d > 0 ? '▲' : '▼') + pct(Math.abs(d)).replace(/^\+/, '')) + '</em></p>';
+    }
+    // the worn one it is compared with: its picture, name, and what it gives now
+    function cmpRow(label, ico, color, name, sub) {
+      return '<div class="cmprow"><span class="cmpic">' + ico + '</span><div class="cmpt"><small>' + label + '</small><b style="color:' + color + '">' + name + '</b><span>' + sub + '</span></div></div>';
+    }
+    function sigilCmp(s, sel, sum) {
+      var c = CW.sigilCompare(s, sel.id), stat = sel.stat, nm = STAT_KO[stat] || stat, v = CW.sigilValue(sel), tot = sum[stat] || 0;
+      if (!c) return '';
+      if (c.mode === 'worn') return '<div class="cmp"><p class="cmphead">지금 끼고 있어요</p><p class="cmpnote">장착 효과 ' + nm + ' +' + pct(tot) + ' 중 이 신성력이 +' + pct(v) + '</p></div>';
+      if (c.mode === 'free') return '<div class="cmp"><p class="cmphead">빈 칸이 있어서 끼면 더해져요</p>' + cmpLine(nm, tot, tot + v) + '</div>';
+      var t = c.target, tv = CW.sigilValue(t), tn = STAT_KO[t.stat] || t.stat;
+      var row = cmpRow(c.mode === 'same' ? '지금 낀 것 · 같은 효과 중 가장 약한 것' : '지금 낀 것 · 가장 약한 것', CW.ICO.sigil(t.stat, t.grade, hc(t.grade), t.q), hc(t.grade), hn(t.grade) + ' ' + tn, CW.qualityName(t.q) + ' (' + Math.round(t.q * 100) + '%) · ' + tn + ' +' + pct(tv));
+      if (!c.full) return '<div class="cmp">' + row + '<p class="cmphead">빈 칸이 있어서 바꾸지 않고 더해져요</p>' + cmpLine(nm, tot, tot + v) + '</div>';
+      if (c.mode === 'same') return '<div class="cmp">' + row + '<p class="cmphead">칸이 다 찼어요 · 이것과 바꾸면</p>' + cmpLine(nm, tot, tot - tv + v) + '</div>';
+      return '<div class="cmp">' + row + '<p class="cmphead">칸이 다 찼어요 · 이것과 바꾸면</p>' + cmpLine(nm, tot, tot + v) + cmpLine(tn, sum[t.stat] || 0, (sum[t.stat] || 0) - tv) + '</div>';
+    }
+    // the resonance after a change to the worn runes (worked out on the real bag, then put back)
+    function runeResAfter(s, slot, id) { var b = CW.runeBag(s), old = b.eq[slot]; b.eq[slot] = id; var r = CW.runeResonance(s); b.eq[slot] = old; return r; }
+    function runeCmp(s, it) {
+      var c = CW.runeCompare(s, it.id), b = CW.runeBag(s), RC = DATA.runeConf, k = CW.runeById(it.kind), nm = STAT_KO[k.stat] || k.stat, v = CW.runeValue(it), res = CW.runeResonance(s), sum = {};
+      if (!c) return '';
+      CW.runeEquipped(s).forEach(function (x) { var kk = CW.runeById(x.kind); sum[kk.stat] = (sum[kk.stat] || 0) + CW.runeValue(x); });
+      var tot = sum[k.stat] || 0, resLine = function (r2) { return r2 === res ? '' : cmpLine('룬 공명 (모든 피해)', res * RC.resFinal, r2 * RC.resFinal, function (x) { return Math.round(x / RC.resFinal) + '단계'; }); };
+      if (c.mode === 'worn') return '<div class="cmp"><p class="cmphead">지금 끼고 있어요</p><p class="cmpnote">장착 효과 ' + nm + ' +' + pct(tot) + ' 중 이 룬이 +' + pct(v) + '</p></div>';
+      if (c.mode === 'free') return '<div class="cmp"><p class="cmphead">빈 칸이 있어서 끼면 더해져요</p>' + cmpLine(nm, tot, tot + v) + resLine(runeResAfter(s, b.eq.indexOf(null), it.id)) + '</div>';
+      var t = c.target, tk = CW.runeById(t.kind), tv = CW.runeValue(t), tn = STAT_KO[tk.stat] || tk.stat, slot = b.eq.indexOf(t.id);
+      var row = cmpRow(c.mode === 'same' ? '지금 낀 것 · 같은 룬 중 가장 약한 것' : '지금 낀 것 · 가장 약한 것', CW.ICO.rune(t.kind, tk.color, t.grade, hc(t.grade)), hc(t.grade), hn(t.grade) + ' ' + tk.name + ' Lv.' + t.lv, tn + ' +' + pct(tv));
+      if (!c.full) return '<div class="cmp">' + row + '<p class="cmphead">빈 칸이 있어서 바꾸지 않고 더해져요</p>' + cmpLine(nm, tot, tot + v) + resLine(runeResAfter(s, b.eq.indexOf(null), it.id)) + '</div>';
+      var lines = c.mode === 'same' ? cmpLine(nm, tot, tot - tv + v) : cmpLine(nm, tot, tot + v) + cmpLine(tn, sum[tk.stat] || 0, (sum[tk.stat] || 0) - tv);
+      return '<div class="cmp">' + row + '<p class="cmphead">칸이 다 찼어요 · 이것과 바꾸면</p>' + lines + resLine(runeResAfter(s, slot, it.id)) + '</div>';
+    }
+    // the top-right ✕ of the bottom box
+    function dockX(kind) { return '<button class="dockx" data-dockx="' + kind + '" aria-label="닫기">✕</button>'; }
+
     // ---------- runes (2026-11-14): seven worn runes in the ring, the bag below; pick one to level, promote, wear, lock, fuse ----------
     function runeCell(s, it) {
       var k = CW.runeById(it.kind), worn = CW.runeIsWorn(s, it.id);
@@ -217,7 +256,6 @@
     function runePanel() {
       var s = G.state, RC = DATA.runeConf, open = CW.runeOpen(s), res = CW.runeResonance(s), bag = CW.runeBag(s), n = RC.slots;
       if (selRune && !CW.runeItem(s, selRune)) selRune = null;
-      if (!selRune) { var w0 = CW.runeEquipped(s)[0]; selRune = w0 ? w0.id : (bag.items[0] && bag.items[0].id) || null; }
       var head = '<div class="manaline"><span>' + CW.ICO.cur('rune') + ' 룬석 <b>' + fmt(s.runeStone || 0) + '</b></span><small class="note">' + (open ? '장착 ' + CW.runeEquipped(s).length + '/' + n + ' · 가방 ' + bag.items.length + '/' + RC.cap : RC.unlockTier + '차 전직 후에 열려요') + '</small></div>';
       var ring = '<div class="runering r7">' + bag.eq.map(function (id, i) {
         var it = id && CW.runeItem(s, id);
@@ -233,10 +271,12 @@
         var k = CW.runeById(it.kind), cap = CW.runeCap(it), cost = CW.runeCost(it.lv), top = it.grade >= DATA.hiGrades.length - 1, full = it.lv >= cap, gcost = CW.runeGradeCost(it.grade);
         var worn = CW.runeIsWorn(s, it.id), freeIt = !worn && !it.lock;
         var same = bag.items.filter(function (x) { return x !== it && x.kind === it.kind && x.grade === it.grade && !x.lock && !CW.runeIsWorn(s, x.id); }).length;
+        var rc = CW.runeCompare(s, it.id), swapTo = !worn && rc && rc.full && rc.target;
         detail = '<div class="row"><div class="ricon" style="background:radial-gradient(circle,' + k.color + '55,#1a1030);box-shadow:inset 0 0 0 2px ' + k.color + '">' + CW.ICO.rune(it.kind, k.color, it.grade, hc(it.grade)) + '</div><div class="info"><div class="name"><span style="color:' + hc(it.grade) + '">' + hn(it.grade) + '</span> ' + k.name + ' <span class="lv">Lv.' + it.lv + '/' + cap + '</span></div><div class="desc">' + bonusText(k.stat, CW.runeValue(it)) + ' (등급 보너스 +' + pct(it.grade * RC.gradeStep) + ')' + (worn ? '' : ' · 장착하면 적용') + '</div></div>' +
           (full && !top ? '<button class="buy gemb' + (!open || (s.runeStone || 0) < gcost ? ' off' : '') + '" data-rgrade="' + it.id + '"><small>' + hn(it.grade + 1) + '(으)로 승급</small><span>' + CW.ICO.cur('rune') + ' ' + fmt(gcost) + '</span></button>'
             : '<button class="buy' + (!open || full || (s.runeStone || 0) < cost ? ' off' : '') + '" data-rune="' + it.id + '">' + (full ? '최대' : CW.ICO.cur('rune') + ' ' + fmt(cost)) + '</button>') + '</div>' +
-          '<div class="sgbtns"><button class="btn' + (worn ? ' on' : '') + '" data-reqp="' + it.id + '">' + (worn ? '해제' : '장착') + '</button><button class="btn' + (it.lock ? ' on' : '') + '" data-rlock="' + it.id + '">' + (it.lock ? '잠금 풀기' : '잠금') + '</button>' +
+          runeCmp(s, it) +
+          '<div class="sgbtns">' + (swapTo ? '<button class="btn pri" data-rswap="' + rc.target.id + '|' + it.id + '">교체</button>' : '<button class="btn' + (worn ? ' on' : '') + '" data-reqp="' + it.id + '">' + (worn ? '해제' : '장착') + '</button>') + '<button class="btn' + (it.lock ? ' on' : '') + '" data-rlock="' + it.id + '">' + (it.lock ? '잠금 풀기' : '잠금') + '</button>' +
           '<button class="btn' + (freeIt ? '' : ' off') + '" data-rdis="' + it.id + '">분해 ' + CW.ICO.cur('rune') + fmt(CW.runeDismantleValue(it)) + '</button><button class="btn' + (same >= 2 && !top && freeIt ? '' : ' off') + '" data-rfuse="' + it.id + '">합성 ' + Math.min(3, same + 1) + '/3</button></div>' +
           '<span class="note">' + (top ? '가장 높은 등급이에요' : '같은 ' + k.name + ' ' + hn(it.grade) + ' 3개 → ' + hn(it.grade + 1) + ' ' + k.name) + '</span>';
       }
@@ -244,7 +284,8 @@
       var inv = bag.items.filter(function (x) { return rnFilter === 'all' || x.kind === rnFilter; }).sort(function (a, c) { return CW.runePower(c) - CW.runePower(a); }).map(function (x) { return runeCell(s, x); }).join('');
       var acts = '<div class="btns bagacts"><button class="btn pri" data-act="rbest">추천 장착</button><button class="btn" data-act="rdisall">잠금 안 한 것 모두 분해</button></div>' +
         '<div class="pulls sgpulls">' + [5, 10].map(function (m) { return '<button class="pull' + (!open || s.gems < RC.summon[m] ? ' off' : '') + '" data-rsum="' + m + '"><b>룬 ' + m + '회 소환</b><span><i class="gem"></i>' + RC.summon[m] + '</span></button>'; }).join('') + '</div>';
-      return head + ring + detail + acts + filt + '<div class="sggrid inv">' + (inv || '<p class="note">룬이 없어요. 보스를 잡거나 소환해 보세요.</p>') + '</div>' +
+      if (detail) dockHtml = '<div class="dockbox rdock" style="--gc:' + hc(it.grade) + '">' + dockX('rn') + detail + '</div>';
+      return head + ring + acts + filt + '<div class="sggrid inv">' + (inv || '<p class="note">룬이 없어요. 보스를 잡거나 소환해 보세요.</p>') + '</div>' +
         '<p class="note">끼운 룬 중 가장 낮은 레벨이 ' + ((res + 1) * RC.resEvery) + '이 되면 공명 ' + (res + 1) + '단계 (모든 피해 +' + pct(RC.resFinal) + ' 더). 빈 칸은 공명에 안 들어가요. 등급마다 최대 레벨이 ' + RC.lvPerGrade + '씩 늘고, 최대 레벨에서 룬석으로 승급해요. 같은 종류·같은 등급 3개를 합성하면 한 등급 위 룬이 나와요. 버튼을 꾹 누르면 계속 올라가요.</p>';
     }
     function showRunes(list) {
@@ -273,15 +314,18 @@
       var sel = selSigil ? CW.sigilById(s, selSigil) : null, selBox = '';
       if (sel) {
         var on = eq.indexOf(sel.id) >= 0, same = b.items.filter(function (x) { return x !== sel && x.grade === sel.grade && !x.lock && !CW.isEquipped(s, x.id); }).length;
-        selBox = '<div class="sgsel" style="--gc:' + hc(sel.grade) + '"><div class="sgselhead"><span class="sgbig">' + CW.ICO.sigil(sel.stat, sel.grade, hc(sel.grade), sel.q) + '</span><div><b style="color:' + hc(sel.grade) + '">' + hn(sel.grade) + ' ' + (STAT_KO[sel.stat] || sel.stat) + '</b><span class="note">' + CW.qualityName(sel.q) + ' (' + Math.round(sel.q * 100) + '%) · ' + bonusText(sel.stat, CW.sigilValue(sel)) + '</span></div></div>' +
-          '<div class="sgbtns"><button class="btn' + (on ? ' on' : '') + '" data-sgeq="' + sel.id + '">' + (on ? '해제' : '장착') + '</button><button class="btn' + (sel.lock ? ' on' : '') + '" data-sglock="' + sel.id + '">' + (sel.lock ? '잠금 풀기' : '잠금') + '</button>' +
+        var sc = CW.sigilCompare(s, sel.id), swapTo = !on && sc && sc.full && sc.target;
+        selBox = '<div class="sgsel dockbox" style="--gc:' + hc(sel.grade) + '">' + dockX('sg') + '<div class="sgselhead"><span class="sgbig">' + CW.ICO.sigil(sel.stat, sel.grade, hc(sel.grade), sel.q) + '</span><div><b style="color:' + hc(sel.grade) + '">' + hn(sel.grade) + ' ' + (STAT_KO[sel.stat] || sel.stat) + '</b><span class="note">' + CW.qualityName(sel.q) + ' (' + Math.round(sel.q * 100) + '%) · ' + bonusText(sel.stat, CW.sigilValue(sel)) + '</span></div></div>' +
+          sigilCmp(s, sel, sum) +
+          '<div class="sgbtns">' + (swapTo ? '<button class="btn pri" data-sgswap="' + sc.target.id + '|' + sel.id + '">교체</button>' : '<button class="btn' + (on ? ' on' : '') + '" data-sgeq="' + sel.id + '">' + (on ? '해제' : '장착') + '</button>') + '<button class="btn' + (sel.lock ? ' on' : '') + '" data-sglock="' + sel.id + '">' + (sel.lock ? '잠금 풀기' : '잠금') + '</button>' +
           '<button class="btn' + (sel.lock || CW.isEquipped(s, sel.id) ? ' off' : '') + '" data-sgdis="' + sel.id + '">분해</button><button class="btn' + (same >= 2 && sel.grade < DATA.hiGrades.length - 1 && !sel.lock && !CW.isEquipped(s, sel.id) ? '' : ' off') + '" data-sgfuse="' + sel.id + '">합성 ' + Math.min(3, same + 1) + '/3</button></div>' + (sel.grade < DATA.hiGrades.length - 1 ? '<span class="note">같은 등급 3개 → ' + hn(sel.grade + 1) + '</span>' : '<span class="note">가장 높은 등급이에요</span>') + '</div>';
       }
       var filt = '<div class="kindtabs">' + [-1].concat(DATA.hiGrades.map(function (x, i) { return i; })).map(function (g) { return '<button role="tab" aria-selected="' + (sgFilter === g) + '" data-sgf="' + g + '"' + (g >= 0 ? ' style="color:' + hc(g) + '"' : '') + '>' + (g < 0 ? '전체' : hn(g)) + '</button>'; }).join('') + '</div>';
       var inv = b.items.filter(function (x) { return sgFilter < 0 || x.grade === sgFilter; }).sort(function (a, c) { return CW.sigilPower(c) - CW.sigilPower(a); }).map(function (x) { return sgCell(x, CW.isEquipped(s, x.id)); }).join('');
       var acts = '<div class="btns bagacts"><button class="btn pri" data-act="sgbest">추천 장착</button><button class="btn" data-act="sgdisall">잠금 안 한 것 모두 분해</button></div>' +
         '<div class="pulls sgpulls">' + [5, 10].map(function (n) { return '<button class="pull' + (s.gems < C.summon[n] ? ' off' : '') + '" data-sgsum="' + n + '"><b>신성력 ' + n + '회 소환</b><span><i class="gem"></i>' + C.summon[n] + '</span></button>'; }).join('') + '</div>';
-      return head + '<div class="sggrid">' + cells + '</div>' + lvbar + '<div class="potbox sgeff"><small>신성력 장착 효과</small>' + effs + '</div>' + selBox + acts + filt + '<div class="sggrid inv">' + (inv || '<p class="note">신성력이 없어요. 보스를 잡거나 소환해 보세요.</p>') + '</div>' +
+      dockHtml = selBox;
+      return head + '<div class="sggrid">' + cells + '</div>' + lvbar + '<div class="potbox sgeff"><small>신성력 장착 효과</small>' + effs + '</div>' + acts + filt + '<div class="sggrid inv">' + (inv || '<p class="note">신성력이 없어요. 보스를 잡거나 소환해 보세요.</p>') + '</div>' +
         '<p class="note">같은 등급 3개를 합성하면 다음 등급이 나와요. 분해하면 신성석이 나오고, 신성석으로 레벨을 올리면 신성력 데미지와 슬롯이 늘어요(' + C.slotsPer + '레벨마다 1칸).</p>';
     }
     function showSigils(list, fromPack) {
@@ -296,7 +340,7 @@
         var r = CW.relicById(o.id); return '<div class="' + (r.divine ? 'divine' : '') + '"><span>' + mi('relic', r) + '</span><small>' + r.name + '</small><b>' + (o.refund ? '다이아 +' + o.refund : 'Lv.' + o.lv) + '</b></div>';
       }).join('') + '</div>' + (gems ? '<p class="note">최대 레벨이라 다이아 ' + gems + '개로 바꿨어요.</p>' : ''), [{ label: '닫기' }, { label: '한 번 더', pri: true, fn: function () { var r = G.summonRelics(list.length); if (!r) toast('다이아가 부족해요'); else { showRelics(r); renderPanel(true); hud(); } } }]);
     }
-    var panel = $('panel');
+    var panel = $('panel'), dock = $('dock');
 
     // ---------- modal / toast ----------
     function modal(html, buttons) {
@@ -601,9 +645,13 @@
     var PANELS = { dungeon: dungeonPanel, stage: stagePanel, up: trainPanel, skill: skillPanel, gear: gearPanel, gacha: gachaPanel, more: morePanel };
     function renderPanel(force) {
       if (tab === 'battle') return;
-      var html = PANELS[tab]();
-      if (!force && html === lastPanel) return;
-      var y = panel.scrollTop; panel.innerHTML = html; panel.scrollTop = y; lastPanel = html;
+      dockHtml = '';
+      var html = PANELS[tab](), dh = dockHtml, key = html + '|dock|' + dh;
+      if (!force && key === lastPanel) return;
+      var y = panel.scrollTop; panel.innerHTML = html; panel.scrollTop = y; lastPanel = key;
+      // the selected 신성력/룬 sits at the bottom of the sheet, always in sight (2026-11-15); it slides up when it opens
+      var was = !dock.hidden; dock.innerHTML = dh; dock.hidden = !dh;
+      if (dh && !was) { dock.classList.remove('pop'); void dock.offsetWidth; dock.classList.add('pop'); var sl = panel.querySelector('.sel'); if (sl) sl.scrollIntoView({ block: 'nearest' }); }
     }
 
     function dmgRow(key, name, desc, v, lo, hi) {
@@ -626,14 +674,15 @@
       G.setSetting(r.dataset.range, +r.value); G.showDamageSample(); renderPanel(true);
     });
     function stopHold() { clearTimeout(holdT); clearInterval(holdI); holdT = holdI = null; }
-    panel.addEventListener('pointerdown', function (e) {
+    var onDown = function (e) {
       var b = e.target.closest('[data-up],[data-mark],[data-circle],[data-blv],[data-rune],[data-sglv]'); if (!b) return;
       var key = b.dataset.up, mk = b.dataset.mark, ci = b.dataset.circle, bl = b.dataset.blv, ru = b.dataset.rune, sl = b.dataset.sglv;
       var once = function () { var ok = bl ? G.levelUp(bl) : ru ? G.runeUp(ru) : sl ? G.sigilLvUp() : mk ? G.markUp(mk) : ci ? G.circleUp() : (upMul > 1 ? G.upgradeN(key, upMul) : G.upgrade(key)); if (ok) { fxRune = ru || null; renderPanel(true); fxRune = null; hud(); } else stopHold(); };
       once(); holdT = setTimeout(function () { holdI = setInterval(once, 90); }, 380);
-    });
-    ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { panel.addEventListener(ev, stopHold); });
-    panel.addEventListener('click', function (e) {
+    };
+    panel.addEventListener('pointerdown', onDown); dock.addEventListener('pointerdown', onDown);
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { panel.addEventListener(ev, stopHold); dock.addEventListener(ev, stopHold); });
+    var onClick = function (e) {
       var t = e.target.closest('button'); if (!t) return;
       var d = t.dataset;
       if (d.prev) { G.previewSkill(d.prev); }
@@ -649,7 +698,7 @@
       else if (d.dgo) { var r3 = G.dungeon(d.dgo); if (r3 === 'busy') toast('보스전이나 던전이 끝난 뒤에 들어갈 수 있어요'); else if (r3 === 'ticket') toast('오늘 입장권을 다 썼어요'); }
       else if (d.dsw) { var r4 = G.sweep(d.dsw); if (!r4) toast('입장권이 없거나 아직 기록이 없어요'); else toast('소탕! ' + (r4.gold ? '골드 +' + fmtG(r4.gold) : r4.gems ? '다이아 +' + fmt(r4.gems) : r4.runeStone ? '룬석 +' + fmt(r4.runeStone) + (r4.got && r4.got.length ? ' · 룬 ' + r4.got.length + '개' : '') + (r4.overflow ? ' · 가방이 꽉 차 룬석 +' + fmt(r4.overflow) : '') : '마력석 +' + fmt(r4.mana))); renderPanel(true); hud(); }
       else if (d.jump !== undefined) { var jh = panel.querySelectorAll('h3')[+d.jump]; if (jh) panel.scrollTop += jh.getBoundingClientRect().top - panel.getBoundingClientRect().top - 46; }
-      else if (d.gsub) { gearSub = d.gsub; panel.scrollTop = 0; renderPanel(true); }
+      else if (d.gsub) { gearSub = d.gsub; selSigil = selRune = null; panel.scrollTop = 0; renderPanel(true); }
       else if (d.relic) { var rr = G.summonRelics(+d.relic); if (!rr) toast('다이아가 부족해요'); else { showRelics(rr); renderPanel(true); hud(); } }
       else if (d.cbuy) { if (G.buyCostume(d.cbuy)) toast(CW.costumeById(d.cbuy).name + ' 획득!'); else toast('다이아가 부족해요'); renderPanel(true); hud(); }
       else if (d.cup) { if (G.upCostume(d.cup)) toast(CW.costumeById(d.cup).name + ' Lv.' + G.state.costume.owned[d.cup]); else toast(G.state.costume.owned[d.cup] >= DATA.costumeConf.maxLv ? '최대 레벨이에요' : '다이아가 부족해요'); renderPanel(true); hud(); }
@@ -668,7 +717,7 @@
       else if (d.bkind) { bagKind = d.bkind; selKey = null; renderPanel(true); }
       else if (d.btr) { var eb = G.state.bag[d.btr]; if (G.transcend(d.btr)) { toast(CW.gearName(d.btr) + ' 초월 ★' + G.state.bag[d.btr].star + '!'); banner('초월 성공!'); } else toast(!eb ? '아직 없는 장비예요' : (eb.star || 0) >= DATA.bagConf.starMax ? '이미 최고 초월이에요' : eb.lv < CW.maxLevel(d.btr, eb.star) ? '최대 레벨까지 올려야 해요' : eb.n <= CW.transcendCost(G.state, d.btr).copies ? '같은 장비가 더 필요해요' : '골드가 부족해요'); renderPanel(true); hud(); }
       else if (d.brew) { if (G.brew(d.brew)) toast(CW.potionById(d.brew).name + '을(를) 만들었어요!'); else toast('골드가 부족해요'); renderPanel(true); hud(); }
-      else if (d.rpick) { selRune = d.rpick; renderPanel(true); }
+      else if (d.rpick) { selRune = selRune === d.rpick ? null : d.rpick; renderPanel(true); }
       else if (d.rgrade) { var ri = CW.runeItem(G.state, d.rgrade), rg2 = ri ? ri.grade : 0; if (G.runeGradeUp(d.rgrade)) { toast(CW.runeById(ri.kind).name + ' → ' + hn(rg2 + 1) + '!'); banner(hn(rg2 + 1) + ' 룬!'); } else toast('룬석이 부족해요'); fxRune = d.rgrade; renderPanel(true); fxRune = null; }
       else if (d.reqp) { var res0 = CW.runeResonance(G.state); if (G.runeEquipToggle(d.reqp) === 'full') toast('룬 칸이 모두 찼어요. 먼저 하나를 해제해 주세요'); else { var res1 = CW.runeResonance(G.state); if (res1 < res0) toast('룬 공명이 ' + res0 + '단계 → ' + res1 + '단계로 내려갔어요 (끼운 룬 중 가장 낮은 레벨 기준)'); } renderPanel(true); }
       else if (d.rlock) { G.runeLock(d.rlock); renderPanel(true); }
@@ -680,6 +729,9 @@
       else if (d.act === 'rdisall') { confirmBox('모두 분해', '잠금하지 않고 장착하지 않은 룬을 모두 룬석으로 바꿀까요?', '분해하기', function () { var rn2 = G.runeDismantleAll(); toast(rn2 ? '룬석 +' + fmt(rn2) : '분해할 룬이 없어요'); selRune = null; renderPanel(true); }); }
       else if (d.pack) { var pk = CW.packById(d.pack); confirmBox('연습용 구매', pk.name + ' (' + pk.won.toLocaleString('ko-KR') + '원)<br><b>실제 결제 없음 · 연습용</b><br>누르면 바로 들어와요.', '받기', function () { var got = G.buyPack(d.pack); if (got === false) toast(CW.packOpen(G.state, d.pack) !== 'ok' ? '지금은 받을 수 없어요' : '신성력 가방에 자리가 부족해요 (최대 ' + DATA.sigilConf.cap + '개)'); else if (got.gear && got.gear.length) showGacha(got.gear); else if (got.length) showSigils(got, true); else toast(pk.name + '을(를) 받았어요'); renderPanel(true); hud(); }); }
       else if (d.act === 'daily') { var dg = G.claimDaily(); toast(dg ? '다이아 ' + fmt(dg) + '개를 받았어요' : '오늘은 이미 받았어요'); renderPanel(true); hud(); }
+      else if (d.dockx) { if (d.dockx === 'sg') selSigil = null; else selRune = null; renderPanel(true); }
+      else if (d.sgswap) { var sw = d.sgswap.split('|'); if (G.sigilSwap(sw[0], sw[1])) toast('바꿔 꼈어요'); renderPanel(true); }
+      else if (d.rswap) { var rw = d.rswap.split('|'); if (G.runeSwap(rw[0], rw[1])) toast('바꿔 꼈어요'); renderPanel(true); }
       else if (d.sg) { selSigil = selSigil === d.sg ? null : d.sg; renderPanel(true); }
       else if (d.sgset !== undefined) { G.sigilSet(+d.sgset); toast((+d.sgset + 1) + '번 신성력 세트'); renderPanel(true); }
       else if (d.sgf !== undefined) { sgFilter = +d.sgf; renderPanel(true); }
@@ -722,7 +774,8 @@
         if (d.set === 'reset') confirmBox('처음부터 다시 하기', '정말 모든 진행을 지울까요? 되돌릴 수 없어요.', '지우기', function () { confirmBox('한 번 더 확인', '진행, 장비, 다이아가 모두 사라져요.', '정말 지우기', G.reset); });
         renderPanel(true);
       }
-    });
+    };
+    panel.addEventListener('click', onClick); dock.addEventListener('click', onClick);
     CW.ICO.onTint = function () { if (tab === 'gear' || tab === 'gacha') renderPanel(true); };
     document.querySelectorAll('#tabs [data-tab]').forEach(function (b) { var x = CW.ICO.misc && CW.ICO.misc('tab', b.dataset.tab), sv = b.querySelector('svg'); if (x && sv) sv.outerHTML = x; });
     // the rune and sigil shortcuts use the user's pictures (art/ic-rune.webp, ic-sigil.webp, 2026-11-14)

@@ -85,6 +85,23 @@
     b.sets[b.cur] = best.map(function (it) { return it.id; });
     return best.length;
   }
+  // what a selected sigil stands against (2026-11-15): itself if worn; else the weakest worn one with the same stat; else,
+  // when every slot is full, the weakest worn one (by grade and quality); else nothing (an empty slot is waiting)
+  function sigilCompare(state, id) {
+    var it = sigilById(state, id); if (!it) return null;
+    var worn = equipped(state).map(function (x) { return sigilById(state, x); }), full = worn.length >= sigilSlots(state);
+    if (worn.indexOf(it) >= 0) return { mode: 'worn', target: null, full: full };
+    var same = worn.filter(function (x) { return x.stat === it.stat; }).sort(function (a, c) { return sigilValue(a) - sigilValue(c); });
+    if (same.length) return { mode: 'same', target: same[0], full: full };
+    if (full) return { mode: 'weakest', target: worn.slice().sort(function (a, c) { return power(a) - power(c); })[0] || null, full: full };
+    return { mode: 'free', target: null, full: full };
+  }
+  // the new one takes the old one's place in the worn list
+  function sigilSwap(state, oldId, newId) {
+    var b = box(state), set = b.sets[b.cur], i = set.indexOf(oldId);
+    if (i < 0 || !sigilById(state, newId) || set.indexOf(newId) >= 0) return false;
+    set[i] = newId; return true;
+  }
   function sigilStats(state) {
     var b = {}; if (!state.sigil) return b;
     equipped(state).forEach(function (id) { var it = sigilById(state, id); b[it.stat] = (b[it.stat] || 0) + sigilValue(it); });
@@ -94,5 +111,5 @@
   return { sigilOpen: sigilOpen, sigilById: sigilById, equipped: equipped, isEquipped: isEquipped, qualityName: qualityName, sigilValue: sigilValue, addSigil: addSigil,
     sigilSlots: sigilSlots, sigilEquip: sigilEquip, sigilUnequip: sigilUnequip, sigilSet: sigilSet, sigilLock: sigilLock, sigilDismantle: sigilDismantle,
     sigilDismantleAll: sigilDismantleAll, sigilFuse: sigilFuse, sigilLvCost: sigilLvCost, sigilLvUp: sigilLvUp, sigilDrop: sigilDrop, sigilSummon: sigilSummon,
-    sigilStats: sigilStats, sigilEquipBest: sigilEquipBest, sigilPower: power, sigilIcon: function (stat) { return statDef(stat).icon; } };
+    sigilStats: sigilStats, sigilEquipBest: sigilEquipBest, sigilCompare: sigilCompare, sigilSwap: sigilSwap, sigilPower: power, sigilIcon: function (stat) { return statDef(stat).icon; } };
 });

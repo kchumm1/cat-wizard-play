@@ -1285,6 +1285,30 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 #sheet.cream .sgeff p:last-child{border-bottom:0;padding-bottom:0}
 #sheet.cream .sgeff p b{font:400 16px var(--display);color:#8a5f14;font-variant-numeric:tabular-nums;white-space:nowrap}
 #sheet.cream .sgeff p.note{display:block;border:0;font-weight:400}
+/* the selected 신성력/룬 docked at the bottom of the sheet (2026-11-15, user: the box came far below, and show what I wear
+   at once): it stays in sight while the list scrolls above it, and holds what is worn now next to the selection */
+#dock{flex:none;max-height:60%;overflow-y:auto;overscroll-behavior:contain;padding:10px max(14px,env(safe-area-inset-right,0px)) 10px max(14px,env(safe-area-inset-left,0px));background:linear-gradient(180deg,#F5ECDB,#F0E5D0);box-shadow:0 -1px 0 #E4D6BC,0 -10px 22px rgba(92,67,48,.16);position:relative;z-index:2}
+#dock[hidden]{display:none}
+#dock.pop{animation:dockup .2s ease-out}
+@keyframes dockup{from{transform:translateY(28px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){#dock.pop{animation:none}}
+#dock .dockbox{position:relative;margin:0;background:var(--card);border-radius:18px;padding:12px 12px 10px;box-shadow:inset 0 0 0 2px var(--gc),0 2px 0 rgba(150,120,70,.14);display:flex;flex-direction:column;gap:8px}
+#dock .dockx{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;border:0;background:#EFE5D3;color:#7a6d60;font:700 14px/30px var(--body);padding:0;z-index:1}
+#dock .sgselhead{padding-right:34px}
+#dock .rdock .row{background:none;box-shadow:none;padding:0 34px 0 0;margin:0;border:0}
+#dock .note{margin:0}
+#dock .sgbtns .btn.pri{background:linear-gradient(180deg,#FBEBC0,#EDCF85);color:#4d3b1f;box-shadow:inset 0 0 0 1.5px #C9A562,0 3px 0 #B8975A}
+#dock .rdock .row .desc{font-size:12px}
+.cmp{background:#FBF4E6;border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:5px}
+.cmphead{margin:0;font:700 12px var(--body);color:#8a7a66}
+.cmpnote{margin:0;font:700 13px var(--body);color:#5b4f44}
+.cmprow{display:flex;align-items:center;gap:8px;padding-bottom:6px;border-bottom:1px solid #EFE3CC}
+.cmpic{width:42px;height:42px;flex:none;display:grid;place-items:center}.cmpic>*{width:100%;height:100%}
+.cmpt{display:flex;flex-direction:column;min-width:0}.cmpt small{font:700 11px var(--body);color:#8f8272}.cmpt b{font:400 15px var(--display)}.cmpt span{font:700 12px var(--body);color:#6e6255}
+.cmpline{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:8px;margin:0;font:700 13px var(--body);color:#5b4f44}
+.cmpline b{font:400 14px var(--display);color:#443C35;white-space:nowrap}.cmpline b i{font-style:normal;color:#b5a58c;margin:0 4px}
+.cmpline em{font:700 12px var(--body);font-style:normal;white-space:nowrap;padding:2px 7px;border-radius:9px;background:#EFE8DA;color:#8a7a66}
+.cmpline em.up{background:#E3F0DC;color:#3f7a2e}.cmpline em.down{background:#F8E0DA;color:#b0402c}
 /* ==CREAM-END== */
 /* ==THEME-END== */
 @media (prefers-reduced-motion:reduce){#killBar i,.ico .orb,.sk.now .ico,.rlines .flow,.rcore.lit,.isg,.gart .gimg,.gart .gstaff,.gshine::after{animation:none!important}}
@@ -1314,7 +1338,7 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
     <div id="qrow"><div id="quest"><b>목표</b><span id="questTxt"></span></div><div id="pre" role="group" aria-label="스킬 프리셋"></div></div>
     <div id="surgeGauge" aria-label="마력 폭주 게이지"><i id="surgeFill"></i><b>폭주</b></div><div class="slots" id="slots"></div>
   </div>
-  <section id="sheet" class="cream" aria-label="메뉴"><div class="sheet-head"><b id="sheetTitle">강화</b><button id="sheetClose">닫기</button></div><main id="panel" aria-live="polite"></main></section>
+  <section id="sheet" class="cream" aria-label="메뉴"><div class="sheet-head"><b id="sheetTitle">강화</b><button id="sheetClose">닫기</button></div><main id="panel" aria-live="polite"></main><div id="dock" hidden></div></section>
   <nav id="tabs" role="tablist">
     <button role="tab" data-tab="battle" aria-selected="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 4.5 9 15"/><path d="M19.5 4.5h-4.2M19.5 4.5v4.2"/><path d="m6.2 12.6 5.2 5.2"/><path d="M8.6 15.4 4.5 19.5"/></svg><span>전투</span></button>
     <button role="tab" data-tab="up" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V6"/><path d="m6.5 11.5 5.5-5.5 5.5 5.5"/><path d="M5 21h14"/></svg><span>훈련</span></button>

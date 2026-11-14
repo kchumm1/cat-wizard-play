@@ -352,6 +352,7 @@
     dayKey: function () { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); },
     claimDaily: function () { var n = CW.claimDaily(state, G.dayKey()); if (n) { snd.play('win'); save(); } return n; },
     runeUp: function (id) { var ok = CW.runeUp(state, id); if (ok) { refreshStats(); snd.play('click'); } return ok; },
+    runeSwap: function (oldId, newId) { var ok = CW.runeSwap(state, oldId, newId); if (ok) { refreshStats(); snd.play('click'); save(); } return ok; },
     runeEquipToggle: function (id) { var ok = CW.runeIsWorn(state, id) ? CW.runeUnequip(state, id) : CW.runeEquip(state, id); if (!ok) return 'full'; refreshStats(); snd.play('click'); save(); return 'ok'; },
     runeLock: function (id) { var ok = CW.runeLock(state, id); if (ok) save(); return ok; },
     runeDismantle: function (id) { var n = CW.runeDismantle(state, id); if (n) { refreshStats(); save(); } return n; },
@@ -364,6 +365,7 @@
       var ok = CW.equipped(state).indexOf(id) >= 0 ? CW.sigilUnequip(state, id) : CW.sigilEquip(state, id);
       if (!ok) return 'full'; refreshStats(); snd.play('click'); save(); return 'ok';
     },
+    sigilSwap: function (oldId, newId) { var ok = CW.sigilSwap(state, oldId, newId); if (ok) { refreshStats(); snd.play('click'); save(); } return ok; },
     sigilLock: function (id) { var ok = CW.sigilLock(state, id); if (ok) save(); return ok; },
     sigilDismantle: function (id) { var n = CW.sigilDismantle(state, id); if (n) { refreshStats(); save(); } return n; },
     sigilDismantleAll: function () { var n = CW.sigilDismantleAll(state); if (n) { refreshStats(); snd.play('win'); save(); } return n; },
