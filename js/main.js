@@ -265,7 +265,9 @@
 
   // ---------- coins flying to the gold counter ----------
   var coins = [];
-  for (var i = 0; i < 18; i++) { var el = document.createElement('i'); el.className = 'coin fly'; el.style.opacity = 0; document.body.appendChild(el); coins.push({ el: el, t: 1, d: 0.6 }); }
+  // a coin that is not flying is out of the page (display none), so it does not keep a drawing layer of its own
+  for (var i = 0; i < 18; i++) { var el = document.createElement('i'); el.className = 'coin fly'; el.style.opacity = 0; el.style.display = 'none'; document.body.appendChild(el); coins.push({ el: el, t: 1, d: 0.6, on: false }); }
+  function coinShown(c, on) { if (c.on !== on) { c.on = on; c.el.style.display = on ? '' : 'none'; } }
   // where the stage and the gold counter are: read at most once a frame, at the first kill (reading it at every kill,
   // after damage numbers were added, made the browser lay the page out again for each monster a spell killed at once)
   var coinBox = null;
@@ -287,13 +289,23 @@
     coins.forEach(function (c) {
       if (c.t >= 1) return;
       c.t += dt / c.d;
-      if (c.t < 0) { c.el.style.opacity = 0; return; }
-      if (c.t >= 1) { c.t = 1; c.el.style.opacity = 0; arrived = true; return; }
+      if (c.t < 0) { c.el.style.opacity = 0; coinShown(c, false); return; }
+      if (c.t >= 1) { c.t = 1; c.el.style.opacity = 0; coinShown(c, false); arrived = true; return; }
       var k = c.t, e = k * k, a = (1 - e) * (1 - e), b = 2 * (1 - e) * e, cc = e * e;
       var x = a * c.x0 + b * c.cx + cc * c.x1, y = a * c.y0 + b * c.cy + cc * c.y1;
-      c.el.style.opacity = 1; c.el.style.transform = 'translate(' + x + 'px,' + y + 'px) scale(' + (1.2 - k * 0.4) + ')';
+      coinShown(c, true); c.el.style.opacity = 1; c.el.style.transform = 'translate(' + x + 'px,' + y + 'px) scale(' + (1.2 - k * 0.4) + ')';
     });
-    if (arrived) { var chip = $('goldTxt').parentNode; chip.classList.remove('pulse'); void chip.offsetWidth; chip.classList.add('pulse'); }
+    if (arrived) pulseGold();
+  }
+  // the gold counter's little bounce when coins land. Restarting a CSS animation needs the page laid out on the spot
+  // (reading offsetWidth), several times a second while farming; the same bounce played by the browser's animation
+  // call does not.
+  var goldPulse = null;
+  function pulseGold() {
+    var chip = $('goldTxt').parentNode;
+    if (!chip.animate) { chip.classList.remove('pulse'); void chip.offsetWidth; chip.classList.add('pulse'); return; }
+    if (goldPulse) goldPulse.cancel();
+    goldPulse = chip.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.16)' }, { transform: 'scale(1)' }], { duration: 250 });
   }
 
   // ---------- actions used by the screens ----------
@@ -419,14 +431,18 @@
   }
 
   // ---------- quality watchdog ----------
-  var autoQ = 'high', fpsAcc = 0, fpsN = 0, fpsT = 0;
+  // Every 3 s: a low average frame rate lowers the quality, and so do repeated stalls (frames that came more than
+  // 45 ms after the one before, i.e. two or more frames missed at 60 a second). The average alone stayed high on a
+  // phone that stuttered several times a second, so its quality never came down. 5 stalls in 3 s is steady stutter,
+  // not a one-off such as a picture loading; a phone held at 30 frames a second (low power) is not counted as stalls.
+  var autoQ = 'high', fpsAcc = 0, fpsN = 0, fpsT = 0, stalls = 0;
   function watchFps(rdt) {
     if (state.settings.quality !== 'auto') return;
-    fpsAcc += rdt; fpsN++; fpsT += rdt;
+    fpsAcc += rdt; fpsN++; fpsT += rdt; if (rdt > 0.045) stalls++;
     if (fpsT < 3) return;
-    var fps = fpsN / fpsAcc; fpsAcc = 0; fpsN = 0; fpsT = 0;
+    var fps = fpsN / fpsAcc, stuck = stalls >= 5; fpsAcc = 0; fpsN = 0; fpsT = 0; stalls = 0;
     var next = autoQ;
-    if (fps < 28) next = 'low'; else if (fps < 42 && autoQ === 'high') next = 'mid';
+    if (fps < 28) next = 'low'; else if ((fps < 42 || stuck) && autoQ === 'high') next = 'mid'; else if (stuck && autoQ === 'mid') next = 'low';
     if (next !== autoQ) { autoQ = next; applySettings(); }
   }
 

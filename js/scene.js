@@ -427,7 +427,9 @@
 
     // ---------- damage numbers (DOM overlay) ----------
     var pool = [];
-    for (var p = 0; p < 40; p++) { var d = document.createElement('div'); d.className = 'dmg'; overlay.appendChild(d); pool.push({ el: d, t: 0, x: 0, y: 0, live: false, crit: false, dir: 1 }); }
+    // a number that is not showing is taken out of the page (display none): with only opacity 0 each of the 40 kept its
+    // own drawing layer (will-change) all the time, which phones pay for on every frame
+    for (var p = 0; p < 40; p++) { var d = document.createElement('div'); d.className = 'dmg'; d.style.display = 'none'; overlay.appendChild(d); pool.push({ el: d, t: 0, x: 0, y: 0, live: false, crit: false, dir: 1 }); }
     // the player's choice in 설정: size and see-through of the numbers (fractions of the drawn size and of full colour)
     var dmgSize = 0.6, dmgAlpha = 0.85;
     function setDamageStyle(size, alpha) { dmgSize = Math.max(0.3, Math.min(1.5, size)); dmgAlpha = Math.max(0.05, Math.min(1, alpha)); }
@@ -446,6 +448,7 @@
       slot.el.innerHTML = (tier >= 2 && TT ? '<small>' + TT[tier - 1].name + '</small>' : '') + text;
       slot.el.className = 'dmg' + (tier ? ' crit c' + tier : '');
       slot.el.style.color = tier ? '' : (color || '');
+      slot.el.style.display = '';
     }
 
     // ---------- screen effects ----------
@@ -803,7 +806,7 @@
       // numbers
       pool.forEach(function (s) {
         if (!s.live) return; s.t += rdt; var dur = s.crit ? 1.05 + 0.15 * (s.tier || 0) : 0.8, k = s.t / dur;
-        if (k >= 1) { s.live = false; s.el.style.opacity = 0; return; }
+        if (k >= 1) { s.live = false; s.el.style.opacity = 0; s.el.style.display = 'none'; return; }
         var pop = s.crit ? (k < 0.12 ? 0.3 + k / 0.12 * 1.2 : k < 0.24 ? 1.5 - (k - 0.12) / 0.12 * 0.4 : 1.1) : (k < 0.1 ? 0.5 + k / 0.1 * 0.7 : 1.2 - Math.min(0.2, k - 0.1));
         var rise = s.crit ? k * 38 : (k * 52 - k * k * 10), side = s.crit ? Math.sin(k * 40) * 3 * (1 - k) : s.dir * k * 14;
         s.el.style.opacity = (k > 0.72 ? (1 - k) / 0.28 : 1) * dmgAlpha;

@@ -548,7 +548,9 @@ table.prob th:first-child,table.prob td:first-child{text-align:left}
 @keyframes gfloat{50%{transform:translateY(-3%)}}
 .gshine{position:absolute;inset:0;border-radius:50%;overflow:hidden;pointer-events:none;mix-blend-mode:screen}
 .gshine::after{content:'';position:absolute;top:-20%;left:-60%;width:38%;height:140%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.75),transparent);transform:rotate(20deg);animation:gsweep 2.6s ease-in-out infinite}
-@keyframes gsweep{0%,55%{left:-60%}100%{left:130%}}
+/* moves by transform, not left: moving left laid the whole page out again every frame while the gear tab was open.
+   190% of the card's width = 5 times the shine's own width (38%), the same path as before */
+@keyframes gsweep{0%,55%{transform:translateX(0) rotate(20deg)}100%{transform:translateX(500%) rotate(20deg)}}
 .bcell{padding:14px 2px}.bcell .gart{width:78%}.bcell.big .gart{width:80%}.gcard .gart{width:66%}
 .bcell:has(.g5){background:radial-gradient(circle at 50% 40%,#5a1830,#1c0a18)}.bcell:has(.g4){background:radial-gradient(circle at 50% 40%,#5a3c0c,#1c1406)}
 .bcell:has(.g3){background:radial-gradient(circle at 50% 40%,#3a1f66,#150c26)}.bcell:has(.g2){background:radial-gradient(circle at 50% 40%,#173a70,#0a1426)}
