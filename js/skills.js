@@ -110,6 +110,6 @@
     var st2 = {}; for (var j in st) st2[j] = st[j]; st2.skillLv = sl;
     return E.hitDamage(st2, sk, {});
   }
-  function skillTargetText(n) { return n >= 99 ? '전체 공격' : n <= 1 ? '단일 대상' : '몬스터 ' + n + '마리'; }
+  function skillTargetText(n) { return n >= 99 ? '전체 공격' : n <= 1 ? '단일 공격' : '여러 마리 공격'; }
   return { skillOwnedStats: skillOwnedStats, skillDamageAt: skillDamageAt, skillTargetText: skillTargetText, skillUpAll: skillUpAll, switchPreset: switchPreset, unequipSkill: unequipSkill, placeSkill: placeSkill, autoFillSkills: autoFillSkills, skillScore: skillScore, skillLevel: skillLevel, skillUpCost: skillUpCost, trySkillUp: trySkillUp, rotation: rotation, castTime: castTime, unlockedSkills: unlockedSkills, equipSkill: equipSkill, autoSlotNew: autoSlotNew, skillById: byId };
 });

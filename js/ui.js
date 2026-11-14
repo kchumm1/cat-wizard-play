@@ -480,18 +480,15 @@
             (sk ? '<button class="slotout" data-out="' + i + '" aria-label="' + (i + 1) + '번 칸 비우기">빼기</button>' : '') + '</div>';
         }).join('') + '</div><div class="presets"><span class="note">프리셋</span>' + [0, 1, 2].map(function (i) { return '<button class="btn' + ((s.preset || 0) === i ? ' on' : '') + '" data-preset="' + i + '" aria-pressed="' + ((s.preset || 0) === i) + '">' + (i + 1) + '</button>'; }).join('') +
           '</div><div class="btns" style="margin:8px 0 4px"><button class="btn pri" data-act="autoskill">센 스킬로 자동 배치</button><button class="btn" data-act="skillall">일괄 강화</button></div>' +
-          '<div class="note">스킬 칸의 피해는 지금 내 능력치로 한 번 썼을 때 몬스터 한 마리가 받는 피해예요(치명타·약점·폭주 전). 보스에게는 보스 피해만큼 더 들어가요.</div>' +
           '<div class="note">스킬 보유 효과: 모든 스킬 피해 +' + pct(CW.skillOwnedStats(s).skillDmg) + ' (강화 1단계마다 +' + pct(DATA.balance.skillOwnedPer) + ')</div>' +
         '<div class="note">' + (selSlot >= 0 ? (selSlot + 1) + '번 칸을 골랐어요. 아래에서 넣을 스킬을 누르세요.' : '칸을 고르지 않고 넣으면 빈 칸(없으면 4번 칸)에 들어가요.') + '</div>';
       var row = function (sk) {
         var locked = sk.tier > s.tier, at = s.slots.indexOf(sk.id), lv = CW.skillLevel(s, sk.id), max = lv >= DATA.balance.skillMaxLv, cost = CW.skillUpCost(sk, lv);
-        var dmg = sk.mult * (1 + DATA.balance.skillLvBonus * lv), next = sk.mult * (1 + DATA.balance.skillLvBonus * (lv + 1));
         var act = locked ? '<span class="note">' + sk.tier + '차 전직</span>'
           : (at >= 0 ? '<button class="btn" data-unslot="' + at + '">' + (at + 1) + '번 빼기</button>' : '<button class="btn pri" data-eq="' + sk.id + '">' + (selSlot >= 0 ? (selSlot + 1) + '번에 넣기' : '넣기') + '</button>');
         var up = locked ? '' : '<button class="buy ' + (max || s.gold < cost ? 'off' : '') + '" data-sup="' + sk.id + '">' + (max ? '최대' : '강화 <i class="coin"></i>' + gh(cost)) + '</button>';
-        return '<div class="row skrow" style="' + (locked ? 'opacity:.55' : '') + '"><div class="sk" style="--c:#' + new THREE.Color(sk.color).getHexString() + ';width:52px;height:52px">' + CW.ICO.skill(sk.id) + '</div><div class="info"><div class="name">' + sk.name + '<span class="lv">' + (locked ? sk.tier + '차' : '+' + lv) + '</span></div><div class="desc skwho"><b>' + CW.skillTargetText(CW.targetCount(sk, false)) + '</b>' + (sk.splash ? ' · 옆 몬스터에게도 ' + Math.round(sk.splash * 100) + '%' : '') + (sk.status ? ' · ' + STATUS[sk.status] : '') + '</div>' +
-          '<div class="desc skdmg">한 마리에게 <b>' + fmt(CW.skillDamageAt(s, sk, lv)) + '</b>' + (!max && !locked ? ' → 다음 강화 ' + fmt(CW.skillDamageAt(s, sk, lv + 1)) : '') + '</div>' +
-          '<div class="desc sklv">강화 0단계 ' + fmt(CW.skillDamageAt(s, sk, 0)) + ' · ' + DATA.balance.skillMaxLv + '단계(최대) ' + fmt(CW.skillDamageAt(s, sk, DATA.balance.skillMaxLv)) + ' <small>(피해 ×' + (Math.round(dmg * 100) / 100) + ')</small></div>' + (sk.how ? '<div class="desc how">' + sk.how + '</div>' : '') +
+        return '<div class="row skrow" style="' + (locked ? 'opacity:.55' : '') + '"><div class="sk" style="--c:#' + new THREE.Color(sk.color).getHexString() + ';width:52px;height:52px">' + CW.ICO.skill(sk.id) + '</div><div class="info"><div class="name">' + sk.name + '<span class="lv">' + (locked ? sk.tier + '차' : '+' + lv) + '</span></div><div class="desc skwho"><b>' + CW.skillTargetText(sk.targets) + '</b></div>' +
+          (sk.how ? '<div class="desc how">' + sk.how + '</div>' : '') +
           '<div class="skbtns"><button class="btn" data-prev="' + sk.id + '">보기</button>' + act + up + '</div></div></div>';
       };
       // one block per job tier: its name, then the skills that tier brings
@@ -499,7 +496,7 @@
         var n = i + 1, open = n <= s.tier;
         return '<div class="sktier' + (open ? '' : ' lock') + '"><b>' + n + '차</b><span>' + t.name + '</span>' + (open ? '' : '<small>' + (n - 1) + '-31 보스를 이기면 열려요</small>') + '</div>' + DATA.skills.filter(function (sk) { return sk.tier === n; }).map(row).join('');
       }).join('');
-      return top + '<h3>스킬 목록 · 강화</h3><div class="note" style="margin:-4px 0 8px">전직할 때마다 그 차수의 스킬 네 가지가 열려요. 피해 배수는 한 번 쓸 때 몬스터 한 마리가 받는 전체 피해예요(여러 번에 나눠 맞아도 합은 같아요). 강화할 때마다 그 스킬 피해가 ' + Math.round(DATA.balance.skillLvBonus * 100) + '%씩 늘어요 (최대 +' + DATA.balance.skillMaxLv + ').</div><div class="list">' + list + '</div>';
+      return top + '<h3>스킬 목록 · 강화</h3><div class="note" style="margin:-4px 0 8px">전직할 때마다 그 차수의 스킬 네 가지가 열려요. 강화할 때마다 그 스킬 피해가 ' + Math.round(DATA.balance.skillLvBonus * 100) + '%씩 늘어요 (최대 +' + DATA.balance.skillMaxLv + ').</div><div class="list">' + list + '</div>';
     }
     function gearPanel() {
       if (gearSub === 'relic') return subTabs() + relicPanel();
