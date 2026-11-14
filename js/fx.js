@@ -1241,16 +1241,16 @@
     sc.hooks.step = function (pos, boss) { if (boss) { dust(pos, N(3), 1.1); gRing(pos, 0xffffff, 0.9, 0.25); } else if (Math.random() < 0.45) dust(pos, 1, 0.45); };
     // a monster claws at the wizard: slash marks fly at it and its magic barrier ripples
     // the staff swing (scene, at a cast's release): the star leaves a short arc of light in the spell's colour
-    // the staff swing (scene, at a cast's release): an arc of light from where the star is, over the head, to the front —
-    // larger than the staff itself turns (the picture can only bend so far), so the swing reads as a full stroke
+    // the staff swing (scene, at a cast's release): a streak of light that follows the staff's head as it swings. (Until
+    // 2026-11-15 it was a made-up arc over the head from the plain wizard's star — in a costume it fanned out over the
+    // helmet while the staff, now its own piece, swung the other way.)
     sc.hooks.swing = function (col) {
-      var tip = sc.heroTip(), c = sc.heroCenter(); c.y += 0.1;
-      var dx = tip.x - c.x, dy = tip.y - c.y, R = Math.max(0.35, Math.sqrt(dx * dx + dy * dy)) * 1.1, a0 = Math.atan2(dy, dx), turn = (dx < 0 ? -1 : 1) * 2.3, t = 0, T = 0.13;
+      var t = 0, T = 0.26;
       var a = vx.ribbon({ solid: true, mode: 'trail', w: 0.1, color: deep(col), core: 0.85, alpha: 0.95, maxPts: 18, shrink: 70, minDist: 0.02 }),
         h = vx.ribbon({ mode: 'trail', w: 0.26, color: col, core: 0, alpha: 0.3, maxPts: 18, shrink: 70, minDist: 0.02 });
       tick(function (dt) {
-        t += dt; var k = Math.min(1, t / T), e = 1 - (1 - k) * (1 - k), ang = a0 + turn * e, p = V(c.x + Math.cos(ang) * R, c.y + Math.sin(ang) * R, c.z + 0.08);
-        if (a) a.head(p); if (h) h.head(p); if (k < 1) return false; if (a) a.detach(); if (h) h.detach(); return true;
+        t += dt; var p = sc.heroTip(); p.z += 0.08;
+        if (a) a.head(p); if (h) h.head(p); if (t < T) return false; if (a) a.detach(); if (h) h.detach(); return true;
       });
     };
     sc.hooks.swipe = function (mob) {

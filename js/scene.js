@@ -278,7 +278,14 @@
       var p = pointOn(hero, u, v);
       return new T.Vector3(heroGroup.position.x + hero.position.x + p.x, heroGroup.position.y + hero.position.y + p.y * COS_T, heroGroup.position.z - p.y * SIN_T + 0.1);
     }
-    function heroTip() { return hero ? heroLocal(TIP_U, TIP_V) : new T.Vector3(-1.85, 1.1, 0.35); }
+    // The staff's head in the picture now worn: the rig's tip (rig.js armL.tip), else the top of its staff strip. (It used
+    // to be the plain wizard's star for every picture, which in a costume is beside the helmet — the staff's twinkles and
+    // its swing trail came from there, 2026-11-15.)
+    function tipUV() {
+      var d = hero.userData, a = d.rig && d.rig.armL, c = d.crop, q = a && (a.tip || a.cap);
+      return q && c ? [(q[0] - c.x0) / c.cw, 1 - (q[1] - c.y0) / c.ch] : [TIP_U, TIP_V];
+    }
+    function heroTip() { if (!hero) return new T.Vector3(-1.85, 1.1, 0.35); var t = tipUV(); return heroLocal(t[0], t[1]); }
     // spells leave from just in front of the raised paw so they never cross the face
     function heroPaw() { var p = hero ? heroLocal(0.86, 0.5) : new T.Vector3(-0.75, 0.9, 0.35); p.z += 0.12; return p; }
     function heroCenter() { var h = HERO_H * 0.5; return new T.Vector3(heroGroup.position.x + (hero ? hero.position.x : 0), h * COS_T + (hero ? hero.position.y : 0), heroGroup.position.z - h * SIN_T); }
