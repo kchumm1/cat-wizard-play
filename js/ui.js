@@ -55,8 +55,8 @@
         '<div class="bagbtns"><button class="buy' + (!e || lv >= max || s.gold < cost ? ' off' : '') + '" data-blv="' + k + '">' + (lv >= max ? '최대 레벨' : '<small>레벨업</small><span><i class="coin"></i>' + gh(cost) + '</span>') + '</button>' +
         '<button class="btn' + (e && e.n >= DATA.bagConf.mergeCount && p.t < T - 1 ? '' : ' off') + '" data-bmerge="' + k + '">합성 ' + (e ? e.n : 0) + '/' + DATA.bagConf.mergeCount + '</button>' +
         '<button class="btn' + (worn ? ' on' : '') + (e ? '' : ' off') + '" data-bequip="' + k + '">' + (worn ? '장착 중' : '장착') + '</button>' +
-        '<button class="btn tr' + (trOk ? '' : ' off') + '" data-btr="' + k + '">' + (star >= BG.starMax ? '초월 완료 ★' + star : '초월 ★' + star + '→' + (star + 1) + '<small>최대 레벨 · 같은 장비 ' + trc.copies + '개 · <i class="coin"></i>' + gh(trc.gold) + '</small>') + '</button>' +
-        '<button class="btn' + (e ? '' : ' off') + '" data-bpot="' + k + '">잠재력 💎' + (e ? CW.potCost(s, k) : DATA.potConf.cost) + '</button></div>';
+        '<button class="btn tr' + (trOk ? '' : ' off') + '" data-btr="' + k + '">' + (star >= BG.starMax ? '초월 완료 ★' + star : '초월 ★' + star + '→' + (star + 1) + '<small>최대 레벨 · 같은 장비 ' + trc.copies + '개 · <span class="trcost"><i class="coin"></i>' + gh(trc.gold) + '</span></small>') + '</button>' +
+        '<button class="btn pot' + (e ? '' : ' off') + '" data-bpot="' + k + '"><small>잠재력</small><span><i class="gem"></i>' + fmt(e ? CW.potCost(s, k) : DATA.potConf.cost) + '</span></button></div>';
       var kinds = '<div class="kindtabs" role="tablist">' + DATA.kinds.map(function (kd) {
         var w = s.equip[kd], g = w ? CW.parseKey(w).grade : -1;
         return '<button role="tab" aria-selected="' + (kd === bagKind) + '" data-bkind="' + kd + '">' + KIND_SHORT[kd] + (g >= 0 ? '<i style="background:' + gc(g) + '"></i>' : '') + '</button>';
@@ -267,7 +267,7 @@
         else cells += '<div class="sgcell lockd"><span>🔒</span><small>Lv.' + ((i - C.slotsBase + 1) * C.slotsPer) + '</small></div>';
       }
       var sum = {}; eq.forEach(function (id) { var it = CW.sigilById(s, id); sum[it.stat] = (sum[it.stat] || 0) + CW.sigilValue(it); });
-      var effs = Object.keys(sum).map(function (k) { return '<p>' + bonusText(k, sum[k]) + '</p>'; }).join('') || '<p class="note">장착한 신성력이 없어요</p>';
+      var effs = Object.keys(sum).map(function (k) { return '<p><span>' + (STAT_KO[k] || k) + '</span><b>+' + pct(sum[k]) + '</b></p>'; }).join('') || '<p class="note">장착한 신성력이 없어요</p>';
       var lvbar = '<div class="codexbar"><span>신성력 레벨 효과 (Lv.' + b.lv + ')</span><b>신성력 데미지 +' + pct(b.lv * C.lvFinal) + '</b></div>' +
         '<div class="sglv"><span>' + CW.ICO.cur('sigil') + ' 신성석 <b>' + fmt(b.stone) + '</b><small class="note">분해하면 얻어요</small></span><button class="buy gemb' + (b.stone < lvCost || b.lv >= C.lvMax ? ' off' : '') + '" data-sglv="1">' + (b.lv >= C.lvMax ? '최대' : '<small>레벨업</small><span>' + CW.ICO.cur('sigil') + ' ' + fmt(lvCost) + '</span>') + '</button></div>';
       var sel = selSigil ? CW.sigilById(s, selSigil) : null, selBox = '';
