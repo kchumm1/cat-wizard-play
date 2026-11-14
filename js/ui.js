@@ -343,7 +343,7 @@
       var now = Date.now(), bt = DATA.potions.map(function (p) { var l = CW.buffLeft(s, p.id, now); return l ? '<span>' + mi('potion', p) + mmss(l) + '</span>' : ''; }).join('');
       if (bt !== lastBuffs) { lastBuffs = bt; $('buffs').innerHTML = bt; }
       var tier = DATA.tiers[s.tier - 1];
-      var next = s.tier < DATA.tiers.length ? (s.tier) + '-31 보스를 이기면 ' + (s.tier + 1) + '차' : (s.best >= 309 ? '마왕 토벌 완료!' : '최종 목표 10-31 늑대 왕');
+      var next = s.tier < DATA.tiers.length ? CW.tierNeed(s.tier + 1) + ' ' + (s.tier + 1) + '차' : (s.best >= 309 ? '마왕 토벌 완료!' : '최종 목표 10-31 늑대 왕');
       var wornT = CW.titleWorn ? CW.titleWorn(s) : 'tNovice';
       var tTxt = wornT !== 'tNovice' ? CW.titleById(wornT).name : s.tier + '차 ' + tier.name; if ($('tierTag').textContent !== tTxt) $('tierTag').textContent = tTxt; $('tierTag').classList.toggle('ttl', wornT !== 'tNovice'); if ($('questTxt').textContent !== next) $('questTxt').textContent = next;
     }
@@ -441,51 +441,78 @@
       }).join('') + '</div>';
       var table = '<details style="margin-top:12px"><summary class="note" style="cursor:pointer">확률 보기</summary><div class="tablewrap"><table class="prob"><tr><th>레벨</th>' + DATA.grades.map(function (g) { return '<th style="color:' + g.color + '">' + g.name + '</th>'; }).join('') + '</tr>' +
         DATA.gacha.table.map(function (r, i) { return '<tr style="' + (i + 1 === lv ? 'color:var(--gold)' : '') + '"><td>' + (i + 1) + ' (' + L[i] + '회~)</td>' + r.map(function (p) { return '<td>' + p + '%</td>'; }).join('') + '</tr>'; }).join('') + '</table></div></details>';
-      return '<div class="artban ab-gacha" aria-hidden="true"></div><h3>장비 뽑기</h3>' + head + pulls + table + '<p class="note" style="margin-top:10px">다이아가 부족하면 더보기 → 상점에서 받을 수 있어요(연습용).</p>';
+      return '<div class="artban ab-gacha" aria-hidden="true"></div><h3>장비 뽑기</h3>' + head + pulls + table + '<p class="note" style="margin-top:10px">다이아가 부족하면 더보기 → 패키지에서 받을 수 있어요(연습용).</p>';
     }
+    // 더보기: three parts only (2026-11-14): 전직 (when each job opens), 패키지 (everything for sale, practice only),
+    // 설정 (how the game looks and plays; the rows for finding problems are folded away). Difficulty and going back to
+    // an old region are on the map (stagePanel).
     function morePanel() {
       var s = G.state;
+      var nextN = s.tier + 1;
+      var tierRow = function (n, name, sk, nSkills, soon) {
+        var now = s.tier === n, done = s.tier >= n, next = n === nextN;
+        return '<div class="row tierrow' + (next ? ' next' : '') + '" style="' + (done || next ? '' : 'opacity:.6') + '"><div class="info"><div class="name">' + n + '차 ' + name +
+          (now ? '<span class="lv">지금</span>' : soon ? '<span class="lv soon">준비 중</span>' : next ? '<span class="lv">다음</span>' : '') + '</div><div class="desc">' + CW.tierNeed(n) +
+          (nSkills ? ' · 스킬 ' + nSkills + '개' + (sk ? ' (' + sk.name + ' 등)' : '') : '') + '</div></div></div>';
+      };
       var tiers = '<h3>전직</h3><div class="list">' + DATA.tiers.map(function (t, i) {
-        var n = i + 1, done = s.tier >= n, sk = t.skill && CW.skillById(t.skill);
-        return '<div class="row" style="' + (done ? '' : 'opacity:.6') + '"><div class="info"><div class="name">' + n + '차 ' + t.name + (s.tier === n ? '<span class="lv">지금</span>' : '') + '</div><div class="desc">' + (n === 1 ? '처음부터' : (n - 1) + '-31 보스를 이기면') + ' · 스킬 ' + DATA.skills.filter(function (x) { return x.tier === n; }).length + '개' + (sk ? ' (' + sk.name + ' 등)' : '') + '</div></div></div>';
-      }).join('') + '</div>';
-      var frontier = Math.min(309, s.best + 1);
-      var regions = '<h3>사냥터</h3><div class="note" style="margin:-4px 0 8px">지나온 지역에서 다시 사냥할 수 있어요.</div><div class="btns">' + DATA.regions.map(function (r, i) {
-        var open = i * 31 <= frontier; return '<button class="btn" data-go="' + (i * 31) + '" ' + (open ? '' : 'disabled style="opacity:.35"') + '>' + r.name + '</button>';
-      }).join('') + '<button class="btn pri" data-go="' + frontier + '">도전 중인 판으로</button></div>';
-      var shop = '<h3>상점</h3><div class="notice">실제 결제 없음 · 연습용</div><div class="shop">' + DATA.shop.map(function (p, i) {
+        var n = i + 1; return tierRow(n, t.name, t.skill && CW.skillById(t.skill), DATA.skills.filter(function (x) { return x.tier === n; }).length, false);
+      }).join('') + (DATA.tierSoon || []).map(function (t) { return tierRow(t.n, t.name, null, 0, true); }).join('') + '</div>';
+      var won = function (v) { return v.toLocaleString('ko-KR') + '원'; };
+      var gems = '<div class="subh">다이아</div><div class="shop">' + DATA.shop.map(function (p, i) {
         var first = !s.firstBuy[i];
-        return '<div class="prod">' + (first ? '<span class="tag">첫 구매 2배</span>' : '') + '<div class="amt"><i class="gem"></i>' + fmt(p.gems * (first ? 2 : 1)) + '</div><div class="note">' + p.name + '</div><button class="buy gemb" data-shop="' + i + '">' + p.won.toLocaleString('ko-KR') + '원</button></div>';
-      }).join('') + '</div>' + '<h3>패키지</h3><div class="note" style="margin:-4px 0 8px">룬·신성력 패키지예요. 실제 결제 없이 연습용으로 바로 받아요.</div><div class="packs">' + DATA.packs.map(function (p) {
-        var g = p.give, lines = [];
+        return '<div class="prod">' + (first ? '<span class="tag">첫 구매 2배</span>' : '') + '<div class="amt"><i class="gem"></i>' + fmt(p.gems * (first ? 2 : 1)) + '</div><div class="note">' + p.name + '</div><button class="buy gemb" data-shop="' + i + '">' + won(p.won) + '</button></div>';
+      }).join('') + '</div>';
+      var packLines = function (g) {
+        var lines = [];
+        if (g.daily) lines.push('<i class="gem"></i> 다이아 ' + fmt(g.daily.gems) + '개씩 ' + g.daily.days + '일');
+        if (g.gems) lines.push('<i class="gem"></i> 다이아 ' + fmt(g.gems));
+        if (g.goldMin) lines.push('<i class="coin"></i> 골드 ' + fmt(CW.goldPerSecond(s) * 60 * g.goldMin) + ' (사냥 ' + (g.goldMin >= 60 ? g.goldMin / 60 + '시간' : g.goldMin + '분') + '치)');
+        if (g.potionMin) lines.push('물약 3종 ' + (g.potionMin >= 60 ? g.potionMin / 60 + '시간' : g.potionMin + '분'));
+        if (g.pulls) lines.push('장비 뽑기 ' + g.pulls + '번 (다이아 안 씀)');
         if (g.runeStone) lines.push(CW.ICO.cur('rune') + ' 룬석 ' + fmt(g.runeStone));
         (g.sigils || []).forEach(function (x) { lines.push('<b style="color:' + hc(x.grade) + '">' + hn(x.grade) + '</b> 신성력 ' + x.n + '개'); });
         if (g.sigilStone) lines.push(CW.ICO.cur('sigil') + ' 신성석 ' + fmt(g.sigilStone));
-        return '<div class="pack"><div class="picon">' + mi('pack', p) + '</div><div class="info"><div class="name">' + p.name + (s.packs && s.packs[p.id] ? ' <span class="lv">' + s.packs[p.id] + '번 받음</span>' : '') + '</div><div class="desc">' + lines.join(' · ') + '</div></div><button class="buy gemb" data-pack="' + p.id + '">' + p.won.toLocaleString('ko-KR') + '원</button></div>';
-      }).join('') + '</div>';
+        return lines.join(' · ');
+      };
+      var packRow = function (p) {
+        var why = CW.packOpen(s, p.id), times = (s.packs || {})[p.id] || 0, btn;
+        if (why === 'ok') btn = '<button class="buy gemb" data-pack="' + p.id + '">' + won(p.won) + '</button>';
+        else if (why === 'tier') btn = '<button class="buy" disabled>' + p.need.tier + '차부터</button>';
+        else if (why === 'limit') btn = '<button class="buy" disabled>받음</button>';
+        else btn = '<button class="buy" disabled>받는 중</button>';
+        var dd = s.dailyGems || {}, extra = '';
+        if (p.give.daily && dd.left > 0) {
+          var today = G.dayKey(), took = dd.last === today;
+          extra = '<div class="desc">남은 날 ' + dd.left + '일 · ' + (took ? '오늘 받음' : '<button class="btn pri" data-act="daily">오늘 다이아 받기</button>') + '</div>';
+        }
+        return '<div class="pack"><div class="picon">' + mi('pack', p) + '</div><div class="info"><div class="name">' + p.name + (times && !p.limit && !p.give.daily ? ' <span class="lv">' + times + '번 받음</span>' : '') + '</div><div class="desc">' + packLines(p.give) + '</div>' + extra + '</div>' + btn + '</div>';
+      };
+      var SECTIONS = [['daily', '매일 다이아'], ['grow', '성장'], ['gear', '장비 뽑기'], ['tier', '전직 축하 (한 번만)'], ['rune', '룬·신성력']];
+      var packs = '<h3>패키지</h3><div class="notice">실제 결제 없음 · 연습용 · 누르면 바로 받아요</div>' + gems + SECTIONS.map(function (sec) {
+        return '<div class="subh">' + sec[1] + '</div><div class="packs">' + DATA.packs.filter(function (p) { return p.cat === sec[0]; }).map(packRow).join('') + '</div>';
+      }).join('');
       var st = s.settings;
       var settings = '<h3>설정</h3><div class="list">' +
-        '<div class="row"><div class="info"><div class="name">효과음</div></div><button class="btn" data-set="sound">' + (st.sound ? '켜짐' : '꺼짐') + '</button></div>' +
+        '<div class="row"><div class="info"><div class="name">화질</div><div class="desc">버벅이면 낮춰 보세요</div></div><button class="btn" data-set="quality">' + ({ auto: '자동', high: '높음', mid: '보통', low: '낮음' })[st.quality] + '</button></div>' +
         '<div class="row"><div class="info"><div class="name">보는 방식</div><div class="desc">도트 느낌은 픽셀 그림처럼 보여요</div></div><button class="btn" data-set="pixel">' + (st.pixel ? '도트 느낌' : '보통 3D') + '</button></div>' +
-        '<div class="row"><div class="info"><div class="name">보스 자동 도전</div><div class="desc">끄면 도전 버튼을 눌러야 보스가 나와요</div></div><button class="btn" data-set="autoBoss">' + (st.autoBoss === false ? '꺼짐' : '켜짐') + '</button></div>' +
+        '<div class="row"><div class="info"><div class="name">효과음</div></div><button class="btn" data-set="sound">' + (st.sound ? '켜짐' : '꺼짐') + '</button></div>' +
         dmgRow('dmgSize', '대미지 글씨 크기', '작게 하면 몬스터가 잘 보여요', st.dmgSize === undefined ? 60 : st.dmgSize, 30, 120) +
         dmgRow('dmgAlpha', '대미지 글씨 투명도', '낮출수록 글씨가 비쳐 보여요', st.dmgAlpha === undefined ? 85 : st.dmgAlpha, 10, 100) +
-        '<div class="row"><div class="info"><div class="name">화질</div><div class="desc">버벅이면 낮춰 보세요</div></div><button class="btn" data-set="quality">' + ({ auto: '자동', high: '높음', mid: '보통', low: '낮음' })[st.quality] + '</button></div>' +
-        '<div class="row"><div class="info"><div class="name">진행 옮기기</div><div class="desc">다른 기기(아이폰·갤럭시)로 옮길 때: 코드를 복사해서 다른 기기의 "코드 넣기"에 붙여요</div></div><div class="sbtns"><button class="btn" data-act="savecopy">코드 복사</button><button class="btn" data-act="savepaste">코드 넣기</button></div></div>' +
-        '<div class="row"><div class="info"><div class="name">처음부터 다시 하기</div><div class="desc">모든 진행이 지워져요</div></div><button class="btn" data-set="reset">다시 하기</button></div>' +
-        '<div class="row"><div class="info"><div class="name">게임 버전</div><div class="desc">새 버전이 나오면 앱을 다시 열 때 바뀌어요</div></div><b class="appver" id="appVer">' + appVersion() + '</b></div>' +
-        lastErrorRow() + hitchRow() +
+        '<div class="row"><div class="info"><div class="name">보스 자동 도전</div><div class="desc">끄면 도전 버튼을 눌러야 보스가 나와요</div></div><button class="btn" data-set="autoBoss">' + (st.autoBoss === false ? '꺼짐' : '켜짐') + '</button></div>' +
         // only in an iPhone home-screen app whose page lies under the clock (an icon added the old way), where the page
         // may be stretched to the screen (tools/build-site.cjs)
         (root.__cwFit && document.documentElement.classList.contains('under') ? '<div class="row"><div class="info"><div class="name">아래 메뉴</div><div class="desc">아래 메뉴가 잘리면 안쪽으로 바꿔 주세요</div></div><button class="btn" data-set="bottomFit">' + (bottomInside() ? '안쪽' : '맨 아래') + '</button></div>' : '') +
+        '<div class="row"><div class="info"><div class="name">진행 옮기기</div><div class="desc">다른 기기(아이폰·갤럭시)로 옮길 때: 코드를 복사해서 다른 기기의 "코드 넣기"에 붙여요</div></div><div class="sbtns"><button class="btn" data-act="savecopy">코드 복사</button><button class="btn" data-act="savepaste">코드 넣기</button></div></div>' +
+        (G.storageOk() ? '' : '<p class="note">이 브라우저에서는 저장이 안 돼요. 창을 닫으면 진행이 사라져요.</p>') + '</div>' +
+        '<details class="fold"><summary>문제 확인용</summary><div class="list">' +
+        '<div class="row"><div class="info"><div class="name">게임 버전</div><div class="desc">새 버전이 나오면 앱을 다시 열 때 바뀌어요</div></div><b class="appver" id="appVer">' + appVersion() + '</b></div>' +
+        lastErrorRow() + hitchRow() +
         '<div class="row"><div class="info"><div class="name">화면 높이</div><div class="desc" id="scrInfo">' + screenInfo() + '</div></div></div>' +
-        (G.storageOk() ? '' : '<p class="note">이 브라우저에서는 저장이 안 돼요. 창을 닫으면 진행이 사라져요.</p>') + '</div>';
-      var diffs = '<h3>난이도</h3><div class="note" style="margin:-4px 0 8px">10-31 늑대 왕을 이기면 다음 난이도가 열려요. 보스 체력이 엄청 커지고 몬스터가 더 많이 몰려와요.</div><div class="list">' + DATA.difficulties.map(function (df, i) {
-        var open = i <= (s.diffUnlocked || 0), now = i === (s.diff || 0);
-        return '<div class="row" style="' + (open ? '' : 'opacity:.55') + '"><div class="info"><div class="name">' + df.name + (now ? '<span class="lv">지금</span>' : '') + '</div><div class="desc">보스 체력 ×' + fmt(df.bossMul) + ' · 몬스터 +' + df.extraMobs + '마리 · 다이아 ×' + df.gemMul + '</div></div>' + (now ? '' : '<button class="btn' + (open ? ' pri' : '') + '" data-diff="' + i + '">' + (open ? '도전' : '잠김') + '</button>') + '</div>';
-      }).join('') + '</div>';
-      var jump = '<div class="jump">' + ['난이도', '전직', '사냥터', '상점', '패키지', '설정'].map(function (t, i) { return '<button data-jump="' + i + '">' + t + '</button>'; }).join('') + '</div>';
-      return jump + diffs + tiers + regions + shop + settings;
+        '<div class="row"><div class="info"><div class="name">처음부터 다시 하기</div><div class="desc">모든 진행이 지워져요</div></div><button class="btn" data-set="reset">다시 하기</button></div>' +
+        '</div></details>';
+      var jump = '<div class="jump three">' + ['전직', '패키지', '설정'].map(function (t, i) { return '<button data-jump="' + i + '">' + t + '</button>'; }).join('') + '</div>';
+      return jump + tiers + packs + settings;
     }
     function bottomInside() { try { return localStorage.getItem('cw-bottom') === 'inside'; } catch (e) { return false; } }
     // the last error the game kept going through (main.js noteError), only when there was one: to find what broke
@@ -530,6 +557,10 @@
       var best = d === (s.diff || 0) ? s.best : ((s.diffBest || {})[d] ? s.diffBest[d].best : -1), frontier = Math.min(309, best + 1), here = d === (s.diff || 0) ? s.stage : -1;
       var st = CW.stats(s), reg = DATA.regions[R], open = d <= (s.diffUnlocked || 0);
       var head = '<div class="dsel"><button class="btn" data-dsel="-1" aria-label="이전 난이도">◀</button><b>' + DATA.difficulties[d].name + (open ? '' : ' (잠김)') + '</b><button class="btn" data-dsel="1" aria-label="다음 난이도">▶</button></div>' +
+        // what this difficulty is like (this used to be the 난이도 part of 더보기), and a way straight to its front line
+        '<div class="note dnote">' + (open ? '보스 체력 ×' + fmt(DATA.difficulties[d].bossMul) + ' · 몬스터 +' + DATA.difficulties[d].extraMobs + '마리 · 다이아 ×' + DATA.difficulties[d].gemMul
+          : '앞 난이도의 10-31 늑대 왕을 이기면 열려요') + '</div>' +
+        (open ? '<button class="btn pri dgo" data-sgo="' + frontier + '" data-sd="' + d + '">' + (d === (s.diff || 0) ? '도전 중인 판으로' : DATA.difficulties[d].name + ' 도전 중인 판으로') + ' (' + CW.stageLabel(frontier) + ')</button>' : '') +
         '<div class="rsel">' + DATA.regions.map(function (r, i) { return '<button class="rchip' + (i === R ? ' on' : '') + (i * 31 > frontier ? ' lock' : '') + '" data-rsel="' + i + '">' + (i + 1) + '</button>'; }).join('') + '</div>' +
         '<div class="artban ab-map" aria-hidden="true" style="background-position:50% ' + MAP_Y[R] + '%"><b>' + reg.name + '</b></div><div class="note" style="margin:6px 0 8px">판을 누르면 그곳으로 가요</div>';
       var rows = '';
@@ -538,7 +569,7 @@
         var res = { id: info.isBoss ? CW.stageBoss(i).art : reg.monsters[(n * 5) % reg.monsters.length], tint: null };
         var img = G.thumb(res.id), gold = CW.stageGold(tmp) * st.goldMul / 3, xp = CW.killXp(tmp) / 3;
         rows += '<button class="srow' + (i === here ? ' here' : '') + (info.isBoss ? ' boss' : '') + '" data-sgo="' + i + '" data-sd="' + d + '"' + (lock ? ' disabled' : '') + '>' +
-          '<span class="sname"><small>' + DATA.difficulties[d].name + '</small>' + CW.stageLabel(i) + (CW.isTierTrial(s, i) ? ' 전직 시험' : info.isRegionBoss ? ' 지역 보스' : info.isBoss ? ' 보스' : '') + '</span>' +
+          '<span class="sname"><small>' + DATA.difficulties[d].name + '</small>' + CW.stageLabel(i) + (CW.isTierTrial(s, i, d) ? ' 전직 시험' : info.isRegionBoss ? ' 지역 보스' : info.isBoss ? ' 보스' : '') + '</span>' +
           '<span class="smon">' + (img ? '<img src="' + img + '" alt="" style="' + (res.tint ? 'filter:hue-rotate(' + (R * 36) + 'deg)' : '') + '">' : '') + '</span>' +
           '<span class="srew"><i class="coin"></i>' + fmt(gold) + '</span><span class="srew"><b class="xpdot"></b>' + fmt(xp) + '</span>' +
           (info.isBoss ? '<span class="srew"><i class="gem"></i>' + fmt(CW.bossGems(i, !(s.firstClear || {})[CW.clearKey({ diff: d }, i)]) * DATA.difficulties[d].gemMul) + '</span>' : '<span class="srew muted">체력 ' + fmt(CW.stageMonsterHp(tmp) / 3) + '</span>') +
@@ -625,7 +656,8 @@
       else if (d.rkf) { rnFilter = d.rkf; renderPanel(true); }
       else if (d.act === 'rbest') { G.runeEquipBest(); toast('가장 좋은 룬으로 장착했어요'); renderPanel(true); }
       else if (d.act === 'rdisall') { confirmBox('모두 분해', '잠금하지 않고 장착하지 않은 룬을 모두 룬석으로 바꿀까요?', '분해하기', function () { var rn2 = G.runeDismantleAll(); toast(rn2 ? '룬석 +' + fmt(rn2) : '분해할 룬이 없어요'); selRune = null; renderPanel(true); }); }
-      else if (d.pack) { var pk = CW.packById(d.pack); confirmBox('연습용 구매', pk.name + ' (' + pk.won.toLocaleString('ko-KR') + '원)<br><b>실제 결제 없음 · 연습용</b><br>누르면 바로 들어와요.', '받기', function () { var got = G.buyPack(d.pack); if (got === false) toast('신성력 가방에 자리가 부족해요 (최대 ' + DATA.sigilConf.cap + '개)'); else if (got.length) showSigils(got, true); else toast(pk.name + '을(를) 받았어요'); renderPanel(true); hud(); }); }
+      else if (d.pack) { var pk = CW.packById(d.pack); confirmBox('연습용 구매', pk.name + ' (' + pk.won.toLocaleString('ko-KR') + '원)<br><b>실제 결제 없음 · 연습용</b><br>누르면 바로 들어와요.', '받기', function () { var got = G.buyPack(d.pack); if (got === false) toast(CW.packOpen(G.state, d.pack) !== 'ok' ? '지금은 받을 수 없어요' : '신성력 가방에 자리가 부족해요 (최대 ' + DATA.sigilConf.cap + '개)'); else if (got.gear && got.gear.length) showGacha(got.gear); else if (got.length) showSigils(got, true); else toast(pk.name + '을(를) 받았어요'); renderPanel(true); hud(); }); }
+      else if (d.act === 'daily') { var dg = G.claimDaily(); toast(dg ? '다이아 ' + fmt(dg) + '개를 받았어요' : '오늘은 이미 받았어요'); renderPanel(true); hud(); }
       else if (d.sg) { selSigil = selSigil === d.sg ? null : d.sg; renderPanel(true); }
       else if (d.sgset !== undefined) { G.sigilSet(+d.sgset); toast((+d.sgset + 1) + '번 신성력 세트'); renderPanel(true); }
       else if (d.sgf !== undefined) { sgFilter = +d.sgf; renderPanel(true); }

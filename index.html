@@ -646,6 +646,15 @@ table.prob th:first-child,table.prob td:first-child{text-align:left}
 .jump{position:sticky;top:-1px;z-index:3;display:flex;gap:6px;overflow-x:auto;padding:6px 0 8px;margin:0 0 4px;background:linear-gradient(180deg,var(--ink) 80%,transparent);scrollbar-width:none}
 .jump::-webkit-scrollbar{display:none}
 .jump button{flex:none;padding:7px 13px;border-radius:999px;background:#2c3050;box-shadow:0 3px 0 #17182a;font:700 13px var(--body);color:#fff}
+/* 더보기 (2026-11-14): three equal jump buttons, small headings inside 패키지, the folded rows for finding problems */
+.jump.three button{flex:1;padding:9px 0;font-size:14px}
+.subh{font:800 14px var(--body);color:var(--gold);margin:14px 2px 6px}
+.lv.soon{background:#5a5f7a}
+.tierrow.next{outline:2px solid var(--gold);outline-offset:-2px}
+details.fold{margin:14px 0 4px}
+details.fold>summary{cursor:pointer;font:700 13px var(--body);opacity:.7;padding:8px 2px}
+.dnote{text-align:center;margin:4px 0 8px}
+.dgo{display:block;width:100%;margin:0 0 10px}
 /* ---------- breathing room: wider gaps and bigger touch targets on a phone ---------- */
 :root{--tabh:72px}
 #hud{padding-top:12px;gap:10px}

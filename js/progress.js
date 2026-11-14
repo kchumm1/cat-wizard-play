@@ -31,17 +31,31 @@
     if (stageInfo(state.stage).isBoss) { state.bossTry = true; return 'boss'; }
     return 'next';
   }
-  // the job a region boss leads to (regions 1-9 -> jobs 2-10; region 10, the last boss, leads to none)
-  function trialTier(i) { var info = stageInfo(i); return info.isRegionBoss && info.region < 9 ? info.region + 2 : 0; }
+  // the job a region boss leads to: regions 1-8 -> jobs 2-9 on any difficulty; the 10th job (the phoenix) is the
+  // boss of 5-31 on 루나틱 (difficulty 2, 2026-11-14); 9-31 and the last boss lead to none (yet)
+  var TIER10 = { diff: 2, region: 4 };
+  function trialTier(i, diff) {
+    var info = stageInfo(i); if (!info.isRegionBoss) return 0;
+    if ((diff || 0) === TIER10.diff && info.region === TIER10.region) return 10;
+    return info.region < 8 ? info.region + 2 : 0;
+  }
   // a job trial: beating this boss would still raise the tier (shown as "전직 시험"; once the job is reached it is a
-  // plain region boss)
-  function isTierTrial(state, i) { return trialTier(i) > (state.tier || 1); }
+  // plain region boss). diff: the difficulty asked about (the map shows others than the one being played)
+  function isTierTrial(state, i, diff) { return trialTier(i, diff === undefined ? state.diff : diff) > (state.tier || 1); }
+  // what job n needs, in words (the job list and the goal line say this)
+  function tierNeed(n) {
+    if (n <= 1) return '처음부터';
+    if (n <= 9) return (n - 1) + '-31 보스를 이기면';
+    if (n === 10) return DATA.difficulties[TIER10.diff].name + ' ' + (TIER10.region + 1) + '-31 보스를 이기면';
+    var soon = (DATA.tierSoon || []).filter(function (t) { return t.n === n; })[0];
+    return soon ? DATA.difficulties[soon.diff].name + ' 10-31 보스를 이기면' : '';
+  }
   function onBossResult(state, won) {
     state.bossTry = false;
     state.kills = 0;
     if (!won) { state.stage = Math.max(0, state.stage - 1); state.farming = true; return { cleared: false, tierUp: null, final: false }; }
     state.bossWins = (state.bossWins || 0) + 1; if (state.diff >= 1) state.slayerWin = true;
-    var tierUp = isTierTrial(state, state.stage) ? trialTier(state.stage) : null;
+    var tierUp = isTierTrial(state, state.stage) ? trialTier(state.stage, state.diff) : null;
     state.best = Math.max(state.best, state.stage);
     if (tierUp) state.tier = tierUp;
     var final = state.stage === LAST, unlocked = null;
@@ -83,5 +97,5 @@
     state.farming = state.stage <= state.best;
     return true;
   }
-  return { clearKey: clearKey, setDifficulty: setDifficulty, stageLabel: stageLabel, stageInfo: stageInfo, stageBoss: stageBoss, isTierTrial: isTierTrial, onKill: onKill, onBossResult: onBossResult, retryBoss: retryBoss, onHidden: onHidden, goStage: goStage, LAST_STAGE: LAST };
+  return { clearKey: clearKey, setDifficulty: setDifficulty, stageLabel: stageLabel, stageInfo: stageInfo, stageBoss: stageBoss, isTierTrial: isTierTrial, tierNeed: tierNeed, onKill: onKill, onBossResult: onBossResult, retryBoss: retryBoss, onHidden: onHidden, goStage: goStage, LAST_STAGE: LAST };
 });

@@ -43,6 +43,12 @@
       // 10th job and on: legendary beasts (10 phoenix; dragon, sky whale and white tiger to come), in elemental spirit style
       { name: '불사조 냥법사', skill: 'phoenixDive', aura: 4 }
     ],
+    // the next jobs, not in the game yet (shown as "준비 중" in the job list): the boss of 10-31 on that difficulty
+    tierSoon: [
+      { n: 11, name: '용 냥법사', diff: 2 },
+      { n: 12, name: '하늘 고래 냥법사', diff: 3 },
+      { n: 13, name: '백호 냥법사', diff: 4 }
+    ],
     // Every job tier brings four skills of its own kind (the first job has its four starters plus three).
     // mult = the whole damage one monster takes from one cast, however many hits it arrives in.
     // targets 99 = every monster on the field · splash = share of the damage for monsters standing next to the target.
@@ -157,14 +163,29 @@
     // every owned costume adds collect to all damage
     costumeConf: { maxLv: 50, upBase: 20, upGrowth: 1.6, upLv: 0.15, starEvery: 10, starBonus: 0.1, collect: 0.05 },
     // shop packages (practice only, no real payment)
+    // Packages (practice only, no real payment). cat = the shop section; need.tier = only after that job; limit = how
+    // many times it can be bought. give: gems, goldMin (minutes of hunting gold at the current stage), potionMin (every
+    // potion runs that much longer), pulls (free gear pulls), daily { days, gems } (claimed once a day), runeStone,
+    // sigils, sigilStone. The plain gem shop is DATA.shop.
     packs: [
-      { id: 'runeS', name: '룬석 꾸러미', won: 5900, icon: '🔮', give: { runeStone: 1500 } },
-      { id: 'runeL', name: '룬 승급 상자', won: 33000, icon: '🔮', give: { runeStone: 12000 } },
-      { id: 'sigilA', name: '신성력 전설 패키지', won: 12000, icon: '💠', give: { sigils: [{ grade: 3, n: 3 }], sigilStone: 2000 } },
-      { id: 'sigilB', name: '신성력 고대 패키지', won: 33000, icon: '💠', give: { sigils: [{ grade: 5, n: 2 }, { grade: 4, n: 2 }], sigilStone: 8000 } },
-      { id: 'sigilC', name: '신성력 불멸 패키지', won: 59000, icon: '💠', give: { sigils: [{ grade: 7, n: 1 }, { grade: 6, n: 2 }], sigilStone: 20000 } },
-      { id: 'sigilD', name: '신성력 멸망 패키지', won: 119000, icon: '💠', give: { sigils: [{ grade: 10, n: 1 }, { grade: 8, n: 2 }], sigilStone: 60000 } },
-      { id: 'mixed', name: '룬·신성력 성장 세트', won: 22000, icon: '🎁', give: { runeStone: 5000, sigils: [{ grade: 4, n: 1 }], sigilStone: 5000 } }
+      { id: 'dailyGem', cat: 'daily', name: '매일 다이아 7일', won: 6900, icon: '📅', give: { daily: { days: 7, gems: 300 } } },
+      { id: 'goldS', cat: 'grow', name: '골드 꾸러미', won: 3300, icon: '💰', give: { goldMin: 120 } },
+      { id: 'goldL', cat: 'grow', name: '골드 금고', won: 12000, icon: '💰', give: { goldMin: 600 } },
+      { id: 'potion', cat: 'grow', name: '물약 꾸러미', won: 4900, icon: '🧪', give: { potionMin: 120 } },
+      { id: 'grow', cat: 'grow', name: '성장 한 번에', won: 15000, icon: '🎁', give: { goldMin: 300, potionMin: 180, gems: 800 } },
+      { id: 'gear10', cat: 'gear', name: '장비 뽑기 10번', won: 3300, icon: '🎰', give: { pulls: 10 } },
+      { id: 'gear30', cat: 'gear', name: '장비 뽑기 30번', won: 8900, icon: '🎰', give: { pulls: 30 } },
+      { id: 'gear100', cat: 'gear', name: '장비 뽑기 100번', won: 27000, icon: '🎰', give: { pulls: 100 } },
+      { id: 'tier5', cat: 'tier', name: '5차 전직 축하', won: 9900, icon: '🎉', need: { tier: 5 }, limit: 1, give: { gems: 2000, runeStone: 3000 } },
+      { id: 'tier8', cat: 'tier', name: '8차 전직 축하', won: 19900, icon: '🎉', need: { tier: 8 }, limit: 1, give: { gems: 5000, sigils: [{ grade: 4, n: 2 }], sigilStone: 5000 } },
+      { id: 'tier10', cat: 'tier', name: '불사조 전직 축하', won: 29900, icon: '🔥', need: { tier: 10 }, limit: 1, give: { gems: 10000, runeStone: 10000, sigils: [{ grade: 6, n: 1 }] } },
+      { id: 'runeS', cat: 'rune', name: '룬석 꾸러미', won: 5900, icon: '🔮', give: { runeStone: 1500 } },
+      { id: 'runeL', cat: 'rune', name: '룬 승급 상자', won: 33000, icon: '🔮', give: { runeStone: 12000 } },
+      { id: 'sigilA', cat: 'rune', name: '신성력 전설 패키지', won: 12000, icon: '💠', give: { sigils: [{ grade: 3, n: 3 }], sigilStone: 2000 } },
+      { id: 'sigilB', cat: 'rune', name: '신성력 고대 패키지', won: 33000, icon: '💠', give: { sigils: [{ grade: 5, n: 2 }, { grade: 4, n: 2 }], sigilStone: 8000 } },
+      { id: 'sigilC', cat: 'rune', name: '신성력 불멸 패키지', won: 59000, icon: '💠', give: { sigils: [{ grade: 7, n: 1 }, { grade: 6, n: 2 }], sigilStone: 20000 } },
+      { id: 'sigilD', cat: 'rune', name: '신성력 멸망 패키지', won: 119000, icon: '💠', give: { sigils: [{ grade: 10, n: 1 }, { grade: 8, n: 2 }], sigilStone: 60000 } },
+      { id: 'mixed', cat: 'rune', name: '룬·신성력 성장 세트', won: 22000, icon: '🎁', give: { runeStone: 5000, sigils: [{ grade: 4, n: 1 }], sigilStone: 5000 } }
     ],
     // the three star items (staff, cape, charm): level with gold, stars from boss shards
     divine: [

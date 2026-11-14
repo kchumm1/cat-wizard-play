@@ -348,6 +348,9 @@
     brew: function (id) { var ok = CW.brew(state, id, Date.now()); if (ok) { refreshStats(); buffKey = CW.buffKey(state); snd.play('win'); save(); } return ok; },
     runeGradeUp: function (id) { var ok = CW.runeGradeUp(state, id); if (ok) { refreshStats(); snd.play('tier'); fx.levelUp(state.tier, 0xb58cff, true); save(); } return ok; },
     buyPack: function (id) { var got = CW.buyPack(state, id); if (got !== false) { refreshStats(); snd.play('win'); save(); } return got; },
+    // the phone's own date (the daily gems reset at its midnight)
+    dayKey: function () { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); },
+    claimDaily: function () { var n = CW.claimDaily(state, G.dayKey()); if (n) { snd.play('win'); save(); } return n; },
     runeUp: function (id) { var ok = CW.runeUp(state, id); if (ok) { refreshStats(); snd.play('click'); } return ok; },
     runeEquipToggle: function (id) { var ok = CW.runeIsWorn(state, id) ? CW.runeUnequip(state, id) : CW.runeEquip(state, id); if (!ok) return 'full'; refreshStats(); snd.play('click'); save(); return 'ok'; },
     runeLock: function (id) { var ok = CW.runeLock(state, id); if (ok) save(); return ok; },

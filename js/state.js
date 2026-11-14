@@ -13,7 +13,7 @@
         catEye: 0, manaBurst: 0, resonance: 0, rift: 0, arcane: 0, judge: 0, origin: 0, haste: 0, doomClaw: 0, elemRule: 0 },
       slots: ['starShot', 'magicClaw', 'furBomb', 'sparkRing'], skillLv: {}, relics: {}, preset: 0, presets: [null, null, null],
       costume: { owned: { basic: 1 }, wear: 'basic' },
-      talents: {}, marks: {}, rank: 0, circle: 0, mana: 0, runes: {}, runeGrade: {}, runeStone: 0, packs: {}, sigil: { items: [], seq: 0, sets: [[], [], []], cur: 0, lv: 0, stone: 0 }, alch: { brews: 0, until: {} }, codex: {}, dungeon: { day: '', used: {}, best: {} },
+      talents: {}, marks: {}, rank: 0, circle: 0, mana: 0, runes: {}, runeGrade: {}, runeStone: 0, packs: {}, dailyGems: { left: 0, last: '' }, sigil: { items: [], seq: 0, sets: [[], [], []], cur: 0, lv: 0, stone: 0 }, alch: { brews: 0, until: {} }, codex: {}, dungeon: { day: '', used: {}, best: {} },
       divine: { staff: { lv: 0, star: 0 }, robe: { lv: 0, star: 0 }, charm: { lv: 0, star: 0 }, shards: 0 },
       inv: [], bag: {}, equip: { hat: null, staff: null, robe: null, belt: null, necklace: null, ear: null, ring: null },
       pulls: 0, pity: 0, uidSeq: 0, firstBuy: {}, firstClear: {},
