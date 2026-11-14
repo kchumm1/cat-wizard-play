@@ -64,6 +64,10 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .wallet{display:flex;gap:6px}
 .chip{display:flex;align-items:center;gap:6px;white-space:nowrap;background:rgba(20,12,40,.62);backdrop-filter:blur(6px);border-radius:999px;padding:5px 11px 5px 6px;font:400 15px var(--display);font-variant-numeric:tabular-nums}
 .coin{width:18px;height:18px;background:url(art/ic-gold.webp) 50% 50%/contain no-repeat}
+/* gold amounts (ui.js gh): one moderate size in every menu, the letter unit a little smaller */
+.gn{font-size:14px;font-weight:inherit;font-family:inherit;letter-spacing:0;white-space:nowrap}
+.gn small{font-size:.92em;margin-left:0;opacity:1;font:inherit}
+.chip .gn{font-size:15px}.srew .gn,#gainlog .gn,.desc .gn{font-size:12px}
 .gem{width:17px;height:17px;background:url(art/ic-gem.webp) 50% 50%/contain no-repeat}
 .bar{height:8px;border-radius:99px;background:rgba(255,255,255,.18);overflow:hidden;width:100%}
 .bar i{display:block;height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,#ffe58a,#ff9fd0);transition:width .15s}
