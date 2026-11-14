@@ -259,7 +259,7 @@
     dun = null; clearField(true); restT = 0.6; ui.dunHud(null);
     snd.play('win'); ui.banner('던전 완료!'); save();
     var lines = d.kind === 'mana' ? '<p>골렘에게 준 피해 <b>' + CW.fmt(d.dmg) + '</b> (Lv.' + r.level + ')</p><p style="color:#8fd8ff;font:400 22px var(--display)">마력석 +' + CW.fmt(r.mana) + '</p>'
-      : '<p>잡은 몬스터 <b>' + d.kills + '마리</b></p><p style="color:' + (d.kind === 'gold' ? 'var(--gold)' : d.kind === 'rune' ? '#d8b8ff' : 'var(--gem)') + ';font:400 22px var(--display)">' + (d.kind === 'gold' ? '골드 +' + CW.fmt(r.gold) : d.kind === 'rune' ? '룬석 +' + CW.fmt(r.runeStone) + (r.got && r.got.length ? ' · 룬 ' + r.got.length + '개' : '') + (r.overflow ? ' · 가방이 꽉 차 룬석 +' + CW.fmt(r.overflow) : '') : '다이아 +' + CW.fmt(r.gems)) + '</p>';
+      : '<p>잡은 몬스터 <b>' + d.kills + '마리</b></p><p style="color:' + (d.kind === 'gold' ? 'var(--gold)' : d.kind === 'rune' ? '#d8b8ff' : 'var(--gem)') + ';font:400 22px var(--display)">' + (d.kind === 'gold' ? '골드 +' + CW.fmtGold(r.gold) : d.kind === 'rune' ? '룬석 +' + CW.fmt(r.runeStone) + (r.got && r.got.length ? ' · 룬 ' + r.got.length + '개' : '') + (r.overflow ? ' · 가방이 꽉 차 룬석 +' + CW.fmt(r.overflow) : '') : '다이아 +' + CW.fmt(r.gems)) + '</p>';
     ui.modal('<h2>' + d.def.name + '</h2>' + lines + '<p class="note">남은 입장권 ' + CW.ticketsLeft(state, d.kind, Date.now()) + '장 · 기록이 좋으면 소탕으로 같은 보상을 바로 받을 수 있어요.</p>', [{ label: '좋아요', pri: true }]);
   }
 

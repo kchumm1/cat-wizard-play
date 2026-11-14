@@ -1,6 +1,6 @@
 (function (root) {
   var CW = root.CW = root.CW || {};
-  var DATA = CW.DATA, fmt = CW.fmt;
+  var DATA = CW.DATA, fmt = CW.fmt, fmtG = CW.fmtGold;
   var $ = function (id) { return document.getElementById(id); };
   var STAT_NAME = { atk: '공격력', atkPct: '공격력', critRate: '치명타 확률', critDmg: '치명타 피해', goldMul: '골드 획득', skillDmg: '스킬 피해', speed: '공격 속도', bossDmg: '보스 피해', speedBoss: '공격 속도·보스 피해' };
   var SLOT_NAME = { hat: '모자', staff: '지팡이', robe: '로브', belt: '벨트', necklace: '목걸이', ear1: '귀걸이', ear2: '귀걸이', ring1: '반지', ring2: '반지' };
@@ -49,10 +49,10 @@
       var pot = e && e.pot ? e.pot.map(function (pl, i) { var t = potTag(pl.q || 0); return '<p class="potline" style="color:' + t[1] + '"><span>' + t[0] + ' - ' + (STAT_KO[pl.stat] || pl.stat) + ' ' + CW.bonusAmount(pl.stat, pl.val) + '</span><button class="plock' + (pl.lock ? ' on' : '') + '" data-plock="' + k + '|' + i + '" aria-pressed="' + !!pl.lock + '" aria-label="이 줄 ' + (pl.lock ? '잠금 풀기' : '잠그기') + '">' + (pl.lock ? '🔒' : '🔓') + '</button></p>'; }).join('') + '<p class="note">🔒 잠근 줄은 다시 돌려도 그대로예요 (잠근 줄마다 💎' + DATA.potConf.cost + ' 더)</p>' : '<p class="note">잠재력 없음 · 다이아로 열 수 있어요 (장착 중일 때 적용)</p>';
       var top = '<div class="bagtop">' + bagCell(k, true) + '<div class="binfo"><b style="color:' + gc(p.grade) + '">' + CW.gearName(k) + '</b><span class="gstars">' + stars + '</span><span class="note">Lv.' + lv + ' / ' + max + (e ? '' : ' · 아직 없어요') + '</span>' +
         '<div class="eff"><small>장착 효과</small>' + statLine(stat, CW.mainValue(p.kind, p.t, lv, star)) + '</div><div class="eff"><small>보유 효과</small>' + statLine(stat, CW.ownedValue(p.kind, p.t, lv, star)) + '</div><div class="potbox"><small>잠재력</small>' + pot + '</div></div></div>' +
-        '<div class="bagbtns"><button class="buy' + (!e || lv >= max || s.gold < cost ? ' off' : '') + '" data-blv="' + k + '">' + (lv >= max ? '최대 레벨' : '<small>레벨업</small><span><i class="coin"></i>' + fmt(cost) + '</span>') + '</button>' +
+        '<div class="bagbtns"><button class="buy' + (!e || lv >= max || s.gold < cost ? ' off' : '') + '" data-blv="' + k + '">' + (lv >= max ? '최대 레벨' : '<small>레벨업</small><span><i class="coin"></i>' + fmtG(cost) + '</span>') + '</button>' +
         '<button class="btn' + (e && e.n >= DATA.bagConf.mergeCount && p.t < T - 1 ? '' : ' off') + '" data-bmerge="' + k + '">합성 ' + (e ? e.n : 0) + '/' + DATA.bagConf.mergeCount + '</button>' +
         '<button class="btn' + (worn ? ' on' : '') + (e ? '' : ' off') + '" data-bequip="' + k + '">' + (worn ? '장착 중' : '장착') + '</button>' +
-        '<button class="btn tr' + (trOk ? '' : ' off') + '" data-btr="' + k + '">' + (star >= BG.starMax ? '초월 완료 ★' + star : '초월 ★' + star + '→' + (star + 1) + '<small>최대 레벨 · 같은 장비 ' + trc.copies + '개 · <i class="coin"></i>' + fmt(trc.gold) + '</small>') + '</button>' +
+        '<button class="btn tr' + (trOk ? '' : ' off') + '" data-btr="' + k + '">' + (star >= BG.starMax ? '초월 완료 ★' + star : '초월 ★' + star + '→' + (star + 1) + '<small>최대 레벨 · 같은 장비 ' + trc.copies + '개 · <i class="coin"></i>' + fmtG(trc.gold) + '</small>') + '</button>' +
         '<button class="btn' + (e ? '' : ' off') + '" data-bpot="' + k + '">잠재력 💎' + (e ? CW.potCost(s, k) : DATA.potConf.cost) + '</button></div>';
       var kinds = '<div class="kindtabs" role="tablist">' + DATA.kinds.map(function (kd) {
         var w = s.equip[kd], g = w ? CW.parseKey(w).grade : -1;
@@ -76,7 +76,7 @@
       var list = DATA.potions.map(function (p) {
         var left = CW.buffLeft(s, p.id, now);
         return '<div class="row potion' + (left ? ' on' : '') + '"><div class="ricon pt">' + mi('potion', p) + '</div><div class="info"><div class="name">' + p.name + '</div><div class="desc">' + p.desc + ' ×' + (1 + CW.potionPower(s, p.id)).toFixed(2) + (left ? ' · <b class="tleft">' + mmss(left) + ' 남음</b>' : '') + '</div></div>' +
-          '<button class="buy' + (s.gold < cost ? ' off' : '') + '" data-brew="' + p.id + '"><small>' + (left ? '시간 추가' : '만들기') + '</small><span><i class="coin"></i>' + fmt(cost) + '</span></button></div>';
+          '<button class="buy' + (s.gold < cost ? ' off' : '') + '" data-brew="' + p.id + '"><small>' + (left ? '시간 추가' : '만들기') + '</small><span><i class="coin"></i>' + fmtG(cost) + '</span></button></div>';
       }).join('');
       return head + '<div class="list">' + list + '</div><p class="note">물약 값은 지금 ' + Math.round(AC.costSec / 60) + '분 동안 버는 골드쯤이에요. 다시 만들면 시간이 더해져요(최대 ' + CW.potionMinutes(s) * AC.stackCap + '분). 게임을 꺼 둔 동안에도 시간은 흘러요.</p>';
     }
@@ -144,7 +144,7 @@
           var left = CW.ticketsLeft(s, d.id, now), best = s.dungeon && s.dungeon.best && s.dungeon.best[d.id];
           var bestTxt = best ? (d.id === 'mana' ? '최고 피해 ' + fmt(best.dmg) : '최고 ' + best.kills + '마리') : '기록 없음';
           var rw = best ? CW.dungeonReward(s, d.id, best) : null;
-          var rwTxt = rw ? (rw.gold ? '골드 +' + fmt(rw.gold) : rw.gems ? '다이아 +' + fmt(rw.gems) : rw.runeStone ? '룬석 +' + fmt(rw.runeStone) + (rw.runes ? ' · 룬 ' + rw.runes + '개' : '') : '마력석 +' + fmt(rw.mana)) : '';
+          var rwTxt = rw ? (rw.gold ? '골드 +' + fmtG(rw.gold) : rw.gems ? '다이아 +' + fmt(rw.gems) : rw.runeStone ? '룬석 +' + fmt(rw.runeStone) + (rw.runes ? ' · 룬 ' + rw.runes + '개' : '') : '마력석 +' + fmt(rw.mana)) : '';
           if (!CW.kindOpen(s, d.id)) return '<div class="dung dg-' + d.id + ' lockd"><div class="dicon">' + mi('dungeon', d) + '</div><div class="info"><div class="dname">' + d.name + '</div><div class="note">' + d.desc + '</div><div class="note">' + d.unlockTier + '차 전직 후에 열려요</div></div></div>';
           return '<div class="dung dg-' + d.id + '"><div class="dicon">' + mi('dungeon', d) + '</div><div class="info"><div class="dname">' + d.name + '</div><div class="note">' + d.desc + '</div><div class="note">입장권 <b style="color:#fff">' + left + '/' + DATA.dungeonConf.tickets + '</b> · ' + bestTxt + (rwTxt ? ' (' + rwTxt + ')' : '') + '</div></div>' +
             '<div class="dbtns"><button class="buy' + (left && !run ? '' : ' off') + '" data-dgo="' + d.id + '">입장</button><button class="btn' + (left && best && !run ? '' : ' off') + '" data-dsw="' + d.id + '">소탕</button></div></div>';
@@ -200,7 +200,7 @@
         var val = d.lv ? it.per * d.lv * (1 + C.starBonus * d.star) : 0;
         return '<div class="dcard' + (open ? '' : ' none') + '"><div class="dstars">' + stars + '</div><div class="dicon">' + mi('divine', it) + '</div><div class="dname">' + it.name + ' <span class="lv">Lv.' + d.lv + '</span></div><div class="note">' + it.kind + ' · ' + it.desc + '</div>' +
           '<div class="deff">' + (d.lv ? bonusText(it.stat, val) : STAT_KO[it.stat] + ' (레벨당 +' + pct(it.per) + ', 별마다 +' + pct(C.starBonus) + ')') + '</div>' +
-          '<div class="btns"><button class="buy' + (!open || s.gold < cost || d.lv >= C.maxLv ? ' off' : '') + '" data-dlv="' + it.id + '">' + (d.lv ? '레벨업' : '깨우기') + ' <i class="coin"></i>' + fmt(cost) + '</button>' +
+          '<div class="btns"><button class="buy' + (!open || s.gold < cost || d.lv >= C.maxLv ? ' off' : '') + '" data-dlv="' + it.id + '">' + (d.lv ? '레벨업' : '깨우기') + ' <i class="coin"></i>' + fmtG(cost) + '</button>' +
           '<button class="btn' + (!open || !d.lv || D.shards < sc || d.star >= C.starMax ? ' off' : '') + '" data-dstar="' + it.id + '">별 올리기 ✦' + sc + '</button></div></div>';
       }).join('');
       return '<h3>별의 삼신기</h3>' + head + '<div class="dlist">' + cards + '</div>';
@@ -321,7 +321,7 @@
           if (tc) tc.setAttribute('content', capc);
         }
       }
-      $('goldTxt').textContent = fmt(s.gold); $('gemTxt').textContent = fmt(s.gems);
+      $('goldTxt').textContent = fmtG(s.gold); $('gemTxt').textContent = fmt(s.gems);
       $('lvTxt').textContent = 'Lv.' + s.level; $('xpBar').style.width = (s.level >= DATA.balance.levelMax ? 100 : Math.min(100, s.xp / CW.xpNeed(s.level) * 100)) + '%';
       var boss = G.boss(), sub = '', kp;
       $('bossbox').classList.toggle('on', !!boss);
@@ -393,7 +393,7 @@
           return '<div class="row lockrow"><div class="ricon">' + CW.ICO.stat(k) + '</div><div class="info"><div class="name">' + u.name + '</div><div class="desc need">' + why + '</div></div><span class="lockic">' + CW.ICO.pic('lock', 'ilock') + '</span></div>';
         }
         return '<div class="row"><div class="ricon">' + CW.ICO.stat(k) + '</div><div class="info"><div class="name">' + u.name + '<span class="lv">Lv.' + lv + '</span></div><div class="desc">' + eff[k] + '</div></div>' +
-          '<button class="buy ' + (max || s.gold < one ? 'off' : '') + '" data-up="' + k + '">' + (max ? '최대' : (upMul > 1 ? '<small>×' + upMul + '</small>' : '') + '<i class="coin"></i>' + fmt(cost)) + '</button></div>';
+          '<button class="buy ' + (max || s.gold < one ? 'off' : '') + '" data-up="' + k + '">' + (max ? '최대' : (upMul > 1 ? '<small>×' + upMul + '</small>' : '') + '<i class="coin"></i>' + fmtG(cost)) + '</button></div>';
       }).join('') + '</div>';
     }
     function skillPanel() {
@@ -412,7 +412,7 @@
         var dmg = sk.mult * (1 + DATA.balance.skillLvBonus * lv), next = sk.mult * (1 + DATA.balance.skillLvBonus * (lv + 1));
         var act = locked ? '<span class="note">' + sk.tier + '차 전직</span>'
           : (at >= 0 ? '<button class="btn" data-unslot="' + at + '">' + (at + 1) + '번 빼기</button>' : '<button class="btn pri" data-eq="' + sk.id + '">' + (selSlot >= 0 ? (selSlot + 1) + '번에 넣기' : '넣기') + '</button>');
-        var up = locked ? '' : '<button class="buy ' + (max || s.gold < cost ? 'off' : '') + '" data-sup="' + sk.id + '">' + (max ? '최대' : '강화 <i class="coin"></i>' + fmt(cost)) + '</button>';
+        var up = locked ? '' : '<button class="buy ' + (max || s.gold < cost ? 'off' : '') + '" data-sup="' + sk.id + '">' + (max ? '최대' : '강화 <i class="coin"></i>' + fmtG(cost)) + '</button>';
         return '<div class="row skrow" style="' + (locked ? 'opacity:.55' : '') + '"><div class="sk" style="--c:#' + new THREE.Color(sk.color).getHexString() + ';width:52px;height:52px">' + CW.ICO.skill(sk.id) + '</div><div class="info"><div class="name">' + sk.name + '<span class="lv">' + (locked ? sk.tier + '차' : '+' + lv) + '</span></div><div class="desc">피해 ×' + (Math.round(dmg * 100) / 100) + (!max && !locked ? ' → ×' + (Math.round(next * 100) / 100) : '') + ' · ' + (sk.targets >= 99 ? '모든 몬스터' : '몬스터 ' + sk.targets) + (sk.splash ? ' · 주변 ' + Math.round(sk.splash * 100) + '%' : '') + (sk.status ? ' · ' + STATUS[sk.status] : '') + '</div>' + (sk.how ? '<div class="desc how">' + sk.how + '</div>' : '') +
           '<div class="skbtns"><button class="btn" data-prev="' + sk.id + '">보기</button>' + act + up + '</div></div></div>';
       };
@@ -467,7 +467,7 @@
         var lines = [];
         if (g.daily) lines.push('<i class="gem"></i> 다이아 ' + fmt(g.daily.gems) + '개씩 ' + g.daily.days + '일');
         if (g.gems) lines.push('<i class="gem"></i> 다이아 ' + fmt(g.gems));
-        if (g.goldMin) lines.push('<i class="coin"></i> 골드 ' + fmt(CW.goldPerSecond(s) * 60 * g.goldMin) + ' (사냥 ' + (g.goldMin >= 60 ? g.goldMin / 60 + '시간' : g.goldMin + '분') + '치)');
+        if (g.goldMin) lines.push('<i class="coin"></i> 골드 ' + fmtG(CW.goldPerSecond(s) * 60 * g.goldMin) + ' (사냥 ' + (g.goldMin >= 60 ? g.goldMin / 60 + '시간' : g.goldMin + '분') + '치)');
         if (g.potionMin) lines.push('물약 3종 ' + (g.potionMin >= 60 ? g.potionMin / 60 + '시간' : g.potionMin + '분'));
         if (g.pulls) lines.push('장비 뽑기 ' + g.pulls + '번 (다이아 안 씀)');
         if (g.runeStone) lines.push(CW.ICO.cur('rune') + ' 룬석 ' + fmt(g.runeStone));
@@ -589,7 +589,7 @@
         rows += '<button class="srow' + (i === here ? ' here' : '') + (info.isBoss ? ' boss' : '') + '" data-sgo="' + i + '" data-sd="' + d + '"' + (lock ? ' disabled' : '') + '>' +
           '<span class="sname"><small>' + DATA.difficulties[d].name + (rw.gems ? ' · <i class="gem"></i>' + fmt(rw.gems) : '') + '</small>' + CW.stageLabel(i) + (CW.isTierTrial(s, i, d) ? ' 전직 시험' : info.isRegionBoss ? ' 지역 보스' : info.isBoss ? ' 보스' : '') + '</span>' +
           '<span class="smon">' + (img ? '<img src="' + img + '" alt="" style="' + (res.tint ? 'filter:hue-rotate(' + (R * 36) + 'deg)' : '') + '">' : '') + '</span>' +
-          '<span class="srews"><span class="srew"><i class="coin"></i>' + fmt(rw.gold) + '</span><span class="srew"><b class="xpdot"></b>' + fmt(rw.xp) + '</span>' +
+          '<span class="srews"><span class="srew"><i class="coin"></i>' + fmtG(rw.gold) + '</span><span class="srew"><b class="xpdot"></b>' + fmt(rw.xp) + '</span>' +
           '<span class="srew muted hp"><b class="hpdot"></b>체력 ' + fmt(rw.hp) + '</span></span>' +
           '<span class="sgo">' + (lock ? '🔒' : i === here ? '여기' : '이동') + '</span></button>';
       }
@@ -644,7 +644,7 @@
       else if (d.act === 'treset') { G.talentReset(); toast('특성을 초기화했어요'); renderPanel(true); }
       else if (d.act === 'rankup') { var rr2 = CW.rankReady(G.state); if (G.rankUp()) toast(DATA.rankConf.names[G.state.rank] + '(으)로 승급!'); else toast(rr2.why === 'marks' ? '기본 징표 6개를 최대로 올려야 해요' : rr2.why === 'level' ? '계정 레벨 ' + rr2.need + '이 필요해요' : rr2.why === 'mana' ? '마력석이 부족해요' : '더 올릴 수 없어요'); renderPanel(true); }
       else if (d.dgo) { var r3 = G.dungeon(d.dgo); if (r3 === 'busy') toast('보스전이나 던전이 끝난 뒤에 들어갈 수 있어요'); else if (r3 === 'ticket') toast('오늘 입장권을 다 썼어요'); }
-      else if (d.dsw) { var r4 = G.sweep(d.dsw); if (!r4) toast('입장권이 없거나 아직 기록이 없어요'); else toast('소탕! ' + (r4.gold ? '골드 +' + fmt(r4.gold) : r4.gems ? '다이아 +' + fmt(r4.gems) : r4.runeStone ? '룬석 +' + fmt(r4.runeStone) + (r4.got && r4.got.length ? ' · 룬 ' + r4.got.length + '개' : '') + (r4.overflow ? ' · 가방이 꽉 차 룬석 +' + fmt(r4.overflow) : '') : '마력석 +' + fmt(r4.mana))); renderPanel(true); hud(); }
+      else if (d.dsw) { var r4 = G.sweep(d.dsw); if (!r4) toast('입장권이 없거나 아직 기록이 없어요'); else toast('소탕! ' + (r4.gold ? '골드 +' + fmtG(r4.gold) : r4.gems ? '다이아 +' + fmt(r4.gems) : r4.runeStone ? '룬석 +' + fmt(r4.runeStone) + (r4.got && r4.got.length ? ' · 룬 ' + r4.got.length + '개' : '') + (r4.overflow ? ' · 가방이 꽉 차 룬석 +' + fmt(r4.overflow) : '') : '마력석 +' + fmt(r4.mana))); renderPanel(true); hud(); }
       else if (d.jump !== undefined) { var jh = panel.querySelectorAll('h3')[+d.jump]; if (jh) panel.scrollTop += jh.getBoundingClientRect().top - panel.getBoundingClientRect().top - 46; }
       else if (d.gsub) { gearSub = d.gsub; panel.scrollTop = 0; renderPanel(true); }
       else if (d.relic) { var rr = G.summonRelics(+d.relic); if (!rr) toast('다이아가 부족해요'); else { showRelics(rr); renderPanel(true); hud(); } }
@@ -749,7 +749,7 @@
 
     // ---------- big moments ----------
     function showOffline(r, onClose) {
-      modal('<h2>돌아왔어요!</h2><p>' + Math.floor(r.seconds / 3600) + '시간 ' + Math.floor(r.seconds % 3600 / 60) + '분 동안 냥법사가 모은 것' + (r.seconds >= DATA.balance.offlineCapSec ? ' (최대 8시간)' : '') + '</p><div class="big"><i class="coin"></i>' + fmt(r.gold) + '</div>' + (r.xp ? '<p>경험치 +' + fmt(r.xp) + (r.levels ? ' · 레벨 ' + r.levels + ' 올랐어요' : '') + '</p>' : '') + (r.gems ? '<div class="big" style="color:var(--gem)"><i class="gem"></i>' + fmt(r.gems) + '</div>' : ''), [{ label: '받기', pri: true, fn: onClose }]);
+      modal('<h2>돌아왔어요!</h2><p>' + Math.floor(r.seconds / 3600) + '시간 ' + Math.floor(r.seconds % 3600 / 60) + '분 동안 냥법사가 모은 것' + (r.seconds >= DATA.balance.offlineCapSec ? ' (최대 8시간)' : '') + '</p><div class="big"><i class="coin"></i>' + fmtG(r.gold) + '</div>' + (r.xp ? '<p>경험치 +' + fmt(r.xp) + (r.levels ? ' · 레벨 ' + r.levels + ' 올랐어요' : '') + '</p>' : '') + (r.gems ? '<div class="big" style="color:var(--gem)"><i class="gem"></i>' + fmt(r.gems) + '</div>' : ''), [{ label: '받기', pri: true, fn: onClose }]);
     }
     function showTierUp(tier, skill) {
       var t = DATA.tiers[tier - 1];
@@ -776,7 +776,7 @@
     var logLines = [];
     function gainLog(g) {
       var add = [];
-      if (g.gold > 0) add.push('<i class="coin"></i>골드 +' + fmt(g.gold));
+      if (g.gold > 0) add.push('<i class="coin"></i>골드 +' + fmtG(g.gold));
       if (g.xp > 0) add.push('<b class="xpdot"></b>경험치 +' + fmt(g.xp));
       if (g.gems > 0) add.push('<i class="gem"></i>다이아 +' + fmt(g.gems));
       (g.more || []).forEach(function (m) { add.push('<b class="gdot" style="background:' + m.c + '"></b>' + m.t); });
