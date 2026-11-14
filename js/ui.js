@@ -223,11 +223,11 @@
       if (!c) return '';
       if (c.mode === 'worn') return '<div class="cmp"><p class="cmphead">지금 끼고 있어요</p><p class="cmpnote">장착 효과 ' + nm + ' +' + pct(tot) + ' 중 이 신성력이 +' + pct(v) + '</p></div>';
       if (c.mode === 'free') return '<div class="cmp"><p class="cmphead">빈 칸이 있어서 끼면 더해져요</p>' + cmpLine(nm, tot, tot + v) + '</div>';
-      var t = c.target, tv = CW.sigilValue(t), tn = STAT_KO[t.stat] || t.stat;
+      var t = c.target, tv = CW.sigilValue(t), tn = STAT_KO[t.stat] || t.stat, fullHead = cmpFullHead(sigilWorse(sel, c));
       var row = cmpRow(c.mode === 'same' ? '지금 낀 것 · 같은 효과 중 가장 약한 것' : '지금 낀 것 · 가장 약한 것', CW.ICO.sigil(t.stat, t.grade, hc(t.grade), t.q), hc(t.grade), hn(t.grade) + ' ' + tn, CW.qualityName(t.q) + ' (' + Math.round(t.q * 100) + '%) · ' + tn + ' +' + pct(tv));
       if (!c.full) return '<div class="cmp">' + row + '<p class="cmphead">빈 칸이 있어서 바꾸지 않고 더해져요</p>' + cmpLine(nm, tot, tot + v) + '</div>';
-      if (c.mode === 'same') return '<div class="cmp">' + row + '<p class="cmphead">칸이 다 찼어요 · 이것과 바꾸면</p>' + cmpLine(nm, tot, tot - tv + v) + '</div>';
-      return '<div class="cmp">' + row + '<p class="cmphead">칸이 다 찼어요 · 이것과 바꾸면</p>' + cmpLine(nm, tot, tot + v) + cmpLine(tn, sum[t.stat] || 0, (sum[t.stat] || 0) - tv) + '</div>';
+      if (c.mode === 'same') return '<div class="cmp">' + row + fullHead + cmpLine(nm, tot, tot - tv + v) + '</div>';
+      return '<div class="cmp">' + row + fullHead + cmpLine(nm, tot, tot + v) + cmpLine(tn, sum[t.stat] || 0, (sum[t.stat] || 0) - tv) + '</div>';
     }
     // the resonance after a change to the worn runes (worked out on the real bag, then put back)
     function runeResAfter(s, slot, id) { var b = CW.runeBag(s), old = b.eq[slot]; b.eq[slot] = id; var r = CW.runeResonance(s); b.eq[slot] = old; return r; }
@@ -238,12 +238,21 @@
       var tot = sum[k.stat] || 0, resLine = function (r2) { return r2 === res ? '' : cmpLine('룬 공명 (모든 피해)', res * RC.resFinal, r2 * RC.resFinal, function (x) { return Math.round(x / RC.resFinal) + '단계'; }); };
       if (c.mode === 'worn') return '<div class="cmp"><p class="cmphead">지금 끼고 있어요</p><p class="cmpnote">장착 효과 ' + nm + ' +' + pct(tot) + ' 중 이 룬이 +' + pct(v) + '</p></div>';
       if (c.mode === 'free') return '<div class="cmp"><p class="cmphead">빈 칸이 있어서 끼면 더해져요</p>' + cmpLine(nm, tot, tot + v) + resLine(runeResAfter(s, b.eq.indexOf(null), it.id)) + '</div>';
-      var t = c.target, tk = CW.runeById(t.kind), tv = CW.runeValue(t), tn = STAT_KO[tk.stat] || tk.stat, slot = b.eq.indexOf(t.id);
+      var t = c.target, tk = CW.runeById(t.kind), tv = CW.runeValue(t), tn = STAT_KO[tk.stat] || tk.stat, slot = b.eq.indexOf(t.id), fullHead = cmpFullHead(runeWorse(s, it, c));
       var row = cmpRow(c.mode === 'same' ? '지금 낀 것 · 같은 룬 중 가장 약한 것' : '지금 낀 것 · 가장 약한 것', CW.ICO.rune(t.kind, tk.color, t.grade, hc(t.grade)), hc(t.grade), hn(t.grade) + ' ' + tk.name + ' Lv.' + t.lv, tn + ' +' + pct(tv));
       if (!c.full) return '<div class="cmp">' + row + '<p class="cmphead">빈 칸이 있어서 바꾸지 않고 더해져요</p>' + cmpLine(nm, tot, tot + v) + resLine(runeResAfter(s, b.eq.indexOf(null), it.id)) + '</div>';
       var lines = c.mode === 'same' ? cmpLine(nm, tot, tot - tv + v) : cmpLine(nm, tot, tot + v) + cmpLine(tn, sum[tk.stat] || 0, (sum[tk.stat] || 0) - tv);
-      return '<div class="cmp">' + row + '<p class="cmphead">칸이 다 찼어요 · 이것과 바꾸면</p>' + lines + resLine(runeResAfter(s, slot, it.id)) + '</div>';
+      return '<div class="cmp">' + row + fullHead + lines + resLine(runeResAfter(s, slot, it.id)) + '</div>';
     }
+    // a swap that makes things worse (2026-11-15, user: show it at once, in red): same effect = a smaller value; another
+    // effect = weaker by grade and quality (as 추천 장착 judges); a rune also when the resonance would go down
+    function sigilWorse(sel, c) { if (!c || !c.full || !c.target) return false; return c.mode === 'same' ? CW.sigilValue(sel) < CW.sigilValue(c.target) : CW.sigilPower(sel) < CW.sigilPower(c.target); }
+    function runeWorse(s, it, c) {
+      if (!c || !c.full || !c.target) return false;
+      var slot = CW.runeBag(s).eq.indexOf(c.target.id); if (runeResAfter(s, slot, it.id) < CW.runeResonance(s)) return true;
+      return c.mode === 'same' ? CW.runeValue(it) < CW.runeValue(c.target) : CW.runePower(it) < CW.runePower(c.target);
+    }
+    function cmpFullHead(worse) { return worse ? '<p class="cmphead bad">바꾸면 떨어져요 ▼</p>' : '<p class="cmphead">칸이 다 찼어요 · 이것과 바꾸면</p>'; }
     // the top-right ✕ of the bottom box
     function dockX(kind) { return '<button class="dockx" data-dockx="' + kind + '" aria-label="닫기">✕</button>'; }
 
@@ -276,7 +285,7 @@
           (full && !top ? '<button class="buy gemb' + (!open || (s.runeStone || 0) < gcost ? ' off' : '') + '" data-rgrade="' + it.id + '"><small>' + hn(it.grade + 1) + '(으)로 승급</small><span>' + CW.ICO.cur('rune') + ' ' + fmt(gcost) + '</span></button>'
             : '<button class="buy' + (!open || full || (s.runeStone || 0) < cost ? ' off' : '') + '" data-rune="' + it.id + '">' + (full ? '최대' : CW.ICO.cur('rune') + ' ' + fmt(cost)) + '</button>') + '</div>' +
           runeCmp(s, it) +
-          '<div class="sgbtns">' + (swapTo ? '<button class="btn pri" data-rswap="' + rc.target.id + '|' + it.id + '">교체</button>' : '<button class="btn' + (worn ? ' on' : '') + '" data-reqp="' + it.id + '">' + (worn ? '해제' : '장착') + '</button>') + '<button class="btn' + (it.lock ? ' on' : '') + '" data-rlock="' + it.id + '">' + (it.lock ? '잠금 풀기' : '잠금') + '</button>' +
+          '<div class="sgbtns">' + (swapTo ? (runeWorse(s, it, rc) ? '<button class="btn warn" data-rswap="' + rc.target.id + '|' + it.id + '">교체<small>떨어져요</small></button>' : '<button class="btn pri" data-rswap="' + rc.target.id + '|' + it.id + '">교체</button>') : '<button class="btn' + (worn ? ' on' : '') + '" data-reqp="' + it.id + '">' + (worn ? '해제' : '장착') + '</button>') + '<button class="btn' + (it.lock ? ' on' : '') + '" data-rlock="' + it.id + '">' + (it.lock ? '잠금 풀기' : '잠금') + '</button>' +
           '<button class="btn' + (freeIt ? '' : ' off') + '" data-rdis="' + it.id + '">분해 ' + CW.ICO.cur('rune') + fmt(CW.runeDismantleValue(it)) + '</button><button class="btn' + (same >= 2 && !top && freeIt ? '' : ' off') + '" data-rfuse="' + it.id + '">합성 ' + Math.min(3, same + 1) + '/3</button></div>' +
           '<span class="note">' + (top ? '가장 높은 등급이에요' : '같은 ' + k.name + ' ' + hn(it.grade) + ' 3개 → ' + hn(it.grade + 1) + ' ' + k.name) + '</span>';
       }
@@ -317,7 +326,7 @@
         var sc = CW.sigilCompare(s, sel.id), swapTo = !on && sc && sc.full && sc.target;
         selBox = '<div class="sgsel dockbox" style="--gc:' + hc(sel.grade) + '">' + dockX('sg') + '<div class="sgselhead"><span class="sgbig">' + CW.ICO.sigil(sel.stat, sel.grade, hc(sel.grade), sel.q) + '</span><div><b style="color:' + hc(sel.grade) + '">' + hn(sel.grade) + ' ' + (STAT_KO[sel.stat] || sel.stat) + '</b><span class="note">' + CW.qualityName(sel.q) + ' (' + Math.round(sel.q * 100) + '%) · ' + bonusText(sel.stat, CW.sigilValue(sel)) + '</span></div></div>' +
           sigilCmp(s, sel, sum) +
-          '<div class="sgbtns">' + (swapTo ? '<button class="btn pri" data-sgswap="' + sc.target.id + '|' + sel.id + '">교체</button>' : '<button class="btn' + (on ? ' on' : '') + '" data-sgeq="' + sel.id + '">' + (on ? '해제' : '장착') + '</button>') + '<button class="btn' + (sel.lock ? ' on' : '') + '" data-sglock="' + sel.id + '">' + (sel.lock ? '잠금 풀기' : '잠금') + '</button>' +
+          '<div class="sgbtns">' + (swapTo ? (sigilWorse(sel, sc) ? '<button class="btn warn" data-sgswap="' + sc.target.id + '|' + sel.id + '">교체<small>떨어져요</small></button>' : '<button class="btn pri" data-sgswap="' + sc.target.id + '|' + sel.id + '">교체</button>') : '<button class="btn' + (on ? ' on' : '') + '" data-sgeq="' + sel.id + '">' + (on ? '해제' : '장착') + '</button>') + '<button class="btn' + (sel.lock ? ' on' : '') + '" data-sglock="' + sel.id + '">' + (sel.lock ? '잠금 풀기' : '잠금') + '</button>' +
           '<button class="btn' + (sel.lock || CW.isEquipped(s, sel.id) ? ' off' : '') + '" data-sgdis="' + sel.id + '">분해</button><button class="btn' + (same >= 2 && sel.grade < DATA.hiGrades.length - 1 && !sel.lock && !CW.isEquipped(s, sel.id) ? '' : ' off') + '" data-sgfuse="' + sel.id + '">합성 ' + Math.min(3, same + 1) + '/3</button></div>' + (sel.grade < DATA.hiGrades.length - 1 ? '<span class="note">같은 등급 3개 → ' + hn(sel.grade + 1) + '</span>' : '<span class="note">가장 높은 등급이에요</span>') + '</div>';
       }
       var filt = '<div class="kindtabs">' + [-1].concat(DATA.hiGrades.map(function (x, i) { return i; })).map(function (g) { return '<button role="tab" aria-selected="' + (sgFilter === g) + '" data-sgf="' + g + '"' + (g >= 0 ? ' style="color:' + hc(g) + '"' : '') + '>' + (g < 0 ? '전체' : hn(g)) + '</button>'; }).join('') + '</div>';
