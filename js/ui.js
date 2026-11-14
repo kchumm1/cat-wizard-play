@@ -345,7 +345,7 @@
       var tier = DATA.tiers[s.tier - 1];
       var next = s.tier < 9 ? (s.tier) + '-31 보스를 이기면 ' + (s.tier + 1) + '차' : (s.best >= 309 ? '마왕 토벌 완료!' : '최종 목표 10-31 늑대 왕');
       var wornT = CW.titleWorn ? CW.titleWorn(s) : 'tNovice';
-      $('tierTag').textContent = wornT !== 'tNovice' ? '「' + CW.titleById(wornT).name + '」' : s.tier + '차 ' + tier.name; if ($('questTxt').textContent !== next) $('questTxt').textContent = next;
+      var tTxt = wornT !== 'tNovice' ? CW.titleById(wornT).name : s.tier + '차 ' + tier.name; if ($('tierTag').textContent !== tTxt) $('tierTag').textContent = tTxt; $('tierTag').classList.toggle('ttl', wornT !== 'tNovice'); if ($('questTxt').textContent !== next) $('questTxt').textContent = next;
     }
     function slots() {
       var s = G.state, now = G.castingSlot();
@@ -755,7 +755,7 @@
         var eff = t.bonus ? Object.keys(t.bonus).map(function (k) { return (STAT_KO[k] || k) + ' ' + CW.bonusAmount(k, t.bonus[k]); }).join(' · ') : '효과 없음';
         return '<button class="ttl' + (on ? ' on' : '') + (have ? '' : ' lock') + '" data-title="' + t.id + '"' + (have ? '' : ' disabled') + '><b>' + (have ? '' : '🔒 ') + t.name + '</b><small>' + (have ? eff : CW.titleNeedText(t)) + '</small></button>';
       }).join('');
-      return '<div class="statwin"><div class="sthead"><b>' + $('nick').textContent + '</b><span>Lv.' + s.level + '</span><span class="sttitle">「' + CW.titleById(worn).name + '」</span></div>' +
+      return '<div class="statwin"><div class="sthead"><b>' + $('nick').textContent + '</b><span>Lv.' + s.level + '</span><span class="sttitle">' + CW.titleById(worn).name + '</span></div>' +
         '<div class="stpow"><small>전투력 (초당 피해)</small><b>' + fmt(CW.dps(s, st)) + '</b><small>보스 ' + fmt(CW.bossDps(s, st)) + '</small></div>' +
         '<h4>공격</h4>' + statRow('공격력', fmt(st.atk), ['atkPct'], by) + statRow('공격 속도', x(st.speedMul), ['speed'], by) + statRow('스킬 피해', x(st.skillDmg * st.mastery), ['skillDmg'], by) +
         statRow('보스 피해', x(st.bossDmg), ['bossDmg'], by) + statRow('모든 피해', x(st.finalMul), ['finalPct', 'potion'], by) +
