@@ -462,17 +462,18 @@
 
     // ---------- tier aura ----------
     var AURA = [null, 0xff6a2b, 0x9fd8ff, 0xbfefff, 0xffe14a, 0xe6e6ff, 0xffd84a, 0xb04bff, 0xffffff, 0xff8a3a];
-    var aura = { ring: null, orbs: [], wings: [], crown: null };
+    var aura = { ring: null, orbs: [], wings: [] };
     function setTierAura(tier) {
       while (auraGroup.children.length) auraGroup.remove(auraGroup.children[0]);
-      aura = { ring: null, orbs: [], wings: [], crown: null };
+      aura = { ring: null, orbs: [], wings: [] };
       var col = tier < 2 ? 0xffe9a0 : AURA[tier - 1];
       var ring = new T.Mesh(new T.RingGeometry(0.62, 0.7, 48), new T.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.85, side: T.DoubleSide, depthWrite: false, blending: T.AdditiveBlending }));
       ring.rotation.x = -Math.PI / 2; ring.position.y = 0.03; ring.renderOrder = 2; auraGroup.add(ring); aura.ring = ring;
       if (tier < 2) { ring.material.opacity = 0.7; return; }
       if (tier >= 3) { var r2 = ring.clone(); r2.material = ring.material.clone(); r2.scale.setScalar(0.72); auraGroup.add(r2); aura.ring2 = r2; }
       if (tier >= 5) for (var i = 0; i < (tier >= 7 ? 5 : 3); i++) { var o = new T.Sprite(new T.SpriteMaterial({ map: GLOW, color: col, transparent: true, depthWrite: false, blending: T.AdditiveBlending })); o.scale.setScalar(0.32); o.renderOrder = 4; auraGroup.add(o); aura.orbs.push(o); }
-      if (tier >= 9) { var cr = new T.Mesh(new T.TorusGeometry(0.28, 0.035, 8, 32), new T.MeshBasicMaterial({ color: 0xffe14a })); cr.position.set(0, 1.95, 0); cr.rotation.x = Math.PI / 2.4; auraGroup.add(cr); aura.crown = cr; var cg = new T.Sprite(new T.SpriteMaterial({ map: GLOW, color: 0xfff2a0, transparent: true, depthWrite: false, blending: T.AdditiveBlending })); cg.scale.setScalar(0.9); cg.position.copy(cr.position); cg.renderOrder = 4; auraGroup.add(cg); }
+      // (the 9th tier's halo over the head is gone, 2026-11-15: it sat on the head with a light as big as the head and
+      // washed the hat or helmet out white — the user asked to drop it)
     }
 
     // ---------- worn costume: an aura hugging the wizard's outline and a soft light behind ----------
@@ -814,7 +815,6 @@
       if (aura.ring2) aura.ring2.rotation.z -= dt * 1.4;
       aura.orbs.forEach(function (o, i) { var a = time * 1.6 + i * Math.PI * 2 / aura.orbs.length; o.position.set(Math.cos(a) * 0.75, 1.0 + Math.sin(time * 2 + i) * 0.25, Math.sin(a) * 0.45); });
       aura.wings.forEach(function (w, i) { w.rotation.y = (i ? -1 : 1) * (0.25 + Math.sin(time * 2.2) * 0.18); });
-      if (aura.crown) aura.crown.rotation.z += dt;
       costumeTick(dt);
       // monsters
       mobs.forEach(function (m) { mobBrain(m, dt); });
