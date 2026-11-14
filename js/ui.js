@@ -106,7 +106,7 @@
       var t = selTalent && CW.talentById(selTalent), info = '';
       if (t) {
         var lv = (s.talents || {})[t.id] || 0;
-        info = '<div class="tinfo"><b>' + t.name + ' ' + lv + '/' + t.max + '</b><div>' + STAT_KO[t.stat] + ' +' + pct(lv * t.per) + (lv < t.max ? ' → <span style="color:#8ff59a">+' + pct((lv + 1) * t.per) + '</span>' : '') + '</div>' +
+        info = '<div class="tinfo"><b>' + t.name + ' ' + lv + '/' + t.max + '</b><div>' + STAT_KO[t.stat] + ' ' + CW.bonusAmount(t.stat, lv * t.per) + (lv < t.max ? ' → <span style="color:#8ff59a">' + CW.bonusAmount(t.stat, (lv + 1) * t.per) + '</span>' : '') + '</div>' +
           '<div class="note">' + (t.row ? '위 줄에 ' + TC.rowNeed[t.row] + '포인트 이상, ' : '') + '계정 레벨 ' + TC.rowLevel[t.row] + ' 이상</div>' +
           '<div class="btns"><button class="buy' + (CW.talentCan(s, t.id) ? '' : ' off') + '" data-tup="' + t.id + '">레벨업 (포인트 1)</button></div></div>';
       }
@@ -119,7 +119,7 @@
       var list = DATA.marks.map(function (m) {
         var lv = (s.marks || {})[m.id] || 0, cost = CW.markCost(lv), full = lv >= cap;
         if (!CW.markOpen(s, m.id)) return '<div class="row lockrow"><div class="ricon mk">' + mi('mark', m) + '</div><div class="info"><div class="name">' + m.name + '</div><div class="desc need">' + RC.names[m.openRank] + '가 되면 열려요 · ' + STAT_KO[m.stat] + '</div></div><span class="lockic">' + CW.ICO.pic('lock', 'ilock') + '</span></div>';
-        return '<div class="row"><div class="ricon mk">' + mi('mark', m) + '</div><div class="info"><div class="name">' + m.name + ' <span class="lv">' + lv + '/' + cap + '</span></div><div class="desc">' + STAT_KO[m.stat] + ' +' + pct(lv * m.per) + '</div></div>' +
+        return '<div class="row"><div class="ricon mk">' + mi('mark', m) + '</div><div class="info"><div class="name">' + m.name + ' <span class="lv">' + lv + '/' + cap + '</span></div><div class="desc">' + STAT_KO[m.stat] + ' ' + CW.bonusAmount(m.stat, lv * m.per) + '</div></div>' +
           '<button class="buy gemb' + (full || (s.mana || 0) < cost ? ' off' : '') + '" data-mark="' + m.id + '">' + (full ? '최대' : '' + CW.ICO.cur('mana') + ' ' + fmt(cost)) + '</button></div>';
       }).join('');
       var next = r + 1 < RC.names.length ? RC.names[r + 1] : null;
@@ -349,7 +349,7 @@
         var a = DATA.upgrades[k].adds; if (!a) return;
         var lv = s.up[k] || 0;
         eff[k] = Object.keys(a).map(function (b) {
-          var times = /^(super|ultra|hyper|mega|ultimate|alpha)Dmg$/.test(b), f = function (v) { return times ? '+' + (Math.round(v * 100) / 100) + '배' : '+' + pct(v); };
+          var f = function (v) { return CW.bonusAmount(b, v); };
           return STAT_KO[b] + ' ' + f(lv * a[b]) + ' (1레벨당 ' + f(a[b]) + ')';
         }).join(' · ');
       });

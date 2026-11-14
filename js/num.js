@@ -17,5 +17,10 @@
     var s = (r % 1 === 0) ? String(r) : r.toFixed(1);
     return s + unit(k);
   }
-  return { fmt: fmt };
+  // a bonus as the player reads it: crit-tier damage (super…alpha) adds to a ×multiplier, so it reads in 배; the rest in %
+  function bonusAmount(stat, v) {
+    if (/^(super|ultra|hyper|mega|ultimate|alpha)Dmg$/.test(stat)) return "+" + (Math.round(v * 100) / 100) + "배";
+    return "+" + (Math.round(v * 1000) / 10) + "%";
+  }
+  return { fmt: fmt, bonusAmount: bonusAmount };
 });
