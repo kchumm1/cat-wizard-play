@@ -168,7 +168,13 @@
       { id: 'doomPlume', name: '진홍 깃털 기사', desc: '붉은 깃털과 호박 보석의 진홍 기사 갑주', art: 'cos14', outfit: { h: 355, s: 0.85, v: 0.5 }, grade: 10, stat: 'finalPct', per: 0.05, price: 120000,
         fx: { col: 0xff3a2a, col2: 0xffb030, aura: 0.9, glow: 0.38, parts: 'ember', rate: 8 } },
       { id: 'doomPrism', name: '오색 별빛 마녀', desc: '무지갯빛 수정 깃과 별 모자를 두른 밤하늘 마녀', art: 'cos15', outfit: { h: 268, s: 0.6, v: 0.85 }, grade: 10, stat: 'finalPct', per: 0.05, price: 120000,
-        fx: { col: 0xc89bff, col2: 0x9fe8ff, aura: 0.9, glow: 0.38, parts: 'light', rate: 8 } }
+        fx: { col: 0xc89bff, col2: 0x9fe8ff, aura: 0.9, glow: 0.38, parts: 'light', rate: 8 } },
+      { id: 'doomRose', name: '루비 장미 마녀', desc: '루비 결정 날개와 붉은 장미의 검붉은 마녀 드레스', art: 'cos16', outfit: { h: 350, s: 0.85, v: 0.6 }, grade: 10, stat: 'finalPct', per: 0.05, price: 120000,
+        fx: { col: 0xff2a5a, col2: 0xff9ab0, aura: 0.9, glow: 0.38, parts: 'ember', rate: 8 } },
+      { id: 'doomNight', name: '밤하늘 수정 마녀', desc: '은빛 거미줄 수정과 별이 박힌 검은 마녀 망토', art: 'cos17', outfit: { h: 240, s: 0.5, v: 0.45 }, grade: 10, stat: 'finalPct', per: 0.05, price: 120000,
+        fx: { col: 0x8a7bff, col2: 0xe0e8ff, aura: 0.9, glow: 0.38, parts: 'void', rate: 8 } },
+      { id: 'doomClock', name: '시계태엽 가면 백작', desc: '호박빛 시계 지팡이와 비취 보석의 태엽 백작 옷', art: 'cos18', outfit: { h: 168, s: 0.7, v: 0.45 }, grade: 10, stat: 'finalPct', per: 0.05, price: 120000,
+        fx: { col: 0xffa030, col2: 0x2fe0a0, aura: 0.9, glow: 0.38, parts: 'rune', rate: 8 } }
     ],
     // enhance with diamonds: cost = upBase × upGrowth^grade × (1 + lv × upLv); a star every starEvery levels (+starBonus each);
     // every owned costume adds collect to all damage

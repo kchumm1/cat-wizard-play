@@ -66,5 +66,5 @@
   CW.GEAR_IMG = {};
   ['hat', 'staff', 'robe', 'belt', 'necklace', 'ear', 'ring'].forEach(function (k) { CW.GEAR_IMG[k] = (CW.ART_BASE || 'art/') + 'g-' + k + '.webp'; });
   // costume pictures load only when a costume is worn or its card is shown
-  CW.COSTUME_ART = ['cos1', 'cos2', 'cos3', 'cos4', 'cos5', 'cos6', 'cos7', 'cos8', 'cos9', 'cos10', 'cos11', 'cos12', 'cos13', 'cos14', 'cos15'];
+  CW.COSTUME_ART = ['cos1', 'cos2', 'cos3', 'cos4', 'cos5', 'cos6', 'cos7', 'cos8', 'cos9', 'cos10', 'cos11', 'cos12', 'cos13', 'cos14', 'cos15', 'cos16', 'cos17', 'cos18'];
 })(this);
