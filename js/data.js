@@ -158,23 +158,25 @@
         fx: { col: 0xa04bff, col2: 0xff6bf0, aura: 0.85, glow: 0.35, parts: 'void', rate: 7, horns: true, eyes: 0xd27bff } },
       { id: 'doom', name: '멸망의 군주', desc: '핏빛 지옥 기운이 타오르는 악마 갑옷', art: 'cos10', outfit: { h: 356, s: 0.95, v: 0.38 }, grade: 10, stat: 'finalPct', per: 0.05, price: 120000,
         fx: { col: 0xff2a2a, col2: 0xff8a2a, aura: 0.9, glow: 0.38, parts: 'doom', rate: 8, horns: true, eyes: 0xff3030 } },
-      // four more 멸망 costumes (user's pictures, 2026-11-14), the same grade and strength as 멸망의 군주
+      // four more 멸망 costumes (user's pictures, 2026-11-14), the same grade and strength as 멸망의 군주.
+      // Their look is quiet on purpose (user, 2026-11-14: no thick coloured halo): sheen = light on the armour (scene.js SHEEN_FS),
+      // parts = one small sign of each costume (fx.js quietParticle)
       { id: 'doomHoly', name: '순백의 대성기사', desc: '분홍 보석과 진주로 꾸민 순백·황금 성당 갑주', art: 'cos11', outfit: { h: 40, s: 0.35, v: 1.15 }, grade: 10, stat: 'finalPct', per: 0.05, price: 120000,
-        fx: { col: 0xff7ab0, col2: 0xffe08a, aura: 0.9, glow: 0.38, parts: 'light', rate: 8 } },
+        fx: { col: 0xffd6e6, col2: 0xfff0c0, aura: 0.3, glow: 0.1, parts: 'holy', rate: 3, sheen: { rim: 0.48, sweep: 0.90, glint: 1.20, period: 4.2 } } },
       { id: 'doomDragon', name: '청룡의 군주', desc: '황금 용이 감아 오르는 비취빛 용린 갑주', art: 'cos12', outfit: { h: 150, s: 0.8, v: 0.5 }, grade: 10, stat: 'finalPct', per: 0.05, price: 120000,
-        fx: { col: 0x2fe08a, col2: 0xffd24a, aura: 0.9, glow: 0.38, parts: 'leaf', rate: 8 } },
+        fx: { col: 0x3ae0a0, col2: 0xffd86a, aura: 0.3, glow: 0.1, parts: 'qi', rate: 2.4, sheen: { rim: 0.40, sweep: 0.83, glint: 0.96, period: 3.8 } } },
       { id: 'doomFrost', name: '서리 성채의 기사', desc: '얼음 결정이 빛나는 은빛 성채 갑옷과 진주 망토', art: 'cos13', outfit: { h: 220, s: 0.6, v: 0.55 }, grade: 10, stat: 'finalPct', per: 0.05, price: 120000,
-        fx: { col: 0x8fd8ff, col2: 0xffffff, aura: 0.9, glow: 0.38, parts: 'frost', rate: 8 } },
+        fx: { col: 0xcfeaff, col2: 0xffffff, aura: 0.3, glow: 0.1, parts: 'rime', rate: 2.6, sheen: { rim: 0.51, sweep: 0.90, glint: 1.20, period: 3.4 } } },
       { id: 'doomPlume', name: '진홍 깃털 기사', desc: '붉은 깃털과 호박 보석의 진홍 기사 갑주', art: 'cos14', outfit: { h: 355, s: 0.85, v: 0.5 }, grade: 10, stat: 'finalPct', per: 0.05, price: 120000,
-        fx: { col: 0xff3a2a, col2: 0xffb030, aura: 0.9, glow: 0.38, parts: 'ember', rate: 8 } },
+        fx: { col: 0xc8202a, col2: 0xffc060, aura: 0.3, glow: 0.1, parts: 'feather', rate: 2.2, sheen: { rim: 0.35, sweep: 0.75, glint: 0.96, period: 4.0 } } },
       { id: 'doomPrism', name: '오색 별빛 마녀', desc: '무지갯빛 수정 깃과 별 모자를 두른 밤하늘 마녀', art: 'cos15', outfit: { h: 268, s: 0.6, v: 0.85 }, grade: 10, stat: 'finalPct', per: 0.05, price: 120000,
-        fx: { col: 0xc89bff, col2: 0x9fe8ff, aura: 0.9, glow: 0.38, parts: 'light', rate: 8 } },
+        fx: { col: 0xd8c0ff, col2: 0xbff0ff, aura: 0.3, glow: 0.1, parts: 'prism', rate: 3, sheen: { rim: 0.45, sweep: 0.90, glint: 1.20, period: 3.6, rainbow: 0.75 } } },
       { id: 'doomRose', name: '루비 장미 마녀', desc: '루비 결정 날개와 붉은 장미의 검붉은 마녀 드레스', art: 'cos16', outfit: { h: 350, s: 0.85, v: 0.6 }, grade: 10, stat: 'finalPct', per: 0.05, price: 120000,
-        fx: { col: 0xff2a5a, col2: 0xff9ab0, aura: 0.9, glow: 0.38, parts: 'ember', rate: 8 } },
+        fx: { col: 0xb0102e, col2: 0xffb0c0, aura: 0.3, glow: 0.1, parts: 'petal', rate: 2.2, sheen: { rim: 0.35, sweep: 0.75, glint: 1.08, period: 4.4 } } },
       { id: 'doomNight', name: '밤하늘 수정 마녀', desc: '은빛 거미줄 수정과 별이 박힌 검은 마녀 망토', art: 'cos17', outfit: { h: 240, s: 0.5, v: 0.45 }, grade: 10, stat: 'finalPct', per: 0.05, price: 120000,
-        fx: { col: 0x8a7bff, col2: 0xe0e8ff, aura: 0.9, glow: 0.38, parts: 'void', rate: 8 } },
+        fx: { col: 0xb4b0ff, col2: 0xeef0ff, aura: 0.3, glow: 0.1, parts: 'stars', rate: 2.4, sheen: { rim: 0.45, sweep: 0.75, glint: 1.20, period: 4.6 } } },
       { id: 'doomClock', name: '시계태엽 가면 백작', desc: '호박빛 시계 지팡이와 비취 보석의 태엽 백작 옷', art: 'cos18', outfit: { h: 168, s: 0.7, v: 0.45 }, grade: 10, stat: 'finalPct', per: 0.05, price: 120000,
-        fx: { col: 0xffa030, col2: 0x2fe0a0, aura: 0.9, glow: 0.38, parts: 'rune', rate: 8 } }
+        fx: { col: 0xffb24a, col2: 0x6af0c0, aura: 0.3, glow: 0.1, parts: 'tick', rate: 2.6, sheen: { rim: 0.38, sweep: 0.83, glint: 0.96, period: 3.0 } } }
     ],
     // enhance with diamonds: cost = upBase × upGrowth^grade × (1 + lv × upLv); a star every starEvery levels (+starBonus each);
     // every owned costume adds collect to all damage

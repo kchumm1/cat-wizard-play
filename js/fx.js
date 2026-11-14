@@ -1254,7 +1254,44 @@
 
     // particles around the wizard while a costume is worn
     var cosFx = null, cosAcc = 0;
+    // Quiet parts for the 멸망 costumes added 2026-11-14: few, small, slow — each costume has one small sign of its own
+    // (a feather, a rose petal, a turning star, a ticking mote) instead of a cloud of coloured sparks.
+    function sway(p, dt) { var d = p.data; d.t += dt; p.y += p.vy * dt; p.x = d.x0 + Math.sin(d.t * d.w + d.ph) * d.amp; p.z = d.z0 + Math.cos(d.t * d.w * 0.7 + d.ph) * d.amp * 0.5; return true; }
+    function orbit(p, dt) { var d = p.data, H = sc.heroCenter(); d.a += dt * d.w * (d.step ? (Math.sin(d.t * 6.283) > 0.6 ? 2.2 : 0.15) : 1); d.t += dt; d.y += d.vy * dt;
+      p.x = H.x + Math.cos(d.a) * d.R; p.z = H.z + Math.sin(d.a) * d.R * 0.45; p.y = d.y; return true; }
+    function quietParticle(f) {
+      var H = sc.heroCenter(), c1 = f.col, c2 = f.col2 || f.col, x = H.x, z = H.z, P = f.parts, q = Math.random();
+      if (P === 'holy') {                       // tiny gold motes rising like dust in cathedral light, a rare pink jewel wink
+        if (q < 0.8) E({ pos: V(x + rr(-0.55, 0.55), rr(0.1, 1.2), z + rr(-0.2, 0.25)), vel: V(rr(-0.05, 0.05), rr(0.25, 0.5), 0), frame: 'dot', color: [0xfff4c8, c2], size: [rr(0.06, 0.09), 0.03], alpha: 0.95, life: rr(1.8, 2.6), fadeIn: 0.3, fadeOut: 0.6 });
+        else E({ pos: V(x + rr(-0.45, 0.45), rr(0.6, 1.7), z + 0.2), frame: 'star', color: [0xffffff, c1], size: [0.03, 0.2], ease: 2, alpha: 0.95, life: 0.6, spin: 1.5, fadeOut: 0.4 });
+      } else if (P === 'qi') {                  // a gold wisp of dragon breath winding up around the body
+        E({ pos: V(x, 0.2, z), frame: 'glow', color: [c2, 0xfff0b0, c1], size: [0.16, 0.05], alpha: 0.9, life: rr(1.6, 2.2), fadeIn: 0.25, upd: orbit, data: { a: rr(0, 6.28), R: rr(0.5, 0.65), w: 2.4, vy: 0.75, y: rr(0.1, 0.4), t: 0 } });
+        if (q < 0.4) E({ pos: V(x + rr(-0.5, 0.5), rr(0.3, 1.5), z + 0.2), frame: 'dot', color: [0xbfffe0, c1], size: [0.07, 0.02], alpha: 0.7, life: rr(0.9, 1.3), vel: V(0, 0.15, 0), fadeIn: 0.3 });
+      } else if (P === 'rime') {                // single snow crystals drifting down, catching the light once as they turn
+        E({ pos: V(x + rr(-0.7, 0.7), rr(1.4, 2.2), z + rr(-0.2, 0.3)), vel: V(0, rr(-0.32, -0.2), 0), frame: q < 0.7 ? 'snow' : 'star', color: [0xffffff, 0xeaf6ff], size: [rr(0.12, 0.17), 0.07], alpha: 0.9, life: rr(2.4, 3.2), spin: rr(-0.8, 0.8), fadeIn: 0.2, fadeOut: 0.7, white: true,
+          upd: sway, data: { x0: x + rr(-0.7, 0.7), z0: z + rr(-0.15, 0.3), t: 0, w: rr(0.9, 1.4), ph: rr(0, 6), amp: 0.08 } });
+      } else if (P === 'feather') {             // a crimson feather tumbling slowly down beside the knight, now and then an amber ember
+        if (q < 0.55) { E({ sys: 'norm', pos: V(x, rr(1.5, 2.1), z), vel: V(0, rr(-0.28, -0.18), 0), frame: 'crescent', ar: 0.42, color: [c1, 0x8a0e18], size: [0.26, 0.22], alpha: 0.95, life: rr(2.6, 3.4), spin: rr(-1.2, 1.2), fadeIn: 0.15, fadeOut: 0.75, white: true,
+          upd: sway, data: { x0: x + rr(-0.65, 0.65), z0: z + rr(-0.1, 0.3), t: 0, w: rr(1.6, 2.2), ph: rr(0, 6), amp: 0.16 } }); }
+        else E({ pos: V(x + rr(-0.4, 0.4), rr(0.2, 0.8), z + 0.15), vel: V(rr(-0.08, 0.08), rr(0.45, 0.8), 0), frame: 'dot', color: [0xffd27a, c2], size: [0.07, 0.02], alpha: 0.9, life: rr(1, 1.5), flicker: 0.25, fadeIn: 0.2 });
+      } else if (P === 'prism') {               // little prisms: stars that wink on and shift colour as they fade
+        var hc = pick([[0xffb3e6, 0x9fe8ff], [0x9fe8ff, 0xfff2a8], [0xfff2a8, 0xc8a8ff], [0xc8a8ff, 0xffb3e6]]);
+        E({ pos: V(x + rr(-0.7, 0.7), rr(0.3, 2.0), z + rr(-0.1, 0.3)), vel: V(0, 0.06, 0), frame: q < 0.6 ? 'star' : 'flare', color: [0xffffff, hc[0], hc[1]], size: [0.03, rr(0.16, 0.22)], ease: 2, alpha: 0.95, life: rr(0.7, 1.0), spin: rr(-1, 1), fadeOut: 0.45 });
+      } else if (P === 'petal') {               // dark rose petals falling and turning, a rare ruby glint
+        if (q < 0.75) E({ sys: 'norm', pos: V(x, rr(1.5, 2.1), z), vel: V(0, rr(-0.3, -0.2), 0), frame: 'crescent', ar: 0.75, color: [c1, 0x6a0618], size: [0.2, 0.17], alpha: 0.95, life: rr(2.4, 3.2), spin: rr(-2, 2), fadeIn: 0.15, fadeOut: 0.75, white: true,
+          upd: sway, data: { x0: x + rr(-0.7, 0.7), z0: z + rr(-0.1, 0.3), t: 0, w: rr(1.4, 2), ph: rr(0, 6), amp: 0.13 } });
+        else E({ pos: V(x + rr(-0.4, 0.4), rr(0.5, 1.6), z + 0.2), frame: 'star', color: [0xffffff, c1], size: [0.03, 0.18], ease: 2, alpha: 0.95, life: 0.55, fadeOut: 0.4 });
+      } else if (P === 'stars') {               // a few small stars slowly turning around her like a quiet constellation
+        E({ pos: V(x, 1, z), frame: 'star', color: [0xffffff, c2, c1], size: [rr(0.11, 0.16), 0.05], alpha: 0.9, life: rr(2.6, 3.4), spin: 0.6, fadeIn: 0.3, fadeOut: 0.7, flicker: 0.35,
+          upd: orbit, data: { a: rr(0, 6.28), R: rr(0.55, 0.8), w: rr(0.35, 0.55) * (q < 0.5 ? 1 : -1), vy: rr(-0.04, 0.06), y: rr(0.5, 1.9), t: 0 } });
+      } else if (P === 'tick') {                // amber motes that move around him in clockwork steps — rest, tick, rest
+        E({ pos: V(x, 1, z), frame: q < 0.7 ? 'dot' : 'circle', color: [0xffd28a, c1], size: q < 0.7 ? [0.08, 0.05] : [0.15, 0.1], alpha: 0.85, life: rr(2.2, 3), fadeIn: 0.25, fadeOut: 0.7,
+          upd: orbit, data: { a: rr(0, 6.28), R: rr(0.55, 0.7), w: 1.4, vy: 0.08, y: rr(0.4, 1.4), t: rr(0, 1), step: true } });
+        if (q < 0.25) E({ pos: V(x + rr(-0.35, 0.35), rr(0.6, 1.4), z + 0.2), frame: 'star', color: [0xffffff, c2], size: [0.03, 0.17], ease: 2, alpha: 0.8, life: 0.5, fadeOut: 0.4 });
+      }
+    }
     function costumeParticle(f) {
+      if (f.sheen) return quietParticle(f);
       var H = sc.heroCenter(), c1 = f.col, c2 = f.col2 || f.col, x = H.x, z = H.z;
       if (f.parts === 'frost') E({ pos: V(x + rr(-0.8, 0.8), rr(0.3, 2.2), z + rr(-0.3, 0.3)), vel: V(rr(-0.2, 0.2), rr(-0.4, -0.1), 0), frame: pick(['snow', 'frost', 'star']), color: [0xffffff, c1], size: [rr(0.12, 0.22), 0.03], life: rr(1.2, 2), spin: rr(-2, 2), fadeIn: 0.2 });
       else if (f.parts === 'shadow' || f.parts === 'void' || f.parts === 'doom') {

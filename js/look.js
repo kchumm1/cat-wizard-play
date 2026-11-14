@@ -113,6 +113,23 @@
     var cx = W / 2, top = H - hh - hh * 0.03, A = css(fx.col), B = css(fx.col2 || fx.col);
     var bg = g.createRadialGradient(cx, top + hh * 0.5, 0, cx, top + hh * 0.5, W * 0.6); bg.addColorStop(0, A + '55'); bg.addColorStop(0.6, A + '18'); bg.addColorStop(1, A + '00');
     g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    if (fx.sheen) {
+      // quiet costumes: no coloured halo — a thin white edge light and one diagonal glint across the picture, three small twinkles
+      g.drawImage(hero, cx - hw / 2, top);
+      var sh = document.createElement('canvas'); sh.width = hw; sh.height = hh; var q = sh.getContext('2d');
+      var gr = q.createLinearGradient(hw * 0.1, hh * 0.15, hw * 0.75, hh * 0.85);
+      gr.addColorStop(0.36, 'rgba(255,255,255,0)'); gr.addColorStop(0.45, 'rgba(255,255,255,0.42)'); gr.addColorStop(0.5, B + '33'); gr.addColorStop(0.58, 'rgba(255,255,255,0)');
+      q.fillStyle = gr; q.fillRect(0, 0, hw, hh); q.globalCompositeOperation = 'destination-in'; q.drawImage(hero, 0, 0);
+      g.globalCompositeOperation = 'lighter'; g.drawImage(sh, cx - hw / 2, top);
+      [[-0.18, 0.3], [0.2, 0.52], [-0.05, 0.72]].forEach(function (p, i) {
+        var x = cx + p[0] * hw, y = top + p[1] * hh, R = hw * (0.03 - i * 0.006);
+        g.strokeStyle = 'rgba(255,255,255,0.85)'; g.lineWidth = Math.max(1, hw * 0.004);
+        g.beginPath(); g.moveTo(x - R, y); g.lineTo(x + R, y); g.moveTo(x, y - R); g.lineTo(x, y + R); g.stroke();
+        var pg = g.createRadialGradient(x, y, 0, x, y, R * 0.6); pg.addColorStop(0, '#ffffff'); pg.addColorStop(1, B + '00'); g.fillStyle = pg; g.fillRect(x - R, y - R, R * 2, R * 2);
+      });
+      g.globalCompositeOperation = 'source-over';
+      return c;
+    }
     var sil = document.createElement('canvas'); sil.width = hw; sil.height = hh; var sg = sil.getContext('2d');
     sg.drawImage(hero, 0, 0); sg.globalCompositeOperation = 'source-in'; sg.fillStyle = A; sg.fillRect(0, 0, hw, hh);
     g.save(); g.globalCompositeOperation = 'lighter'; g.shadowColor = A; g.shadowBlur = hw * (0.05 + fx.aura * 0.06); g.globalAlpha = 0.35 + fx.aura * 0.45;

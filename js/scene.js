@@ -51,6 +51,32 @@
     '  float f = a * (0.35 + 0.85 * n) * (0.7 + 0.45 * vUv.y);',
     '  vec3 c = mix(uCol, uCol2, smoothstep(0.45, 0.9, n));',
     '  gl_FragColor = uAdd > 0.5 ? vec4(c * f * uAmt * 2.4, min(1.0, f * uAmt * 1.3)) : vec4(c * (0.75 + 0.35 * n), min(1.0, f * uAmt * 1.15)); }'].join('\n');
+  // Quiet costume finish (the 멸망 costumes added 2026-11-14): instead of a thick coloured halo, light lives ON the armour —
+  // a thin rim of light at the edges, a narrow glint that sweeps over the costume now and then, and a few jewel twinkles
+  // on its brightest spots. Additive, only where the costume picture is.
+  var SHEEN_FS = [
+    'uniform sampler2D map; uniform vec3 uCol; uniform vec3 uCol2; uniform float uTime; uniform float uRim; uniform float uSweep; uniform float uGlint; uniform float uPeriod; uniform float uRainbow;',
+    'varying vec2 vUv;',
+    'float h(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }',
+    'vec3 hue(float t) { return clamp(abs(mod(t * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0); }',
+    'void main() {',
+    '  vec4 t = texture2D(map, vUv); float a = t.a; if (a < 0.02) discard;',
+    '  float ring = 0.0;',
+    '  for (int i = 0; i < 8; i++) { float g = float(i) * 0.785; ring += texture2D(map, vUv + vec2(cos(g), sin(g)) * 0.014).a; }',
+    '  float rim = a * clamp(1.0 - ring * 0.125, 0.0, 1.0);',
+    '  float lum = dot(t.rgb, vec3(0.3, 0.59, 0.11));',
+    '  float ph = fract(uTime / uPeriod); float pos = -0.35 + ph * 2.6;',
+    '  float d = vUv.y * 0.9 + vUv.x * 0.45;',
+    '  float band = exp(-pow((d - pos) / 0.045, 2.0)) + 0.5 * exp(-pow((d - pos + 0.11) / 0.018, 2.0));',
+    '  float sweep = band * a * smoothstep(0.2, 0.85, lum);',
+    '  vec2 gg = vUv * 13.0; vec2 cell = floor(gg); vec2 fp = fract(gg) - 0.5; float r = h(cell);',
+    '  float on = step(0.72, r) * smoothstep(0.35, 0.7, lum);',
+    '  float bl = pow(max(0.0, sin(uTime * (0.9 + r * 1.2) + r * 40.0)), 10.0);',
+    '  float crs = max(exp(-abs(fp.x) * 26.0) * exp(-abs(fp.y) * 4.0), exp(-abs(fp.y) * 26.0) * exp(-abs(fp.x) * 4.0));',
+    '  float glint = on * bl * (crs + exp(-dot(fp, fp) * 90.0)) * a * 1.6;',
+    '  vec3 tint = mix(uCol2, hue(fract(vUv.y * 0.8 + vUv.x * 0.3 + uTime * 0.05)), uRainbow);',
+    '  vec3 c = mix(vec3(1.0), uCol, 0.45) * rim * uRim + (t.rgb * 1.35 + mix(vec3(0.25), tint * 0.3, 0.5)) * sweep * uSweep + mix(vec3(1.0), tint, 0.3) * glint * uGlint;',
+    '  gl_FragColor = vec4(c, 1.0); }'].join('\n');
 
 
   function spring(k, c) { return { x: 0, v: 0, target: 0, k: k, c: c }; }
@@ -402,6 +428,7 @@
     // ---------- worn costume: an aura hugging the wizard's outline and a soft light behind ----------
     function attachAura() {
       var f = cos.fx; if (!hero || !f) return;
+      if (f.sheen) return attachSheen();
       var hu = hero.userData.u, body = hero.userData.body, dark = /shadow|void|doom/.test(f.parts || '');
       var mat = new T.ShaderMaterial({
         uniforms: { map: hu.map, uBend: hu.uBend, uScale: hu.uScale, uH: hu.uH, uBP: hu.uBP, uBA: hu.uBA, uBT: hu.uBT,
@@ -409,6 +436,17 @@
         vertexShader: BB_VS, fragmentShader: AURA_FS, transparent: true, depthWrite: false, blending: dark ? T.NormalBlending : T.AdditiveBlending, side: T.DoubleSide });
       var am = new T.Mesh(body.geometry, mat); am.scale.set(1.2, 1.12, 1); am.position.z = -0.03; am.renderOrder = 2;
       body.add(am); cos.aura = am;
+    }
+    function attachSheen() {
+      var f = cos.fx, s = f.sheen, hu = hero.userData.u, body = hero.userData.body;
+      var mat = new T.ShaderMaterial({
+        uniforms: { map: hu.map, uBend: hu.uBend, uScale: hu.uScale, uH: hu.uH, uBP: hu.uBP, uBA: hu.uBA, uBT: hu.uBT,
+          uCol: { value: new T.Color(f.col) }, uCol2: { value: new T.Color(f.col2 || f.col) }, uTime: { value: 0 },
+          uRim: { value: s.rim === undefined ? 0.35 : s.rim }, uSweep: { value: s.sweep === undefined ? 0.55 : s.sweep },
+          uGlint: { value: s.glint === undefined ? 0.9 : s.glint }, uPeriod: { value: s.period || 3.6 }, uRainbow: { value: s.rainbow || 0 } },
+        vertexShader: BB_VS, fragmentShader: SHEEN_FS, transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide });
+      var am = new T.Mesh(body.geometry, mat); am.position.z = 0.004; am.renderOrder = (body.renderOrder || 0) + 1;
+      body.add(am); cos.aura = am; cos.sheen = true;
     }
     function setCostumeFx(f) {
       while (cosGroup.children.length) cosGroup.remove(cosGroup.children[0]);
@@ -418,10 +456,12 @@
       attachAura();
       var gl = new T.Sprite(new T.SpriteMaterial({ map: GLOW, color: f.col, transparent: true, opacity: f.glow, depthWrite: false, blending: T.AdditiveBlending }));
       gl.scale.set(1.9 * CUTE, 2.3 * CUTE, 1); gl.position.set(0, 0.85 * CUTE, -0.4 * CUTE); gl.renderOrder = 1; cosGroup.add(gl); cos.glow = gl;
+      if (f.sheen) gl.scale.set(1.3 * CUTE, 1.7 * CUTE, 1);
     }
     function costumeTick(dt) {
       if (!cos.fx) return;
-      if (cos.aura) { var u = cos.aura.material.uniforms; u.uTime.value = time; u.uAmt.value = cos.fx.aura * (0.82 + Math.sin(time * 2.2) * 0.18); }
+      if (cos.sheen) { if (cos.aura) cos.aura.material.uniforms.uTime.value = time; }
+      else if (cos.aura) { var u = cos.aura.material.uniforms; u.uTime.value = time; u.uAmt.value = cos.fx.aura * (0.82 + Math.sin(time * 2.2) * 0.18); }
       if (cos.glow) { cos.glow.material.opacity = cos.fx.glow * (0.8 + Math.sin(time * 2.2) * 0.2); if (hero) cos.glow.position.set(hero.position.x, 0.85 * CUTE + hero.position.y, hero.position.z - 0.4 * CUTE); }
     }
 
