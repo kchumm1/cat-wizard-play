@@ -10,8 +10,8 @@
   function isMiniBoss(i) { var n = i % 31 + 1; return n <= 30 && n % 5 === 0; }
 
   function monsterHp(i) { return cap(B.hpBase * Math.pow(B.hpGrowth, i) * Math.pow(B.regionStep || 1, Math.floor(i / 31))); }
-  function bossHp(i) {
-    var wall = (B.wallMul && B.wallMul[Math.floor(i / 31)]) || 1;
+  function bossHp(i, walls) {
+    var W = walls || B.wallMul, wall = (W && W[Math.floor(i / 31)]) || 1;
     // mini bosses carry part of the region wall, growing toward the region boss
     if (!isRegionBoss(i)) return cap(monsterHp(i) * B.bossMul * Math.pow(wall, (B.wallShare || 0) * ((i % 31 + 1) / 31)));
     return cap(monsterHp(i) * B.regionBossMul * wall);
@@ -21,7 +21,7 @@
   var SPAN = 310;
   function diffOf(state) { return (DATA.difficulties && DATA.difficulties[state.diff || 0]) || { hpMul: 1, bossMul: 1, gemMul: 1, extraMobs: 0 }; }
   function stageMonsterHp(state, i) { i = i === undefined ? state.stage || 0 : i; return cap(monsterHp(i + SPAN * (state.diff || 0)) * diffOf(state).hpMul); }
-  function stageBossHp(state, i) { i = i === undefined ? state.stage || 0 : i; return cap(bossHp(i) * Math.pow(B.hpGrowth, SPAN * (state.diff || 0)) * diffOf(state).bossMul); }
+  function stageBossHp(state, i) { i = i === undefined ? state.stage || 0 : i; return cap(bossHp(i, state.diff ? B.diffWallMul : null) * Math.pow(B.hpGrowth, SPAN * (state.diff || 0)) * diffOf(state).bossMul); }
   function stageGold(state, i) { i = i === undefined ? state.stage || 0 : i; return cap(monsterGold(i + SPAN * (state.diff || 0))); }
   function bossGems(i, first) {
     var region = Math.floor(i / 31);
@@ -72,8 +72,18 @@
     });
     return r;
   }
+  // 초월 growth lines: level × adds, into the same bonus keys
+  function upgradeBonus(state) {
+    var r = {}, up = state.up || {};
+    Object.keys(DATA.upgrades).forEach(function (k) {
+      var a = DATA.upgrades[k].adds, lv = up[k] || 0; if (!a || !lv) return;
+      for (var s in a) r[s] = (r[s] || 0) + a[s] * lv;
+    });
+    return r;
+  }
   function stats(state) {
-    var u = state.up, gb = gearBonus(state);
+    var u = state.up, gb = gearBonus(state), ub = upgradeBonus(state);
+    for (var bk in ub) if (gb[bk] !== undefined) gb[bk] += ub[bk];
     var atk = B.atkBase * (1 + u.atk * B.atkPerLevel) * Math.pow(B.atkCompound, u.atk);
     atk = atk * (1 + gb.atk) * (1 + gb.atkPct) * (1 + B.levelAtk * ((state.level || 1) - 1));
     return {
@@ -174,7 +184,7 @@
   return {
     stageMonsterHp: stageMonsterHp, stageBossHp: stageBossHp, stageGold: stageGold, diffOf: diffOf,
     monsterHp: monsterHp, bossHp: bossHp, monsterGold: monsterGold, bossGems: bossGems,
-    isWeak: isWeak, regionOf: regionOf, surgeTick: surgeTick, surgeFactor: surgeFactor, weakFactor: weakFactor, upgradeCostN: upgradeCostN, tryUpgradeN: tryUpgradeN, upgradeOpen: upgradeOpen, upgradeNeed: upgradeNeed, rollCrit: rollCrit, critFactor: critFactor, upgradeCost: upgradeCost, tryUpgrade: tryUpgrade, stats: stats, hitDamage: hitDamage,
+    isWeak: isWeak, regionOf: regionOf, surgeTick: surgeTick, surgeFactor: surgeFactor, weakFactor: weakFactor, upgradeBonus: upgradeBonus, upgradeCostN: upgradeCostN, tryUpgradeN: tryUpgradeN, upgradeOpen: upgradeOpen, upgradeNeed: upgradeNeed, rollCrit: rollCrit, critFactor: critFactor, upgradeCost: upgradeCost, tryUpgrade: tryUpgrade, stats: stats, hitDamage: hitDamage,
     dps: dps, bossDps: bossDps, killsPerSecond: killsPerSecond, goldPerSecond: goldPerSecond, skillById: skillById,
     isRegionBoss: isRegionBoss, isMiniBoss: isMiniBoss
   };

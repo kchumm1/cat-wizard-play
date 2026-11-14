@@ -166,16 +166,23 @@
       { id: 'tChain', name: '약점 공략', row: 1, stat: 'weakDmg', per: 0.1, max: 10, icon: '🎯' },
       { id: 'tGold', name: '황금 수염', row: 2, stat: 'goldMul', per: 0.1, max: 5, icon: '💰' },
       { id: 'tXp', name: '호기심 많은 눈', row: 2, stat: 'xpMul', per: 0.06, max: 5, icon: '📚' },
-      { id: 'tChain3', name: '폭주 증폭', row: 2, stat: 'surgeDmg', per: 0.2, max: 5, icon: '💥' }
+      { id: 'tChain3', name: '폭주 증폭', row: 2, stat: 'surgeDmg', per: 0.2, max: 5, icon: '💥' },
+      // 초월 row (2026-11-14)
+      { id: 'tManaBurst', name: '마력 해방', row: 3, stat: 'hyperDmg', per: 0.1, max: 5, icon: '⚡' },
+      { id: 'tRift', name: '차원 파열', row: 3, stat: 'ultimateDmg', per: 0.1, max: 5, icon: '🌀' },
+      { id: 'tOrigin', name: '태초의 섭리', row: 3, stat: 'finalPct', per: 0.05, max: 5, icon: '🌟' }
     ],
-    talentConf: { levelsPerPoint: 20, rowLevel: [10, 120, 300], rowNeed: [0, 8, 13] },
+    talentConf: { levelsPerPoint: 20, rowLevel: [10, 120, 300, 500], rowNeed: [0, 8, 13, 18] },
     marks: [
       { id: 'mStar', name: '별의 징표', stat: 'atkPct', per: 0.04, icon: '⭐' },
       { id: 'mClaw', name: '발톱의 징표', stat: 'critRate', per: 0.001, icon: '🐾' },
       { id: 'mMoon', name: '달의 징표', stat: 'critDmg', per: 0.04, icon: '🌙' },
       { id: 'mComet', name: '혜성의 징표', stat: 'superRate', per: 0.0008, icon: '☄️' },
       { id: 'mCrown', name: '왕관의 징표', stat: 'bossDmg', per: 0.03, icon: '👑' },
-      { id: 'mBook', name: '마도서의 징표', stat: 'skillDmg', per: 0.03, icon: '📕' }
+      { id: 'mBook', name: '마도서의 징표', stat: 'skillDmg', per: 0.03, icon: '📕' },
+      // extra marks (2026-11-14): open at openRank, not needed for rank up
+      { id: 'mArcane', name: '비전의 징표', stat: 'alphaDmg', per: 0.02, icon: '🔮', extra: true, openRank: 3 },
+      { id: 'mJudge', name: '심판의 징표', stat: 'bossDmg', per: 0.02, icon: '⚖️', extra: true, openRank: 3 }
     ],
     rankConf: { names: ['견습 마법사', '정식 마법사', '숙련 마법사', '상급 마법사', '대마법사', '현자', '천상 마법사'], capPerRank: 20, rankLevel: [0, 60, 150, 260, 400, 560, 720], rankCost: [0, 300, 1500, 6000, 25000, 100000, 400000], rankFinal: 0.5, markBase: 5, markGrowth: 1.07 },
     circleConf: { base: 20, growth: 1.06, perLv: 0.02, tierEvery: 25, tierFinal: 0.5, maxLv: 225 },
@@ -255,7 +262,19 @@
       ultimateCrit: { name: '얼티밋 크리티컬 확률', costBase: 5e24, costGrowth: 1.14, max: 100, need: ['megaCrit', 50] },
       ultimateDmg: { name: '얼티밋 크리티컬 데미지', costBase: 2.5e24, costGrowth: 1.1, max: 300, need: ['megaCrit', 50] },
       alphaCrit: { name: '알파 크리티컬 확률', costBase: 2e29, costGrowth: 1.14, max: 100, need: ['ultimateCrit', 50] },
-      alphaDmg: { name: '알파 크리티컬 데미지', costBase: 1e29, costGrowth: 1.1, max: 300, need: ['ultimateCrit', 50] }
+      alphaDmg: { name: '알파 크리티컬 데미지', costBase: 1e29, costGrowth: 1.1, max: 300, need: ['ultimateCrit', 50] },
+      // 초월 (2026-11-14): open when the stat before is maxed; adds = bonus per level (same keys as gear/relic bonuses).
+      // costBase = the needed stat's last level cost.
+      catEye: { name: '고양이의 눈빛', costBase: 3.25e9, costGrowth: 1.1, max: 200, need: ['crit', 140], adds: { superDmg: 0.02 }, ascend: true },
+      manaBurst: { name: '마력 해방', costBase: 8.6e11, costGrowth: 1.1, max: 200, need: ['superCrit', 100], adds: { hyperDmg: 0.02 }, ascend: true },
+      resonance: { name: '극한 공명', costBase: 8.6e16, costGrowth: 1.1, max: 200, need: ['ultraCrit', 100], adds: { megaDmg: 0.02 }, ascend: true },
+      rift: { name: '차원 파열', costBase: 6.45e21, costGrowth: 1.1, max: 200, need: ['hyperCrit', 100], adds: { ultimateDmg: 0.02 }, ascend: true },
+      arcane: { name: '비전 폭발', costBase: 4.3e25, costGrowth: 1.1, max: 200, need: ['megaCrit', 100], adds: { alphaDmg: 0.02 }, ascend: true },
+      judge: { name: '왕의 심판', costBase: 2.15e30, costGrowth: 1.1, max: 200, need: ['ultimateCrit', 100], adds: { bossDmg: 0.01 }, ascend: true },
+      origin: { name: '태초의 섭리', costBase: 8.6e34, costGrowth: 1.1, max: 200, need: ['alphaCrit', 100], adds: { finalPct: 0.005 }, ascend: true },
+      haste: { name: '시간 가속', costBase: 1.2e8, costGrowth: 1.1, max: 200, need: ['speed', 100], adds: { skillDmg: 0.01 }, ascend: true },
+      doomClaw: { name: '파멸의 발톱', costBase: 1.19e32, costGrowth: 1.1, max: 200, need: ['megaDmg', 300], adds: { bossDmg: 0.01 }, ascend: true },
+      elemRule: { name: '원소 지배', costBase: 5.95e36, costGrowth: 1.1, max: 200, need: ['ultimateDmg', 300], adds: { weakDmg: 0.01, surgeDmg: 0.02 }, ascend: true }
     },
     slots: [
       { id: 'hat', kind: 'hat', name: '마법 모자', stat: 'critRate' },
@@ -300,7 +319,9 @@
       startGems: 300,
       killsPerStage: 10,
       hpBase: 30, hpGrowth: 1.12, regionStep: 1, bossMul: 9, regionBossMul: 22,
-      wallMul: [1,19169.38,5566798.08,22820341.73,178880696.24,1691557414.71,8489733214.33,95531878018.25,176986468430.32,294004021895.86], wallShare: 0.7,
+      // difficulty modes keep the walls they had before 초월 (2026-11-14)
+      diffWallMul: [1,19169.38,5566798.08,22820341.73,178880696.24,1691557414.71,8489733214.33,95531878018.25,176986468430.32,294004021895.86],
+      wallMul: [1,18089.69,8530996.34,37137183.19,355464724.47,567601558.3,64002674168.89,2705046173297.78,1731058590696.22,1760499825374.36], wallShare: 0.7,
       goldBase: 3, goldGrowth: 1.2,
       bossGemsBase: 10, bossGemsPerRegion: 6, regionBossGems: 25, firstClearMul: 2,
       atkBase: 10, atkPerLevel: 0, atkCompound: 1.05,

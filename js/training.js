@@ -25,8 +25,9 @@
   function markById(id) { for (var i = 0; i < DATA.marks.length; i++) if (DATA.marks[i].id === id) return DATA.marks[i]; return null; }
   function markCap(state) { return RC.capPerRank * ((state.rank || 0) + 1); }
   function markCost(lv) { return Math.ceil(RC.markBase * Math.pow(RC.markGrowth, lv)); }
+  function markOpen(state, id) { var m = markById(id); return !!m && (!m.extra || (state.rank || 0) >= m.openRank); }
   function markUp(state, id) {
-    if (!markById(id)) return false;
+    if (!markOpen(state, id)) return false;
     state.marks = state.marks || {};
     var lv = state.marks[id] || 0; if (lv >= markCap(state)) return false;
     var c = markCost(lv); if (!((state.mana || 0) >= c)) return false;
@@ -35,7 +36,7 @@
   function rankReady(state) {
     var r = state.rank || 0, next = r + 1;
     if (next >= RC.names.length) return { ok: false, why: 'max' };
-    var capped = DATA.marks.every(function (m) { return ((state.marks || {})[m.id] || 0) >= markCap(state); });
+    var capped = DATA.marks.every(function (m) { return m.extra || ((state.marks || {})[m.id] || 0) >= markCap(state); });
     if (!capped) return { ok: false, why: 'marks' };
     if ((state.level || 1) < RC.rankLevel[next]) return { ok: false, why: 'level', need: RC.rankLevel[next] };
     if ((state.mana || 0) < RC.rankCost[next]) return { ok: false, why: 'mana', need: RC.rankCost[next] };
@@ -66,6 +67,6 @@
     return b;
   }
   return { talentById: talentById, talentPoints: talentPoints, talentSpent: talentSpent, talentCan: talentCan, talentUp: talentUp, talentReset: talentReset,
-    markById: markById, markCap: markCap, markCost: markCost, markUp: markUp, rankReady: rankReady, rankUp: rankUp,
+    markById: markById, markOpen: markOpen, markCap: markCap, markCost: markCost, markUp: markUp, rankReady: rankReady, rankUp: rankUp,
     circleCost: circleCost, circleTier: circleTier, circleUp: circleUp, manaForBoss: manaForBoss, trainingStats: trainingStats };
 });

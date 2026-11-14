@@ -6,10 +6,14 @@
   var MAP = {
     stat: { atk: 'growth-atk', speed: 'growth-speed', crit: 'growth-crit', critDmg: 'growth-crit-dmg', gold: 'growth-gold', mastery: 'growth-mastery',
       superCrit: 'growth-super-crit', ultraCrit: 'growth-ultra-crit', hyperCrit: 'growth-hyper-crit', megaCrit: 'growth-mega-crit', megaDmg: 'growth-mega-dmg',
-      ultimateCrit: 'growth-ultimate-crit', ultimateDmg: 'growth-ultimate-dmg', alphaCrit: 'growth-alpha-crit', alphaDmg: 'growth-alpha-dmg' },
+      ultimateCrit: 'growth-ultimate-crit', ultimateDmg: 'growth-ultimate-dmg', alphaCrit: 'growth-alpha-crit', alphaDmg: 'growth-alpha-dmg',
+      // 초월 lines (2026-11-14) borrow the picture of the stat they grow from
+      catEye: 'growth-crit', manaBurst: 'growth-hyper-crit', resonance: 'growth-mega-dmg', rift: 'growth-ultimate-dmg', arcane: 'growth-alpha-dmg',
+      judge: 'growth-mastery', origin: 'growth-alpha-crit', haste: 'growth-speed', doomClaw: 'growth-crit-dmg', elemRule: 'growth-mastery' },
     talent: { tSkill: 'talent-mana-focus', tBoss: 'talent-boss-hunter', tCrit: 'talent-sharp-claws', tChain: 'talent-weak-point',
-      tGold: 'talent-golden-whiskers', tXp: 'talent-curious-eyes', tChain3: 'talent-surge' },
-    mark: { mStar: 'mark-star', mClaw: 'mark-claw', mMoon: 'mark-moon', mComet: 'mark-comet', mCrown: 'mark-crown', mBook: 'mark-book' },
+      tGold: 'talent-golden-whiskers', tXp: 'talent-curious-eyes', tChain3: 'talent-surge',
+      tManaBurst: 'talent-surge', tRift: 'talent-weak-point', tOrigin: 'talent-mana-focus' },
+    mark: { mStar: 'mark-star', mClaw: 'mark-claw', mMoon: 'mark-moon', mComet: 'mark-comet', mCrown: 'mark-crown', mBook: 'mark-book', mArcane: 'mark-book', mJudge: 'mark-crown' },
     potion: { rage: 'potion-rage', luck: 'potion-luck', wisdom: 'potion-wisdom' },
     tab: { up: 'menu-training' },
     cur: { mana: 'currency-mana' },

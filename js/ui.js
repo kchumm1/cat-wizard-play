@@ -94,13 +94,14 @@
     }
     function talentPanel() {
       var s = G.state, pts = CW.talentPoints(s), spent = CW.talentSpent(s), TC = DATA.talentConf;
-      var rows = [0, 1, 2].map(function (r) {
+      var last = TC.rowLevel.length - 1;
+      var rows = TC.rowLevel.map(function (_, r) {
         var nodes = DATA.talents.filter(function (t) { return t.row === r; }).map(function (t) {
           var lv = (s.talents || {})[t.id] || 0, open = s.level >= TC.rowLevel[r] && (r === 0 || CW.talentSpent(s, r - 1) >= TC.rowNeed[r]);
           // a closed talent still shows its picture, with a small lock on its corner (design pack 2026-11-14)
           return '<button class="tnode' + (selTalent === t.id ? ' sel' : '') + (open ? '' : ' lock') + (lv >= t.max ? ' max' : '') + '" data-tal="' + t.id + '"><span class="ti">' + mi('talent', t) + '</span>' + (open ? '' : '<i class="tlock">' + CW.ICO.pic('lock', 'ilock') + '</i>') + '<b>' + lv + '/' + t.max + '</b><small>' + t.name + '</small></button>';
         }).join('');
-        return '<div class="trow">' + nodes + '</div>' + (r < 2 ? '<div class="tarrow">▼ ' + (TC.rowNeed[r + 1] ? '위에서 ' + TC.rowNeed[r + 1] + '포인트 · ' : '') + 'Lv.' + TC.rowLevel[r + 1] + '</div>' : '');
+        return '<div class="trow">' + nodes + '</div>' + (r < last ? '<div class="tarrow">▼ ' + (TC.rowNeed[r + 1] ? '위에서 ' + TC.rowNeed[r + 1] + '포인트 · ' : '') + 'Lv.' + TC.rowLevel[r + 1] + '</div>' : '');
       }).join('');
       var t = selTalent && CW.talentById(selTalent), info = '';
       if (t) {
@@ -117,11 +118,12 @@
       var head = '<div class="rankbox"><div class="dstars">' + stars + '</div><b>' + RC.names[r] + '</b><span class="note">승급 효과 · 모든 피해 +' + pct(r * RC.rankFinal) + '</span></div>';
       var list = DATA.marks.map(function (m) {
         var lv = (s.marks || {})[m.id] || 0, cost = CW.markCost(lv), full = lv >= cap;
+        if (!CW.markOpen(s, m.id)) return '<div class="row lockrow"><div class="ricon mk">' + mi('mark', m) + '</div><div class="info"><div class="name">' + m.name + '</div><div class="desc need">' + RC.names[m.openRank] + '가 되면 열려요 · ' + STAT_KO[m.stat] + '</div></div><span class="lockic">' + CW.ICO.pic('lock', 'ilock') + '</span></div>';
         return '<div class="row"><div class="ricon mk">' + mi('mark', m) + '</div><div class="info"><div class="name">' + m.name + ' <span class="lv">' + lv + '/' + cap + '</span></div><div class="desc">' + STAT_KO[m.stat] + ' +' + pct(lv * m.per) + '</div></div>' +
           '<button class="buy gemb' + (full || (s.mana || 0) < cost ? ' off' : '') + '" data-mark="' + m.id + '">' + (full ? '최대' : '' + CW.ICO.cur('mana') + ' ' + fmt(cost)) + '</button></div>';
       }).join('');
       var next = r + 1 < RC.names.length ? RC.names[r + 1] : null;
-      var cond = next ? '<div class="rankup"><div class="note">다음: <b style="color:#fff">' + next + '</b><br>조건 · 모든 징표 ' + cap + ' · 계정 Lv.' + RC.rankLevel[r + 1] + ' · ' + CW.ICO.cur('mana') + ' ' + fmt(RC.rankCost[r + 1]) + '</div><button class="buy' + (ready.ok ? '' : ' off') + '" data-act="rankup">승급</button></div>' : '<p class="note">가장 높은 계급이에요.</p>';
+      var cond = next ? '<div class="rankup"><div class="note">다음: <b style="color:#fff">' + next + '</b><br>조건 · 기본 징표 6개 ' + cap + ' · 계정 Lv.' + RC.rankLevel[r + 1] + ' · ' + CW.ICO.cur('mana') + ' ' + fmt(RC.rankCost[r + 1]) + '</div><button class="buy' + (ready.ok ? '' : ' off') + '" data-act="rankup">승급</button></div>' : '<p class="note">가장 높은 계급이에요.</p>';
       return head + '<div class="list">' + list + '</div>' + cond;
     }
     function circlePanel() {
@@ -342,7 +344,16 @@
         alphaCrit: '얼티밋 중 ' + pct(st.alphaRate) + ' 알파 (최대 20%)', alphaDmg: '알파 크리티컬 피해 ×' + st.alphaDmg.toFixed(2),
         chainInfo: ''
       };
-      var mul = '<div class="mulpick" role="group" aria-label="한 번에 올릴 단계">' + [1, 10, 100].map(function (n) { return '<button class="btn' + (upMul === n ? ' on' : '') + '" data-mul="' + n + '" aria-pressed="' + (upMul === n) + '">×' + n + '</button>'; }).join('') + '</div>';
+      // 초월 lines: what each level grows, e.g. 하이퍼 크리티컬 피해 +0.20배 (1레벨당 +0.02배)
+      Object.keys(DATA.upgrades).forEach(function (k) {
+        var a = DATA.upgrades[k].adds; if (!a) return;
+        var lv = s.up[k] || 0;
+        eff[k] = Object.keys(a).map(function (b) {
+          var times = /^(super|ultra|hyper|mega|ultimate|alpha)Dmg$/.test(b), f = function (v) { return times ? '+' + (Math.round(v * 100) / 100) + '배' : '+' + pct(v); };
+          return STAT_KO[b] + ' ' + f(lv * a[b]) + ' (1레벨당 ' + f(a[b]) + ')';
+        }).join(' · ');
+      });
+      var mul ='<div class="mulpick" role="group" aria-label="한 번에 올릴 단계">' + [1, 10, 100].map(function (n) { return '<button class="btn' + (upMul === n ? ' on' : '') + '" data-mul="' + n + '" aria-pressed="' + (upMul === n) + '">×' + n + '</button>'; }).join('') + '</div>';
       return '<h3>성장</h3>' + mul + '<div class="note" style="margin:4px 0 8px">버튼을 꾹 누르면 계속 올라가요. ×10·×100은 골드가 되는 만큼 한 번에 올려요.</div><div class="list">' + Object.keys(DATA.upgrades).map(function (k) {
         var u = DATA.upgrades[k], lv = s.up[k] || 0, max = u.max !== null && lv >= u.max, one = CW.upgradeCost(k, lv), cost = upMul > 1 ? CW.upgradeCostN(s, k, upMul) : one;
         if (!CW.upgradeOpen(s, k)) {
@@ -550,7 +561,7 @@
       else if (d.tal) { selTalent = d.tal; renderPanel(true); }
       else if (d.tup) { if (G.talentUp(d.tup)) toast(CW.talentById(d.tup).name + ' 레벨업!'); else toast(CW.talentSpent(G.state) >= CW.talentPoints(G.state) ? '포인트가 없어요' : '아직 열리지 않았어요'); renderPanel(true); }
       else if (d.act === 'treset') { G.talentReset(); toast('특성을 초기화했어요'); renderPanel(true); }
-      else if (d.act === 'rankup') { var rr2 = CW.rankReady(G.state); if (G.rankUp()) toast(DATA.rankConf.names[G.state.rank] + '(으)로 승급!'); else toast(rr2.why === 'marks' ? '모든 징표를 최대로 올려야 해요' : rr2.why === 'level' ? '계정 레벨 ' + rr2.need + '이 필요해요' : rr2.why === 'mana' ? '마력석이 부족해요' : '더 올릴 수 없어요'); renderPanel(true); }
+      else if (d.act === 'rankup') { var rr2 = CW.rankReady(G.state); if (G.rankUp()) toast(DATA.rankConf.names[G.state.rank] + '(으)로 승급!'); else toast(rr2.why === 'marks' ? '기본 징표 6개를 최대로 올려야 해요' : rr2.why === 'level' ? '계정 레벨 ' + rr2.need + '이 필요해요' : rr2.why === 'mana' ? '마력석이 부족해요' : '더 올릴 수 없어요'); renderPanel(true); }
       else if (d.dgo) { var r3 = G.dungeon(d.dgo); if (r3 === 'busy') toast('보스전이나 던전이 끝난 뒤에 들어갈 수 있어요'); else if (r3 === 'ticket') toast('오늘 입장권을 다 썼어요'); }
       else if (d.dsw) { var r4 = G.sweep(d.dsw); if (!r4) toast('입장권이 없거나 아직 기록이 없어요'); else toast('소탕! ' + (r4.gold ? '골드 +' + fmt(r4.gold) : r4.gems ? '다이아 +' + fmt(r4.gems) : r4.runeStone ? '룬석 +' + fmt(r4.runeStone) : '마력석 +' + fmt(r4.mana))); renderPanel(true); hud(); }
       else if (d.jump !== undefined) { var jh = panel.querySelectorAll('h3')[+d.jump]; if (jh) panel.scrollTop += jh.getBoundingClientRect().top - panel.getBoundingClientRect().top - 46; }
