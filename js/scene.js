@@ -442,6 +442,12 @@
       dying.push(mob);
       if (hooks.die) hooks.die(mob, mobPos(mob), big);
     }
+    // a monster quietly taken off the field (no death, no reward): the field is over its size after the quality dropped
+    function dismissMob(mob) {
+      if (!mob.alive) return;
+      mob.alive = false; mobs.splice(mobs.indexOf(mob), 1); if (HB.focus === mob) HB.focus = null;
+      mobGroup.remove(mob.group); disposeGroup(mob.group);
+    }
     function disposeGroup(g) { g.traverse(function (x) { if (x.geometry && !x.geometry.userData.cached) x.geometry.dispose(); if (x.material && x.material.dispose) x.material.dispose(); }); }
     function clearMobs() { HB.focus = null; mobs.slice().forEach(function (m) { m.alive = false; mobGroup.remove(m.group); disposeGroup(m.group); }); mobs.length = 0; dying.forEach(function (m) { mobGroup.remove(m.group); disposeGroup(m.group); }); dying.length = 0; }
     function mobPos(mob) { var g = mob.group, h = g.userData.h * 0.5; return new T.Vector3(g.position.x, h * COS_T + g.position.y, g.position.z - h * SIN_T + 0.15); }
@@ -977,7 +983,7 @@
       THREE: T, scene: scene, camera: camera, renderer: renderer, fxGroup: fxGroup, glow: GLOW, hooks: hooks,
       size: size, setRegion: setRegion, setHero: setHero, setHeroTexture: setHeroTexture, setCostumeFx: setCostumeFx, heroTip: heroTip, heroPaw: heroPaw, heroCenter: heroCenter, heroPose: heroPose, heroBeatAt: function () { return beatT; }, heroGlow: heroGlowPulse, ghost: ghost,
       castPulse: function () { heroGlow = 1; }, heroState: function () { return HB; }, heroFaceTo: heroFaceTo, heroCheer: heroCheer, setViewShift: setViewShift,
-      spawnMob: spawnMob, hitMob: hitMob, killMob: killMob, clearMobs: clearMobs, mobs: function () { return mobs; }, mobPos: mobPos, mobTop: mobTop,
+      spawnMob: spawnMob, hitMob: hitMob, killMob: killMob, dismissMob: dismissMob, clearMobs: clearMobs, mobs: function () { return mobs; }, mobPos: mobPos, mobTop: mobTop,
       setTierAura: setTierAura, damageText: damageText, screenPos: screenPos, flash: flash, dim: dim, shake: shake, punch: camPunch, light: light,
       hitStop: hitStop, slowmo: slowmo, climax: climax, scaleDt: scaleDt, update: update, render: render, lens: lens, warmLens: warmLens,
       setPixel: setPixel, setDamageStyle: setDamageStyle, setQuality: setQuality, getQuality: function () { return quality; }

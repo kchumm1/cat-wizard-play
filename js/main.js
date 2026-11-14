@@ -88,7 +88,12 @@
   }
   // Normal monsters come in crowds: each one has a third of a stage monster's health and gold,
   // and every three of them count as one kill toward the stage.
-  var CROWD = CW.CROWD, smallKills = 0, wave = { left: 0, t: 0 };
+  var CROWD = CW.CROWD, smallKills = 0, wave = { left: 0, t: 0 }, trimT = 0;
+  function dismissFarthest() {
+    var H = sc.heroState(), far = null, fd = -1;
+    aliveMobs().forEach(function (m) { if (m.boss) return; var d = (m.x - H.x) * (m.x - H.x) + (m.z - H.z) * (m.z - H.z); if (d > fd) { fd = d; far = m; } });
+    if (far) sc.dismissMob(far);
+  }
   function crowdMax() { return CW.crowdCap(sc.getQuality(), CW.diffOf(state).extraMobs); }
   // dungeons keep the field size they had before monsters were split finer (2026-11-15): they pay by the number of kills
   function dunCap() { var q = sc.getQuality(), extra = CW.diffOf(state).extraMobs; return q === 'low' ? 7 + Math.round(extra / 2) : q === 'mid' ? 10 + Math.round(extra * 0.75) : 14 + extra; }
@@ -479,7 +484,9 @@
     } else {
       var alive = aliveMobs().length;
       if (wave.left <= 0 && alive <= Math.floor(crowdMax() * CW.REFILL_AT)) { wave.left = crowdMax() - alive; wave.t = 0.2; }
-      wave.left = CW.waveRoom(wave.left, crowdMax(), alive);   // the quality dropped mid-wave: fill only up to the new field size
+      wave.left = CW.waveRoom(wave.left, crowdMax(), alive);
+      // and the ones already over the new size step away one at a time, farthest from the wizard first
+      trimT -= dt; if (trimT <= 0) { trimT = 0.25; if (CW.excessMobs(alive, crowdMax()) > 0) dismissFarthest(); }   // the quality dropped mid-wave: fill only up to the new field size
       if (wave.left > 0) { wave.t -= dt; if (wave.t <= 0) { spawnNormal(); wave.left--; wave.t = (0.05 + Math.random() * 0.12) * 3 / CROWD; } }   // smaller monsters come that much faster: the same health per second walks in as when three made a stage (2026-11-15)
     }
     if (preview) { preview.t += dt; if (preview.t > 1.5) preview = null; }
