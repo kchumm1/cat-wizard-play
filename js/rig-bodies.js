@@ -78,7 +78,13 @@
   BODIES.standTailR = Object.assign({}, BODIES.stand, { tail: { e: [0.86, 0.50, 0.14, 0.30], p: [0.70, 0.76] } });
   // a snake rearing up and facing us: the head sways on top, the coils stay
   BODIES.cobra = B({ head: { e: [0.50, 0.24, 0.32, 0.24], p: [0.50, 0.50] }, tail: { e: [0.86, 0.86, 0.15, 0.13], p: [0.72, 0.88] } });
-  var FIT = {};
+  // 2026-11-15 pack: drop the bones that landed on something that is not a limb (seen on tools/rig-sheet.py):
+  // a teapot's spout and handle, a watering can's spout, a sponge's sides, a whale's belly, tails drawn on the wrong side.
+  var FIT = {
+    m102: { tail: null }, m108: { armL: null, armR: null }, m109: { tail: null }, m113: { tail: null }, m115: { armL: null, armR: null },
+    m116: { armL: null, armR: null }, m120: { tail: null }, m127: { tail: null }, m128: { tail: null }, m132: { tail: null },
+    b53: { tail: null }, b64: { tail: null }, b74: { tail: null }
+  };
   var RIGS = {};
   Object.keys(BEST).forEach(function (id) {
     var b = BEST[id].body; if (!b || !BODIES[b]) return;

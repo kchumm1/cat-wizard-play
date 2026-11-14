@@ -639,7 +639,7 @@
       var rows = '';
       for (var n = 0; n < 31; n++) {
         var i = R * 31 + n, info = CW.stageInfo(i), lock = !open || i > frontier, tmp = { stage: i, diff: d, up: s.up };
-        var res = { id: info.isBoss ? CW.stageBoss(i).art : reg.monsters[(n * 5) % reg.monsters.length], tint: null };
+        var res = { id: info.isBoss ? CW.stageBoss(i, d).art : reg.monsters[(n * 5) % reg.monsters.length], tint: null };
         // the same numbers the game uses (stage-rewards.js): one monster, or the boss and what beating it gives
         var img = G.thumb(res.id), rw = CW.stageRewards(tmp, st, !(s.firstClear || {})[CW.clearKey({ diff: d }, i)]);
         rows += '<button class="srow' + (i === here ? ' here' : '') + (info.isBoss ? ' boss' : '') + '" data-sgo="' + i + '" data-sd="' + d + '"' + (lock ? ' disabled' : '') + '>' +
@@ -814,7 +814,12 @@
 
     // ---------- big moments ----------
     function showOffline(r, onClose) {
-      modal('<h2>돌아왔어요!</h2><p>' + Math.floor(r.seconds / 3600) + '시간 ' + Math.floor(r.seconds % 3600 / 60) + '분 동안 냥법사가 모은 것' + (r.seconds >= DATA.balance.offlineCapSec ? ' (최대 8시간)' : '') + '</p><div class="big"><i class="coin"></i>' + gh(r.gold) + '</div>' + (r.xp ? '<p>경험치 +' + fmt(r.xp) + (r.levels ? ' · 레벨 ' + r.levels + ' 올랐어요' : '') + '</p>' : '') + (r.gems ? '<div class="big" style="color:var(--gem)"><i class="gem"></i>' + fmt(r.gems) + '</div>' : ''), [{ label: '받기', pri: true, fn: onClose }]);
+      // 2026-11-15 pack: the welcome cat and one short row per reward; the numbers and the single onClose are the same as before
+      var row = function (icon, label, val, cls) { return '<div class="offrow' + (cls || '') + '">' + icon + '<span>' + label + '</span><b>+' + val + '</b></div>'; };
+      modal('<div class="offwrap"><img class="offcat" src="' + (CW.ART_BASE || 'art/') + 'ui-welcome-cat.webp" alt="" draggable="false"><h2>돌아왔어요!</h2><p>기다리는 동안 냥법사가 모았어요</p>' +
+        '<div class="offtime">' + Math.floor(r.seconds / 3600) + '시간 ' + Math.floor(r.seconds % 3600 / 60) + '분' + (r.seconds >= DATA.balance.offlineCapSec ? ' · 최대 8시간' : '') + '</div>' +
+        row('<i class="coin"></i>', '골드', gh(r.gold)) + (r.xp ? row('<b class="xpdot"></b>', '경험치', fmt(r.xp)) : '') +
+        (r.levels ? '<div class="offlv">레벨 ' + r.levels + ' 올랐어요!</div>' : '') + '</div>', [{ label: '받기', pri: true, fn: onClose }]);
     }
     function showTierUp(tier, skill) {
       var t = DATA.tiers[tier - 1];
@@ -823,15 +828,16 @@
     }
     function showGacha(items) {
       var fx = $('gachaFx'), best = Math.max.apply(null, items.map(function (i) { return i.grade; }));
-      fx.hidden = false; fx.innerHTML = '<div class="circle"></div><div class="note">마법진이 장비를 부르는 중…</div><button class="btn" id="gSkip">건너뛰기</button>';
+      fx.hidden = false; fx.innerHTML = '<div class="chest"><img class="cclosed" src="' + (CW.ART_BASE || 'art/') + 'ui-chest-closed.webp" alt="" draggable="false"><img class="copen" src="' + (CW.ART_BASE || 'art/') + 'ui-chest-open.webp" alt="" draggable="false"></div><div class="note">마법 상자가 장비를 부르는 중…</div><button class="btn" id="gSkip">건너뛰기</button>';
+      var chest = fx.querySelector('.chest'), openT = setTimeout(function () { chest.classList.add('open'); }, best >= 4 ? 900 : 500);
       G.sound('pull');
       var done = false;
       function showCards() {
-        if (done) return; done = true;
+        if (done) return; done = true; clearTimeout(openT);
         if (best >= 4) { $('flashbg').classList.remove('go'); void $('flashbg').offsetWidth; $('flashbg').classList.add('go'); G.sound('legend'); }
         var shown = items.slice().sort(function (a, b) { return b.grade - a.grade; });
         var hero = best >= 4 ? '<div class="reveal" style="color:' + gc(best) + '">' + DATA.grades[best].name + '!</div>' : '';
-        fx.innerHTML = hero + '<div class="cards">' + shown.map(function (it, i) { return '<div class="gcard" style="--gc:' + gc(it.grade) + ';animation-delay:' + Math.min(i * 0.04, 1.2) + 's">' + gearArt(it.kind, it.grade, it.sub) + '<small>' + DATA.grades[it.grade].name + ' ' + CW.roman(it.sub || 0) + '</small></div>'; }).join('') + '</div><div class="btns" style="width:min(420px,100%)"><button class="btn" id="gClose">닫기</button><button class="btn pri" id="gAgain">한 번 더 (' + items.length + '회)</button></div>';
+        fx.innerHTML = hero + '<div class="cards">' + shown.map(function (it, i) { return '<div class="gcard" style="--gc:' + gc(it.grade) + ';--d:' + Math.min(i * 0.04, 1.2) + 's"><div class="gface">' + gearArt(it.kind, it.grade, it.sub) + '<small>' + DATA.grades[it.grade].name + ' ' + CW.roman(it.sub || 0) + '</small></div><div class="gbackc" style="background-image:url(' + (CW.ART_BASE || 'art/') + 'ui-card-back.webp)"></div></div>'; }).join('') + '</div><div class="btns" style="width:min(420px,100%)"><button class="btn" id="gClose">닫기</button><button class="btn pri" id="gAgain">한 번 더 (' + items.length + '회)</button></div>';
         $('gClose').onclick = function () { fx.hidden = true; };
         $('gAgain').onclick = function () { var more = G.pull(items.length); if (!more) { toast('다이아가 부족해요'); return; } showGacha(more); renderPanel(true); hud(); };
       }

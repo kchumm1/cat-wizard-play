@@ -98,7 +98,7 @@
   function startBoss() {
     var info = CW.stageInfo(state.stage), R = DATA.regions[info.region];
     clearField(false);
-    var sb = CW.stageBoss(state.stage), a = mobArt(sb.art, R.boss.art) || mobArt(R.boss.art);
+    var sb = CW.stageBoss(state.stage, state.diff || 0), a = mobArt(sb.art, R.boss.art) || mobArt(R.boss.art);
     if (!a) { needArt(sb.art); restT = 0.3; state.bossTry = true; return; }
     var name = sb.name;
     // bosses are drawn clearly bigger than the crowd: a stage boss about twice a monster, the region boss more

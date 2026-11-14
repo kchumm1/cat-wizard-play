@@ -1316,6 +1316,35 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 /* ==CREAM-END== */
 /* ==THEME-END== */
 @media (prefers-reduced-motion:reduce){#killBar i,.ico .orb,.sk.now .ico,.rlines .flow,.rcore.lit,.isg,.gart .gimg,.gart .gstaff,.gshine::after{animation:none!important}}
+/* 2026-11-15 pack: gacha chest + face-down cards, the welcome-back window (js/ui.js showGacha / showOffline) */
+#gachaFx .chest{position:relative;width:min(68vw,290px);aspect-ratio:1;animation:chestShake .45s ease-in-out infinite;transform-origin:50% 90%}
+#gachaFx .chest img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transition:opacity .22s}
+#gachaFx .chest .copen{opacity:0}
+#gachaFx .chest.open{animation:chestPop .35s ease-out forwards}
+#gachaFx .chest.open .copen{opacity:1}#gachaFx .chest.open .cclosed{opacity:0}
+@keyframes chestShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-3deg) translateY(-3px)}75%{transform:rotate(3deg) translateY(-3px)}}
+@keyframes chestPop{0%{transform:scale(1)}45%{transform:scale(1.1)}100%{transform:scale(1.02)}}
+.gcard{position:relative;animation-delay:var(--d,0s)}
+.gcard .gface{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:100%;height:100%;transform:scaleX(0);animation:cardFace .16s calc(var(--d,0s) + .5s) forwards}
+.gcard .gbackc{position:absolute;inset:0;border-radius:inherit;background:center/cover no-repeat;animation:cardBack .16s calc(var(--d,0s) + .34s) forwards}
+@keyframes cardBack{to{transform:scaleX(0)}}
+@keyframes cardFace{to{transform:scaleX(1)}}
+.offwrap{text-align:center}
+.offcat{display:block;width:min(170px,46vw);margin:-4px auto 2px}
+.offtime{display:inline-block;margin:2px 0 10px;padding:4px 12px;border-radius:14px;background:#EFE8DA;color:#7a6c5c;font:700 12px var(--body)}
+.offrow{display:flex;align-items:center;gap:10px;margin:6px 0;padding:10px 14px;border-radius:14px;background:#F4EDE2;box-shadow:inset 0 0 0 1px #E6D7BB;text-align:left}
+.offrow span{flex:1;color:#8f8272;font:700 13px var(--body)}.offrow b{font:400 18px var(--display);color:#443C35}
+.offlv{margin-top:8px;color:#5f7f58;font:700 13px var(--body)}
+@media (prefers-reduced-motion:reduce){#gachaFx .chest{animation:none}.gcard .gface,.gcard .gbackc{animation-duration:.01s}}
+/* gacha screen look picked by the user 2026-11-15: plum background, warm glow under the chest, a few floating gold sparks */
+#gachaFx{background:radial-gradient(ellipse 70% 42% at 50% 46%,#5e2e45 0%,#46203c 45%,transparent 75%),radial-gradient(ellipse 120% 70% at 50% 45%,#3b1734,#30122e 70%)}
+#gachaFx .chest::before{content:"";position:absolute;left:8%;right:8%;bottom:-6%;height:24%;border-radius:50%;background:radial-gradient(ellipse at 50% 50%,rgba(255,206,140,.75),rgba(214,140,90,.35) 45%,transparent 72%);filter:blur(4px);z-index:-1}
+#gachaFx .chest::after{content:"";position:absolute;inset:-18% -22%;pointer-events:none;background:radial-gradient(circle,#ffd98a 0 1.6px,transparent 2.4px) 12% 30%/100% 100% no-repeat,radial-gradient(circle,#ffd98a 0 1.3px,transparent 2px) 88% 22%/100% 100% no-repeat,radial-gradient(circle,#ffe7b0 0 1.4px,transparent 2.2px) 20% 64%/100% 100% no-repeat,radial-gradient(circle,#ffd98a 0 1.5px,transparent 2.3px) 92% 70%/100% 100% no-repeat;animation:gSpark 2.4s ease-in-out infinite alternate}
+@keyframes gSpark{from{opacity:.35;transform:translateY(4px)}to{opacity:1;transform:translateY(-4px)}}
+#gachaFx .chest{isolation:isolate}
+#gachaFx .note{color:#c9a9bd}
+@media (prefers-reduced-motion:reduce){#gachaFx .chest::after{animation:none}}
+#gachaFx #gSkip{min-width:180px;padding:12px 34px;border-radius:999px;border:2px solid #d8b07a;background:linear-gradient(180deg,#6a3358,#45203f 55%,#3a1a35);color:#f7e7d8;font:700 17px var(--body);letter-spacing:.5px;box-shadow:inset 0 0 0 2px rgba(94,46,80,.9),inset 0 2px 0 rgba(255,220,240,.18),0 4px 12px rgba(0,0,0,.35)!important;text-shadow:0 1px 0 rgba(0,0,0,.35)}
 </style>
 
 <div id="topcap" aria-hidden="true"></div>

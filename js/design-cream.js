@@ -7,13 +7,16 @@
     stat: { atk: 'growth-atk', speed: 'growth-speed', crit: 'growth-crit', critDmg: 'growth-crit-dmg', gold: 'growth-gold', mastery: 'growth-mastery',
       superCrit: 'growth-super-crit', ultraCrit: 'growth-ultra-crit', hyperCrit: 'growth-hyper-crit', megaCrit: 'growth-mega-crit', megaDmg: 'growth-mega-dmg',
       ultimateCrit: 'growth-ultimate-crit', ultimateDmg: 'growth-ultimate-dmg', alphaCrit: 'growth-alpha-crit', alphaDmg: 'growth-alpha-dmg',
-      // 초월 lines (2026-11-14) borrow the picture of the stat they grow from
-      catEye: 'growth-crit', manaBurst: 'growth-hyper-crit', resonance: 'growth-mega-dmg', rift: 'growth-ultimate-dmg', arcane: 'growth-alpha-dmg',
-      judge: 'growth-mastery', origin: 'growth-alpha-crit', haste: 'growth-speed', doomClaw: 'growth-crit-dmg', elemRule: 'growth-mastery' },
+      // 초월 lines: their own pictures from the 2026-11-15 pack (art/tr-pk-*, tools/apply-pack-20261115.py)
+      catEye: 'pk-growth-catEye', manaBurst: 'pk-growth-manaBurst', resonance: 'pk-growth-resonance', rift: 'pk-growth-rift', arcane: 'pk-growth-arcane',
+      judge: 'pk-growth-judge', origin: 'pk-growth-origin', haste: 'pk-growth-haste', doomClaw: 'pk-growth-doomClaw', elemRule: 'pk-growth-elemRule' },
     talent: { tSkill: 'talent-mana-focus', tBoss: 'talent-boss-hunter', tCrit: 'talent-sharp-claws', tChain: 'talent-weak-point',
       tGold: 'talent-golden-whiskers', tXp: 'talent-curious-eyes', tChain3: 'talent-surge',
-      tManaBurst: 'talent-surge', tRift: 'talent-weak-point', tOrigin: 'talent-mana-focus' },
-    mark: { mStar: 'mark-star', mClaw: 'mark-claw', mMoon: 'mark-moon', mComet: 'mark-comet', mCrown: 'mark-crown', mBook: 'mark-book', mArcane: 'mark-book', mJudge: 'mark-crown' },
+      tManaBurst: 'pk-talent-tManaBurst', tRift: 'pk-talent-tRift', tOrigin: 'pk-talent-tOrigin' },
+    mark: { mStar: 'mark-star', mClaw: 'mark-claw', mMoon: 'mark-moon', mComet: 'mark-comet', mCrown: 'mark-crown', mBook: 'mark-book', mArcane: 'pk-mark-mArcane', mJudge: 'pk-mark-mJudge' },
+    // packages that only had an emoji (2026-11-15 pack); names, prices and contents stay in js/data.js
+    pack: { dailyGem: 'pk-pack-dailyGem', goldS: 'pk-pack-goldS', goldL: 'pk-pack-goldL', potion: 'pk-pack-potion', grow: 'pk-pack-grow',
+      gear10: 'pk-pack-gear10', gear30: 'pk-pack-gear30', gear100: 'pk-pack-gear100', tier5: 'pk-pack-tier5', tier8: 'pk-pack-tier8', tier10: 'pk-pack-tier10' },
     potion: { rage: 'potion-rage', luck: 'potion-luck', wisdom: 'potion-wisdom' },
     tab: { up: 'menu-training' },
     cur: { mana: 'currency-mana' },
@@ -73,7 +76,7 @@
   var CW = root.CW, I = CW && CW.ICO; if (!I) return;
   var B = CW.ART_BASE || 'art/';
   function img(name, cls) { return '<img class="ico pic ' + cls + '" src="' + B + 'tr-' + name + '.webp" alt="" draggable="false">'; }
-  var stat0 = I.stat, misc0 = I.misc, cur0 = I.cur, pic0 = I.pic, MISC = ['talent', 'mark', 'potion', 'tab'];
+  var stat0 = I.stat, misc0 = I.misc, cur0 = I.cur, pic0 = I.pic, MISC = ['talent', 'mark', 'potion', 'tab', 'pack'];
   I.stat = function (k) { return MAP.stat[k] ? img(MAP.stat[k], 'imisc tr') : stat0(k); };
   I.misc = function (cat, id) { return MISC.indexOf(cat) >= 0 && MAP[cat][id] ? img(MAP[cat][id], 'imisc tr p-' + cat) : misc0(cat, id); };
   I.cur = function (k) { return MAP.cur[k] ? img(MAP.cur[k], 'icur tr') : cur0(k); };
