@@ -33,7 +33,7 @@
     B7: { head: { e: [640, 420, 260, 270], p: [640, 650] }, legL: { e: [440, 1075, 100, 70], p: [470, 1000] }, legR: { e: [820, 1075, 100, 70], p: [790, 1000] },
       wingL: { e: [195, 600, 250, 380], p: [430, 560] }, wingR: { e: [1060, 600, 250, 380], p: [830, 560] } }
   };
-  ['cos1', 'cos2', 'cos3', 'cos4', 'cos5', 'cos6', 'cos7', 'cos8', 'cos9', 'cos10'].forEach(function (id) { RIGS[id] = RIGS.costume; });
+  ['cos1', 'cos2', 'cos3', 'cos4', 'cos5', 'cos6', 'cos7', 'cos8', 'cos9', 'cos10', 'cos11', 'cos12', 'cos13', 'cos14', 'cos15'].forEach(function (id) { RIGS[id] = RIGS.costume; });
   var SIZE = 1254;
   function smooth(a, b, x) { var t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
   // Weight of every bone at one point of the picture (u right, v up from the feet, both 0..1 of the cropped art).

@@ -157,7 +157,18 @@
       { id: 'chaos', name: '혼돈의 마왕', desc: '보랏빛 혼돈의 기운이 소용돌이치는 마왕 갑옷', art: 'cos9', outfit: { h: 275, s: 0.9, v: 0.42 }, grade: 9, stat: 'finalPct', per: 0.03, price: 70000,
         fx: { col: 0xa04bff, col2: 0xff6bf0, aura: 0.85, glow: 0.35, parts: 'void', rate: 7, horns: true, eyes: 0xd27bff } },
       { id: 'doom', name: '멸망의 군주', desc: '핏빛 지옥 기운이 타오르는 악마 갑옷', art: 'cos10', outfit: { h: 356, s: 0.95, v: 0.38 }, grade: 10, stat: 'finalPct', per: 0.05, price: 120000,
-        fx: { col: 0xff2a2a, col2: 0xff8a2a, aura: 0.9, glow: 0.38, parts: 'doom', rate: 8, horns: true, eyes: 0xff3030 } }
+        fx: { col: 0xff2a2a, col2: 0xff8a2a, aura: 0.9, glow: 0.38, parts: 'doom', rate: 8, horns: true, eyes: 0xff3030 } },
+      // four more 멸망 costumes (user's pictures, 2026-11-14), the same grade and strength as 멸망의 군주
+      { id: 'doomHoly', name: '순백의 대성기사', desc: '분홍 보석과 진주로 꾸민 순백·황금 성당 갑주', art: 'cos11', outfit: { h: 40, s: 0.35, v: 1.15 }, grade: 10, stat: 'finalPct', per: 0.05, price: 120000,
+        fx: { col: 0xff7ab0, col2: 0xffe08a, aura: 0.9, glow: 0.38, parts: 'light', rate: 8 } },
+      { id: 'doomDragon', name: '청룡의 군주', desc: '황금 용이 감아 오르는 비취빛 용린 갑주', art: 'cos12', outfit: { h: 150, s: 0.8, v: 0.5 }, grade: 10, stat: 'finalPct', per: 0.05, price: 120000,
+        fx: { col: 0x2fe08a, col2: 0xffd24a, aura: 0.9, glow: 0.38, parts: 'leaf', rate: 8 } },
+      { id: 'doomFrost', name: '서리 성채의 기사', desc: '얼음 결정이 빛나는 은빛 성채 갑옷과 진주 망토', art: 'cos13', outfit: { h: 220, s: 0.6, v: 0.55 }, grade: 10, stat: 'finalPct', per: 0.05, price: 120000,
+        fx: { col: 0x8fd8ff, col2: 0xffffff, aura: 0.9, glow: 0.38, parts: 'frost', rate: 8 } },
+      { id: 'doomPlume', name: '진홍 깃털 기사', desc: '붉은 깃털과 호박 보석의 진홍 기사 갑주', art: 'cos14', outfit: { h: 355, s: 0.85, v: 0.5 }, grade: 10, stat: 'finalPct', per: 0.05, price: 120000,
+        fx: { col: 0xff3a2a, col2: 0xffb030, aura: 0.9, glow: 0.38, parts: 'ember', rate: 8 } },
+      { id: 'doomPrism', name: '오색 별빛 마녀', desc: '무지갯빛 수정 깃과 별 모자를 두른 밤하늘 마녀', art: 'cos15', outfit: { h: 268, s: 0.6, v: 0.85 }, grade: 10, stat: 'finalPct', per: 0.05, price: 120000,
+        fx: { col: 0xc89bff, col2: 0x9fe8ff, aura: 0.9, glow: 0.38, parts: 'light', rate: 8 } }
     ],
     // enhance with diamonds: cost = upBase × upGrowth^grade × (1 + lv × upLv); a star every starEvery levels (+starBonus each);
     // every owned costume adds collect to all damage
