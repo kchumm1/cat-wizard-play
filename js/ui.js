@@ -169,6 +169,8 @@
       el.innerHTML = '<b>' + run.name + '</b><span>' + Math.max(0, run.t).toFixed(1) + '초</span><span>' + (run.kind === 'mana' ? '피해 ' + fmt(run.dmg) + ' · 골렘 Lv.' + run.level : '처치 ' + run.kills) + '</span>';
     }
     var STAT_KO = { atk: '기본 공격력', potion: '분노의 물약', potionGold: '황금 물약', potionXp: '지혜의 물약', megaRate: '메가 크리티컬 확률', megaDmg: '메가 크리티컬 피해', ultimateRate: '얼티밋 크리티컬 확률', ultimateDmg: '얼티밋 크리티컬 피해', alphaRate: '알파 크리티컬 확률', alphaDmg: '알파 크리티컬 피해', atkPct: '공격력', critRate: '치명타 확률', critDmg: '치명타 피해', superRate: '슈퍼 크리티컬 확률', superDmg: '슈퍼 크리티컬 피해', ultraRate: '울트라 크리티컬 확률', ultraDmg: '울트라 크리티컬 피해', hyperRate: '하이퍼 크리티컬 확률', hyperDmg: '하이퍼 크리티컬 피해', bossDmg: '보스 피해', normalDmg: '일반 몬스터 피해', skillDmg: '스킬 피해', goldMul: '골드 획득', xpMul: '경험치 획득', speed: '공격 속도', weakDmg: '약점 피해', surgeDmg: '폭주 피해', surgeRate: '폭주 충전 속도', finalPct: '모든 피해' };
+    // "스킬 피해가" / "공격력이": the right particle after a Korean word (a final consonant takes 이)
+    function iga(w) { var c = w.charCodeAt(w.length - 1) - 0xAC00; return w + (c >= 0 && c < 11172 && c % 28 ? '이' : '가'); }
     function bonusText(stat, v) { return (STAT_KO[stat] || stat) + ' +' + pct(v); }
     function subTabs() {
       return '<div class="subtabs n6" role="tablist">' + [['gear', '장비'], ['relic', '유물'], ['costume', '코스튬'], ['divine', '삼신기'], ['sigil', '신성력'], ['rune', '룬']].map(function (t) {
@@ -239,17 +241,12 @@
     }
     // the resonance after a change to the worn runes (worked out on the real bag, then put back)
     function runeResAfter(s, slot, id) { var b = CW.runeBag(s), old = b.eq[slot]; b.eq[slot] = id; var r = CW.runeResonance(s); b.eq[slot] = old; return r; }
-    // how the number is made: "Lv.101 × 3% = +303%" / "고대 등급이라 ×2.25 = +681.8% (레벨 1마다 +6.8%)"
-    function runeCalc(it) {
-      var b = CW.runeBreakdown(it);
-      return 'Lv.' + b.lv + ' × ' + pct(b.per) + ' = +' + pct(b.base) + (b.mul > 1 ? '<br>' + hn(it.grade) + ' 등급이라 ×' + (Math.round(b.mul * 100) / 100) + ' = +' + pct(b.value) : '') + ' <small>(레벨 1마다 +' + pct(b.per * b.mul) + ')</small>';
-    }
     function runeCmp(s, it) {
       var c = CW.runeCompare(s, it.id), b = CW.runeBag(s), RC = DATA.runeConf, k = CW.runeById(it.kind), nm = STAT_KO[k.stat] || k.stat, v = CW.runeValue(it), res = CW.runeResonance(s), sum = {};
       if (!c) return '';
       CW.runeEquipped(s).forEach(function (x) { var kk = CW.runeById(x.kind); sum[kk.stat] = (sum[kk.stat] || 0) + CW.runeValue(x); });
       var tot = sum[k.stat] || 0, resLine = function (r2) { return r2 === res ? '' : cmpLine('룬 공명 (모든 피해)', res * RC.resFinal, r2 * RC.resFinal, function (x) { return Math.round(x / RC.resFinal) + '단계'; }); };
-      if (c.mode === 'worn') return '<div class="cmp"><p class="cmphead">지금 끼고 있어요</p><p class="cmpnote">' + (Math.abs(tot - v) < 1e-9 ? nm + ' +' + pct(v) + '는 전부 이 룬에서 나와요 (이 효과를 주는 룬은 이것 하나)' : '끼고 있는 룬의 ' + nm + ' 합계 +' + pct(tot) + ' 중 이 룬이 +' + pct(v)) + '</p></div>';
+      if (c.mode === 'worn') return '<div class="cmp"><p class="cmphead">지금 끼고 있어요</p><p class="cmpnote">장착 효과 ' + nm + ' +' + pct(tot) + ' 중 이 룬이 +' + pct(v) + '</p></div>';
       if (c.mode === 'free') return '<div class="cmp"><p class="cmphead">빈 칸이 있어서 끼면 더해져요</p>' + cmpLine(nm, tot, tot + v) + resLine(runeResAfter(s, b.eq.indexOf(null), it.id)) + '</div>';
       var t = c.target, tk = CW.runeById(t.kind), tv = CW.runeValue(t), tn = STAT_KO[tk.stat] || tk.stat, slot = b.eq.indexOf(t.id), fullHead = cmpFullHead(runeWorse(s, it, c));
       var row = cmpRow(c.mode === 'same' ? '지금 낀 것 · 같은 룬 중 가장 약한 것' : '지금 낀 것 · 가장 약한 것', CW.ICO.rune(t.kind, tk.color, t.grade, hc(t.grade)), hc(t.grade), hn(t.grade) + ' ' + tk.name + ' Lv.' + t.lv, tn + ' +' + pct(tv));
@@ -279,12 +276,6 @@
       var s = G.state, RC = DATA.runeConf, open = CW.runeOpen(s), res = CW.runeResonance(s), bag = CW.runeBag(s), n = RC.slots;
       if (selRune && !CW.runeItem(s, selRune)) selRune = null;
       var head = '<div class="manaline"><span>' + CW.ICO.cur('rune') + ' 룬석 <b>' + fmt(s.runeStone || 0) + '</b></span><small class="note">' + (open ? '장착 ' + CW.runeEquipped(s).length + '/' + n + ' · 가방 ' + bag.items.length + '/' + RC.cap : RC.unlockTier + '차 전직 후에 열려요') + '</small></div>';
-      // how the resonance step is counted, under the ring
-      function resNote() {
-        var worn = CW.runeEquipped(s); if (!worn.length) return '';
-        var minLv = Math.min.apply(null, worn.map(function (x) { return x.lv; })), next = (res + 1) * RC.resEvery;
-        return '<p class="note rres">룬 공명: 끼고 있는 룬 중 가장 낮은 레벨(Lv.' + minLv + ')로 정해져요. ' + RC.resEvery + '레벨마다 1단계, 단계마다 모든 피해 +' + pct(RC.resFinal) + (minLv < next ? ' · 다음 단계는 낀 룬이 모두 Lv.' + next + ' 이상' : '') + '</p>';
-      }
       var ring = '<div class="runering r7">' + bag.eq.map(function (id, i) {
         var it = id && CW.runeItem(s, id);
         if (!it) return '<div class="rune empty" style="--i:' + i + '"><span>빈 칸</span></div>';
@@ -293,14 +284,14 @@
       }).join('') + '<svg class="rlines" viewBox="0 0 200 200" aria-hidden="true">' + bag.eq.map(function (id, i) {
         var it = id && CW.runeItem(s, id), a = i * 2 * Math.PI / n - Math.PI / 2, lv = it ? it.lv : 0, col = it ? CW.runeById(it.kind).color : '#8a7ad0';
         return '<line x1="100" y1="100" x2="' + (100 + Math.cos(a) * 69).toFixed(1) + '" y2="' + (100 + Math.sin(a) * 69).toFixed(1) + '" stroke="' + col + '" stroke-width="' + (lv ? 3 : 1.5) + '" opacity="' + (lv ? 0.85 : 0.25) + '"' + (lv ? ' class="flow"' : '') + '/>';
-      }).join('') + '<circle cx="100" cy="100" r="68" fill="none" stroke="#8a7ad0" stroke-width="1.5" stroke-dasharray="2 6" opacity=".6"/></svg><div class="rcore' + (res ? ' lit' : '') + '"><small>룬 공명</small><b>' + res + '단계</b><span>모든 피해 +' + pct(res * RC.resFinal) + '</span></div></div>' + resNote();
+      }).join('') + '<circle cx="100" cy="100" r="68" fill="none" stroke="#8a7ad0" stroke-width="1.5" stroke-dasharray="2 6" opacity=".6"/></svg><div class="rcore' + (res ? ' lit' : '') + '"><small>룬 공명</small><b>' + res + '단계</b><span>모든 피해 +' + pct(res * RC.resFinal) + '</span></div></div>';
       var it = selRune && CW.runeItem(s, selRune), detail = '';
       if (it) {
         var k = CW.runeById(it.kind), cap = CW.runeCap(it), cost = CW.runeCost(it.lv), top = it.grade >= DATA.hiGrades.length - 1, full = it.lv >= cap, gcost = CW.runeGradeCost(it.grade);
         var worn = CW.runeIsWorn(s, it.id), freeIt = !worn && !it.lock;
         var same = bag.items.filter(function (x) { return x !== it && x.kind === it.kind && x.grade === it.grade && !x.lock && !CW.runeIsWorn(s, x.id); }).length;
         var rc = CW.runeCompare(s, it.id), swapTo = !worn && rc && rc.full && rc.target;
-        detail = '<div class="row"><div class="ricon" style="background:radial-gradient(circle,' + k.color + '55,#1a1030);box-shadow:inset 0 0 0 2px ' + k.color + '">' + CW.ICO.rune(it.kind, k.color, it.grade, hc(it.grade)) + '</div><div class="info"><div class="name"><span style="color:' + hc(it.grade) + '">' + hn(it.grade) + '</span> ' + k.name + ' <span class="lv">Lv.' + it.lv + '/' + cap + '</span></div><div class="desc">' + bonusText(k.stat, CW.runeValue(it)) + (worn ? '' : ' · 장착하면 적용') + '</div><div class="desc rcalc">' + runeCalc(it) + '</div></div>' +
+        detail = '<div class="row"><div class="ricon" style="background:radial-gradient(circle,' + k.color + '55,#1a1030);box-shadow:inset 0 0 0 2px ' + k.color + '">' + CW.ICO.rune(it.kind, k.color, it.grade, hc(it.grade)) + '</div><div class="info"><div class="name"><span style="color:' + hc(it.grade) + '">' + hn(it.grade) + '</span> ' + k.name + ' <span class="lv">Lv.' + it.lv + '/' + cap + '</span></div><div class="desc">' + bonusText(k.stat, CW.runeValue(it)) + ' (등급 보너스 +' + pct(it.grade * RC.gradeStep) + ')' + (worn ? '' : ' · 장착하면 적용') + '</div><div class="desc rwhat">' + k.name + ': 끼면 ' + iga(STAT_KO[k.stat] || k.stat) + ' 올라가요. 레벨을 올릴수록, 등급이 높을수록 더 많이 올라요.</div></div>' +
           (full && !top ? '<button class="buy gemb' + (!open || (s.runeStone || 0) < gcost ? ' off' : '') + '" data-rgrade="' + it.id + '"><small>' + hn(it.grade + 1) + '(으)로 승급</small><span>' + CW.ICO.cur('rune') + ' ' + fmt(gcost) + '</span></button>'
             : '<button class="buy' + (!open || full || (s.runeStone || 0) < cost ? ' off' : '') + '" data-rune="' + it.id + '">' + (full ? '최대' : CW.ICO.cur('rune') + ' ' + fmt(cost)) + '</button>') + '</div>' +
           runeCmp(s, it) +

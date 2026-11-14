@@ -29,8 +29,6 @@
   function runeCap(it) { return C.lvPerGrade * (it.grade + 1); }
   function runeCost(lv) { return Math.ceil(C.costBase * Math.pow(C.costGrowth, lv)); }
   function runeGradeCost(g) { return Math.ceil(C.gradeCostBase * Math.pow(C.gradeCostGrowth, g)); }
-  // how a rune's number is made, for the rune card: level × per level = base, × (1 + grade × gradeStep) = the effect
-  function runeBreakdown(it) { var k = runeById(it.kind), per = k ? k.per : 0, mul = 1 + it.grade * C.gradeStep; return { lv: it.lv, per: per, base: it.lv * per, mul: mul, value: it.lv * per * mul }; }
   function runeValue(it) { var k = runeById(it.kind); return k ? it.lv * k.per * (1 + it.grade * C.gradeStep) : 0; }
   // strength in 'effective levels' (the effect divided by the kind's per-level value), comparable across kinds; grade breaks ties
   function runePower(it) { return it.lv * (1 + it.grade * C.gradeStep) + it.grade * 1e-3; }
@@ -153,7 +151,7 @@
     var res = runeResonance(state); if (res) b.finalPct = (b.finalPct || 0) + res * C.resFinal;
     return b;
   }
-  return { runeBreakdown: runeBreakdown, runeById: runeById, runeOpen: runeOpen, runeBag: runeBag, runeItem: runeItem, runeIsWorn: isWorn, runeEquipped: runeEquipped, runeCompare: runeCompare, runeSwap: runeSwap, runeCap: runeCap, runeCost: runeCost,
+  return { runeById: runeById, runeOpen: runeOpen, runeBag: runeBag, runeItem: runeItem, runeIsWorn: isWorn, runeEquipped: runeEquipped, runeCompare: runeCompare, runeSwap: runeSwap, runeCap: runeCap, runeCost: runeCost,
     runeGradeCost: runeGradeCost, runeValue: runeValue, runePower: runePower, runeAdd: runeAdd, runeEquip: runeEquip, runeUnequip: runeUnequip, runeEquipBest: runeEquipBest, runeUseful: runeUseful,
     runeLock: runeLock, runeUp: runeUp, runeGradeUp: runeGradeUp, runeFuse: runeFuse, runeDismantleValue: runeDismantleValue, runeDismantle: runeDismantle,
     runeDismantleAll: runeDismantleAll, runeDrop: runeDrop, runeGive: runeGive, runeSummon: runeSummon, runeResonance: runeResonance, runeStoneForBoss: runeStoneForBoss, runeStats: runeStats };
