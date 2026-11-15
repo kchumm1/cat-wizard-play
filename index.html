@@ -1516,7 +1516,7 @@ html.fullh #mailbox{position:absolute;bottom:auto;height:var(--apph)}
 #mailbox .mbtab span{position:absolute;left:58%;top:50%;transform:translate(-50%,-50%);white-space:nowrap;font:800 2.5cqw/1 var(--body);color:#5a4636}
 #mailbox .mbtab.r span{left:56%}
 #mailbox .mbtab.on span{left:60%;color:#fff;text-shadow:0 1px 1px rgba(20,40,80,.4)}
-#mailbox .mbscroll{position:absolute;left:3.05%;top:19.4%;width:93.4%;height:59.9%;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:0 0 1cqw 1.2cqw;box-sizing:border-box}
+#mailbox .mbscroll{position:absolute;left:3.05%;top:19.4%;width:93.4%;height:59.9%;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior:contain;touch-action:pan-y;padding:0 0 1cqw 1.2cqw;box-sizing:border-box}
 #mailbox .mbcard{position:relative;display:block;width:91.8cqw;margin:0 0 -.3cqw}
 #mailbox .mbcard .mbcbg{display:block;width:100%;height:auto;pointer-events:none}
 #mailbox .mbcard>b,#mailbox .mbcard>span{position:absolute;white-space:nowrap;overflow:hidden;text-align:left;transform:translateY(-50%)}
@@ -1544,15 +1544,24 @@ html.fullh #mailbox{position:absolute;bottom:auto;height:var(--apph)}
 #mailbox .mlt{position:absolute;left:50.2%;top:19.2%;transform:translate(-50%,-50%);max-width:36.8%;overflow:hidden;white-space:nowrap;text-align:center;font:700 5.8cqw/1.15 'Noto Serif KR',var(--body);color:#3b2a20}
 #mailbox .mlf{position:absolute;left:33%;top:25%;transform:translateY(-50%);white-space:nowrap;font:700 2.4cqw/1 var(--body);color:#3b2a20}
 #mailbox .mlnew{position:absolute;left:68.3%;top:23.2%;width:16.9%;height:3.9%;display:flex;align-items:center;justify-content:center;border-radius:2cqw;background:#e8664a;box-shadow:inset 0 0 0 .3cqw #f6a085;font:800 2.3cqw/1 var(--body);color:#fff}
-#mailbox .mlbody{position:absolute;left:16.5%;top:29.3%;width:67%;height:20.6%;overflow-y:auto;scrollbar-width:none;font:500 2.9cqw/1.6 var(--body);color:#3b2a20;white-space:normal;word-break:keep-all}
-#mailbox .mlbody::-webkit-scrollbar{display:none}
+#mailbox .mlbody{position:absolute;left:16.5%;top:29.3%;width:67%;height:20.6%;overflow-y:auto;scrollbar-width:none;font:500 3.2cqw/1.6 var(--body);color:#3b2a20;white-space:normal;word-break:keep-all}
+#mailbox .mlbody::-webkit-scrollbar,#mailbox .mbscroll::-webkit-scrollbar{display:none}
+#mailbox .mlbody{overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}
 #mailbox .mlsign{margin:.5em 0 0;text-align:right;font-weight:800}
 #mailbox .mlcnt{position:absolute;left:59.1%;top:62.7%;transform:translate(-50%,-50%);font:800 1.9cqw/1 var(--body);color:#5d4a38}
-#mailbox .mlrew{position:absolute;left:30.7%;top:68%;width:39.5%;height:6.4%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.6cqw}
+#mailbox .mlrew{position:absolute;left:28.4%;top:66.6%;width:43.1%;height:8.3%;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.6cqw;border-radius:2.6cqw;background:linear-gradient(#fff6e6,#fcecd2);box-shadow:inset 0 0 0 .25cqw #ead6b4,inset 0 .5cqw .6cqw rgba(255,255,255,.7),0 .5cqw .8cqw rgba(150,110,60,.18)}
 #mailbox .mlrew span{display:flex;align-items:center;gap:2cqw;white-space:nowrap;font:800 3.4cqw/1 var(--body);color:#3b2a20}
 #mailbox .mlrew img{width:5cqw;height:5cqw;object-fit:contain}
 #mailbox .mlrew.two span{font-size:2.6cqw}#mailbox .mlrew.two img{width:3.6cqw;height:3.6cqw}
 #mailbox .mlrew .none{font-size:2.6cqw;color:#8a7766}
+#mailbox .mlrew.one{flex-direction:row;justify-content:flex-start;gap:0}
+#mailbox .mlrew.one .mlri{flex:none;width:39%;display:flex;align-items:center;justify-content:center}
+#mailbox .mlrew.one .mlri img.gem{width:14.5cqw;height:auto}#mailbox .mlrew.one .mlri img.gold{width:7.4cqw;height:auto}
+#mailbox .mlrew.one .mldiv{flex:none;width:.22cqw;height:62%;background:#dcc8ab;border-radius:1px}
+#mailbox .mlrew.one .mlrt{flex:1;min-width:0;padding:0 2.4cqw;overflow:hidden;white-space:nowrap;text-align:center;font:700 3.7cqw/1 var(--body);color:#3a2a22}
+#mailbox .mlrew.one .mlri{position:relative;align-self:stretch}
+#mailbox .mlstar{position:absolute;fill:#f4c442;filter:drop-shadow(0 0 .5cqw rgba(255,214,90,.8))}
+#mailbox .mlstar.a{left:16%;top:16%;width:3.4cqw}#mailbox .mlstar.b{left:22%;bottom:12%;width:2.3cqw}#mailbox .mlstar.c{right:12%;bottom:22%;width:2.6cqw}
 #mailbox .mlget{left:25.3%;top:79.1%;width:49.3%;height:7.6%;border-radius:5cqw}
 #mailbox .mlget span{position:absolute;left:59%;top:50%;transform:translate(-50%,-50%);white-space:nowrap;font:800 4.4cqw/1 var(--body);color:#fff;text-shadow:0 1px 2px rgba(20,40,80,.45)}
 #mailbox .mlget.done{background:rgba(246,238,226,.55)}#mailbox .mlget.done span{color:#4f5d72;text-shadow:none}
