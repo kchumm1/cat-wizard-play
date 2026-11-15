@@ -55,6 +55,7 @@ ol.steps{padding-left:20px;font-size:14px;margin:8px 0}ol.steps li{margin:4px 0}
         <p class="hint">폰 카메라로 찍으면 이 화면이 열리면서 열쇠가 저장돼요. 다 옮겼으면 꼭 닫으세요(QR 안에 열쇠가 들어 있어요).</p>
         <button class="btn ghost" id="qrClose" style="margin-top:8px">QR 닫기</button>
       </div>
+      <button class="btn ghost" id="keyCopy">열쇠 복사 (홈 화면 앱에 붙여 넣기용)</button>
       <button class="btn ghost" id="keyForget">열쇠 지우기</button></div>
     <div id="keyOff">
       <label for="key">GitHub 열쇠 붙여 넣기</label>
@@ -165,6 +166,18 @@ ol.steps{padding-left:20px;font-size:14px;margin:8px 0}ol.steps li{margin:4px 0}
     var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
     s.onload = draw; s.onerror = function () { say('keyMsg', 'QR 그리는 파일을 못 받았어요(인터넷 확인).', 'bad'); };
     document.head.appendChild(s);
+  };
+  // 열쇠 복사: on an iPhone the home-screen app keeps its own storage, apart from Safari; copy here, paste there
+  $('keyCopy').onclick = function () {
+    var t = token(), done = function () { say('keyMsg', '열쇠를 복사했어요. 홈 화면 앱을 열어 열쇠 칸에 붙여 넣고 「열쇠 저장」을 누르세요.', 'ok'); };
+    var old = function () {
+      var a = document.createElement('textarea'); a.value = t; a.setAttribute('readonly', ''); a.style.position = 'fixed'; a.style.opacity = '0';
+      document.body.appendChild(a); a.select(); a.setSelectionRange(0, t.length);
+      var ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(a);
+      if (ok) done(); else say('keyMsg', '복사하지 못했어요. 이 브라우저에서는 QR로 옮겨 주세요.', 'bad');
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, old); else old();
   };
   $('qrClose').onclick = function () { $('qr').textContent = ''; $('qrBox').classList.add('hide'); };
   (function () {
