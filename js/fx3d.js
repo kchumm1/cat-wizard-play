@@ -1080,6 +1080,23 @@
         }
         var hx = []; for (var h = 0; h < 6; h++) { var ha = h * Math.PI / 3; hx.push([Math.cos(ha) * 0.26, Math.sin(ha) * 0.26]); }
         parts.push(ext(poly(hx), Y2));
+      } else if (k === 5) {
+        // 1차 젤리 발바닥: a big round pad and four toe beans, thick and soft-edged like jelly
+        var JX = { depth: 0.3, bevelEnabled: true, bevelThickness: 0.16, bevelSize: 0.1, bevelSegments: 5, curveSegments: 20 };
+        var pad = new T.Shape(); pad.moveTo(0, -0.95);
+        pad.bezierCurveTo(0.52, -0.95, 0.74, -0.62, 0.7, -0.3); pad.bezierCurveTo(0.66, 0.0, 0.34, 0.08, 0, 0.0);
+        pad.bezierCurveTo(-0.34, 0.08, -0.66, 0.0, -0.7, -0.3); pad.bezierCurveTo(-0.74, -0.62, -0.52, -0.95, 0, -0.95);
+        parts.push(ext(pad, JX));
+        [[-0.7, 0.28, 0.2, 0.24], [-0.26, 0.62, 0.21, 0.26], [0.26, 0.62, 0.21, 0.26], [0.7, 0.28, 0.2, 0.24]].forEach(function (b) {
+          var s = new T.Shape(); s.absellipse(b[0], b[1], b[2], b[3], 0, Math.PI * 2, false, 0); parts.push(ext(s, JX));
+        });
+      } else if (k === 6) {
+        // 1차 마법 발톱: one cat claw — a thick rounded root at the bottom, hooking up and over to one sharp tip (top right)
+        var cl = new T.Shape(); cl.moveTo(-0.2, -0.9);
+        cl.bezierCurveTo(-0.38, -0.05, -0.1, 0.7, 0.62, 1.0);      // the back of the hook up to the tip
+        cl.bezierCurveTo(0.18, 0.6, 0.12, -0.2, 0.2, -0.9);        // the inside of the hook back down
+        cl.bezierCurveTo(0.14, -1.06, -0.14, -1.06, -0.2, -0.9);   // the round root
+        parts.push(ext(cl, { depth: 0.22, bevelEnabled: true, bevelThickness: 0.07, bevelSize: 0.05, bevelSegments: 3, curveSegments: 14 }));
       } else {
         // a swirl: a band coiling out from the middle, thin at its heart and widening
         var out = [], inn = [], TH = 1.7 * 6.2832;
@@ -1177,6 +1194,40 @@
       xBody.instanceMatrix.needsUpdate = xLine.instanceMatrix.needsUpdate = xBody.instanceColor.needsUpdate = xLine.instanceColor.needsUpdate = true;
     }
 
+    // =================== 1차: cat things in 3D (2026-11-15) ===================
+    // A ball of fur: soft and lit from above, its edge frayed into fine hairs (see-through there), a light sheen on top.
+    FS.fluff = 'uniform vec3 uCol,uDeep;uniform float uAlpha,uSeed;void main(){vec3 N=normalize(vWN);' + F +
+      'float d=max(dot(N,normalize(vec3(-0.3,0.85,0.45))),0.0);' +
+      'float hair=fb(vP*vec3(14.0,14.0,14.0)+vec3(uSeed)),tuft=fb(vP*3.2+vec3(uSeed*2.0,uTime*0.4,0.0));' +
+      'vec3 c=mix(uDeep,uCol,0.25+0.75*d)*(0.82+0.3*hair)+vec3(1.0)*pow(d,6.0)*0.25*(1.0-uBright);' +
+      'float al=smoothstep(0.05,0.45,f+hair*0.35+tuft*0.2-0.2)*uAlpha;gl_FragColor=vec4(c,clamp(al,0.0,1.0));}';
+    // A ball of yarn: strands wound round it in three directions, a darker groove between strands, lit from above.
+    FS.yarn = 'uniform vec3 uCol,uDeep;uniform float uSeed;void main(){vec3 N=normalize(vWN),p=normalize(vP);' + F +
+      'float d=max(dot(N,normalize(vec3(-0.3,0.85,0.45))),0.0);' +
+      'vec3 a1=normalize(vec3(0.9,0.3,0.2)),a2=normalize(vec3(-0.2,0.95,0.3)),a3=normalize(vec3(0.3,-0.25,0.92));' +
+      'float w1=abs(dot(p,a1)),w2=abs(dot(p,a2)),w3=abs(dot(p,a3));' +
+      'float s1=abs(sin(dot(p,cross(a1,vec3(0.0,0.0,1.0)))*26.0)),s2=abs(sin(dot(p,cross(a2,vec3(1.0,0.0,0.0)))*26.0)),s3=abs(sin(dot(p,cross(a3,vec3(0.0,1.0,0.0)))*26.0));' +
+      'float m=fb(p*2.2+vec3(uSeed));float s=w1<w2&&w1<w3?s1:(w2<w3?s2:s3);s=mix(s,s1,smoothstep(0.55,0.75,m)*0.6);' +
+      'float groove=smoothstep(0.0,0.35,s);vec3 c=mix(uDeep*0.7,uCol,groove*(0.35+0.75*d));c+=vec3(1.0)*pow(d,8.0)*0.18*groove;' +
+      'gl_FragColor=vec4(c,1.0);}';
+    function fluffBall(o) {
+      var p = add(new T.Mesh(GEO.puff, mat(FS.fluff, { uCol: { value: C(o.col || 0xfff1dc) }, uDeep: { value: C(o.deep || 0xc89a74) }, uAlpha: { value: 1 }, uSeed: { value: Math.random() * 9 } }, { normal: true })), { order: o.order === undefined ? 6.8 : o.order });
+      p.mesh.name = 'core3d fluff';
+      return {
+        set: function (pos, r, sy, roll, alpha) { p.mesh.position.copy(pos); r = Math.max(0.001, r); p.mesh.scale.set(r, r * (sy || 1), r); p.mesh.rotation.set(0.2, roll || 0, 0); if (alpha !== undefined) U(p).uAlpha.value = alpha; },
+        kill: function () { drop(p); }
+      };
+    }
+    function yarnBall(o) {
+      var body = add(new T.Mesh(GEO.ball, mat(FS.yarn, { uCol: { value: C(o.col || 0x7fd8a0) }, uDeep: { value: C(o.deep || 0x2a7a50) }, uSeed: { value: Math.random() * 9 } }, { solid: true })), { order: 6.8 });
+      var line = add(new T.Mesh(GEO.ball, lineMat(o.line === undefined ? 0x16402a : o.line)), { order: 6.75 });
+      body.mesh.name = 'core3d yarn';
+      return {
+        set: function (pos, r, q) { r = Math.max(0.001, r); body.mesh.position.copy(pos); body.mesh.scale.setScalar(r); line.mesh.position.copy(pos); line.mesh.scale.setScalar(r * 1.08); if (q) body.mesh.quaternion.copy(q); },
+        kill: function () { drop(body); drop(line); }
+      };
+    }
+
     function update(dt) {
       time += dt;
       for (var i = parts.length - 1; i >= 0; i--) {
@@ -1200,14 +1251,15 @@
       beam({ col: 0xffffff, deep: 0x8866ff, r: 0.1 }).set(far, far.clone().add(vel), 1); orb({ col: 0xffffff }).set(far, 1, 1); moon({}).set(far, 1, 0);
       rock({ size: 0.3 }).set(far, vel, 0.05); fireball({ size: 0.3 }).set(far, vel, 0.05); column({}).set(far, 1, 1, 0); ringWall({}).set(far, 1, 1, 0); fireWave({}).set(far.x, far.z, 1, 1, 0, 1, 2, 0); picWave({}).set(far, 1, 0, 1, 0, 1); var ws = waveShards({}); ws.put(0, far, 0, 0, 1, 1, 1, 0); ws.commit(); var sq = seqWave(); sq.put(0, 0, 0, far, 0, 0, 1, 1, 1, 0); sq.commit(); iceSpear({ size: 1 }).set(far, vel, 0.05); iceSpikes(far, { n: 2 }); mark({}).set(far, 0.5, 1); impact(far, { size: 1, chips: 3 }); blast(far, { size: 1, flash: true });
       var h = hole({ pos: far }); h.set(1, 1, 0); h.lens.dead = true; puff(far, {}); chip(far, 1, 0xff7a1a, false);
-      for (var ek = 0; ek < 5; ek++) emblem(ek, { col: 0xff8a3a, deep: 0x8a2a10 }).set(far, 0.5, 0); glassOrb({ kind: 0, col: 0xff8a3a, deep: 0x8a2a10 }).set(far, 0.5, 0, 1); elemRing({ cols: [0xff0000, 0xffff00, 0xff00ff, 0x00ffff, 0x00ff00] }).set(far, 1, 0, 0, 1); var xst = xs.length; crystal({ pos: far });
+      fluffBall({}).set(far, 0.5); yarnBall({}).set(far, 0.5);
+      for (var ek = 0; ek < 7; ek++) emblem(ek, { col: 0xff8a3a, deep: 0x8a2a10 }).set(far, 0.5, 0); glassOrb({ kind: 0, col: 0xff8a3a, deep: 0x8a2a10 }).set(far, 0.5, 0, 1); elemRing({ cols: [0xff0000, 0xffff00, 0xff00ff, 0x00ffff, 0x00ff00] }).set(far, 1, 0, 0, 1); var xst = xs.length; crystal({ pos: far });
       drawSpikes(0); layoutSmoke(sc.camera, true); drawChips(0); drawCrystals(0);   // the layers must be drawing copies when compiled, so their (instanced) programs are built too
       sc.renderer.compile(sc.scene, sc.camera);
       for (var i = parts.length - 1; i >= start; i--) drop(parts[i]);
       parts.length = start; spikes.length = spikeStart; chips.forEach(function (l, i) { l.length = chipStart[i]; }); xs.length = xst; drawSpikes(0); drawChips(0); drawCrystals(0);
       if (sc.warmLens) sc.warmLens();
     }
-    return { beam: beam, orb: orb, moon: moon, rock: rock, fireball: fireball, column: column, ringWall: ringWall, fireWave: fireWave, picWave: picWave, waveShards: waveShards, seqWave: seqWave, iceSpear: iceSpear, iceSpikes: iceSpikes, iceSpike: iceSpike, mark: mark, impact: impact, puff: puff, blast: blast, chip: chip, hole: hole, emblem: emblem, glassOrb: glassOrb, elemRing: elemRing, crystal: crystal, update: update, clear: clear, warm: warm, setBright: function (v) { bright = !!v; }, setBatchSmoke: function (v) { batchSmoke = !!v; }, setBatchChips: function (v) { batchChips = !!v; },
+    return { beam: beam, orb: orb, moon: moon, rock: rock, fireball: fireball, column: column, ringWall: ringWall, fireWave: fireWave, picWave: picWave, waveShards: waveShards, seqWave: seqWave, iceSpear: iceSpear, iceSpikes: iceSpikes, iceSpike: iceSpike, mark: mark, impact: impact, puff: puff, blast: blast, chip: chip, hole: hole, emblem: emblem, glassOrb: glassOrb, elemRing: elemRing, crystal: crystal, fluffBall: fluffBall, yarnBall: yarnBall, update: update, clear: clear, warm: warm, setBright: function (v) { bright = !!v; }, setBatchSmoke: function (v) { batchSmoke = !!v; }, setBatchChips: function (v) { batchChips = !!v; },
       count: function () { return parts.length + xs.length + spikes.length + chips[0].length + chips[1].length + chips[2].length; }, spikeTops: spikeTops,
       // for checks: the puffs in the last picture and the draws they took
       smoke: function () { return { puffs: smokeNow.puffs, draws: smokeNow.draws }; } };
