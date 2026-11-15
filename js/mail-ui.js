@@ -66,8 +66,8 @@
     return '<div class="mbw mblist"><img class="mbbg" src="art/mail-list.webp" alt="" draggable="false">' +
       '<button class="mbx" data-mbx aria-label="닫기"></button>' +
       '<b class="mbnew">' + PAW + '새 편지 ' + wait.length + '</b>' +
-      '<button class="mbtab l' + (tab === 'all' ? ' on' : '') + '" data-mbtab="all"><span>전체</span></button>' +
-      '<button class="mbtab r' + (tab === 'wait' ? ' on' : '') + '" data-mbtab="wait"><span>받지 않은 우편</span></button>' +
+      '<button class="mbtab l' + (tab === 'all' ? ' on' : '') + '" data-mbtab="all"><span><i class="mbti"></i>전체</span></button>' +
+      '<button class="mbtab r' + (tab === 'wait' ? ' on' : '') + '" data-mbtab="wait"><span><i class="mbti"></i>받지 않은 우편</span></button>' +
       '<div class="mbscroll">' + (cards || '<p class="mbnone">받지 않은 우편이 없어요</p>') + '</div>' +
       '<button class="mball' + (wait.some(CW.mailHasReward) ? '' : ' off') + '" data-mball aria-label="보상 모두 받기"></button>' +
       '<b class="mbpid">' + CW.mailPid(s) + '</b><button class="mbcopy" data-mbcopy aria-label="우편번호 복사"></button></div>';
