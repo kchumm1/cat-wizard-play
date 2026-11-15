@@ -7,7 +7,10 @@
     var fieldPt = K.fieldPt, fieldWave = K.fieldWave, fieldRain = K.fieldRain, flare = K.flare, glow = K.glow, sparks = K.sparks, embers = K.embers, smoke = K.smoke, fire = K.fire, trailFire = K.trailFire, shock = K.shock, ring = K.ring, gRing = K.gRing, gGlow = K.gGlow;
     var scorch = K.scorch, dust = K.dust, circle = K.circle, seal = K.seal, converge = K.converge, impact = K.impact, heavy = K.heavy, homing = K.homing, explosion = K.explosion;
     var liveMobs = K.liveMobs, gp = K.gp, share = K.share, volley = K.volley, ringHits = K.ringHits, skyBolt = K.skyBolt, zapHit = K.zapHit, beamOf = K.beamOf, picHead = K.picHead, picAt = K.picAt, picFall = K.picFall;
-    var P3 = K.P3;
+    var P3 = K.P3, near = K.near;
+    // the monster a shot is flying at, or (if it has fallen on the way) the one standing nearest it, which is the one
+    // that will take the hit (c.hit moves a fallen one's hit there): so the shot is seen to land where the damage goes
+    function liveTarget(m) { if (m && !m.alive) { var nb = near(liveMobs(), m.x, m.z, 2.6); if (nb) return nb; } return m; }
     var ICE = [0xffffff, 0xd8f2ff, 0xbfe8ff];
     function mp(m) { return sc.mobPos(m); }
     // a 3D ball of coloured light: a light heart in a softer glow of its colour. In bright regions (snow, desert) light
@@ -482,34 +485,43 @@
     // =================================================================== 6차: 달
     // Crescent blades: three great crescents are cut loose across the whole field, one after another; each cuts every monster it passes.
     // Each blade is a real 3D crescent made in Blender (tools/blender/skills6_meshes.py): a thick rounded back, a thin
-    // edge burning white-violet, a gleam running along it. It is turned a little so its thickness shows, sways as it
-    // flies, and two fading afterimages of it follow.
+    // edge burning white-violet, a gleam running along it. It flies flat at waist height with its tips reaching from the
+    // far side of the field to the near side, its edge a little raised, so its edge really sweeps through every monster:
+    // a monster is hit the moment the edge (where it is drawn at that monster's depth) reaches it (2026-11-16: standing
+    // up, the blade only covered the middle of the screen and the ones at the top and bottom were hit untouched).
+    // Two fading afterimages follow it.
     S.crescents = function (c) {
       sc.heroPose('swipe', c.D(0.1), c.col); sc.dim(0.35, c.D(0.85));
-      var dir = sc.heroState().faceT > 0 ? 1 : -1, SZ = 3.4, H = 1.4 * Math.min(1.25, c.s);
+      var dir = sc.heroState().faceT > 0 ? 1 : -1, cs = Math.min(1.25, c.s), SX = 1.7 * cs, SZ = 5.2, ST = 2.4 * cs, Y0 = 0.75, Z0 = -0.4;
+      // the blade's own x along the way it flies, its tips along the depth of the field, its thickness up
+      var X = V(dir, 0, 0), Zu = V(0, 1, 0), Yd = Zu.clone().cross(X), base = new T.Quaternion().setFromRotationMatrix(new T.Matrix4().makeBasis(X, Yd, Zu)), scl = V(SX, SZ, ST);
+      // where its sharp edge is at depth z (the blade's outer arc: x = sqrt(1 - y²) of its own size, the tips at 0.2)
+      function edgeX(x, z) { var ly = Math.abs(z - Z0) / SZ; return x + dir * SX * (ly < 0.978 ? Math.sqrt(1 - ly * ly) : 0.2); }
       for (var b = 0; b < 3; b++) (function (b) {
         after(c.D(0.1 + b * 0.13), function () {
-          var x = -4.6 * dir - dir * SZ * 0.4, hit = [], tilt = (b - 1) * 0.16, P = V(x, 1.25, -0.4), t = 0;
+          var x = -dir * (5.2 + SX), hit = [], P = V(x, Y0 + (b - 1) * 0.12, Z0), t = 0, roll = new T.Quaternion(), G = V();
           var blade = P3.bm('crescent', { col: 0xe6e0ff }), ghost = [P3.bm('crescent', { col: c.col, line: false }), P3.bm('crescent', { col: c.col, line: false })];
-          var yaw = dir > 0 ? 0.42 : Math.PI - 0.42, scl = V(H, H, H * 1.7), G = V();
           sc.shake(0.08); if (!b) sc.flash('rgba(230,225,255,0.35)', 0.18);
+          function cut(m) {
+            hit.push(m);
+            // no slash marks left on each monster (the user: the "/" lines drooping behind the blade, 2026-11-16)
+            var q2 = mp(m);
+            sparks(q2, [c.col, 0xffffff], N(6, c), 6, { dir: V(dir, 0.2, 0), spread: 0.4, size: 0.2 * c.s, stretch: 0.12 });
+            flare(q2, 0xffffff, 0.7 * c.s, 0.1, { white: true }); sc.shake(0.04);
+            c.hit(m, 1 / 3, b === 2 ? 1.3 : 0.8);
+          }
           tick(function (dt) {
             t += dt; x += dir * 21 * c.sp * dt; P.x = x;
-            var grow = Math.min(1, t / 0.06), q = camQ(0.32, yaw, (tilt + Math.sin(t * 26 + b) * 0.06) * dir);
+            // the edge tipped up a little (so the face and its thickness show from above), rocking as it flies
+            var grow = Math.min(1, t / 0.06), q = base.clone().multiply(roll.setFromAxisAngle(V(0, 1, 0), (0.3 + (b - 1) * 0.08 + Math.sin(t * 26 + b) * 0.05)));
             blade.set(P, q, scl.clone().multiplyScalar(0.35 + 0.65 * grow), 1, 0.7 + 0.3 * Math.sin(t * 40));
-            for (var g = 0; g < 2; g++) { G.copy(P); G.x -= dir * (0.55 + 0.6 * g) * grow; ghost[g].set(G, q, scl.clone().multiplyScalar(0.98 - 0.06 * g), (g ? 0.2 : 0.38) * grow, 1); }
-            var front = x + dir * SZ * 0.4;
-            for (var i = 0; i < N(3, c); i++) E({ pos: V(front - dir * rr(0, 0.8), rr(0.2, 1.8), rr(-4.4, 3.6)), vel: V(-dir * rr(1, 3), rr(-0.5, 0.8), 0), frame: pick(['crescent', 'flare', 'dot']), color: [0xffffff, c.col], size: [rr(0.12, 0.28), 0.02], life: rr(0.25, 0.5), spin: rr(-6, 6) });
-            c.pool().forEach(function (m) {
-              if (hit.indexOf(m) >= 0 || (m.x - front) * dir > 0) return;
-              hit.push(m);
-              // no slash marks left on each monster (the user: the "/" lines drooping behind the blade, 2026-11-16)
-              var q2 = mp(m);
-              sparks(q2, [c.col, 0xffffff], N(6, c), 6, { dir: V(dir, 0.2, 0), spread: 0.4, size: 0.2 * c.s, stretch: 0.12 });
-              flare(q2, 0xffffff, 0.7 * c.s, 0.1, { white: true }); sc.shake(0.04);
-              c.hit(m, 1 / 3, b === 2 ? 1.3 : 0.8);
-            });
-            if (front * dir < 5.4) return false;
+            for (var g = 0; g < 2; g++) { G.copy(P); G.x -= dir * (0.6 + 0.65 * g) * grow; ghost[g].set(G, q, scl.clone().multiplyScalar(0.98 - 0.05 * g), (g ? 0.2 : 0.38) * grow, 1); }
+            // light shed off the edge all along it
+            for (var i = 0; i < N(3, c); i++) { var z = rr(-4.4, 3.6); E({ pos: V(edgeX(x, z) - dir * rr(0, 0.5), P.y + rr(-0.2, 0.4), z), vel: V(-dir * rr(1, 3), rr(-0.3, 0.8), 0), frame: pick(['crescent', 'flare', 'dot']), color: [0xffffff, c.col], size: [rr(0.12, 0.28), 0.02], life: rr(0.25, 0.5), spin: rr(-6, 6) }); }
+            c.pool().forEach(function (m) { if (hit.indexOf(m) < 0 && (m.x - edgeX(x, m.z)) * dir <= 0) cut(m); });
+            if ((x + dir * SX * 0.2) * dir < 5.8) return false;
+            // any monster it did not pass (one that came on at the far edge) is cut as it goes
+            c.pool().forEach(function (m) { if (hit.indexOf(m) < 0) cut(m); });
             blade.kill(); ghost.forEach(function (h) { h.kill(); }); return true;
           });
         });
@@ -658,7 +670,7 @@
         if (!mob) return;
         var from = sun.clone().add(rdir(0.35)), L = 1.1 * Math.min(1.3, c.s), arrow = P3.bm('arrow', { col: 0xffd04a }), scl = V(L * 1.6, L, L * 1.6), D = V(0, -1, 0);
         flare(from, 0xffffff, 0.5, 0.08, { white: true });
-        homing({ from: from, to: function () { return mp(mob); }, time: c.D(0.15), fancy: false,
+        homing({ from: from, to: function () { mob = liveTarget(mob); return mp(mob); }, time: c.D(0.15), fancy: false,
           trail: { w: 0.07 * c.s, col: 0xffd84a, core: 1.4, pts: 12, shrink: 90, halo: false },
           heads: [],
           emit: function (p, v) { if (v.lengthSq() > 1e-6) D.copy(v).normalize(); arrow.set(p.clone().addScaledVector(D, -L * 0.92), alongQ(D), scl, 1, 0); },

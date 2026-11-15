@@ -1432,7 +1432,9 @@
       bmWarm.forEach(function (h) { h.kill(); }); drawBM();
       if (sc.warmLens) sc.warmLens();
     }
-    return { beam: beam, orb: orb, moon: moon, rock: rock, fireball: fireball, column: column, ringWall: ringWall, fireWave: fireWave, picWave: picWave, waveShards: waveShards, seqWave: seqWave, iceSpear: iceSpear, iceSpikes: iceSpikes, iceSpike: iceSpike, mark: mark, impact: impact, puff: puff, blast: blast, chip: chip, hole: hole, emblem: emblem, glassOrb: glassOrb, elemRing: elemRing, crystal: crystal, fluffBall: fluffBall, yarnBall: yarnBall, bm: bm, update: update, clear: clear, warm: warm, setBright: function (v) { bright = !!v; }, setBatchSmoke: function (v) { batchSmoke = !!v; }, setBatchChips: function (v) { batchChips = !!v; },
+    return { beam: beam, orb: orb, moon: moon, rock: rock, fireball: fireball, column: column, ringWall: ringWall, fireWave: fireWave, picWave: picWave, waveShards: waveShards, seqWave: seqWave, iceSpear: iceSpear, iceSpikes: iceSpikes, iceSpike: iceSpike, mark: mark, impact: impact, puff: puff, blast: blast, chip: chip, hole: hole, emblem: emblem, glassOrb: glassOrb, elemRing: elemRing, crystal: crystal, fluffBall: fluffBall, yarnBall: yarnBall, bm: bm, update: update,
+      // for checks: the live copies of a Blender mesh kind ({ p, q, s, a })
+      bmList: function (kind) { var L = bmLayers[kind]; return L ? L.list.filter(function (h) { return !h.dead && h.a > 0.002; }) : []; }, clear: clear, warm: warm, setBright: function (v) { bright = !!v; }, setBatchSmoke: function (v) { batchSmoke = !!v; }, setBatchChips: function (v) { batchChips = !!v; },
       count: function () { return bmCount() + parts.length + xs.length + spikes.length + chips[0].length + chips[1].length + chips[2].length; }, spikeTops: spikeTops,
       // for checks: the puffs in the last picture and the draws they took
       smoke: function () { return { puffs: smokeNow.puffs, draws: smokeNow.draws }; } };

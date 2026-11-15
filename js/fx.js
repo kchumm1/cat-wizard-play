@@ -595,12 +595,20 @@
           });
         })();
       }
-      function iceFall(g, L, time, onLand) {
-        var h = P3.bm('iceShard', { col: pick(ICE3) }), side = rr(0.9, 2.2), from = V(g.x + side, 6.5, g.z - 0.4), to = V(g.x, 0.1, g.z + 0.1), D = to.clone().sub(from).normalize(), q = new T.Quaternion().setFromUnitVectors(QY, D), t = 0, landed = false, P = V(), S3 = V(L * 0.95, L, L * 0.95), HOLD = c.D(0.6);
+      // it follows its monster as it falls (to land at its feet where it stands then, 2026-11-16: it fell where the monster
+      // had been) and, if that one falls first, the one nearest it, which is the one that takes the hit
+      function iceFall(mob, g, L, time, onLand) {
+        var h = P3.bm('iceShard', { col: pick(ICE3) }), side = rr(0.9, 2.2), from = V(g.x + side, 6.5, g.z - 0.4), to = V(g.x, 0.1, g.z + 0.1), D = V(), q = new T.Quaternion(), t = 0, landed = false, P = V(), S3 = V(L * 0.95, L, L * 0.95), HOLD = c.D(0.6);
+        function aim() {
+          if (mob && !mob.alive) { var nb = near(liveMobs(), mob.x, mob.z, 2.6); if (nb) mob = nb; }
+          if (mob && mob.alive) { var gg = gp(mob); to.set(gg.x, 0.1, gg.z + 0.1); }
+          D.copy(to).sub(from).normalize(); q.setFromUnitVectors(QY, D);
+        }
+        aim();
         tick(function (dt) {
           t += dt;
-          if (t < time) { var f = t / time; P.lerpVectors(from, to, f * f); h.set(P.addScaledVector(D, -L), q, S3, Math.min(1, f * 6), 0); return false; }
-          if (!landed) { landed = true; if (onLand) onLand(); }
+          if (t < time) { aim(); var f = t / time; P.lerpVectors(from, to, f * f); h.set(P.addScaledVector(D, -L), q, S3, Math.min(1, f * 6), 0); return false; }
+          if (!landed) { landed = true; if (onLand) onLand(mob, to.clone().setY(0)); }
           var k = (t - time) / HOLD, sink = Math.max(0, k - 0.55) / 0.45;
           P.copy(to).addScaledVector(D, -L * (0.78 - 0.7 * sink));
           h.set(P, q, S3, Math.max(0, 1 - sink * sink), 0);
@@ -631,7 +639,8 @@
       }
       volley(c, { shots: 10, t0: 0.08, span: 0.5, fire: function (mob, frac) {
         var g = mob ? gp(mob) : fieldPt(0);
-        iceFall(g, rr(0.95, 1.4) * Math.min(1.4, c.s), c.D(0.19), function () {
+        iceFall(mob, g, rr(0.95, 1.4) * Math.min(1.4, c.s), c.D(0.19), function (m2, g2) {
+          mob = m2; g = g2;
           gRing(g, c.col, 1.2 * c.s, 0.3); flare(g.clone().setY(0.15), 0xffffff, 0.6, 0.1, { white: true }); sparks(g.clone().setY(0.2), [0xffffff, c.col], N(4, c), 3.5, { size: 0.13, up: 1.8 }); sc.shake(0.03);
           bits(g.clone().setY(0.15), N(3, c), 2.2, 2.4);
           if (!mob) return;
@@ -1348,7 +1357,7 @@
     return { setStaffColor: function (c) { staffCol = c; }, setCostume: function (f) { cosFx = f; cosAcc = 0; }, cast: cast, update: update, setQuality: setQuality, setBright: setBright, setRegion: setRegion, clear: clear, count: vx.count,
       impact: impact, levelUp: levelUp, bossEnter: bossEnter, coinPop: coinPop, burst: function (pos, col) { impact(pos, col, 0.8); }, vfx: vx,
       // for checks: 3D parts alive, and painted heads alive (only those of the given pictures when names are given)
-      count3d: function () { return P3.count(); }, beasts: function () { return BEASTS ? BEASTS.count() : 0; }, spikeTops: function () { return P3.spikeTops(); }, batchSmoke: function (v) { P3.setBatchSmoke(v); }, smoke3d: function () { return P3.smoke(); }, batchChips: function (v) { P3.setBatchChips(v); }, watch: function (fn) { watcher = fn || null; }, picCount: function (names) { return picHeads.filter(function (h) { return !names || names.indexOf(h.name) >= 0; }).length; } };
+      count3d: function () { return P3.count(); }, bm3d: function (k) { return P3.bmList(k); }, beasts: function () { return BEASTS ? BEASTS.count() : 0; }, spikeTops: function () { return P3.spikeTops(); }, batchSmoke: function (v) { P3.setBatchSmoke(v); }, smoke3d: function () { return P3.smoke(); }, batchChips: function (v) { P3.setBatchChips(v); }, watch: function (fn) { watcher = fn || null; }, picCount: function (names) { return picHeads.filter(function (h) { return !names || names.indexOf(h.name) >= 0; }).length; } };
   }
   CW.createFx = createFx;
 })(this);
