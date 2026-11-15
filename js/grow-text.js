@@ -44,8 +44,10 @@
     var lines = [], about, atMax = u.max !== null && lv >= u.max, hasOver = !!econ.overInfo(state, key);
     if (u.adds) {
       var bs = Object.keys(u.adds);
-      about = bs.map(function (b) { return NAME[b] || b; }).join(' · ') + '를 키워요'; // every name here ends in 피해
-      var amt = function (L) { return bs.map(function (b) { return N().bonusAmount(b, Math.min(L, u.max) * u.adds[b]); }).join(' · '); };
+      about = bs.map(function (b) { return NAME[b] || b; }).join('와 ') + '를 키워요'; // every name here ends in 피해
+      // a row that grows two things (원소 지배: 약점 · 폭주) names each number, so one can tell which is which (2026-11-15, the
+      // user: 원소지배만 표현이 이상하다); a row with one thing reads as before
+      var amt = function (L) { return bs.map(function (b) { return (bs.length > 1 ? (NAME[b] || b).replace(/ 피해$/, '') + ' ' : '') + N().bonusAmount(b, Math.min(L, u.max) * u.adds[b]); }).join(' · '); };
       lines.push(['지금', amt(lv)]);
       if (!atMax) lines.push(['다음', amt(to)]);
       lines.push(['최대', amt(u.max) + ' (Lv.' + u.max + ')']);
