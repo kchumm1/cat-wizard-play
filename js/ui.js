@@ -491,17 +491,17 @@
           '<button class="buy ' + (max || s.gold < one ? 'off' : '') + '" data-up="' + k + '">' + (max ? '최대' : '<span class="bp"><i class="coin"></i>' + gh(cost) + '</span>') + '</button></div>';
       }).join('') + '</div>';
     }
-    // element weakness in plain words (2026-11-15, the user: 불 지역이면 얼음 스킬이 추가 피해 — say it properly): every region
-    // is weak to two elements; a skill of one of them (or of every element) hits ×weakMul there. The box says which two the
-    // region now has and how hard, and opens to every region's pair; each skill shows its element and, where it is weak, the hit.
+    // element match-ups on each skill (2026-11-15, the user: 불 지역이면 얼음 스킬이 추가 피해 — on the skill's element tag,
+    // not in a box): every region is weak to two elements; a skill shows its element, the regions it is strong in, and when
+    // the region now is one of them, the hit there (×weakMul).
     function elChip(el) { var E = DATA.elements[el] || { name: el, color: '#888' }; return '<span class="elchip" style="--ec:' + E.color + '">' + E.name + '</span>'; }
     function weakX(s) { return (Math.round(CW.stats(s).weakMul * 100) / 100).toFixed(2); }
-    function weakBox(s) {
-      var r = CW.regionOf(s), R = DATA.regions[r] || {}, w = R.weak || [];
-      var table = DATA.regions.map(function (Q, i) { return '<li' + (i === r ? ' class="on"' : '') + '><span>' + Q.name + '</span><i>' + (Q.weak || []).map(elChip).join('') + '</i></li>'; }).join('');
-      return '<details class="weakbox"><summary><b>지역 약점</b><span>지금 <em>' + R.name + '</em>' + (((R.name || '').charCodeAt(R.name.length - 1) - 0xac00) % 28 ? '은' : '는') + ' ' + w.map(elChip).join('') + ' 스킬에 약해요 · 피해 <em>×' + weakX(s) + '</em></span></summary>' +
-        '<p>지역마다 약한 원소가 두 가지씩 있어요. 예를 들어 불의 지역인 <b>화산</b>에서는 <b>얼음</b> 스킬이 추가 피해를 줘요. 약점 스킬은 피해가 ×' + DATA.weakConf.mul + '배가 되고, <b>약점 피해</b>(특성 · 장비 잠재력 · 신성력 · 초월 성장의 원소 지배)를 올리면 더 커져요. 지금은 ×' + weakX(s) + '배예요. 9차 스킬은 모든 원소라 어느 지역에서나 약점으로 들어가요. 지역에 맞는 스킬을 칸에 넣어 보세요.</p>' +
-        '<ul>' + table + '</ul></details>';
+    // the regions a skill's element is strong in (the regions weak to it); the one the player is in now is marked
+    function strongIn(el, s) {
+      if (el === 'all') return '<span class="elgood">모든 지역</span>';
+      var now = CW.regionOf(s), names = [];
+      DATA.regions.forEach(function (R, i) { if ((R.weak || []).indexOf(el) >= 0) names.push('<span class="elgood' + (i === now ? ' now' : '') + '">' + R.name + '</span>'); });
+      return names.join('');
     }
     function skillPanel() {
       var s = G.state;
@@ -513,13 +513,13 @@
         }).join('') + '</div><div class="presets"><span class="note">프리셋</span>' + [0, 1, 2].map(function (i) { return '<button class="btn' + ((s.preset || 0) === i ? ' on' : '') + '" data-preset="' + i + '" aria-pressed="' + ((s.preset || 0) === i) + '">' + (i + 1) + '</button>'; }).join('') +
           '</div><div class="btns" style="margin:8px 0 4px"><button class="btn pri" data-act="autoskill">센 스킬로 자동 배치</button><button class="btn" data-act="skillall">일괄 강화</button></div>' +
           '<div class="note">스킬 보유 효과: 모든 스킬 피해 +' + pct(CW.skillOwnedStats(s).skillDmg) + ' (강화 1단계마다 +' + pct(DATA.balance.skillOwnedPer) + ')</div>' +
-        '<div class="note">' + (selSlot >= 0 ? (selSlot + 1) + '번 칸을 골랐어요. 아래에서 넣을 스킬을 누르세요.' : '칸을 고르지 않고 넣으면 빈 칸(없으면 4번 칸)에 들어가요.') + '</div>' + weakBox(s);
+        '<div class="note">' + (selSlot >= 0 ? (selSlot + 1) + '번 칸을 골랐어요. 아래에서 넣을 스킬을 누르세요.' : '칸을 고르지 않고 넣으면 빈 칸(없으면 4번 칸)에 들어가요.') + '</div>';
       var row = function (sk) {
         var locked = sk.tier > s.tier, at = s.slots.indexOf(sk.id), lv = CW.skillLevel(s, sk.id), max = lv >= DATA.balance.skillMaxLv, cost = CW.skillUpCost(sk, lv, s);
         var act = locked ? '<span class="note">' + sk.tier + '차 전직</span>'
           : (at >= 0 ? '<button class="btn" data-unslot="' + at + '">' + (at + 1) + '번 빼기</button>' : '<button class="btn pri" data-eq="' + sk.id + '">' + (selSlot >= 0 ? (selSlot + 1) + '번에 넣기' : '넣기') + '</button>');
         var up = locked ? '' : '<button class="buy ' + (max || s.gold < cost ? 'off' : '') + '" data-sup="' + sk.id + '">' + (max ? '최대' : '강화 <i class="coin"></i>' + gh(cost)) + '</button>';
-        return '<div class="row skrow" style="' + (locked ? 'opacity:.55' : '') + '"><div class="sk" style="--c:#' + new THREE.Color(sk.color).getHexString() + ';width:52px;height:52px">' + CW.ICO.skill(sk.id) + '</div><div class="info"><div class="name">' + sk.name + '<span class="lv">' + (locked ? sk.tier + '차' : '+' + lv) + '</span></div><div class="desc skwho">' + elChip(sk.el) + (CW.isWeak(sk, CW.regionOf(s)) ? '<em class="weakon">약점 ×' + weakX(s) + '</em>' : '') + '<b>' + CW.skillTargetText(sk.targets) + '</b></div>' +
+        return '<div class="row skrow" style="' + (locked ? 'opacity:.55' : '') + '"><div class="sk" style="--c:#' + new THREE.Color(sk.color).getHexString() + ';width:52px;height:52px">' + CW.ICO.skill(sk.id) + '</div><div class="info"><div class="name">' + sk.name + '<span class="lv">' + (locked ? sk.tier + '차' : '+' + lv) + '</span></div><div class="desc skwho"><b>' + CW.skillTargetText(sk.targets) + '</b></div><div class="desc skel">' + elChip(sk.el) + strongIn(sk.el, s) + (CW.isWeak(sk, CW.regionOf(s)) ? '<em class="weakon">약점 ×' + weakX(s) + '</em>' : '') + '</div>' +
           (sk.how ? '<div class="desc how">' + sk.how + '</div>' : '') +
           '<div class="skbtns"><button class="btn" data-prev="' + sk.id + '">보기</button>' + act + up + '</div></div></div>';
       };

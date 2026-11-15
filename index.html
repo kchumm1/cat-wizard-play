@@ -1482,22 +1482,8 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 /* skill tab: region weakness box and element chips (2026-11-15) */
 .elchip{display:inline-flex;align-items:center;height:18px;padding:0 7px;margin-right:5px;border-radius:9px;font:700 11px/1 var(--body);color:#3b2a20;background:color-mix(in srgb,var(--ec) 38%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ec) 70%,#6b4b3a)}
 .weakon{display:inline-flex;align-items:center;height:18px;padding:0 7px;margin-right:6px;border-radius:9px;font:800 11px/1 var(--body);font-style:normal;color:#fff;background:#d4543a}
-.skrow .skwho{display:flex;flex-wrap:wrap;align-items:center;gap:3px 0}
-.weakbox{margin:8px 0 6px;border-radius:12px;background:#FBF3E4;box-shadow:inset 0 0 0 1.5px #E7D3B0;padding:0 10px}
-.weakbox summary{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;min-height:40px;list-style:none;cursor:pointer;font-size:12.5px;color:#5d4a38}
-.weakbox summary::-webkit-details-marker{display:none}
-.weakbox summary b{font-size:13.5px;color:#b5523a}
-.weakbox summary b::after{content:"›";display:inline-block;margin-left:5px;color:#c9a97a;transition:transform .15s}
-.weakbox[open] summary b::after{transform:rotate(90deg)}
-.weakbox summary em{font-style:normal;font-weight:800;color:#443C35}
-.weakbox summary .elchip{margin-right:2px}
-.weakbox p{margin:0 0 8px;font-size:12px;line-height:1.55;color:#5d4a38}
-.weakbox p b{color:#443C35}
-.weakbox ul{list-style:none;margin:0 0 10px;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:4px 10px}
-.weakbox li{display:flex;align-items:center;justify-content:space-between;gap:4px;min-height:24px;padding:0 6px;border-radius:7px;font-size:12px;color:#5d4a38}
-.weakbox li.on{background:#F3E2B8;font-weight:800}
-.weakbox li i{display:flex;font-style:normal}
-.weakbox li .elchip{margin:0 0 0 3px}
+.skrow .skel{display:flex;flex-wrap:wrap;align-items:center;gap:4px 0;margin-top:3px}
+.elgood{display:inline-flex;align-items:center;height:18px;padding:0 6px;margin-right:4px;border-radius:9px;font:700 11px/1 var(--body);color:#6b5642;background:#F3E8D3}.elgood.now{color:#fff;background:#b5523a}
 /* 냥법사 기록 (2026-11-15, js/ui.js openStats): the user's picture. Places and sizes are the picture's own (1024 wide), written
    in cqw of the column: picture px / 10.24. The top is art/prof-top.webp with the real name and numbers written on it. */
 #prof{position:fixed;inset:0;z-index:19;display:none;background:#f7efe9;color:#2b201d;font-family:var(--body)}
