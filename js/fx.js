@@ -1215,7 +1215,7 @@
             var m = m0.alive ? m0 : near(came.length ? came : free, m0.x, m0.z);
             if (!m) return;
             if (m !== m0) aimed[i] = m;
-            var ci = Object.assign({}, c, { targets: [m], center: crowdCenter([m]), avoid: function (x) { return aimed.some(function (y, j) { return j !== i && y === x; }); }, claim: function (x) { aimed[i] = x; } });
+            var ci = Object.assign({}, c, { copy: i, targets: [m], center: crowdCenter([m]), avoid: function (x) { return aimed.some(function (y, j) { return j !== i && y === x; }); }, claim: function (x) { aimed[i] = x; } });
             ci.pool = function () { return m.alive ? [m] : liveMobs().slice(0, 1); };
             // splash spares the other aimed monsters (each takes its own whole hit), and a monster in reach of two copies
             // takes at most one splash share in all

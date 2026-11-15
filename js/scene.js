@@ -639,11 +639,11 @@
 
     // ---------- screen effects ----------
     function layer(bg) { var el = document.createElement('div'); el.style.cssText = 'position:absolute;inset:0;opacity:0;pointer-events:none;background:' + bg; overlay.appendChild(el); return el; }
-    // darkening drawn inside the scene: after the world and the characters, before the spell effects
+    // darkening drawn inside the scene: after the world and the characters, before the spell effects (the painted ones, order 9 and up, and the 3D ones, 6 and up)
     var dimMat = new T.ShaderMaterial({ uniforms: { uDim: { value: 0 } }, transparent: true, depthTest: false, depthWrite: false,
       vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
       fragmentShader: 'uniform float uDim; varying vec2 vUv; void main(){ vec2 p = (vUv - vec2(0.55, 0.45)) * vec2(1.0, 1.25); float v = smoothstep(0.15, 0.75, length(p)); vec3 c = mix(vec3(0.07, 0.03, 0.15), vec3(0.02, 0.0, 0.06), v); gl_FragColor = vec4(c, uDim * (0.72 + 0.28 * v)); }' });
-    var dimMesh = new T.Mesh(new T.PlaneGeometry(2, 2), dimMat); dimMesh.frustumCulled = false; dimMesh.renderOrder = 8; dimMesh.visible = false; scene.add(dimMesh);
+    var dimMesh = new T.Mesh(new T.PlaneGeometry(2, 2), dimMat); dimMesh.frustumCulled = false; dimMesh.renderOrder = 5.95;   // under the 3D spell parts (fx3d, order 6 and up): drawn after them it turned their light grey (2026-11-15). Smoke and chips (4, 5) stay under it with the world dimMesh.visible = false; scene.add(dimMesh);
     var flashEl = layer('#fff'); flashEl.className = 'screen-flash';
     var flashA = 0, dimA = 0, dimTarget = 0, dimT = 0;
     function flash(color, amount) { flashEl.style.background = color; flashA = Math.max(flashA, Math.min(0.42, amount)); }

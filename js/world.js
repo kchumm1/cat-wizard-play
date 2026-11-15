@@ -316,7 +316,7 @@
       }
       var geo2 = new T.BufferGeometry(); geo2.setAttribute('position', new T.BufferAttribute(pos, 3)); geo2.setAttribute('aSize', new T.BufferAttribute(size, 1)); geo2.setAttribute('aCol', new T.BufferAttribute(col, 3)); geo2.setAttribute('aPh', new T.BufferAttribute(ph, 1));
       var am = new T.ShaderMaterial({ uniforms: { map: { value: shapeTex(ambSpec.shape) }, uTime: { value: 0 }, uScale: { value: 900 }, uBlink: { value: ambSpec.blink ? 1 : 0 } }, vertexShader: AMB_VS, fragmentShader: AMB_FS, transparent: true, depthWrite: false, blending: ambSpec.glow ? T.AdditiveBlending : T.NormalBlending });
-      amb = new T.Points(geo2, am); amb.frustumCulled = false; amb.renderOrder = 6; group.add(amb);
+      amb = new T.Points(geo2, am); amb.frustumCulled = false; amb.renderOrder = 5.9; group.add(amb);   // 5.9: under the darkening (scene.js dim, 5.95) as before
     }
     function update(dt, viewH) {
       time += dt;

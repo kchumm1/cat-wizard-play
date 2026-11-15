@@ -61,14 +61,14 @@
       'vec3 c=mix(uDeep,uCol,smoothstep(0.1,0.8,f));c=mix(c,vec3(1.0),pow(f,4.0)*0.9*(1.0-uBright*0.5));' +
       'float al=pow(f,1.3)*(0.55+0.7*n)*uAlpha;gl_FragColor=vec4(c,clamp(al,0.0,1.0));}',
     // a moon: lit from behind one side so a thick crescent shines, with dark seas and a soft rim
-    moon: 'uniform vec3 uLit,uDark,uRim,uL;uniform float uAlpha;void main(){vec3 N=normalize(vN);' + F +
+    moon: 'uniform vec3 uLit,uDark,uRim,uL;uniform float uAlpha,uSolid;void main(){vec3 N=normalize(vN);' + F +
       'float lit=smoothstep(-0.08,0.38,dot(N,normalize(uL)));' +
       'float sea=smoothstep(0.02,0.24,fbm(vP*2.6)),dots=smoothstep(0.5,0.72,n3(vP*7.5)*0.5+0.5);' +
       'vec3 surf=mix(uLit,uLit*0.7,sea*0.75+dots*0.35);surf*=1.0-0.2*uBright;vec3 c=mix(uDark,surf,lit);' +
       'c+=uRim*pow(1.0-f,3.0)*(0.35+0.9*lit)*(1.0-uBright);' +
       // on snow or sand the white face sinks into the ground and the see-through dark side reads as a faint disk:
       // there it is a little greyer, solid, and edged dark
-      'c=mix(c,uDark*0.55,uBright*smoothstep(0.55,0.95,1.0-f));gl_FragColor=vec4(c,uAlpha*mix(0.5+0.5*lit,1.0,uBright));}',
+      'c=mix(c,uDark*0.55,uBright*smoothstep(0.55,0.95,1.0-f));gl_FragColor=vec4(c,uAlpha*mix(mix(0.5+0.5*lit,1.0,uBright),1.0,uSolid));}',
     // a rock: faceted grey-brown stone lit from above, pitted, with thin glowing cracks; only the face it flies into is
     // white hot, so the dark body and its outline stay readable even when it is past in a moment
     rock: 'uniform vec3 uHot,uDir,uBase;uniform float uHeat;void main(){vec3 N=normalize(vWN);' +
@@ -260,7 +260,9 @@
     var LINE = new T.MeshBasicMaterial({ color: 0x170d0a, side: T.BackSide }); LINE.userData.keep = true;
     var ICE_LINE = new T.MeshBasicMaterial({ color: 0x17407a, side: T.BackSide }); ICE_LINE.userData.keep = true;
     // a spear's outline in another colour: one kept material per colour
-    var LINE_MATS = {};
+    var LINE_MATS = {}, OUTLINE_MATS = {};
+    // an outline that is drawn over everything (for the moon, which is): one kept material per colour
+    function outlineMat(hex) { var m = OUTLINE_MATS[hex]; if (!m) { m = new T.MeshBasicMaterial({ color: hex, side: T.BackSide, depthTest: false, depthWrite: false, transparent: true }); m.userData.keep = true; OUTLINE_MATS[hex] = m; } return m; }
     function lineMat(hex) {
       if (hex === undefined || hex === 0x17407a) return ICE_LINE;
       var m = LINE_MATS[hex]; if (!m) { m = new T.MeshBasicMaterial({ color: hex, side: T.BackSide }); m.userData.keep = true; LINE_MATS[hex] = m; }
@@ -471,15 +473,25 @@
     }
     // ---------- a moon ----------
     function moon(o) {
-      var body = add(new T.Mesh(GEO.ball, mat(FS.moon, { uLit: { value: C(o.lit || 0xf4f0ff) }, uDark: { value: C(o.dark || 0x372a72) }, uRim: { value: C(o.rim || 0xb8a8ff) }, uL: { value: new T.Vector3(-0.75, 0.42, 0.5) }, uAlpha: { value: 1 } }, { normal: true, depthTest: false })), { order: 7 });
-      var glow = orb({ col: o.rim || 0xb8a8ff, deep: o.deep || 0x6a4cff, alpha: 0.5, order: 6 }), spin = 0;
+      var body = add(new T.Mesh(GEO.ball, mat(FS.moon, { uLit: { value: C(o.lit || 0xf4f0ff) }, uDark: { value: C(o.dark || 0x372a72) }, uRim: { value: C(o.rim || 0xb8a8ff) }, uL: { value: new T.Vector3(-0.75, 0.42, 0.5) }, uAlpha: { value: 1 }, uSolid: { value: o.solid ? 1 : 0 } }, { normal: true, depthTest: false })), { order: 7 });
+      // o.line: a dark outline round it (drawn just before it, over everything like the moon itself), for a ball that has
+      // to stand out from busy light; o.solid: its dark side is not see-through
+      var line = o.line === undefined ? null : add(new T.Mesh(GEO.ball, outlineMat(o.line)), { order: 6.9 });
+      var glow = orb({ col: o.rim || 0xb8a8ff, deep: o.deep || 0x6a4cff, alpha: o.glowA === undefined ? 0.5 : o.glowA, order: 6 }), spin = 0, spinK = o.spin || 0.6;
       body.mesh.name = 'core3d moon';
       return {
         set: function (pos, radius, dt) {
-          spin += (dt || 0) * 0.6; body.mesh.position.copy(pos); body.mesh.scale.setScalar(Math.max(0.001, radius)); body.mesh.rotation.set(0.3, spin, 0.2);
+          spin += (dt || 0) * spinK; body.mesh.position.copy(pos); body.mesh.scale.setScalar(Math.max(0.001, radius)); body.mesh.rotation.set(0.3, spin, 0.2);
+          if (line) { line.mesh.position.copy(pos); line.mesh.scale.setScalar(Math.max(0.001, radius * 1.1)); }
           glow.set(pos, radius * 1.55);
         },
-        kill: function () { drop(body); glow.kill(); }
+        // change its colours while it lives (lit face, dark side, rim and glow; a lit/dark/rim/deep set as for moon())
+        tint: function (lit, dark, rim, deep) {
+          var u = U(body); u.uLit.value.setHex(lit); u.uDark.value.setHex(dark); u.uRim.value.setHex(rim);
+          var g = U(glow.part); g.uCol.value.setHex(rim); g.uDeep.value.setHex(deep);
+          if (line && arguments.length > 4) line.mesh.material = outlineMat(arguments[4]);
+        },
+        kill: function () { drop(body); glow.kill(); if (line) drop(line); }
       };
     }
     // run fn after t seconds of effect time (cleared with everything else)
