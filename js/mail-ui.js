@@ -27,17 +27,28 @@
     }).catch(function () {});
   }
 
+  // amounts as people say them: 500000 → 50만, 12000 → 1만 2000, 8000 → 8,000
+  function ko(n) {
+    n = Math.floor(+n || 0); if (n < 10000) return n.toLocaleString('ko-KR');
+    var man = Math.floor(n / 10000), rest = n % 10000;
+    return man.toLocaleString('ko-KR') + '만' + (rest ? ' ' + rest.toLocaleString('ko-KR') : '');
+  }
   function rewardPill(l) {
     var a = [];
-    if (+l.gems > 0) a.push('<span><img src="art/mail-ico-gem.webp" alt="">다이아 ' + Number(l.gems).toLocaleString('ko-KR') + '</span>');
+    if (+l.gems > 0) a.push('<span><img src="art/mail-ico-gem.webp" alt="">다이아 ' + ko(l.gems) + '</span>');
     if (+l.goldJo > 0) a.push('<span><img src="art/mail-ico-gold.webp" alt="">골드 ' + Number(l.goldJo).toLocaleString('ko-KR') + '조</span>');
     return a.join('');
+  }
+  // two rewards on a letter: the pill halved, each with its picture, a line between
+  function twoReward(l) {
+    return '<span class="half"><img class="gem" src="art/mail-gem-big.webp" alt=""><b>다이아<br>' + ko(l.gems) + '</b></span><i class="mldiv"></i>' +
+      '<span class="half"><img class="gold" src="art/mail-ico-gold.webp" alt=""><b>골드<br>' + Number(l.goldJo).toLocaleString('ko-KR') + '조</b></span>';
   }
   // one reward on a letter, as drawn: the big picture on the left, a line, the words on the right
   function oneReward(l) {
     var gem = +l.gems > 0, n = gem ? +l.gems : +l.goldJo;
     var star = function (c) { return '<svg class="mlstar ' + c + '" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 0c.8 5.6 3.4 8.6 10 10-6.6 1.4-9.2 4.4-10 10-.8-5.6-3.4-8.6-10-10 6.6-1.4 9.2-4.4 10-10z"/></svg>'; };
-    return '<span class="mlri' + (gem ? '' : ' sp') + '">' + (gem ? '' : star('a') + star('b') + star('c')) + '<img class="' + (gem ? 'gem' : 'gold') + '" src="art/' + (gem ? 'mail-gem-big' : 'mail-ico-gold') + '.webp" alt=""></span><i class="mldiv"></i><span class="mlrt">' + (gem ? '다이아 ' : '골드 ') + n.toLocaleString('ko-KR') + (gem ? '' : '조') + '</span>';
+    return '<span class="mlri' + (gem ? '' : ' sp') + '">' + (gem ? '' : star('a') + star('b') + star('c')) + '<img class="' + (gem ? 'gem' : 'gold') + '" src="art/' + (gem ? 'mail-gem-big' : 'mail-ico-gold') + '.webp" alt=""></span><i class="mldiv"></i><span class="mlrt">' + (gem ? '다이아 ' + ko(n) : '골드 ' + n.toLocaleString('ko-KR') + '조') + '</span>';
   }
   function sender(l) { var w = CW.mailWhen(l); return esc(l.sender || '운영팀') + (w ? ' · ' + w : ''); }
   function firstLine(l) { return l.sub || String(l.text || '').split('\n').filter(Boolean)[0] || ''; }
@@ -68,14 +79,15 @@
   }
   function letterHtml(l) {
     var s = state(), got = CW.mailGot(s, l), has = CW.mailHasReward(l), n = (+l.gems > 0) + (+l.goldJo > 0);
-    var body = esc(l.text || '').replace(/\n/g, '<br>');
+    // paragraphs (a blank line between) and lines, as on the drawn letter
+    var body = String(l.text || '').split(/\n\s*\n/).map(function (p) { return '<p>' + esc(p).replace(/\n/g, '<br>') + '</p>'; }).join('');
     return '<div class="mbw mbletter"><img class="mbbg" src="art/mail-letter.webp" alt="" draggable="false">' +
       '<button class="mbback" data-mbback aria-label="우편함으로"></button><button class="mbx l" data-mbx aria-label="닫기"></button>' +
       '<b class="mlt">' + esc(l.title || '편지') + '</b><span class="mlf">' + esc(l.sender || '운영팀') + '</span>' +
       (got ? '' : '<b class="mlnew">' + PAW + '새 편지</b>') +
       '<div class="mlbody">' + body + (l.sign ? '<p class="mlsign">' + esc(l.sign) + '</p>' : '') + '</div>' +
       '<b class="mlcnt">' + n + '개</b>' +
-      '<div class="mlrew' + (n > 1 ? ' two' : n ? ' one' : '') + '">' + (n === 1 ? oneReward(l) : has ? rewardPill(l) : '<span class="none">첨부 보상이 없어요</span>') + '</div>' +
+      '<div class="mlrew' + (n > 1 ? ' two' : n ? ' one' : '') + '">' + (n === 1 ? oneReward(l) : n === 2 ? twoReward(l) : has ? rewardPill(l) : '<span class="none">첨부 보상이 없어요</span>') + '</div>' +
       '<button class="mlget' + (got ? ' done' : '') + '" data-mbget="' + esc(l.id) + '"><span>' + (got ? (has ? '수령 완료' : '읽음') : has ? '보상 받기' : '확인') + '</span></button>' +
       '<button class="mllist" data-mbback aria-label="목록으로 돌아가기"></button></div>';
   }
