@@ -341,10 +341,13 @@
     // hero state: a battle mage that hunts on the move — runs to the nearest monster, keeps casting range,
     // circles while it casts, steps back from the recoil and dashes out of the way of a claw
     var HB = { x: 0, z: 0, vx: 0, vz: 0, y: 0, vy: 0, face: 1, faceT: 1, turnT: 0, aim: 0, lock: 0, walk: 0, sp: 0,
-      focus: null, focusT: 0, orbit: 1, orbitT: 3, px: 0, pz: 0, pt: 0, dash: 0, dvx: 0, dvz: 0, dashCd: 0, ghostT: 0, kx: 0, kz: 0, cheer: 0 };
+      focus: null, focusT: 0, orbit: 1, orbitT: 3, px: 0, pz: 0, pt: 0, dash: 0, dvx: 0, dvz: 0, dashCd: 0, ghostT: 0, kx: 0, kz: 0, cheer: 0,
+      // hunting like a person (the user, 2026-11-15): with nobody around the wizard looks around (look, lookT); a monster it
+      // newly spots makes it stop, turn to it and start ("!" mark, spot); a moving boss is followed, not circled
+      look: 0, lookT: 0, lookS: 0, spot: 0, spotM: null, lost: 9, seen: null, lean: 0 };
     var HERO_ZONE = { x0: -2.0, x1: 1.8, z0: -3.0, z1: 2.2 };
-    // turning is a quick snap with a little squash, and never more often than every third of a second
-    function heroTurn(dir) { if (dir === HB.faceT || HB.turnT > 0) return; HB.faceT = dir; HB.turnT = 0.45; if (hero) hero.userData.sq.v -= 0.8; }
+    // turning: one quick snap with a little squash, at most every 0.8 s, so the wizard does not keep flipping in a fight
+    function heroTurn(dir) { if (dir === HB.faceT || HB.turnT > 0) return; HB.faceT = dir; HB.turnT = 0.8; if (hero) hero.userData.sq.v -= 0.8; }
     function heroFaceTo(x) { HB.aim = 0.75; if (Math.abs(x - HB.x) > 0.3) heroTurn(x < HB.x ? -1 : 1); }
     function heroCheer(sec) { HB.cheer = Math.max(HB.cheer, sec || 1.2); }
     function heroDodge(from) {
@@ -618,24 +621,46 @@
         }
         f = HB.focus = best; HB.focusT = rr(0.7, 1.2);
       }
+      // spotting: a monster seen after a while with nobody around (a new wave), or a boss coming in, makes the wizard
+      // stop for a moment, turn to it with a little start, and then go for it
+      if (f && f !== HB.seen) {
+        if (HB.lost > 0.7 || (f.boss && (!HB.seen || !HB.seen.boss))) {
+          HB.spot = 0.42; HB.spotM = f; hd.sq.v += 1.6; hd.bend.v -= 0.9 * HB.face;
+          if (HB.y <= 0.01 && HB.vy === 0) HB.vy = 1.7;
+        }
+        HB.seen = f;
+      }
+      HB.lost = f ? 0 : HB.lost + dt; if (!f) HB.seen = null;
+      HB.spot = Math.max(0, HB.spot - dt);
       var wx = 0, wz = 0, top = 1.4;
       if (HB.cheer > 0) {
         // a win: stop and bounce for joy
         if (HB.y <= 0.01 && HB.vy === 0) HB.vy = 3.6;
+      } else if (HB.spot > 0 && HB.spotM) {
+        // "there it is": stand still, eyes on it
+        var sm = HB.spotM; if ((sm.arrived ? sm.x : sm.tx) !== HB.x) heroTurn((sm.arrived ? sm.x : sm.tx) < HB.x ? -1 : 1);
       } else if (f) {
-        var dx = (f.arrived ? f.x : f.tx) - HB.x, dz = (f.arrived ? f.z : f.tz) - HB.z, d = Math.sqrt(dx * dx + dz * dz) || 1, nx = dx / d, nz = dz / d;
+        var fx = f.arrived ? f.x : f.tx, dx = fx - HB.x, dz = (f.arrived ? f.z : f.tz) - HB.z, d = Math.sqrt(dx * dx + dz * dz) || 1, nx = dx / d, nz = dz / d;
         var r0 = f.boss ? 2.1 : 1.45, r1 = f.boss ? 2.9 : 2.25;
-        if (d > r1) { var a = Math.min(2.9, (d - r1) * 2.4 + 0.9); wx += nx * a; wz += nz * a; top = 2.9; }
+        // a boss on the move is chased: the wizard closes in further and keeps up with it instead of circling
+        var fsp = f.arrived && f.px !== undefined && dt > 0 ? Math.sqrt((f.x - f.px) * (f.x - f.px) + (f.z - f.pz) * (f.z - f.pz)) / dt : 0;
+        var chase = f.boss && fsp > 0.35;
+        if (chase) r1 = 2.4;
+        if (d > r1) { var a = Math.min(chase ? 3.3 : 2.9, (d - r1) * 2.4 + 0.9); wx += nx * a; wz += nz * a; top = chase ? 3.3 : 2.9; }
         else if (d < r0) { var b = Math.min(2.4, (r0 - d) * 3 + 0.8); wx -= nx * b; wz -= nz * b; top = 2.4; }
-        // in range: keep circling, so the wizard is never planted on one spot
-        var ob = d > r1 + 0.8 ? 0.35 : 1;
+        // in range: keep circling, so the wizard is never planted on one spot (gently while chasing)
+        var ob = chase ? 0.25 : d > r1 + 0.8 ? 0.35 : 1;
         wx += -nz * HB.orbit * 0.95 * ob; wz += nx * HB.orbit * 0.95 * ob;
+        // eyes stay on the target: it turns to face it, whichever way the feet go (unless a spell aims elsewhere)
+        if (HB.aim <= 0 && Math.abs(dx) > 0.8) heroTurn(dx < 0 ? -1 : 1);
       } else {
-        // nobody to fight yet: stroll around the middle
-        HB.pt -= dt; var gx = HB.px - HB.x, gz = HB.pz - HB.z, gd = Math.sqrt(gx * gx + gz * gz);
-        if (HB.pt <= 0 || gd < 0.15) { HB.px = rr(Z.x0, Z.x1) * 0.6; HB.pz = rr(Z.z0, Z.z1) * 0.5; HB.pt = rr(1.6, 3.2); gx = HB.px - HB.x; gz = HB.pz - HB.z; gd = Math.sqrt(gx * gx + gz * gz); }
-        if (gd > 1e-3) { var gs = Math.min(1.25, gd * 2); wx = gx / gd * gs; wz = gz / gd * gs; }
+        // nobody to fight yet: walk a little, stop, look around one way and the other, walk on
+        HB.pt -= dt; HB.lookT -= dt; var gx = HB.px - HB.x, gz = HB.pz - HB.z, gd = Math.sqrt(gx * gx + gz * gz);
+        if (HB.pt <= 0) { HB.px = rr(Z.x0, Z.x1) * 0.6; HB.pz = rr(Z.z0, Z.z1) * 0.5; HB.pt = rr(2.2, 3.6); HB.lookS = 2; HB.lookT = 0; gx = HB.px - HB.x; gz = HB.pz - HB.z; gd = Math.sqrt(gx * gx + gz * gz); }
+        if (gd < 0.2 && HB.lookS > 0 && HB.lookT <= 0) { heroTurn(-HB.faceT); HB.lookS--; HB.lookT = rr(0.55, 0.9); }
+        if (gd > 0.2) { var gs = Math.min(1.1, gd * 1.8); wx = gx / gd * gs; wz = gz / gd * gs; }
       }
+      mobs.forEach(function (mm) { mm.px = mm.x; mm.pz = mm.z; });
       // give way to anything that gets too close
       for (i = 0; i < mobs.length; i++) {
         m = mobs[i]; if (!m.arrived) continue;
@@ -665,8 +690,14 @@
       HB.sp = Math.sqrt(HB.vx * HB.vx + HB.vz * HB.vz); var moving = HB.sp > 0.12;
       HB.walk = Math.min(1, HB.sp / 1.1);
       // look where the spell goes; between spells, look where the feet go
-      if (HB.aim <= 0 && Math.abs(HB.vx) > 0.6) heroTurn(HB.vx < 0 ? -1 : 1);
-      HB.face = HB.faceT;   // a turn is one clean flip (with the little squash from heroTurn), never a slow spin
+      // with no target the eyes follow the feet (with a target they stay on it, above)
+      if (!f && HB.aim <= 0 && Math.abs(HB.vx) > 0.6) heroTurn(HB.vx < 0 ? -1 : 1);
+      // facing changes in one go (the picture is drawn from the front: a narrowing "turn" only looks like a card being
+      // flipped, the user 2026-11-15), and rarely: see heroTurn
+      HB.face = HB.faceT;
+      // the body leans toward the monster it is fighting (more while it runs at it), like a fighter, not a picture
+      var lt = 0; if (f && HB.cheer <= 0) { var ldx = (f.arrived ? f.x : f.tx) - HB.x; lt = Math.max(-1, Math.min(1, ldx / 1.6)) * (0.07 + 0.05 * Math.min(1, HB.sp / 2)); }
+      HB.lean += (lt - HB.lean) * Math.min(1, dt * 6);
       HB.y += HB.vy * dt; HB.vy -= 17 * dt;
       if (HB.y <= 0) { if (HB.vy < -3.2) { hd.sq.v -= 2.4; if (hooks.land) hooks.land(new T.Vector3(HB.x, 0.03, HB.z), false); } HB.y = 0; HB.vy = 0; }
       heroGroup.position.set(HB.x, 0, HB.z);
@@ -786,7 +817,7 @@
       // hero
       if (hero) {
         var moving = heroBrain(dt);
-        var hd = hero.userData, fs = HB.faceT, rest = { bend: Math.sin(time * 1.3) * 0.018 + HB.vx * 0.036 + (HB.dash > 0 ? HB.dvx * 0.03 : 0), sq: Math.sin(time * 2.4) * 0.016 - (HB.dash > 0 ? 0.12 : 0), lift: 0, slide: 0 };
+        var hd = hero.userData, fs = HB.faceT, rest = { bend: Math.sin(time * 1.3) * 0.018 + HB.vx * 0.036 + HB.lean + (HB.dash > 0 ? HB.dvx * 0.03 : 0), sq: Math.sin(time * 2.4) * 0.016 - (HB.dash > 0 ? 0.12 : 0), lift: 0, slide: 0 };
         var arms = { walk: HB.walk, speed: HB.sp, stride: 0.4, air: HB.y > 0.08, armR: 0, armL: 0, head: 0, wag: 0, cheer: HB.cheer > 0 ? 1 : 0 };
         if (pose) {
           var P = pose.P; pose.t += dt;
