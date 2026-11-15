@@ -1318,7 +1318,7 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 /* the rune's text took a thin column next to a big button (2026-11-15, user's phone): picture and text on top, the button
    under them across the box */
 #dock .rdock .row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 10px;align-items:start}
-#dock .rdock .row>.buy{grid-column:1/-1;width:100%;min-height:44px;justify-content:center}
+#dock .rdock .row>.buy{grid-column:1/-1;width:calc(100% + 34px);margin-right:-34px;min-height:44px;justify-content:center} /* the row keeps 34px for ✕; the button spans the whole box (2026-11-15) */
 /* a swap that makes things worse: a red button and a red heading, so it is seen at once (2026-11-15) */
 #dock .sgbtns .btn.warn{background:linear-gradient(180deg,#F7CFC5,#EA9F8E);color:#6b1f12;box-shadow:inset 0 0 0 1.5px #D27F6D,0 3px 0 #B9685A;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05}
 #dock .sgbtns .btn.warn small{font:700 10px var(--body);color:#8a2a18;margin-top:1px}
