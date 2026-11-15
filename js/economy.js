@@ -283,28 +283,27 @@
   function killsPerSecond(state, st) { st = st || stats(state); return Math.max(0.02, Math.min(dps(state, st) / stageMonsterHp(state), 2.5)); }
   // ---------- gold read in Korean units, at most 9999조 (2026-11-15, the user) ----------
   // The game's gold grows ×1.2 a stage, so by 엘리멘탈 it is 10^120 and more. What the player sees and holds is that gold
-  // divided by goldScale: 1 until the frontier monster pays 1억 (about 4-8), then it follows the frontier so that the
-  // shown monster gold climbs only from 1억 to 100조 over the whole game. Rewards and every price are divided by the same
-  // number, so what a reward buys is exactly as before; only the numbers are smaller. The scale only grows: it moves
-  // when a new stage is reached, and if a price would pass the cap anyway (a long stay on one stage) it moves with that
-  // price. Holdings stop at 9999조.
-  var GOLD_MAX = 9999e12, SHOW_FROM = 95, SHOW_TOP = 14;
+  // divided by goldScale. Rewards and every price are divided by the same number, so what a reward buys is exactly as
+  // before; only the numbers are smaller. Holdings stop at 9999조.
+  var GOLD_MAX = 9999e12;
   function progressIndex(state) {
     var p = Math.max(0, (state.diff || 0) * SPAN + (state.best === undefined ? -1 : state.best)), db = state.diffBest || {};
     Object.keys(db).forEach(function (d) { var b = db[d] && db[d].best; if (typeof b === 'number') p = Math.max(p, d * SPAN + b); });
     return p;
   }
-  function shownFrontierLog(p) {
-    var end = SPAN * ((DATA.difficulties && DATA.difficulties.length) || 1) - 1, from = Math.log10(monsterGold(SHOW_FROM));
-    if (p <= SHOW_FROM) return Math.log10(monsterGold(p));
-    return from + (SHOW_TOP - from) * Math.min(1, (p - SHOW_FROM) / (end - SHOW_FROM));
-  }
+  // v2 (2026-11-15, the user: 골드 버는 게 너무 약하다 — a kill read "+58"): the scale follows the player's own attack
+  // price, not the frontier monster's gold. On a harder difficulty a monster pays a share of the attack price, far
+  // below the frontier monster's gold, so the old scale made every number tiny. Now each time a new stage is reached the
+  // scale is set so the next attack level reads about 10^atkShownLog(p): 1조 early (no scale while it is cheaper), 100조 at
+  // the end.
+  // Between records it only grows, and only when that price would pass a tenth of the cap.
+  function atkShownLog(p) { var end = SPAN * ((DATA.difficulties && DATA.difficulties.length) || 1) - 1; return 12 + 2 * Math.min(1, p / end); }
   function goldScale(state) {
-    var p = progressIndex(state), d = Math.max(1, monsterGold(p) / Math.pow(10, shownFrontierLog(p)));
-    var price = upgradeCost('atk', (state.up && state.up.atk) || 0) / (GOLD_MAX / 10);
-    d = Math.max(d, price, state.goldScale || 1);
+    var p = progressIndex(state), price = atkPrice(state);
+    if (state.goldScaleP !== p || !(state.goldScale2 > 0)) { state.goldScale2 = Math.max(1, price / Math.pow(10, atkShownLog(p))); state.goldScaleP = p; }
+    var d = Math.max(state.goldScale2, price / (GOLD_MAX / 10));
     if (!(d < CAP)) d = CAP;
-    state.goldScale = d;
+    state.goldScale2 = d;
     return d;
   }
   // keeps holdings under 9999조 (as shown); returns the scale
