@@ -7,7 +7,7 @@
   var CW = root.CW = root.CW || {};
   CW.fxTier1 = function (K, S) {
     var T = K.T, sc = K.sc, vx = K.vx, V = K.V, rr = K.rr, rdir = K.rdir, pick = K.pick, STAY = K.STAY, sway = K.sway, deep = K.deep, E = K.E, N = K.N, after = K.after, tick = K.tick, UPC = K.UPC, above = K.above;
-    var flare = K.flare, sparks = K.sparks, gRing = K.gRing, gGlow = K.gGlow, dust = K.dust, converge = K.converge, heavy = K.heavy, homing = K.homing, gp = K.gp, near = K.near, share = K.share, volley = K.volley, P3 = K.P3;
+    var fire = K.fire, flare = K.flare, sparks = K.sparks, gRing = K.gRing, gGlow = K.gGlow, dust = K.dust, converge = K.converge, heavy = K.heavy, homing = K.homing, gp = K.gp, near = K.near, share = K.share, volley = K.volley, P3 = K.P3;
     function mp(m) { return sc.mobPos(m); }
 
     // a ball of light: a light heart in a softer glow; on snow or sand painted in its colour (added light would vanish)
@@ -141,8 +141,10 @@
           }
           var x = start.x + (end.x - start.x) * k, z = start.z + (end.z - start.z) * k;
           var y = (s2 === 0 ? start.y + (end.y - start.y) * u : end.y) + Math.sin(u * Math.PI) * hh[s2];
-          var squash = u < 0.1 || u > 0.92 ? 0.7 : 1.08;
-          spin -= dt * 9; P.set(x, y, z); ball.set(P, sz, squash, spin);
+          var squash = u < 0.1 || u > 0.92 ? 0.7 : 1.08, late = Math.max(0, (k - 0.78) / 0.22), pulse = 1 + late * (0.18 + 0.1 * Math.sin(k * 90));
+          spin -= dt * 9; P.set(x, y, z); ball.set(P, sz * pulse, squash, spin);
+          if (fuse) { fuse.s0 = fuse.s1 = 0.26 * c.s * (1 + late * 1.4); }
+          if (late > 0 && Math.random() < dt * 60) E({ pos: V(x + 0.32 * sz, y + sz * 1.05, z), vel: rdir(2.2).add(V(0, 1.8, 0)), frame: 'streak', color: [0xffffff, 0xffd060, 0xff7a2b], size: [0.1, 0], stretch: 0.08, life: 0.22, drag: 2 });
           if (fuse) { fuse.x = x + 0.32 * sz; fuse.y = y + sz * 1.05; fuse.z = z + 0.05; }
           if (dt > 0 && Math.random() < dt * 30) E({ pos: V(x + 0.32 * sz, y + sz * 1.05, z), vel: rdir(1).add(V(0, 1.3, 0)), frame: 'dot', color: [0xffe080, 0xff6a2b], size: [0.05, 0], life: 0.3, grav: 3 });
           lastPos.set(x, y, z);
@@ -163,52 +165,113 @@
         sc.hitStop(0.05);
         // a soft warm blast (no white flash over the field), then the fur itself: big clumps of fluff flung out, slowly
         // drifting down, and a cloud of fluff puffing up where it was
-        gRing(V(p.x, 0, p.z), 0xffc070, 2.2 * B, 0.4);
-        pop(p, 0xffc890, 1.1 * B, 0.16);
-        for (var j = 0; j < 11; j++) { var a = j / 11 * 6.283 + rr(-0.3, 0.3); P3.puff(V(p.x + Math.cos(a) * 0.2, p.y * 0.7, p.z + Math.sin(a) * 0.15), { s0: 0.14 * B, s1: rr(0.42, 0.62) * B, life: rr(0.8, 1.2), vel: V(Math.cos(a) * 2.6 * B, rr(0.6, 1.6), Math.sin(a) * 1.8 * B), drag: 2.6, dark: 0xc8a888, light: 0xfff8ee, alpha: 0.75 }); }
+        var Gp = V(p.x, 0, p.z);
+        P3.blast(Gp, { size: 0.48 * B, col: 0xffa040, low: 0xc0401a, hotness: 0.6, ring: 3.2, ringCol: 0xffb050, crater: false, chips: 0, life: 0.45, flash: true, flashLife: 0.14, keepAdd: true });
+        fire(p, N(12, c), { size: 0.75 * B, speed: 3.4, up: 1.6 });
+        pop(p, 0xffc890, 1.0 * B, 0.14);
+        for (var sm = 0; sm < 4; sm++) P3.puff(V(p.x + rr(-0.2, 0.2), p.y * 0.8 + sm * 0.1, p.z + rr(-0.1, 0.1)), { s0: 0.14 * B, s1: rr(0.35, 0.5) * B, life: rr(0.8, 1.1), vel: V(rr(-0.3, 0.3), rr(0.9, 1.5), 0), drag: 1.4, dark: 0x6a5a54, light: 0xc8bcb4, alpha: 0.35 });
+        // the chain of smaller bangs: fluff caught fire goes off around it
+        var bangs = big ? 3 : 2;
+        for (var bk = 0; bk < bangs; bk++) (function (bk) {
+          after(c.D(0.07 + bk * 0.075), function () {
+            var a = bk / bangs * 6.283 + rr(-0.5, 0.5), d = rr(0.55, 0.85) * B, q = V(p.x + Math.cos(a) * d, 0, p.z + Math.sin(a) * d * 0.75);
+            P3.blast(q, { size: 0.28 * B, col: 0xffb050, low: 0xc0401a, hotness: 0.65, ring: 2.6, ringCol: 0xffb050, crater: false, chips: 0, life: 0.35, flash: true, flashLife: 0.1, keepAdd: true });
+            fire(V(q.x, 0.3 * B, q.z), N(5, c), { size: 0.5 * B, speed: 2.6, up: 1.8 });
+            P3.puff(V(q.x, 0.3 * B, q.z), { s0: 0.1 * B, s1: 0.3 * B, life: 0.7, vel: V(0, 1.1, 0), drag: 1.5, dark: 0x6a5a54, light: 0xc8bcb4, alpha: 0.3 });
+            sparks(V(q.x, 0.3, q.z), [0xffd080, 0xffffff, 0xff8a2b], N(5, c), 4.5, { size: 0.15 });
+            sc.shake(0.07); sc.light(V(q.x, 0.4, q.z), 0xff9a40, 0.9, 0.25);
+          });
+        })(bk);
+        for (var j = 0; j < 8; j++) { var a = j / 8 * 6.283 + rr(-0.3, 0.3); P3.puff(V(p.x + Math.cos(a) * 0.2, p.y * 0.7, p.z + Math.sin(a) * 0.15), { s0: 0.1 * B, s1: rr(0.3, 0.45) * B, life: rr(0.7, 1.0), vel: V(Math.cos(a) * 2.6 * B, rr(0.6, 1.6), Math.sin(a) * 1.8 * B), drag: 2.6, dark: 0xc8a888, light: 0xfff8ee, alpha: 0.75 }); }
         for (var f = 0; f < N(9, c); f++) (function () {
           var clump = P3.fluffBall({ col: pick([FUR.col, 0xffe0c0, 0xffd2a8]), deep: FUR.deep }), pos = p.clone(), v = rdir(3.2).add(V(0, 3.2, 0)), r = rr(0.1, 0.17) * c.s, tt = 0, life = rr(0.9, 1.3), rot = 0;
           tick(function (dt) { tt += dt; v.y -= 5 * dt; v.multiplyScalar(Math.max(0, 1 - dt * 1.6)); pos.addScaledVector(v, dt); if (pos.y < r) { pos.y = r; v.set(0, 0, 0); } rot += dt * 4; clump.set(pos, r * Math.min(1, (life - tt) / 0.25), 1, rot); if (tt >= life) { clump.kill(); return true; } });
         })();
         sparks(p, [0xffd080, 0xffffff], N(8, c), 5, { size: 0.18 });
         gGlow(p, 0xff9040, 1.0 * B, 0.3);
-        sc.light(p, 0xff9a40, 1.4, 0.35); heavy(1.2);
+        sc.light(p, 0xff9a40, 1.8, 0.35); heavy(1.5);
         list.forEach(function (m) { c.hit(m, 1, 1.4); });
       }
     };
 
     // ============ 반짝 고리: six balls of light whirl round the wizard, then shoot off at the monsters ============
     S.orbitRing = function (c) {
+      // 1) sparkles are drawn in from all round and a ring of light is drawn round the wizard; a second, thinner ring
+      //    turns the other way a little tilted, little crystals ride along the rings
+      // 2) six ice-blue gem stars spin round on it, each in its own soft light
+      // 3) just before letting go the rings tighten, the gems swell and turn bright — then the rings burst outward
+      // 4) each gem flies off on a curve, twinkling, and bursts on its monster into a small ring of light and splinters
       c.plain = true;
       sc.heroPose('spin', c.D(0.08), c.col);
-      var center = sc.heroCenter(), n = 6, orbs = [], t = 0, launch = c.D(0.34), R = 1.25, hits = share(c.targets, n);
-      gGlow(V(center.x, 0, center.z), c.col, 2.2 * c.s, c.D(0.6));
-      var ring = P3.elemRing({ cols: [c.col, 0xffffff, c.col, 0x7fd8ff, c.col], trail: 3 }), rc = V(center.x, center.y + 0.15, center.z);
-      for (var i = 0; i < n; i++) orbs.push({ a0: i * Math.PI / 3, pos: center.clone(), ball: light3(c.col, 1.6, 0.4), gem: P3.emblem(2, { col: 0xd8f6ff, deep: 0x2a8ac8, line: 0x0a2a48, glow: false, spin: 8 }),
-        rib: vx.ribbon({ solid: true, mode: 'trail', w: 0.08 * c.s, color: c.deep, core: 0.8, maxPts: 14, shrink: 70 }) });
+      var center = sc.heroCenter(), n = 6, orbs = [], t = 0, launch = c.D(0.36), tight = c.D(0.08), R = 1.25, hits = share(c.targets, n);
+      var GEM = { col: 0xd8f6ff, deep: 0x2a8ac8, line: 0x0a2a48 }, LITE = 0xbff0ff;
+      var rc = V(center.x, center.y + 0.15, center.z), G = V(center.x, 0, center.z);
+      gGlow(G, c.col, 2.4 * c.s, c.D(0.65));
+      converge(rc, [c.col, 0xffffff, LITE], N(14, c), 1.6, c.D(0.14));
+      var ring = P3.elemRing({ cols: [c.col, 0xffffff, c.col, LITE, c.col], trail: 3 });
+      var ring2 = P3.elemRing({ cols: [0xffffff, c.col, LITE, c.col, 0xffffff], trail: 5 });
+      // little crystals riding along the two rings (steered every frame)
+      var riders = [];
+      for (var q = 0; q < N(10, c); q++) riders.push({ u: q / N(10, c) + rr(0, 0.05), inner: q % 2 === 1, x: P3.crystal({ pos: rc, len: 0.08 * c.s, thin: 0.35, col: q % 3 ? LITE : 0xffffff, line: 0x10405a, spin: 10 }) });
+      for (var i = 0; i < n; i++) orbs.push({ a0: i * Math.PI / 3, pos: center.clone(), ball: light3(c.col, 1.5, 0.38), gem: P3.emblem(2, { col: GEM.col, deep: GEM.deep, line: GEM.line, glow: false, spin: 8 }),
+        rib: vx.ribbon({ solid: true, mode: 'trail', w: 0.07 * c.s, color: c.deep, core: 0.8, maxPts: 16, shrink: 60 }) });
+      var P = V(), tmp = V();
       tick(function (dt) {
-        t += dt; var grow = Math.min(1, t / c.D(0.12)), w = 11 * c.sp;
-        orbs.forEach(function (o) {
-          var a = o.a0 + t * w, r = R * grow;
-          o.pos.set(center.x + Math.cos(a) * r, center.y + 0.15, center.z + Math.sin(a) * r);
-          o.ball.set(o.pos, 0.17 * c.s * (0.6 + 0.4 * grow)); o.gem.set(o.pos, 0.17 * c.s * grow, dt);
-          if (o.rib) o.rib.head(o.pos);
+        t += dt;
+        var grow = Math.min(1, t / c.D(0.12)), w = 11 * c.sp;
+        // the tightening before the release: 0 → 1 over the last stretch
+        var k = Math.max(0, Math.min(1, (t - (launch - tight)) / tight)), squeeze = 1 - 0.18 * k * k, swell = 1 + 0.35 * k;
+        var r1 = R * grow * squeeze, r2 = R * 0.78 * grow * squeeze;
+        ring.set(rc, r1, 1.5708, -t * 1.75, (0.85 + 0.15 * k) * grow);
+        ring2.set(tmp.set(rc.x, rc.y + 0.06, rc.z), r2, 1.5708 - 0.28, t * 2.4, 0.6 * grow);
+        riders.forEach(function (d) {
+          var rg = d.inner ? ring2 : ring; d.u += dt * (d.inner ? -0.55 : 0.4);
+          rg.at(d.u, P); var nx = rg.at(d.u + 0.01, V()).sub(P); d.x.set(P, nx, 0.08 * c.s * grow);
         });
-        ring.set(rc, R * grow, 1.5708, -t * 1.75, 0.95 * grow);
+        orbs.forEach(function (o) {
+          var a = o.a0 + t * w * (1 + 0.6 * k);
+          o.pos.set(center.x + Math.cos(a) * r1, rc.y + Math.sin(a * 2 + t * 4) * 0.06, center.z + Math.sin(a) * r1);
+          o.ball.set(o.pos, 0.16 * c.s * (0.6 + 0.4 * grow) * swell); o.gem.set(o.pos, 0.17 * c.s * grow * swell, dt);
+          if (o.rib) o.rib.head(o.pos);
+          // a twinkle now and then round each gem
+          if (Math.random() < dt * 14 * c.n) E({ pos: o.pos.clone().add(rdir(0.12)), vel: rdir(0.4), frame: 'star', color: [0xffffff, LITE], size: [rr(0.05, 0.09), 0], life: rr(0.18, 0.3), spin: 8 });
+        });
         if (t < launch) return false;
-        // the ring bursts outward and fades
-        var rt = 0; tick(function (d) { rt += d; var u = Math.min(1, rt / c.D(0.3)); ring.set(rc, R * (1 + u * 1.6), 1.5708, -t * 1.75 - rt * 2, 0.95 * (1 - u)); if (u >= 1) { ring.kill(); return true; } });
-        // the spin lets go: glittering crystals are flung all round and each ball flies off
-        for (var g3 = 0; g3 < N(10, c); g3++) { var ga = rr(0, 6.283); P3.crystal({ pos: center.clone().add(V(Math.cos(ga) * R, 0.15, Math.sin(ga) * R * 0.55)), vel: V(Math.cos(ga) * rr(3, 6), rr(1, 3), Math.sin(ga) * rr(2, 4)), grav: 7, drag: 1.5, len: 0.13, col: c.col, line: 0x10405a, life: rr(0.5, 0.8) }); }
+        // the release: a bright pop in the middle, both rings burst outward and fade, the riders are flung off
+        pop(rc, LITE, 0.9 * c.s, 0.16); sc.shake(0.04); sc.light(rc, c.col, 1.0, 0.3);
+        var rt = 0; tick(function (d) {
+          rt += d; var u = Math.min(1, rt / c.D(0.32)), e = 1 - (1 - u) * (1 - u);
+          ring.set(rc, R * (0.82 + e * 1.8), 1.5708, -t * 1.75 - rt * 3, 0.95 * (1 - u));
+          ring2.set(tmp.set(rc.x, rc.y + 0.06, rc.z), R * (0.64 + e * 2.3), 1.5708 - 0.28, t * 2.4 + rt * 4, 0.6 * (1 - u));
+          if (u >= 1) { ring.kill(); ring2.kill(); return true; }
+        });
+        riders.forEach(function (d) {
+          var rg = d.inner ? ring2 : ring; rg.at(d.u, P); d.x.kill();
+          var out = V(P.x - center.x, 0, P.z - center.z).normalize();
+          P3.crystal({ pos: P, vel: V(out.x * rr(3, 5.5), rr(1.2, 2.8), out.z * rr(2.5, 4)), grav: 7, drag: 1.4, len: 0.1 * c.s, thin: 0.35, col: LITE, line: 0x10405a, life: rr(0.5, 0.8) });
+        });
         orbs.forEach(function (o, i) {
           if (o.rib) o.rib.detach();
           var h = hits[i], from = o.pos.clone();
           if (!h) { o.ball.kill(); o.gem.kill(); pop(from, c.col, 0.4, 0.15); return; }
           after(c.D(i * 0.035), function () {
-            homing({ from: from, to: function () { return mp(h.mob); }, time: c.D(0.2), arc: V(rr(0.2, 0.6), rr(0.3, 0.9), rr(-0.5, 0.5)), fancy: false,
-              trail: { w: 0.14 * c.s, col: c.col, core: 0.8, pts: 14 },
-              emit: function (p, v, dt) { o.ball.set(p, 0.17 * c.s); o.gem.set(p, 0.17 * c.s, dt); },
-              onHit: function (p) { o.ball.kill(); o.gem.kill(); pop(p, c.col, 0.65 * c.s, 0.14); shards(p, c.col, 0x10405a, N(4, c), 3.2, 0.13); sparks(p, [c.col, 0xffffff], N(4, c), 4, { size: 0.14 }); sc.shake(0.03); c.hit(h.mob, h.frac, 0.5); } });
+            var spin = 0;
+            homing({ from: from, to: function () { return mp(h.mob); }, time: c.D(0.22), arc: V(rr(0.2, 0.6), rr(0.4, 1.0), rr(-0.5, 0.5)), fancy: false,
+              trail: { w: 0.12 * c.s, col: c.col, core: 0.85, pts: 16 },
+              emit: function (p, v, dt) {
+                spin += dt * 16; o.ball.set(p, 0.16 * c.s); o.gem.set(p, 0.18 * c.s, dt, spin);
+                if (Math.random() < dt * 30 * c.n) E({ pos: p.clone().add(rdir(0.08)), vel: rdir(0.6), frame: 'star', color: [0xffffff, LITE], size: [rr(0.05, 0.1), 0], life: rr(0.25, 0.4), spin: 9, drag: 1.5 });
+              },
+              onHit: function (p) {
+                o.ball.kill(); o.gem.kill();
+                pop(p, c.col, 0.6 * c.s, 0.13);
+                // a small ring of light opens round the monster and the gem breaks into splinters
+                var hr = P3.elemRing({ cols: [c.col, 0xffffff, LITE, c.col, 0xffffff], trail: 4 }), ht = 0, hp = p.clone(), ph = rr(0, 1);
+                tick(function (d) { ht += d; var u = Math.min(1, ht / 0.28); hr.set(hp, 0.15 + 0.75 * c.s * (1 - (1 - u) * (1 - u)), 1.5708 - 0.35, ph + ht * 3, 1 - u); if (u >= 1) { hr.kill(); return true; } });
+                shards(p, LITE, 0x10405a, N(5, c), 3.4, 0.13);
+                sparks(p, [c.col, 0xffffff], N(4, c), 4, { size: 0.13 });
+                sc.shake(0.03); c.hit(h.mob, h.frac, 0.5);
+              } });
           });
         });
         return true;
