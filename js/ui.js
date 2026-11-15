@@ -681,11 +681,16 @@
       for (var n = 0; n < 31; n++) {
         var i = R * 31 + n, info = CW.stageInfo(i), lock = !open || i > frontier, tmp = { stage: i, diff: d, up: s.up };
         var res = { id: info.isBoss ? CW.stageBoss(i, d).art : reg.monsters[(n * 5) % reg.monsters.length], tint: null };
+        // the name beside the picture: the same names as the monster codex (js/bestiary.js; a region boss's own name)
+        var mname = info.isBoss ? CW.stageBoss(i, d).name : ((CW.BESTIARY || {})[res.id] || {}).name || '';
+        // what kind of stage it is sits small above the name (it used to follow the stage number and wrapped the row taller)
+        var kind = CW.isTierTrial(s, i, d) ? '전직 시험' : info.isRegionBoss ? '지역 보스' : info.isBoss ? '보스' : '';
         // the same numbers the game uses (stage-rewards.js): one monster, or the boss and what beating it gives
         var img = G.thumb(res.id), rw = CW.stageRewards(tmp, st, !(s.firstClear || {})[CW.clearKey({ diff: d }, i)]);
         rows += '<button class="srow' + (i === here ? ' here' : '') + (info.isBoss ? ' boss' : '') + '" data-sgo="' + i + '" data-sd="' + d + '"' + (lock ? ' disabled' : '') + '>' +
-          '<span class="sname"><small>' + DATA.difficulties[d].name + (rw.gems ? ' · <i class="gem"></i>' + fmt(rw.gems) : '') + '</small>' + CW.stageLabel(i) + (CW.isTierTrial(s, i, d) ? ' 전직 시험' : info.isRegionBoss ? ' 지역 보스' : info.isBoss ? ' 보스' : '') + '</span>' +
+          '<span class="sname"><small><span class="sdn">' + DATA.difficulties[d].name + (rw.gems ? ' · ' : '') + '</span>' + (rw.gems ? '<i class="gem"></i>' + fmt(rw.gems) : '') + '</small>' + CW.stageLabel(i) + '</span>' +
           '<span class="smon">' + (img ? '<img src="' + img + '" alt="" style="' + (res.tint ? 'filter:hue-rotate(' + (R * 36) + 'deg)' : '') + '">' : '') + '</span>' +
+          '<span class="snm">' + (kind ? '<small>' + kind + '</small>' : '') + '<b>' + mname + '</b></span>' +
           '<span class="srews"><span class="srew"><i class="coin"></i>' + gh(rw.gold) + '</span><span class="srew"><b class="xpdot"></b>' + fmt(rw.xp) + '</span>' +
           '<span class="srew muted hp"><b class="hpdot"></b><span class="hpbox"><b class="hpheart"></b>HP ' + CW.fmtHp(rw.hp) + '</span></span></span>' +
           '<span class="sgo">' + (lock ? '🔒' : i === here ? '여기' : '이동') + '</span></button>';
@@ -708,13 +713,33 @@
       burst.style.animationDelay = d; if (f.k === 'tierup') nm.style.animationDelay = d;
       core.style.animationDelay = d + ',' + (fl - e).toFixed(3) + 's';
     }
+    // the stage list's reward column is as wide as its widest entry, so every row lines up. The name keeps at least
+    // STAGE_NAME_MIN px: when the rewards would take that (the long numbers of hard difficulties) they get a smaller size.
+    // A name that still does not fit in two lines gets the smaller size too.
+    var STAGE_NAME_MIN = 56;
+    function fitStageRows() {
+      var list = panel.querySelector('.slist'), row = list && list.querySelector('.srow'); if (!row) return;
+      list.classList.remove('tight', 'tighter'); list.style.removeProperty('--srw');
+      var widest = function () { var w = 0; list.querySelectorAll('.srews').forEach(function (e) { e.style.width = 'max-content'; w = Math.max(w, e.getBoundingClientRect().width); e.style.width = ''; }); return Math.ceil(w); };
+      var room = function () {
+        var cs = getComputedStyle(row), cols = cs.gridTemplateColumns.split(' ').map(parseFloat), gap = parseFloat(cs.columnGap) || 0;
+        return row.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - cols[0] - cols[1] - cols[4] - gap * 4 - STAGE_NAME_MIN;
+      };
+      // two steps when it does not fit: smaller reward numbers (tight), then narrower stage/picture columns too (tighter)
+      var w = widest();
+      if (w > room()) { list.classList.add('tight'); w = widest(); }
+      if (w > room()) { list.classList.add('tighter'); w = widest(); }
+      if (w) list.style.setProperty('--srw', w + 'px');
+      var cut = function (n) { return n.scrollHeight > n.clientHeight + 1; };
+      list.querySelectorAll('.snm b').forEach(function (n) { n.classList.remove('tiny', 'tiny3'); if (cut(n)) n.classList.add('tiny'); if (cut(n)) n.classList.add('tiny3'); });
+    }
     function renderPanel(force) {
       if (tab === 'battle') return;
       dockHtml = '';
       var html = PANELS[tab](), dh = dockHtml, key = html + '|dock|' + dh;
       if (!force && key === lastPanel) return;
       var y = panel.scrollTop; panel.innerHTML = html; panel.scrollTop = y; lastPanel = key;
-      keepCircle();
+      keepCircle(); if (tab === 'stage') fitStageRows();
       // the selected 신성력/룬 sits at the bottom of the sheet, always in sight (2026-11-15); it slides up when it opens
       var was = !dock.hidden; dock.innerHTML = dh; dock.hidden = !dh;
       if (dh && !was) { dock.classList.remove('pop'); void dock.offsetWidth; dock.classList.add('pop'); var sl = panel.querySelector('.sel'); if (sl) sl.scrollIntoView({ block: 'nearest' }); }

@@ -1524,6 +1524,32 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 #dex .dxdesc{position:absolute;left:7%;right:7%;top:77.5%;height:10%;display:flex;align-items:center;justify-content:center;gap:2.5%;text-align:center;font:700 3.2cqw/1.15 var(--body)}
 #dex .dxdesc img{width:3.6%!important;flex:none}
 .dexrow .ico{width:40px;height:40px;flex:none;object-fit:contain}
+/* stage list (2026-11-15): the monster's name beside its picture (the same names as the monster codex). Every row has the
+   same columns: stage, picture and 이동 fixed, the rewards as wide as the widest in the list (ui.js fitStageRows sets
+   --srw), so they sit against 이동 and the name takes what is left, two lines at most */
+#sheet .srow{grid-template-columns:58px 44px minmax(0,1fr) var(--srw,max-content) 30px;column-gap:7px;padding-left:10px;padding-right:10px}
+#sheet .srow .srews{grid-template-columns:max-content max-content;column-gap:8px}
+#sheet .srow .snm{min-width:0;display:flex;flex-direction:column;justify-content:center;gap:1px}
+#sheet .srow .snm small{font:400 10.5px/1.2 var(--display);opacity:.75}
+#sheet .srow .snm b{font:400 12.5px/1.2 var(--display);word-break:keep-all;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+#sheet .srow .snm b.tiny{font-size:11px}
+#sheet .srow .snm b.tiny3{font-size:10px;line-height:1.1;-webkit-line-clamp:3}
+#sheet .srow.boss .snm{color:#ffd6f0}
+#sheet.cream .srow .snm{color:#5a4636}
+#sheet.cream .srow.boss .snm{color:#8a3a5a}
+#sheet .srow .sname small{display:block;white-space:normal;font-size:10px;line-height:1.15}
+#sheet .slist.tight .srew{font-size:10px}
+#sheet .slist.tight .srews{column-gap:5px}
+#sheet .slist.tight .hpbox{font-size:10.5px;padding:0 6px 0 4px;gap:3px}
+#sheet .slist.tight .srew .coin{width:14px;height:14px}#sheet .slist.tight .srew .xpdot{width:13px;height:13px}
+#sheet .slist.tighter .srow{grid-template-columns:48px 38px minmax(0,1fr) var(--srw,max-content) 26px;column-gap:5px;padding-left:8px;padding-right:8px}
+#sheet .slist.tighter .smon img{width:36px;height:36px}
+#sheet .slist.tighter .srews{column-gap:4px}
+#sheet .slist.tighter .hpbox{padding:0 5px 0 3px}
+#sheet .slist.tighter .sgo{font-size:12px}
+#sheet .slist.tighter .sname{font-size:13px}
+#sheet .slist.tighter .sdn{display:none}
+#sheet .slist.tighter .sname small{min-height:1.15em}
 </style>
 
 <div id="topcap" aria-hidden="true"></div>
