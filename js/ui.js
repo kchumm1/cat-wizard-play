@@ -111,14 +111,14 @@
         var nodes = DATA.talents.filter(function (t) { return t.row === r; }).map(function (t) {
           var lv = (s.talents || {})[t.id] || 0, open = s.level >= TC.rowLevel[r] && (r === 0 || CW.talentSpent(s, r - 1) >= TC.rowNeed[r]);
           // a closed talent still shows its picture, with a small lock on its corner (design pack 2026-11-14)
-          return '<button class="tnode' + (selTalent === t.id ? ' sel' : '') + (open ? '' : ' lock') + (lv >= t.max ? ' max' : '') + '" data-tal="' + t.id + '"><span class="ti">' + mi('talent', t) + '</span>' + (open ? '' : '<i class="tlock">' + CW.ICO.pic('lock', 'ilock') + '</i>') + '<b>' + (lv > t.max ? t.max + '<em class="ovlv">+' + (lv - t.max) + '</em>' : lv + '/' + t.max) + '</b><small>' + t.name + '</small></button>';
+          return '<button class="tnode' + (selTalent === t.id ? ' sel' : '') + (open ? '' : ' lock') + (lv >= t.max ? ' max' : '') + '" data-tal="' + t.id + '"><span class="ti">' + mi('talent', t) + '</span>' + (open ? '' : '<i class="tlock">' + CW.ICO.pic('lock', 'ilock') + '</i>') + '<b>' + (lv > t.max ? 'Lv.' + lv : lv + '/' + t.max) + '</b><small>' + t.name + '</small></button>';
         }).join('');
         return '<div class="trow">' + nodes + '</div>' + (r < last ? '<div class="tarrow">▼ ' + (TC.rowNeed[r + 1] ? '위에서 ' + TC.rowNeed[r + 1] + '포인트 · ' : '') + 'Lv.' + TC.rowLevel[r + 1] + '</div>' : '');
       }).join('');
       var t = selTalent && CW.talentById(selTalent), info = '';
       if (t) {
         var lv = (s.talents || {})[t.id] || 0;
-        info = '<div class="tinfo"><b>' + t.name + ' ' + (lv > t.max ? t.max + ' +' + (lv - t.max) + ' 돌파' : lv + '/' + t.max) + '</b><div>' + STAT_KO[t.stat] + ' ' + CW.bonusAmount(t.stat, lv * t.per) + (true ? ' → <span style="color:#8ff59a">' + CW.bonusAmount(t.stat, (lv + 1) * t.per) + '</span>' : '') + '</div>' +
+        info = '<div class="tinfo"><b>' + t.name + ' ' + (lv > t.max ? 'Lv.' + lv : lv + '/' + t.max) + '</b><div>' + STAT_KO[t.stat] + ' ' + CW.bonusAmount(t.stat, lv * t.per) + (true ? ' → <span style="color:#8ff59a">' + CW.bonusAmount(t.stat, (lv + 1) * t.per) + '</span>' : '') + '</div>' +
           '<div class="note">' + (t.row ? '위 줄에 ' + TC.rowNeed[t.row] + '포인트 이상, ' : '') + '계정 레벨 ' + TC.rowLevel[t.row] + ' 이상</div>' +
           '<div class="btns"><button class="buy' + (CW.talentCan(s, t.id) ? '' : ' off') + '" data-tup="' + t.id + '">레벨업 (포인트 1)</button></div></div>';
       }
@@ -131,7 +131,7 @@
       var list = DATA.marks.map(function (m) {
         var lv = (s.marks || {})[m.id] || 0, cost = CW.markCost(lv), full = false, ov = lv - cap, rate = ({ critRate: '치명타 피해', superRate: '슈퍼 피해' })[m.stat];   // 한계 돌파 (2026-11-15)
         if (!CW.markOpen(s, m.id)) return '<div class="row lockrow"><div class="ricon mk">' + mi('mark', m) + '</div><div class="info"><div class="name">' + m.name + '</div><div class="desc need">' + RC.names[m.openRank] + '가 되면 열려요 · ' + STAT_KO[m.stat] + '</div></div><span class="lockic">' + CW.ICO.pic('lock', 'ilock') + '</span></div>';
-        return '<div class="row"><div class="ricon mk">' + mi('mark', m) + '</div><div class="info"><div class="name">' + m.name + ' <span class="lv">' + (ov > 0 ? cap + ' <b class="ovlv">+' + ov + '</b>' : lv + '/' + cap) + '</span></div><div class="desc">' + STAT_KO[m.stat] + ' ' + CW.bonusAmount(m.stat, (rate && ov > 0 ? cap : lv) * m.per) + '</div>' + (rate && ov > 0 ? '<div class="desc over">한계 돌파 +' + ov + ' · ' + rate + ' +' + ov + '% (1단계마다 +1%)</div>' : '') + '</div>' +
+        return '<div class="row"><div class="ricon mk">' + mi('mark', m) + '</div><div class="info"><div class="name">' + m.name + ' <span class="lv">' + (ov > 0 ? 'Lv.' + lv : lv + '/' + cap) + '</span></div><div class="desc">' + STAT_KO[m.stat] + ' ' + CW.bonusAmount(m.stat, (rate && ov > 0 ? cap : lv) * m.per) + (rate && ov > 0 ? '<br>' + rate + ' +' + ov + '%' : '') + '</div></div>' +
           '<button class="buy gemb' + (full || (s.mana || 0) < cost ? ' off' : '') + '" data-mark="' + m.id + '">' + (full ? '최대' : '' + CW.ICO.cur('mana') + ' ' + fmt(cost)) + '</button></div>';
       }).join('');
       var next = r + 1 < RC.names.length ? RC.names[r + 1] : null;
@@ -475,13 +475,14 @@
         var max = u.max !== null && lv >= u.max && !oi;
         // 한계 돌파 (2026-11-15): past the row's max, each level adds 1% to the damage it is about
         var OVK = { finalMul: '모든 피해', critDmg: '치명타 피해', superDmg: '슈퍼 피해', ultraDmg: '울트라 피해', hyperDmg: '하이퍼 피해', megaDmg: '메가 피해', ultimateDmg: '얼티밋 피해', alphaDmg: '알파 피해', bossDmg: '보스 피해', skillDmg: '스킬 피해', weakMul: '약점 피해', surgeMul: '폭주 피해' };
-        var overTxt = oi && u.max !== null && lv >= u.max ? '<div class="desc over">한계 돌파 +' + oi.levels + ' · ' + OVK[oi.stat] + ' +' + Math.round(oi.pct * 100) + '% (1단계마다 +1%)</div>' : '';
-        var lvTxt = u.max !== null && lv > u.max ? 'Lv.' + u.max + ' <b class="ovlv">+' + (lv - u.max) + '</b>' : 'Lv.' + lv;
+        var past = oi && u.max !== null && lv > u.max, effTxt = past ? eff[k].replace(/ \((최대|1레벨당) [^)]*\)/g, '') : eff[k];
+        var overTxt = past ? '<br>' + OVK[oi.stat] + ' +' + Math.round(oi.pct * 100) + '%' : '';
+        var lvTxt = 'Lv.' + lv;
         if (!CW.upgradeOpen(s, k)) {
           var nd = CW.upgradeNeed(k), why = u.tier && (s.tier || 1) < u.tier ? u.tier + '차 전직 후에 열려요' : DATA.upgrades[nd.key].name + ' Lv.' + nd.lv + ' 달성하면 열려요';
           return '<div class="row lockrow"><div class="ricon">' + CW.ICO.stat(k) + '</div><div class="info"><div class="name">' + u.name + '</div><div class="desc need">' + why + '</div></div><span class="lockic">' + CW.ICO.pic('lock', 'ilock') + '</span></div>';
         }
-        return '<div class="row"><div class="ricon">' + CW.ICO.stat(k) + '</div><div class="info"><div class="name">' + u.name + '<span class="lv">' + lvTxt + '</span></div><div class="desc">' + eff[k] + '</div>' + overTxt + '</div>' +
+        return '<div class="row"><div class="ricon">' + CW.ICO.stat(k) + '</div><div class="info"><div class="name">' + u.name + '<span class="lv">' + lvTxt + '</span></div><div class="desc">' + effTxt + overTxt + '</div></div>' +
           '<button class="buy ' + (max || s.gold < one ? 'off' : '') + '" data-up="' + k + '">' + (max ? '최대' : (upMul > 1 ? '<small>×' + upMul + '</small>' : '') + '<i class="coin"></i>' + gh(cost)) + '</button></div>';
       }).join('') + '</div>';
     }
