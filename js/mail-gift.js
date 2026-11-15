@@ -57,16 +57,17 @@
   }
   function giftHas(l) { return Object.keys(giftOf(l)).length > 0; }
 
-  // every part of the gift as one short line with its picture: [{ icon, text }]
+  // every part of the gift as one short line with its picture: [{ icon, text, name }] — name is the thing alone, no
+  // amount, for the small pill on the mailbox list (「다이아 외 6종」, 2026-11-16)
   function giftLines(l) {
     var g = giftOf(l), out = [];
-    CUR.forEach(function (c) { if (g[c.key]) out.push({ icon: c.icon, text: c.name + ' ' + ko(g[c.key]) }); });
-    (DATA.potions || []).forEach(function (pt) { var m = g.potions && g.potions[pt.id]; if (m) out.push({ icon: pt.icon, text: pt.name + ' ' + ko(m) + '분' }); });
-    (g.gear || []).forEach(function (x) { out.push({ icon: '🎒', text: DATA.grades[x.grade].name + ' ' + ROMAN(x.sub) + ' ' + DATA.kindName[x.kind] + (x.n > 1 ? ' ×' + x.n : '') }); });
-    (g.runes || []).forEach(function (x) { var r = byId(DATA.runes, x.kind); out.push({ icon: r.icon, text: DATA.hiGrades[x.grade].name + ' ' + r.name + (x.n > 1 ? ' ×' + x.n : '') }); });
-    (g.sigils || []).forEach(function (x) { out.push({ icon: '💠', text: DATA.hiGrades[x.grade].name + ' 신성력' + (x.stat ? '(' + sigilStatName(x.stat) + ')' : '') + (x.best ? ' 최상급' : '') + (x.n > 1 ? ' ×' + x.n : '') }); });
-    (g.relics || []).forEach(function (x) { var r = byId(DATA.relics, x.id); out.push({ icon: r.icon, text: '유물 ' + r.name + (x.n > 1 ? ' ×' + x.n : '') }); });
-    (g.costumes || []).forEach(function (x) { out.push({ icon: '👘', text: '코스튬 ' + byId(DATA.costumes, x.id).name }); });
+    CUR.forEach(function (c) { if (g[c.key]) out.push({ icon: c.icon, text: c.name + ' ' + ko(g[c.key]), name: c.name }); });
+    (DATA.potions || []).forEach(function (pt) { var m = g.potions && g.potions[pt.id]; if (m) out.push({ icon: pt.icon, text: pt.name + ' ' + ko(m) + '분', name: pt.name }); });
+    (g.gear || []).forEach(function (x) { out.push({ icon: '🎒', text: DATA.grades[x.grade].name + ' ' + ROMAN(x.sub) + ' ' + DATA.kindName[x.kind] + (x.n > 1 ? ' ×' + x.n : ''), name: DATA.kindName[x.kind] }); });
+    (g.runes || []).forEach(function (x) { var r = byId(DATA.runes, x.kind); out.push({ icon: r.icon, text: DATA.hiGrades[x.grade].name + ' ' + r.name + (x.n > 1 ? ' ×' + x.n : ''), name: r.name }); });
+    (g.sigils || []).forEach(function (x) { out.push({ icon: '💠', text: DATA.hiGrades[x.grade].name + ' 신성력' + (x.stat ? '(' + sigilStatName(x.stat) + ')' : '') + (x.best ? ' 최상급' : '') + (x.n > 1 ? ' ×' + x.n : ''), name: '신성력' }); });
+    (g.relics || []).forEach(function (x) { var r = byId(DATA.relics, x.id); out.push({ icon: r.icon, text: '유물 ' + r.name + (x.n > 1 ? ' ×' + x.n : ''), name: r.name }); });
+    (g.costumes || []).forEach(function (x) { var c = byId(DATA.costumes, x.id); out.push({ icon: '👘', text: '코스튬 ' + c.name, name: c.name }); });
     return out;
   }
   function giftText(l) { return giftLines(l).map(function (x) { return x.text; }).join(' · '); }

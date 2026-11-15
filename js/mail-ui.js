@@ -37,10 +37,15 @@
     var a = [];
     if (+l.gems > 0) a.push('<span><img src="art/mail-ico-gem.webp" alt="">다이아 ' + ko(l.gems) + '</span>');
     if (CW.mailGold(l) > 0) a.push('<span><img src="art/mail-ico-gold.webp" alt="">골드 ' + CW.mailGoldText(l) + '</span>');
-    // other currencies and items (js/mail-gift.js): the first one, and how many more
-    // with items on it the small pill just says how many gifts (the letter itself lists them)
+    // two or more things (diamonds + gold too, js/mail-gift.js items): one line, the first thing's picture and name, then
+    // how many more — 「💎 다이아 외 6종」 (2026-11-16, the user: the two lines did not fit the pill); one thing keeps its amount
     var gl = CW.giftLines ? CW.giftLines(l) : [];
-    if (gl.length) return '<span><i class="mbgi">🎁</i>선물 ' + (a.length + gl.length) + '가지</span>';
+    if (a.length + gl.length >= 2 || gl.length) {
+      var first = +l.gems > 0 ? '<img src="art/mail-ico-gem.webp" alt="">다이아' : CW.mailGold(l) > 0 ? '<img src="art/mail-ico-gold.webp" alt="">골드'
+        : '<i class="mbgi">' + esc(gl[0].icon) + '</i>' + esc(gl[0].name);
+      var more = (+l.gems > 0) + (CW.mailGold(l) > 0) + gl.length - 1;
+      return '<span class="one">' + first + (more ? ' 외 ' + more + '종' : '') + '</span>';
+    }
     return a.join('');
   }
   // any item on a letter (2026-11-16): small chips, each with its picture, in the reward box (it slides when full)
