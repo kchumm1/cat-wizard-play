@@ -297,18 +297,22 @@
       if (views) views.list.forEach(function (g) { heroGroup.remove(g); });
       views = null;
       if (hero) hero.userData.body.visible = true;
-      if (!arts || !hero || !staff) return;
+      if (!arts || !hero) return;
       var list = arts.map(function (a, i) {
         var g = billboard(a, HERO_H); g.userData.art = a; g.userData.u.map.value = texs[i]; g.userData.shadow.visible = false; g.visible = false;
-        var sg = new T.PlaneGeometry(staff.w, staff.h); sg.translate(staff.w / 2 - staff.gx, staff.h / 2 - staff.gy, 0);
-        var sm = new T.Mesh(sg, new T.MeshBasicMaterial({ map: staff.tex, transparent: true, depthWrite: false, side: T.DoubleSide }));
-        // in front of the body, behind it in the back view
-        sm.renderOrder = i === 3 ? 2 : 4; g.userData.body.add(sm); g.userData.staff = sm;
+        // a costume's views have the staff drawn in (it bends with the arm bone, rig armL.cap); the plain wizard's get the
+        // staff cut out of its picture, in front of the body (behind it in the back view)
+        if (staff) {
+          var sg = new T.PlaneGeometry(staff.w, staff.h); sg.translate(staff.w / 2 - staff.gx, staff.h / 2 - staff.gy, 0);
+          var sm = new T.Mesh(sg, new T.MeshBasicMaterial({ map: staff.tex, transparent: true, depthWrite: false, side: T.DoubleSide }));
+          sm.renderOrder = i === 3 ? 2 : 4; g.userData.body.add(sm); g.userData.staff = sm;
+        }
         heroGroup.add(g);
         return g;
       });
       views = { list: list, cur: 0, want: 0, wantT: 0, hold: 0, face: 1, staff: staff };
       hero.userData.body.visible = false;
+      viewAuras();
     }
     function viewsTick(dt, arms) {
       var V = views, hd = hero.userData, f = HB.focus, lx = 0, lz = 0, want = V.cur;
@@ -330,7 +334,8 @@
       u.uFreeze.value = hu.uFreeze.value; u.uOpacity.value = hu.uOpacity.value; u.uDissolve.value = hu.uDissolve.value; u.uTint.value.copy(hu.uTint.value);
       animRig(g, dt, arms);
       g.position.copy(hero.position);
-      var st = d.staff, gr = d.rig.armL.grip, c = d.crop, p = pointOn(g, (gr[0] - c.x0) / c.cw, 1 - (gr[1] - c.y0) / c.ch);
+      var st = d.staff; if (!st) return;
+      var gr = d.rig.armL.grip, c = d.crop, p = pointOn(g, (gr[0] - c.x0) / c.cw, 1 - (gr[1] - c.y0) / c.ch);
       var s = VIEW_STAFF[V.cur] * V.face;
       st.position.set(p.x / HERO_H, p.y / HERO_H, V.cur === 3 ? -0.006 : 0.006);
       st.scale.set(s * Math.abs(u.uScale.value.x), u.uScale.value.y, 1);
@@ -338,6 +343,7 @@
     }
     var tipV = new T.Vector3();
     function viewTip() {
+      if (!views.staff) { var vg = views.list[views.cur], vd = vg.userData, q = vd.rig.armL.tip, c = vd.crop, p = pointOn(vg, (q[0] - c.x0) / c.cw, 1 - (q[1] - c.y0) / c.ch); return new T.Vector3(heroGroup.position.x + vg.position.x + p.x, heroGroup.position.y + vg.position.y + p.y * COS_T, heroGroup.position.z - p.y * SIN_T + 0.1); }
       var st = views.list[views.cur].userData.staff, S = views.staff;
       st.updateMatrixWorld(true); return tipV.set(S.tx - S.gx, S.ty - S.gy, 0).applyMatrix4(st.matrixWorld).clone();
     }
@@ -552,19 +558,21 @@
     }
 
     // ---------- worn costume: an aura hugging the wizard's outline and a soft light behind ----------
-    function attachAura() {
+    // on: the billboard that gets it (the wizard, or one of its side views); the wizard's own is cos.aura
+    function attachAura(on) {
       var f = cos.fx; if (!hero || !f) return;
-      if (f.sheen) return attachSheen();
-      var hu = hero.userData.u, body = hero.userData.body, dark = /shadow|void|doom/.test(f.parts || '');
+      if (f.sheen) return attachSheen(on);
+      var tg = on || hero, hu = tg.userData.u, body = tg.userData.body, dark = /shadow|void|doom/.test(f.parts || '');
       var mat = new T.ShaderMaterial({
         uniforms: { map: hu.map, uBend: hu.uBend, uScale: hu.uScale, uH: hu.uH, uBP: hu.uBP, uBA: hu.uBA, uBT: hu.uBT,
           uCol: { value: new T.Color(f.col) }, uCol2: { value: new T.Color(f.col2 || f.col) }, uTime: { value: 0 }, uAmt: { value: f.aura }, uAdd: { value: dark ? 0 : 1 } },
         vertexShader: BB_VS, fragmentShader: AURA_FS, transparent: true, depthWrite: false, blending: dark ? T.NormalBlending : T.AdditiveBlending, side: T.DoubleSide });
       var am = new T.Mesh(body.geometry, mat); am.scale.set(1.2, 1.12, 1); am.position.z = -0.03; am.renderOrder = 2;
-      body.add(am); cos.aura = am;
+      body.add(am); if (!on) cos.aura = am;
+      return am;
     }
-    function attachSheen() {
-      var f = cos.fx, s = f.sheen, hu = hero.userData.u, body = hero.userData.body;
+    function attachSheen(on) {
+      var f = cos.fx, s = f.sheen, tg = on || hero, hu = tg.userData.u, body = tg.userData.body;
       var mat = new T.ShaderMaterial({
         uniforms: { map: hu.map, uBend: hu.uBend, uScale: hu.uScale, uH: hu.uH, uBP: hu.uBP, uBA: hu.uBA, uBT: hu.uBT,
           uCol: { value: new T.Color(f.col) }, uCol2: { value: new T.Color(f.col2 || f.col) }, uTime: { value: 0 },
@@ -572,22 +580,34 @@
           uGlint: { value: s.glint === undefined ? 0.9 : s.glint }, uPeriod: { value: s.period || 3.6 }, uRainbow: { value: s.rainbow || 0 } },
         vertexShader: BB_VS, fragmentShader: SHEEN_FS, transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide });
       var am = new T.Mesh(body.geometry, mat); am.position.z = 0.004; am.renderOrder = (body.renderOrder || 0) + 1;
-      body.add(am); cos.aura = am; cos.sheen = true;
+      body.add(am); if (!on) cos.aura = am; cos.sheen = true;
+      return am;
+    }
+    // the costume's aura or sheen on each side view as well (they show instead of the front-facing picture)
+    function viewAuras() {
+      if (!views) return;
+      views.list.forEach(function (g) {
+        var d = g.userData; if (d.aura && d.aura.parent) d.aura.parent.remove(d.aura);
+        d.aura = cos.fx ? attachAura(g) : null;
+      });
     }
     function setCostumeFx(f) {
       while (cosGroup.children.length) cosGroup.remove(cosGroup.children[0]);
       if (cos.aura && cos.aura.parent) cos.aura.parent.remove(cos.aura);
       cos = { fx: f, aura: null, glow: null };
-      if (!f) return;
-      attachAura();
+      if (!f) { viewAuras(); return; }
+      attachAura(); viewAuras();
       var gl = new T.Sprite(new T.SpriteMaterial({ map: GLOW, color: f.col, transparent: true, opacity: f.glow, depthWrite: false, blending: T.AdditiveBlending }));
       gl.scale.set(1.9 * CUTE, 2.3 * CUTE, 1); gl.position.set(0, 0.85 * CUTE, -0.4 * CUTE); gl.renderOrder = 1; cosGroup.add(gl); cos.glow = gl;
       if (f.sheen) gl.scale.set(1.3 * CUTE, 1.7 * CUTE, 1);
     }
     function costumeTick(dt) {
       if (!cos.fx) return;
-      if (cos.sheen) { if (cos.aura) cos.aura.material.uniforms.uTime.value = time; }
-      else if (cos.aura) { var u = cos.aura.material.uniforms; u.uTime.value = time; u.uAmt.value = cos.fx.aura * (0.82 + Math.sin(time * 2.2) * 0.18); }
+      var aus = [cos.aura]; if (views) views.list.forEach(function (g) { aus.push(g.userData.aura); });
+      aus.forEach(function (a) {
+        if (!a) return; var u = a.material.uniforms; u.uTime.value = time;
+        if (!cos.sheen) u.uAmt.value = cos.fx.aura * (0.82 + Math.sin(time * 2.2) * 0.18);
+      });
       if (cos.glow) { cos.glow.material.opacity = cos.fx.glow * (0.8 + Math.sin(time * 2.2) * 0.2); if (hero) cos.glow.position.set(hero.position.x, 0.85 * CUTE + hero.position.y, hero.position.z - 0.4 * CUTE); }
     }
 

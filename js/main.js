@@ -28,7 +28,7 @@
   // costume pictures are fetched the first time they are needed, then the look and the cards refresh
   // monster pictures likewise, when their region is reached
   function needArt(id) {
-    var cos = CW.COSTUME_ART.indexOf(id) >= 0, mon = (CW.MON_ART || []).indexOf(id) >= 0;
+    var cos = CW.COSTUME_ART.indexOf(id) >= 0 || /^cos\d+-v\d$/.test(id), mon = (CW.MON_ART || []).indexOf(id) >= 0;
     if (!id || art[id] || artWait[id] || (!cos && !mon)) return;
     artWait[id] = true;
     CW.loadArt([id]).then(function (m) {
@@ -48,6 +48,9 @@
   // wide pictures (crabs, turtles, snakes) are drawn a little shorter so every monster takes about the same room
   function fitHeight(a, h) { return a.aspect > 1.05 ? h / Math.pow(a.aspect, 0.45) : h; }
   var VIEW_IDS = ['hero-v0', 'hero-v1', 'hero-v2', 'hero-v3'];
+  // pictures that have four views (the user's turnarounds, 2026-11-15): the plain wizard (staff cut out and put in its
+  // paw), and costumes (staff drawn in); a costume's views are fetched when it is worn
+  var VIEW_SETS = { hero: VIEW_IDS, cos11: ['cos11-v0', 'cos11-v1', 'cos11-v2', 'cos11-v3'] };
   // the staff cut out of the plain wizard's picture, trimmed to itself, with where the paw holds it (rig armL.p) and
   // where its star is (armL.tip), in picture heights from its bottom-left — for the side views' paws (scene.js)
   function staffPiece(cv, base, mk) {
@@ -62,7 +65,7 @@
     return { tex: mk(c), w: bw / H, h: bh / H, gx: g[0], gy: g[1], tx: t[0], ty: t[1] };
   }
   function applyLook(silent) {
-    var l = CW.lookOf(state), cl = CW.costumeLook(state), key = CW.lookKey(l) + '|' + cl.id + '|' + (art[cl.art] ? cl.art : 'hero');
+    var l = CW.lookOf(state), cl = CW.costumeLook(state), key = CW.lookKey(l) + '|' + cl.id + '|' + (art[cl.art] ? cl.art : 'hero') + '|' + (VIEW_SETS[cl.art] || []).filter(function (id) { return art[id]; }).length;
     if (key === lastLook || !art.hero) return;
     var first = lastLook === null; lastLook = key;
     var base = art[cl.art];
@@ -82,11 +85,12 @@
       // the plain wizard with no costume turns to where it looks, drawn from four sides (2026-11-15): each side view gets
       // the same hat and cape colours, and the staff just cut out goes into its paw
       try {
-        if (parts && useViews) sc.setHeroViews(VIEW_IDS.map(function (id) { return art[id]; }), VIEW_IDS.map(function (id) { return mk(CW.paintHero(art[id], l)); }), staffPiece(parts.staff, base, mk));
+        if (parts && useViews && base.id === 'hero') sc.setHeroViews(VIEW_IDS.map(function (id) { return art[id]; }), VIEW_IDS.map(function (id) { return mk(CW.paintHero(art[id], l)); }), staffPiece(parts.staff, base, mk));
       } catch (e) { sc.setHeroViews(null); }
     }, 60);
-    var useViews = base.id === 'hero' && !cl.fx && !l.outfit && VIEW_IDS.every(function (id) { return art[id]; });
+    var vset = VIEW_SETS[base.id], useViews = !!vset && (base.id !== 'hero' || (!cl.fx && !l.outfit)) && vset.every(function (id) { if (!art[id]) needArt(id); return art[id]; });
     if (!useViews) sc.setHeroViews(null);
+    else if (base.id !== 'hero') sc.setHeroViews(vset.map(function (id) { return art[id]; }), vset.map(function (id) { return art[id].tex; }), null);
     if (cl.id !== lastCos) { lastCos = cl.id; sc.setCostumeFx(cl.fx); fx.setCostume(cl.fx); }
     if (!first && !silent) { fx.levelUp(state.tier, CW.staffColor(l), true); ui.toast('모습이 바뀌었어요'); }
   }
