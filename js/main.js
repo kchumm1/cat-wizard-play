@@ -325,6 +325,8 @@
   }
 
   // ---------- actions used by the screens ----------
+  // how many frames a second are drawn (js/framepace.js): the 절전 setting, a menu sheet open, no touch for a while
+  var pace = CW.createFramePace();
   var G = {
     get state() { return state; },
     boss: function () { return boss; },
@@ -422,7 +424,8 @@
     storageOk: function () { return !!storage; },
     exportSave: function () { save(); return CW.exportCode(state); },
     importSave: function (code) { var st2 = CW.importCode(code); if (!st2 || !adopt(JSON.stringify(st2))) return false; save(); cloudPush(true); return true; },
-    setSheet: function (open) { sc.setViewShift(open ? 0.22 : 0); },
+    setSheet: function (open) { sc.setViewShift(open ? 0.22 : 0); pace.setSheet(open); },
+    screenHz: function () { return pace.hz(); },
     sound: function (n) { snd.play(n); },
     thumb: function (id) {
       thumbs = thumbs || {};
@@ -451,6 +454,7 @@
     snd.setEnabled(s.sound); sc.setPixel(s.pixel);
     sc.setDamageStyle((s.dmgSize === undefined ? 60 : s.dmgSize) / 100, (s.dmgAlpha === undefined ? 85 : s.dmgAlpha) / 100);
     var q = s.quality === 'auto' ? autoQ : s.quality; sc.setQuality(q); fx.setQuality(q);
+    pace.setCap(s.fpsCap || 60);
   }
 
   // ---------- quality watchdog ----------
@@ -458,14 +462,18 @@
   // 45 ms after the one before, i.e. two or more frames missed at 60 a second). The average alone stayed high on a
   // phone that stuttered several times a second, so its quality never came down. 5 stalls in 3 s is steady stutter,
   // not a one-off such as a picture loading; a phone held at 30 frames a second (low power) is not counted as stalls.
-  var autoQ = 'high', fpsAcc = 0, fpsN = 0, fpsT = 0, stalls = 0;
-  function watchFps(rdt) {
+  // The game may draw fewer frames on purpose (절전, a menu sheet open, no touch for a while: js/framepace.js); the
+  // limits are measured against the rate it aims for, so drawing 30 a second on purpose never lowers the quality.
+  var autoQ = 'high', fpsAcc = 0, fpsN = 0, fpsT = 0, stalls = 0, fpsAim = 60;
+  function watchFps(rdt, aim) {
     if (state.settings.quality !== 'auto') return;
-    fpsAcc += rdt; fpsN++; fpsT += rdt; if (rdt > 0.045) stalls++;
+    aim = aim || 60;
+    if (aim !== fpsAim) { fpsAim = aim; fpsAcc = 0; fpsN = 0; fpsT = 0; stalls = 0; return; }
+    fpsAcc += rdt; fpsN++; fpsT += rdt; if (rdt > Math.max(0.045, 1.4 / aim)) stalls++;
     if (fpsT < 3) return;
-    var fps = fpsN / fpsAcc, stuck = stalls >= 5; fpsAcc = 0; fpsN = 0; fpsT = 0; stalls = 0;
+    var fps = fpsN / fpsAcc, stuck = stalls >= 5, k = aim / 60; fpsAcc = 0; fpsN = 0; fpsT = 0; stalls = 0;
     var next = autoQ;
-    if (fps < 28) next = 'low'; else if ((fps < 42 || stuck) && autoQ === 'high') next = 'mid'; else if (stuck && autoQ === 'mid') next = 'low';
+    if (fps < 28 * k) next = 'low'; else if ((fps < 42 * k || stuck) && autoQ === 'high') next = 'mid'; else if (stuck && autoQ === 'mid') next = 'low';
     if (next !== autoQ) { autoQ = next; applySettings(); }
   }
 
@@ -518,15 +526,22 @@
     // the next frame is asked for first, and each part runs on its own: one error used to end the game loop for good
     // (the picture stood still until the app was reopened)
     requestAnimationFrame(frame);
+    // fewer frames on purpose (절전 / menu open / no touch for a while): this refresh is skipped, nothing is computed
+    if (!pace.shouldDraw(now)) return;
+    var aim = pace.target(now);
     var gap = now - last;
-    if (ready && gap > 100 && gap < 5000 && !document.hidden) noteHitch(gap);
-    var rdt = Math.min(0.05, Math.max(0, gap / 1000)); last = now;
+    if (ready && gap > Math.max(100, 2500 / aim) && gap < 5000 && !document.hidden) noteHitch(gap);
+    var steps = CW.frameSteps(gap / 1000, aim), rdt = 0; last = now;
+    for (var si = 0; si < steps.length; si++) rdt += steps[si];
     if (ready) {
       coinBox = null;
-      var gdt = sc.scaleDt(rdt) * FAST;
-      try { tick(gdt); } catch (e) { noteError(e); }
-      try { fx.update(gdt); } catch (e) { noteError(e); }
-      try { sc.update(gdt, rdt); } catch (e) { noteError(e); }
+      // a longer gap is played in short pieces so effects and movement behave exactly as at 60 a second
+      for (si = 0; si < steps.length; si++) {
+        var gdt = sc.scaleDt(steps[si]) * FAST;
+        try { tick(gdt); } catch (e) { noteError(e); }
+        try { fx.update(gdt); } catch (e) { noteError(e); }
+        try { sc.update(gdt, steps[si]); } catch (e) { noteError(e); }
+      }
       try {
         updateCoins(rdt);
         lookT -= rdt; if (lookT <= 0) { lookT = 0.25; applyLook(); }
@@ -535,7 +550,7 @@
         if (uiT > 0.1) { uiT = 0; ui.hud(); if (nowSlot !== lastSlot) { lastSlot = nowSlot; ui.slots(); } }
         if (panelT > 0.3) { panelT = 0; ui.renderPanel(); }
         if (saveT > 5) { saveT = 0; save(); }
-        watchFps(rdt);
+        watchFps(rdt, aim);
       } catch (e) { noteError(e); }
     }
     try { sc.render(); } catch (e) { noteError(e); }
@@ -555,6 +570,8 @@
   root.addEventListener('pagehide', save);
   root.addEventListener('resize', function () { sc.size(); });
   ['pointerdown', 'touchend', 'click'].forEach(function (ev) { document.addEventListener(ev, function () { snd.init(); }, { passive: true }); });   // iPhone turns sound on only from some touches
+  // any touch counts as playing: the frame rate comes back at once after a quiet while (js/framepace.js)
+  ['pointerdown', 'touchstart', 'keydown', 'wheel'].forEach(function (ev) { document.addEventListener(ev, function () { pace.touch(performance.now()); }, { passive: true, capture: true }); });
   if (/[?&]snd\b/.test(location.search)) {   // ?snd: a small box that shows what the sound is doing (to check on a phone)
     var sndBox = document.createElement('div');
     sndBox.style.cssText = 'position:fixed;left:8px;top:8px;z-index:9999;background:rgba(0,0,0,.75);color:#fff;font:12px monospace;padding:6px 8px;border-radius:6px;pointer-events:none;white-space:pre';
