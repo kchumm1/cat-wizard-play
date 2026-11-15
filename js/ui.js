@@ -553,8 +553,12 @@
             (sk ? '<button class="slotout" data-out="' + i + '" aria-label="' + (i + 1) + '번 슬롯 비우기">빼기</button>' : '') + '</div>';
         }).join('') + '</div><div class="presets"><span class="note">프리셋</span>' + [0, 1, 2].map(function (i) { return '<button class="btn' + ((s.preset || 0) === i ? ' on' : '') + '" data-preset="' + i + '" aria-pressed="' + ((s.preset || 0) === i) + '">' + (i + 1) + '</button>'; }).join('') +
           '</div><div class="btns" style="margin:8px 0 4px"><button class="btn pri" data-act="autoskill">센 스킬로 자동 배치</button><button class="btn" data-act="skillall">일괄 강화</button></div>' +
-          '<div class="note">스킬 보유 효과 · 모든 스킬 피해 +' + pct(CW.skillOwnedStats(s).skillDmg) + '<br>강화 1단계마다 +' + pct(DATA.balance.skillOwnedPer) + '</div>' +
-        '<div class="note">' + (selSlot >= 0 ? (selSlot + 1) + '번 슬롯 선택 · 넣을 스킬을 선택하세요.' : '슬롯을 고르지 않으면 빈 슬롯에 배치돼요. 빈 슬롯이 없으면 4번 슬롯을 교체해요.') + '</div>';
+          // 스킬 안내 한 장 (2026-11-15, 사용자: 밋밋한 세 줄 → 안내 카드처럼 한 번에): 보유 효과 · 배치 · 해금·강화
+          '<div class="skinfo">' +
+          '<div><em>보유 효과</em><p>모든 스킬 피해 <strong>+' + pct(CW.skillOwnedStats(s).skillDmg) + '</strong><small>강화 1단계마다 +' + pct(DATA.balance.skillOwnedPer) + '</small></p></div>' +
+          '<div' + (selSlot >= 0 ? ' class="on"' : '') + '><em>배치</em><p>' + (selSlot >= 0 ? '<strong>' + (selSlot + 1) + '번 슬롯</strong> 선택 · 넣을 스킬을 고르세요.' : '슬롯을 고르지 않으면 빈 슬롯에 들어가요.<small>빈 슬롯이 없으면 4번 슬롯을 교체해요.</small>') + '</p></div>' +
+          '<div><em>해금 · 강화</em><p>전직 차수마다 스킬 <strong>4개</strong><small>강화 1번마다 그 스킬 피해 +' + Math.round(DATA.balance.skillLvBonus * 100) + '% · 최대 +' + DATA.balance.skillMaxLv + '</small></p></div>' +
+          '</div>';
       var row = function (sk) {
         var locked = sk.tier > s.tier, at = s.slots.indexOf(sk.id), lv = CW.skillLevel(s, sk.id), max = lv >= DATA.balance.skillMaxLv, cost = CW.skillUpCost(sk, lv, s);
         var act = locked ? '<span class="note">' + sk.tier + '차 전직</span>'
@@ -570,7 +574,7 @@
         if (CW.FRIEND && n > CW.FRIEND_MAX_TIER) return ''; // 체험판: the 10th job's skills are not shown
         return '<div class="sktier' + (open ? '' : ' lock') + '"><b>' + n + '차</b><span>' + t.name + '</span>' + (open ? '' : '<small>' + (n - 1) + '-31 보스 처치 시 해금</small>') + '</div>' + DATA.skills.filter(function (sk) { return sk.tier === n; }).map(row).join('');
       }).join('');
-      return top + '<h3>스킬 목록 · 강화</h3><div class="note" style="margin:-4px 0 8px">스킬 해금 · 전직 차수별 스킬 4개<br>스킬 강화 · 강화당 해당 스킬 피해 +' + Math.round(DATA.balance.skillLvBonus * 100) + '%, 최대 +' + DATA.balance.skillMaxLv + '</div><div class="list">' + list + '</div>';
+      return top + '<h3>스킬 목록 · 강화</h3><div class="list">' + list + '</div>';
     }
     function gearPanel() {
       if (gearSub === 'relic') return subTabs() + relicPanel();
@@ -589,9 +593,8 @@
       var pulls = '<div class="pulls">' + [1, 10, 30, 100].map(function (n) {
         return '<button class="pull ' + (n === 100 ? 'big' : '') + '" data-pull="' + n + '"><b>' + n + '회 뽑기</b><span><i class="gem"></i>' + fmt(CW.gachaCost(n)) + '</span><small class="note">' + (n >= 100 ? '영웅 이상 1개 보장' : n >= 10 ? '희귀 이상 1개 보장' : '장비 1개') + '</small></button>';
       }).join('') + '</div>';
-      var table = '<details style="margin-top:12px"><summary class="note" style="cursor:pointer">등장 확률</summary><div class="tablewrap"><table class="prob"><tr><th>레벨</th>' + DATA.grades.map(function (g) { return '<th style="color:' + g.color + '">' + g.name + '</th>'; }).join('') + '</tr>' +
-        DATA.gacha.table.map(function (r, i) { return '<tr style="' + (i + 1 === lv ? 'color:var(--gold)' : '') + '"><td>' + (i + 1) + ' (' + L[i] + '회~)</td>' + DATA.grades.map(function (g, gi) { return '<td>' + (r[gi] || 0) + '%</td>'; }).join('') + '</tr>'; }).join('') + '</table></div></details>';
-      return '<div class="artban ab-gacha" aria-hidden="true"></div><h3>장비 뽑기</h3>' + head + pulls + table + (CW.FRIEND ? '' : '<p class="note" style="margin-top:10px">다이아가 필요하다면 더보기 → 패키지를 확인하세요.<br>연습용 기능이며 실제 결제는 없어요.</p>');
+      // 등장 확률 표는 뺐다 (2026-11-15, 사용자: 나중에 다시 만들 것). 현재 확률은 위 head 에 그대로 보인다.
+      return '<div class="artban ab-gacha" aria-hidden="true"></div><h3>장비 뽑기</h3>' + head + pulls + (CW.FRIEND ? '' : '<p class="note" style="margin-top:10px">다이아가 필요하다면 더보기 → 패키지를 확인하세요.<br>연습용 기능이며 실제 결제는 없어요.</p>');
     }
     // 더보기: three parts only (2026-11-14): 전직 (when each job opens), 패키지 (everything for sale, practice only),
     // 설정 (how the game looks and plays; the rows for finding problems are folded away). Difficulty and going back to
