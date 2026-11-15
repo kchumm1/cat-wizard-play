@@ -2,7 +2,7 @@
   var CW = root.CW = root.CW || {};
   var ctx = null, enabled = true, master = null, last = {};
   function init() {
-    if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
+    if (ctx) { if (ctx.state !== 'running') { try { var p = ctx.resume(); if (p && p.catch) p.catch(function () { }); } catch (e) { } } return; }   // iPhone: 'interrupted' after leaving the app, too
     try { var AC = root.AudioContext || root.webkitAudioContext; if (!AC) return; ctx = new AC(); master = ctx.createGain(); master.gain.value = 0.35; master.connect(ctx.destination); } catch (e) { ctx = null; }
   }
   function tone(freq, dur, type, vol, slide, delay) {
@@ -33,7 +33,7 @@
     click: function () { tone(900, 0.04, 'sine', 0.06); }
   };
   // ---------- recorded sounds (2026-11-15): sfx/<group>-<n>.m4a, free CC0 packs (js/sfx-map.js says which skill uses which) ----------
-  var bufs = {}, loading = false, voices = 0, lastPick = {}, MAX_VOICES = 10;
+  var bufs = {}, loading = false, voices = [], lastPick = {}, MAX_VOICES = 10, stat = { loaded: 0, failed: 0, played: 0, err: '' };
   function loadAll() {
     if (loading || !ctx || !CW.SFX_GROUPS) return; loading = true;
     Object.keys(CW.SFX_GROUPS).forEach(function (g) {
@@ -41,18 +41,21 @@
       for (var i = 1; i <= CW.SFX_GROUPS[g]; i++) (function (g) {
         fetch('sfx/' + g + '-' + i + '.m4a').then(function (r) { return r.arrayBuffer(); })
           .then(function (a) { return new Promise(function (ok, bad) { ctx.decodeAudioData(a, ok, bad); }); })
-          .then(function (b) { bufs[g].push(b); }).catch(function () { });
+          .then(function (b) { bufs[g].push(b); stat.loaded++; }).catch(function (e) { stat.failed++; stat.err = String(e && (e.message || e.name) || e).slice(0, 80); });
       })(g);
     });
   }
   // one variant of a group, not the same one twice in a row, slightly different pitch each time; vol 0..1
   function sample(g, vol, gap) {
-    var list = bufs[g]; if (!list || !list.length || voices >= MAX_VOICES) return false;
-    var now = performance.now(); if (last['s:' + g] && now - last['s:' + g] < (gap || 70)) return true; last['s:' + g] = now;
+    var list = bufs[g]; if (!list || !list.length) return false;
+    var now = performance.now();
+    // a voice counts until its sound should have ended — not until onended, which iPhone may never send when the app was left mid-sound
+    voices = voices.filter(function (t) { return t > now; }); if (voices.length >= MAX_VOICES) return false;
+    if (last['s:' + g] && now - last['s:' + g] < (gap || 70)) return true; last['s:' + g] = now;
     var k = Math.floor(Math.random() * list.length); if (list.length > 1 && k === lastPick[g]) k = (k + 1) % list.length; lastPick[g] = k;
     var s = ctx.createBufferSource(), gn = ctx.createGain();
     s.buffer = list[k]; s.playbackRate.value = 0.94 + Math.random() * 0.12; gn.gain.value = vol === undefined ? 1 : vol;
-    s.connect(gn); gn.connect(master); voices++; s.onended = function () { voices--; }; s.start();
+    s.connect(gn); gn.connect(master); voices.push(now + (list[k].duration || 1) / s.playbackRate.value * 1000 + 50); s.start(); stat.played++;
     if (CW.sound.onSample) CW.sound.onSample(g, k, vol);   // test hook (a video with sound)
     return true;
   }
@@ -74,5 +77,7 @@
     try { SOUNDS[name] && SOUNDS[name](); } catch (e) { }
   }
   var init0 = init; init = function () { init0(); loadAll(); };
-  CW.sound = { init: init, play: play, skillCast: skillCast, skillHit: skillHit, setEnabled: function (v) { enabled = !!v; } };
+  // what the sound is doing (open the game with ?snd to see it on screen)
+  function status() { return { state: ctx ? ctx.state : 'none', enabled: enabled, loaded: stat.loaded, failed: stat.failed, played: stat.played, playing: voices.length, err: stat.err }; }
+  CW.sound = { init: init, play: play, skillCast: skillCast, skillHit: skillHit, status: status, setEnabled: function (v) { enabled = !!v; } };
 })(this);

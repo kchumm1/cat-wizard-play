@@ -552,7 +552,16 @@
   });
   root.addEventListener('pagehide', save);
   root.addEventListener('resize', function () { sc.size(); });
-  document.addEventListener('pointerdown', function () { snd.init(); }, { passive: true });
+  ['pointerdown', 'touchend', 'click'].forEach(function (ev) { document.addEventListener(ev, function () { snd.init(); }, { passive: true }); });   // iPhone turns sound on only from some touches
+  if (/[?&]snd\b/.test(location.search)) {   // ?snd: a small box that shows what the sound is doing (to check on a phone)
+    var sndBox = document.createElement('div');
+    sndBox.style.cssText = 'position:fixed;left:8px;top:8px;z-index:9999;background:rgba(0,0,0,.75);color:#fff;font:12px monospace;padding:6px 8px;border-radius:6px;pointer-events:none;white-space:pre';
+    document.body.appendChild(sndBox);
+    setInterval(function () {
+      var s = snd.status();
+      sndBox.textContent = '소리 ' + s.state + (s.enabled ? '' : ' (꺼짐)') + '\n받음 ' + s.loaded + '/57 실패 ' + s.failed + '\n재생 ' + s.played + ' 지금 ' + s.playing + (s.err ? '\n' + s.err : '');
+    }, 500);
+  }
 
   // ---------- cloud save: the viewer's own private slot, so phone and PC share progress ----------
   var cloud = { ref: null, busy: false, last: '', startedAt: Date.now(), off: false };
