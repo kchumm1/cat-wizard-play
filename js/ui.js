@@ -45,7 +45,7 @@
     function bagPanel() {
       var s = G.state, T = CW.tierCount();
       if (!selKey || CW.parseKey(selKey).kind !== bagKind) selKey = s.equip[bagKind] || CW.bestKey(s, bagKind) || CW.keyOf(bagKind, 0);
-      var k = selKey, p = CW.parseKey(k), e = s.bag[k], lv = e ? e.lv : 0, star = e ? e.star || 0 : 0, max = CW.maxLevel(k, star), stat = DATA.kindStat[p.kind], worn = s.equip[p.kind] === k, cost = CW.levelCost(k, lv);
+      var k = selKey, p = CW.parseKey(k), e = s.bag[k], lv = e ? e.lv : 0, star = e ? e.star || 0 : 0, max = CW.maxLevel(k, star), stat = DATA.kindStat[p.kind], worn = s.equip[p.kind] === k, cost = CW.levelCost(k, lv, s);
       var BG = DATA.bagConf, trc = CW.transcendCost(s, k), stars = ''; for (var si = 0; si < BG.starMax; si++) stars += '<i class="' + (si < star ? 'on' : '') + '">' + (si < star ? '★' : '☆') + '</i>';
       var trOk = e && star < BG.starMax && lv >= max && e.n > trc.copies && s.gold >= trc.gold;
       // each line has a lock: locked lines stay when the potential is rolled again (2026-11-14)
@@ -222,7 +222,7 @@
       var s = G.state, open = CW.divineOpen(s), D = s.divine, C = DATA.divineConf;
       var head = '<div class="shards"><span>✦ 신기 조각 <b>' + fmt(D.shards) + '</b></span><small class="note">' + (open ? '보스 ' + C.shardBoss + '개 · 지역 보스 ' + C.shardRegion + '개' : C.unlockTier + '차 전직 후에 열려요') + '</small></div>';
       var cards = DATA.divine.map(function (it) {
-        var d = D[it.id] || { lv: 0, star: 0 }, cost = CW.divineUpCost(d.lv), sc = CW.starCost(d.star);
+        var d = D[it.id] || { lv: 0, star: 0 }, cost = CW.divineUpCost(d.lv, s), sc = CW.starCost(d.star);
         var stars = ''; for (var i = 0; i < C.starMax; i++) stars += '<i class="' + (i < d.star ? 'on' : '') + '">★</i>';
         var val = d.lv ? it.per * d.lv * (1 + C.starBonus * d.star) : 0;
         return '<div class="dcard' + (open ? '' : ' none') + '"><div class="dstars">' + stars + '</div><div class="dicon">' + mi('divine', it) + '</div><div class="dname">' + it.name + ' <span class="lv">Lv.' + d.lv + '</span></div><div class="note">' + it.kind + ' · ' + it.desc + '</div>' +
@@ -780,7 +780,21 @@
       G.setSetting(r.dataset.range, +r.value); G.showDamageSample(); renderPanel(true);
     });
     function stopHold() { clearTimeout(holdT); clearInterval(holdI); holdT = holdI = null; }
+    // talent, costume, divine item and skill level-ups (2026-11-15, the user: 꾸욱 누르면 쭈욱): one step a press like
+    // the rest, then repeating while held. The first step says why it cannot go on; the repeats stop quietly.
+    function stepAct(d, quiet) {
+      var ok;
+      if (d.tup) { ok = G.talentUp(d.tup); if (ok) toast(CW.talentById(d.tup).name + ' 레벨업!'); else if (!quiet) toast(CW.talentSpent(G.state) >= CW.talentPoints(G.state) ? '포인트가 없어요' : '아직 열리지 않았어요'); }
+      else if (d.cup) { ok = G.upCostume(d.cup); if (ok) toast(CW.costumeById(d.cup).name + ' Lv.' + G.state.costume.owned[d.cup]); else if (!quiet) toast(G.state.costume.owned[d.cup] >= DATA.costumeConf.maxLv ? '최대 레벨이에요' : '다이아가 부족해요'); }
+      else if (d.dlv) { ok = G.divineUp(d.dlv); if (ok) toast('삼신기 레벨업!'); else if (!quiet) toast(!CW.divineOpen(G.state) ? DATA.divineConf.unlockTier + '차 전직 후에 열려요' : '골드가 부족해요'); }
+      else if (d.sup) { ok = G.skillUp(d.sup); if (ok) toast(CW.skillById(d.sup).name + ' +' + CW.skillLevel(G.state, d.sup) + ' 강화!'); else if (!quiet) toast(CW.skillLevel(G.state, d.sup) >= DATA.balance.skillMaxLv ? '최대 강화예요' : '골드가 부족해요'); }
+      renderPanel(true); hud(); if (d.sup) slots();
+      return ok;
+    }
+    var HOLD_STEP = '[data-tup],[data-cup],[data-dlv],[data-sup]';
     var onDown = function (e) {
+      var hs = e.target.closest(HOLD_STEP);
+      if (hs) { var dd = { tup: hs.dataset.tup, cup: hs.dataset.cup, dlv: hs.dataset.dlv, sup: hs.dataset.sup }; stopHold(); if (!stepAct(dd, false)) return; holdT = setTimeout(function () { holdI = setInterval(function () { if (!stepAct(dd, true)) stopHold(); }, 90); }, 380); return; }
       var b = e.target.closest('[data-up],[data-mark],[data-circle],[data-blv],[data-rune],[data-sglv]'); if (!b) return;
       var key = b.dataset.up, mk = b.dataset.mark, ci = b.dataset.circle, bl = b.dataset.blv, ru = b.dataset.rune, sl = b.dataset.sglv;
       var once = function () { var ok = bl ? G.levelUp(bl) : ru ? G.runeUp(ru) : sl ? G.sigilLvUp() : mk ? G.markUp(mk) : ci ? G.circleUp() : (upMul > 1 ? G.upgradeN(key, upMul) : G.upgrade(key)); if (ok) { fxRune = ru || null; renderPanel(true); fxRune = null; hud(); } else stopHold(); };
@@ -791,6 +805,7 @@
     var onClick = function (e) {
       var t = e.target.closest('button'); if (!t) return;
       var d = t.dataset;
+      if (t.matches(HOLD_STEP)) { if (e.detail === 0) stepAct(d, false); return; }   // a press is done on pointerdown; keys still work
       if (d.prev) { G.previewSkill(d.prev); }
       else if (d.sel !== undefined) { selSlot = selSlot === +d.sel ? -1 : +d.sel; renderPanel(true); }
       else if (d.eq) { var at = G.placeSkill(d.eq, selSlot); if (at >= 0) toast(CW.skillById(d.eq).name + ' → ' + (at + 1) + '번 칸'); selSlot = -1; renderPanel(true); slots(); }
@@ -798,7 +813,6 @@
       else if (d.mul) { upMul = +d.mul; renderPanel(true); }
       else if (d.tsub) { trainSub = d.tsub; panel.scrollTop = 0; renderPanel(true); }
       else if (d.tal) { selTalent = d.tal; renderPanel(true); }
-      else if (d.tup) { if (G.talentUp(d.tup)) toast(CW.talentById(d.tup).name + ' 레벨업!'); else toast(CW.talentSpent(G.state) >= CW.talentPoints(G.state) ? '포인트가 없어요' : '아직 열리지 않았어요'); renderPanel(true); }
       else if (d.act === 'treset') { G.talentReset(); toast('특성을 초기화했어요'); renderPanel(true); }
       else if (d.act === 'rankup') { var rr2 = CW.rankReady(G.state); if (G.rankUp()) toast(DATA.rankConf.names[G.state.rank] + '(으)로 승급!'); else toast(rr2.why === 'marks' ? '기본 징표 6개를 최대로 올려야 해요' : rr2.why === 'level' ? '계정 레벨 ' + rr2.need + '이 필요해요' : rr2.why === 'mana' ? '마력석이 부족해요' : '더 올릴 수 없어요'); renderPanel(true); }
       else if (d.dgo) { var r3 = G.dungeon(d.dgo); if (r3 === 'busy') toast('보스전이나 던전이 끝난 뒤에 들어갈 수 있어요'); else if (r3 === 'ticket') toast('오늘 입장권을 다 썼어요'); }
@@ -807,14 +821,11 @@
       else if (d.gsub) { gearSub = d.gsub; selSigil = selRune = null; panel.scrollTop = 0; renderPanel(true); }
       else if (d.relic) { var rr = G.summonRelics(+d.relic); if (!rr) toast('다이아가 부족해요'); else { showRelics(rr); renderPanel(true); hud(); } }
       else if (d.cbuy) { if (G.buyCostume(d.cbuy)) toast(CW.costumeById(d.cbuy).name + ' 획득!'); else toast('다이아가 부족해요'); renderPanel(true); hud(); }
-      else if (d.cup) { if (G.upCostume(d.cup)) toast(CW.costumeById(d.cup).name + ' Lv.' + G.state.costume.owned[d.cup]); else toast(G.state.costume.owned[d.cup] >= DATA.costumeConf.maxLv ? '최대 레벨이에요' : '다이아가 부족해요'); renderPanel(true); hud(); }
       else if (d.cwear) { if (G.wearCostume(d.cwear)) toast(CW.costumeById(d.cwear).name + '을(를) 입었어요'); renderPanel(true); }
-      else if (d.dlv) { if (G.divineUp(d.dlv)) toast('삼신기 레벨업!'); else toast(!CW.divineOpen(G.state) ? DATA.divineConf.unlockTier + '차 전직 후에 열려요' : '골드가 부족해요'); renderPanel(true); hud(); }
       else if (d.dstar) { if (G.starUp(d.dstar)) toast('별이 하나 더 빛나요!'); else toast(!CW.divineOpen(G.state) ? DATA.divineConf.unlockTier + '차 전직 후에 열려요' : !G.state.divine[d.dstar].lv ? '먼저 깨워 주세요' : '신기 조각이 부족해요'); renderPanel(true); }
       else if (d.preset !== undefined) { G.switchPreset(+d.preset); toast((+d.preset + 1) + '번 프리셋으로 바꿨어요'); renderPanel(true); slots(); }
       else if (d.act === 'skillall') { var nn = G.skillUpAll(); toast(nn ? '스킬 ' + nn + '단계 강화!' : '골드가 부족해요'); renderPanel(true); hud(); slots(); }
       else if (d.act === 'autoskill') { G.autoSkills(); toast('가장 센 스킬 4개로 채웠어요'); renderPanel(true); slots(); }
-      else if (d.sup) { if (G.skillUp(d.sup)) toast(CW.skillById(d.sup).name + ' +' + CW.skillLevel(G.state, d.sup) + ' 강화!'); else toast(CW.skillLevel(G.state, d.sup) >= DATA.balance.skillMaxLv ? '최대 강화예요' : '골드가 부족해요'); renderPanel(true); hud(); slots(); }
       else if (d.dsel !== undefined) { var nd = ((selDiff < 0 ? (G.state.diff || 0) : selDiff) + +d.dsel + DATA.difficulties.length) % DATA.difficulties.length; selDiff = nd; selRegion = 0; renderPanel(true); }
       else if (d.rsel !== undefined) { selRegion = +d.rsel; renderPanel(true); }
       else if (d.wlock !== undefined) { toast(+d.wlock < 1 ? '이 난이도는 아직 잠겨 있어요' : DATA.regions[+d.wlock - 1].name + ' 지역 보스를 이기면 열려요'); }

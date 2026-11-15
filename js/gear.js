@@ -29,11 +29,18 @@
   function ownedValue(kind, t, lv, star) { return mainValue(kind, t, lv, star) * BG.ownedFrac; }
   // each transcend star lets the item level further
   function maxLevel(k, star) { return BG.maxLvBase * (parseKey(k).grade + 1) + (star || 0) * BG.starLv; }
-  function levelCost(k, lv) { return BG.lvCostBase * Math.pow(BG.lvCostGrowth, lv) * (1 + parseKey(k).t * BG.lvCostTier); }
+  // state (optional): never under GEAR_PRICE of the next attack level, growing GEAR_GROW a level and a little with the
+  // tier (2026-11-15, the user: 장비는 강화비용이 1원 — the fixed price was nothing once the game's gold had grown)
+  var GEAR_PRICE = 0.0003, GEAR_GROW = 1.003, GEAR_TIER = 0.1;
+  function levelCost(k, lv, state) {
+    var c = BG.lvCostBase * Math.pow(BG.lvCostGrowth, lv) * (1 + parseKey(k).t * BG.lvCostTier);
+    if (state) { var u = DATA.upgrades.atk; c = Math.max(c, u.costBase * Math.pow(u.costGrowth, (state.up && state.up.atk) || 0) * GEAR_PRICE * Math.pow(GEAR_GROW, lv) * (1 + parseKey(k).t * GEAR_TIER)); }
+    return isFinite(c) ? Math.min(c, 1e300) : 1e300;
+  }
   function levelUp(state, k) {
     if (!owned(state, k)) return false;
     var e = state.bag[k]; if (e.lv >= maxLevel(k, e.star)) return false;
-    var c = levelCost(k, e.lv); if (!(state.gold >= c)) return false;
+    var c = levelCost(k, e.lv, state); if (!(state.gold >= c)) return false;
     state.gold = Math.max(0, state.gold - c); e.lv++; return true;
   }
   function merge(state, k) {
@@ -50,7 +57,7 @@
   // transcend: at max level, use copies of the same item (and gold) for one more star
   function transcendCost(state, k) {
     var e = state.bag && state.bag[k], st = e ? e.star || 0 : 0;
-    return { copies: st + 1, gold: levelCost(k, maxLevel(k, st)) * BG.starGold };
+    return { copies: st + 1, gold: levelCost(k, maxLevel(k, st), state) * BG.starGold };
   }
   function transcend(state, k) {
     if (!owned(state, k)) return false;

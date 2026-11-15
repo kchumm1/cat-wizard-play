@@ -10,11 +10,17 @@
   }
   function known(id) { return DATA.divine.some(function (d) { return d.id === id; }); }
   function divineOpen(state) { return (state.tier || 1) >= C.unlockTier; }
-  function divineUpCost(lv) { return C.costBase * Math.pow(C.costGrowth, lv); }
+  // state (optional): never under DIVINE_PRICE of the next attack level, growing DIVINE_GROW a level (2026-11-15, like gear)
+  var DIVINE_PRICE = 0.02, DIVINE_GROW = 1.06;
+  function divineUpCost(lv, state) {
+    var c = C.costBase * Math.pow(C.costGrowth, lv);
+    if (state) { var u = DATA.upgrades.atk; c = Math.max(c, u.costBase * Math.pow(u.costGrowth, (state.up && state.up.atk) || 0) * DIVINE_PRICE * Math.pow(DIVINE_GROW, lv)); }
+    return isFinite(c) ? Math.min(c, 1e300) : 1e300;
+  }
   function divineUp(state, id) {
     if (!known(id) || !divineOpen(state)) return false;
     var d = slot(state, id); if (d.lv >= C.maxLv) return false;
-    var cost = divineUpCost(d.lv); if (!(state.gold >= cost)) return false;
+    var cost = divineUpCost(d.lv, state); if (!(state.gold >= cost)) return false;
     state.gold -= cost; d.lv++; return true;
   }
   function starCost(star) { return star + 1; }
