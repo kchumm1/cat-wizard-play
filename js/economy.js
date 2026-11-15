@@ -143,7 +143,8 @@
     if (o.boss) d *= st.bossDmg; else d *= st.normalDmg || 1;
     d *= st.finalMul || 1;
     var ct = o.critTier !== undefined ? o.critTier : (o.crit ? 1 : 0), dm = tierDmgs(st);
-    for (var t = 0; t < ct && t < dm.length; t++) d *= dm[t];
+    if (o.even) d *= evenCrit(st, ct);
+    else for (var t = 0; t < ct && t < dm.length; t++) d *= dm[t];
     if (o.frozen) d *= B.freezeTaken;
     if (o.shocked) d *= B.shockBonus;
     return cap(d);
@@ -175,6 +176,50 @@
     var r = tierRates(st), dm = tierDmgs(st), f = 1;
     for (var i = r.length - 1; i >= 0; i--) f = 1 + r[i] * (dm[i] * f - 1);
     return f;
+  }
+  // Even crits (2026-11-15). With all seven tiers the whole chain (crit…alpha) came once in ~2,600 hits but carried ~72%
+  // of the average damage, so a real 45-second boss fight got only 2-10% of the "보스" number in the stats window
+  // (measured on the user's stats: 11항하사 shown, the 6-31 crocodile with 9.3항하사 needed won ~5% of tries).
+  // In the game a hit now gets: crit and super as they are, the tiers from ultra up squeezed (their product to the
+  // power EVEN_POW), and every hit scaled so the average stays exactly critFactor(st) — the game is tuned on that average.
+  // A typical fight now lands close to it. tierDmgs/critFactor/upgrades are unchanged: raising any tier raises the average
+  // just as before. A player with only crit and super sees no change.
+  var EVEN_FROM = 2, EVEN_POW = 0.15, evenKey = '', evenTab = null;
+  function evenTable(st) {
+    var r = tierRates(st), dm = tierDmgs(st), key = r.join() + '|' + dm.join();
+    if (key === evenKey) return evenTab;
+    var pr = 1, low = 1, high = 1, E = 0, Ec = 0, comp = [];
+    for (var t = 0; t <= r.length; t++) {
+      var stop = t < r.length ? pr * (1 - r[t]) : pr, c = low * Math.pow(high, EVEN_POW);
+      E += stop * low * high; Ec += stop * c; comp.push(c);
+      if (t < r.length) { pr *= r[t]; if (t < EVEN_FROM) low *= dm[t]; else high *= dm[t]; }
+    }
+    var k = Ec > 0 ? E / Ec : 1;
+    evenKey = key; evenTab = comp.map(function (c) { return c * k; });
+    return evenTab;
+  }
+  function evenCrit(st, ct) { var tab = evenTable(st); return tab[Math.max(0, Math.min(tab.length - 1, ct | 0))]; }
+  // The boss damage a usual fight really deals per second (the middle of 151 fights of `secs` seconds, the same random
+  // numbers every time so the stats window does not flicker). One crit roll a cast — a skill split in pieces rolls
+  // each piece, which lands a little closer to the average, so this errs low.
+  function bossDpsTypical(state, st, secs) {
+    st = st || stats(state); secs = secs || 30;
+    var list = (state.slots || []).map(skillById).filter(Boolean); if (!list.length) return 0;
+    var base = list.map(function (s) { return hitDamage(st, s, { boss: true }) * weakFactor(state, st, s) * (s.status === 'freeze' || s.status === 'shock' ? 1.1 : 1); });
+    var dur = list.map(function (s) { return (s.dur + B.gap) / st.speedMul; });
+    var seed = 12345, rng = function () { seed = (seed + 0x6D2B79F5) | 0; var x = Math.imul(seed ^ (seed >>> 15), 1 | seed); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
+    var charge = DATA.surgeConf.charge, out = [];
+    for (var f = 0; f < 151; f++) {
+      var t = 0, dmg = 0, i = Math.floor(rng() * list.length), g = rng() * charge;
+      while (t < secs) {
+        var k = i % list.length, mul = 1; g += st.surgeRate || 1;
+        if (g >= charge) { g -= charge; mul = st.surgeMul; }
+        dmg += base[k] * mul * evenCrit(st, rollCrit(st, rng)); t += dur[k]; i++;
+      }
+      out.push(dmg / secs);
+    }
+    out.sort(function (a, b) { return a - b; });
+    return cap(out[75]);
   }
   function skillById(id) { for (var i = 0; i < DATA.skills.length; i++) if (DATA.skills[i].id === id) return DATA.skills[i]; return null; }
   // average damage per second against a crowd of up to 3 normal monsters
@@ -208,7 +253,7 @@
     stageMonsterHp: stageMonsterHp, stageBossHp: stageBossHp, stageGold: stageGold, diffOf: diffOf,
     monsterHp: monsterHp, bossHp: bossHp, monsterGold: monsterGold, bossGems: bossGems,
     isWeak: isWeak, regionOf: regionOf, surgeTick: surgeTick, surgeFactor: surgeFactor, weakFactor: weakFactor, upgradeBonus: upgradeBonus, bonusBySource: bonusBySource, upgradeCostN: upgradeCostN, tryUpgradeN: tryUpgradeN, upgradeOpen: upgradeOpen, upgradeNeed: upgradeNeed, rollCrit: rollCrit, critFactor: critFactor, upgradeCost: upgradeCost, tryUpgrade: tryUpgrade, stats: stats, hitDamage: hitDamage,
-    dps: dps, bossDps: bossDps, killsPerSecond: killsPerSecond, goldPerSecond: goldPerSecond, skillById: skillById,
+    dps: dps, bossDps: bossDps, bossDpsTypical: bossDpsTypical, evenCrit: evenCrit, killsPerSecond: killsPerSecond, goldPerSecond: goldPerSecond, skillById: skillById,
     isRegionBoss: isRegionBoss, isMiniBoss: isMiniBoss
   };
 });

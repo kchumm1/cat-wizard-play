@@ -136,7 +136,7 @@
     return function (mob, frac, power) {
       if (!mob || !mob.alive) return;
       var ct = CW.rollCrit(st), crit = ct > 0;
-      var dmg = CW.hitDamage(st, skill, { boss: mob.boss, critTier: ct, frozen: mob.frozen > 0, shocked: mob.shocked > 0 }) * (frac === undefined ? 1 : frac) * (mul || 1);
+      var dmg = CW.hitDamage(st, skill, { boss: mob.boss, critTier: ct, even: true, frozen: mob.frozen > 0, shocked: mob.shocked > 0 }) * (frac === undefined ? 1 : frac) * (mul || 1);
       if (dun && mob === dun.golem) dun.dmg += dmg; else mob.hp -= dmg;
       mob.lastCol = skill.color;
       if (skill.status === 'freeze') mob.frozen = Math.max(mob.frozen, mob.boss ? 0.7 : 1.5);
