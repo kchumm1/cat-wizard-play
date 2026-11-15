@@ -18,7 +18,6 @@
     pack: { dailyGem: 'pk-pack-dailyGem', goldS: 'pk-pack-goldS', goldL: 'pk-pack-goldL', potion: 'pk-pack-potion', grow: 'pk-pack-grow',
       gear10: 'pk-pack-gear10', gear30: 'pk-pack-gear30', gear100: 'pk-pack-gear100', tier5: 'pk-pack-tier5', tier8: 'pk-pack-tier8', tier10: 'pk-pack-tier10' },
     potion: { rage: 'potion-rage', luck: 'potion-luck', wisdom: 'potion-wisdom' },
-    tab: { up: 'menu-training' },
     cur: { mana: 'currency-mana' },
     pic: { lock: 'state-lock', cauldron: 'alchemy-cauldron' }
   };
@@ -76,7 +75,7 @@
   var CW = root.CW, I = CW && CW.ICO; if (!I) return;
   var B = CW.ART_BASE || 'art/';
   function img(name, cls) { return '<img class="ico pic ' + cls + '" src="' + B + 'tr-' + name + '.webp" alt="" draggable="false">'; }
-  var stat0 = I.stat, misc0 = I.misc, cur0 = I.cur, pic0 = I.pic, MISC = ['talent', 'mark', 'potion', 'tab', 'pack'];
+  var stat0 = I.stat, misc0 = I.misc, cur0 = I.cur, pic0 = I.pic, MISC = ['talent', 'mark', 'potion', 'pack'];
   I.stat = function (k) { return MAP.stat[k] ? img(MAP.stat[k], 'imisc tr') : stat0(k); };
   I.misc = function (cat, id) { return MISC.indexOf(cat) >= 0 && MAP[cat][id] ? img(MAP[cat][id], 'imisc tr p-' + cat) : misc0(cat, id); };
   I.cur = function (k) { return MAP.cur[k] ? img(MAP.cur[k], 'icur tr') : cur0(k); };

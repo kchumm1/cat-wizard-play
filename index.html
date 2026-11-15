@@ -1384,6 +1384,18 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 .bagtop .pnote{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:2px;padding-top:9px;border-top:1.5px solid #E2D4BE;font:700 12px/1.5 var(--body);color:#6f6356}
 .bagtop .pnote .plocknote{width:24px;height:24px;flex:none}
 .bagtop .pcost{white-space:nowrap}.bagtop .pcost .gem{display:inline-block;width:14px;height:14px;vertical-align:-2px;margin-right:2px}
+/* bottom menu (2026-11-15): after the "Navigation icon redesign" picture the user sent: cream bar with rounded top,
+   seven equal columns, the painted icons at the same size, dark brown labels, the chosen one plum with a gold line under it */
+:root{--tabh:58px}
+#tabs{gap:0;padding:6px max(6px,env(safe-area-inset-right,0px)) max(4px,calc(env(safe-area-inset-bottom,0px) - 14px)) max(6px,env(safe-area-inset-left,0px));background:#FCF6EE;border-radius:22px 22px 0 0;box-shadow:0 -1.5px 0 #EADCC6,0 -6px 18px rgba(80,55,40,.14)}
+#tabs::before{display:none}
+#tabs button{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;min-height:52px;padding:0;border-radius:0;background:none;font:700 11px/1.15 var(--body);letter-spacing:-.02em;color:#4b3b35;position:relative}
+#tabs img.ico{width:32px;height:32px;transform:none;filter:drop-shadow(0 1.5px 1px rgba(80,55,40,.22))}
+#tabs button[aria-selected=true]{color:#6a2c6e;background:none}
+#tabs button[aria-selected=true] img.ico{transform:none;filter:drop-shadow(0 1.5px 1px rgba(80,55,40,.22))}
+#tabs button::after{content:'';position:absolute;left:50%;bottom:1px;width:30px;height:3px;margin-left:-15px;border-radius:3px;background:transparent}
+#tabs button[aria-selected=true]::after{left:50%;right:auto;background:#E3B24E}
+#tabs button span{display:block;padding-bottom:7px}
 </style>
 
 <div id="topcap" aria-hidden="true"></div>
