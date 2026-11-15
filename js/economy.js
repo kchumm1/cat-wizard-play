@@ -131,6 +131,8 @@
     atk = atk * (1 + gb.atk) * (1 + gb.atkPct) * (1 + B.levelAtk * ((state.level || 1) - 1));
     var st = statsBase(state, u, gb, atk), over = {};
     Object.keys(DATA.upgrades).forEach(function (k) { var t = overTarget(k), n = overLevels(state, k); if (t && n) over[t] = (over[t] || 0) + n; });
+    var TR = dep('training'), mo = TR && TR.markOver ? TR.markOver(state) : {};   // rate marks past the rank's cap
+    for (var mk in mo) over[mk] = (over[mk] || 0) + mo[mk];
     for (var t in over) st[t] = cap(st[t] * (1 + OVER_PER * over[t]));
     return st;
   }

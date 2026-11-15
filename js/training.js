@@ -13,7 +13,8 @@
   function talentCan(state, id) {
     var x = talentById(id); if (!x) return false;
     var t = state.talents || {};
-    if ((t[id] || 0) >= x.max || talentSpent(state) >= talentPoints(state)) return false;
+    // 한계 돌파 (2026-11-15): a talent can go past its max; the points (one per 20 levels) are the only limit
+    if (talentSpent(state) >= talentPoints(state)) return false;
     if ((state.level || 1) < TC.rowLevel[x.row]) return false;
     return x.row === 0 || talentSpent(state, x.row - 1) >= TC.rowNeed[x.row];
   }
@@ -29,8 +30,9 @@
   function markUp(state, id) {
     if (!markOpen(state, id)) return false;
     state.marks = state.marks || {};
-    var lv = state.marks[id] || 0; if (lv >= markCap(state)) return false;
-    var c = markCost(lv); if (!((state.mana || 0) >= c)) return false;
+    // 한계 돌파 (2026-11-15): past the rank's cap marks keep going for mana stones (the cost keeps growing)
+    var lv = state.marks[id] || 0;
+    var c = markCost(lv); if (!(c < 1e300)) return false; if (!((state.mana || 0) >= c)) return false;
     state.mana -= c; state.marks[id] = lv + 1; return true;
   }
   function rankReady(state) {
@@ -47,10 +49,12 @@
     state.rank = (state.rank || 0) + 1; state.mana -= RC.rankCost[state.rank]; return true;
   }
   function circleCost(lv) { return Math.ceil(CC.base * Math.pow(CC.growth, lv)); }
-  function circleTier(state) { return Math.floor((state.circle || 0) / CC.tierEvery); }
+  // past maxLv (한계 돌파, 2026-11-15) the circle keeps levelling: skill damage keeps growing, the circle (tier) and its
+  // all-damage bonus and picture stay at the top one
+  function circleTier(state) { return Math.floor(Math.min(state.circle || 0, CC.maxLv) / CC.tierEvery); }
   function circleUp(state) {
-    var lv = state.circle || 0; if (lv >= CC.maxLv) return false;
-    var c = circleCost(lv); if (!((state.mana || 0) >= c)) return false;
+    var lv = state.circle || 0;
+    var c = circleCost(lv); if (!(c < 1e300) || !((state.mana || 0) >= c)) return false;
     state.mana -= c; state.circle = lv + 1; return true;
   }
   function manaForBoss(stage, regionBoss) {
@@ -61,12 +65,21 @@
     var b = {}, t = state.talents || {}, m = state.marks || {};
     function add(k, v) { b[k] = (b[k] || 0) + v; }
     DATA.talents.forEach(function (x) { if (t[x.id]) add(x.stat, t[x.id] * x.per); });
-    DATA.marks.forEach(function (x) { if (m[x.id]) add(x.stat, m[x.id] * x.per); });
+    // a rate mark (치명타·슈퍼 확률) counts up to the rank's cap; what is past it goes to that crit's damage (markOver)
+    DATA.marks.forEach(function (x) { if (m[x.id]) add(x.stat, (RATE_TO[x.stat] ? Math.min(m[x.id], markCap(state)) : m[x.id]) * x.per); });
     if (state.circle) add('skillDmg', state.circle * CC.perLv);
     add('finalPct', (state.rank || 0) * RC.rankFinal + circleTier(state) * CC.tierFinal);
     return b;
   }
-  return { talentById: talentById, talentPoints: talentPoints, talentSpent: talentSpent, talentCan: talentCan, talentUp: talentUp, talentReset: talentReset,
+  // 한계 돌파 of the rate marks: { critDmg: levels, superDmg: levels } past the cap, each +1% (economy.stats adds it like
+  // the 성장 rows' levels past their max)
+  var RATE_TO = { critRate: 'critDmg', superRate: 'superDmg' };
+  function markOver(state) {
+    var o = {}, m = state.marks || {}, cap = markCap(state);
+    DATA.marks.forEach(function (x) { var t = RATE_TO[x.stat], n = (m[x.id] || 0) - cap; if (t && n > 0) o[t] = (o[t] || 0) + n; });
+    return o;
+  }
+  return { markOver: markOver, talentById: talentById, talentPoints: talentPoints, talentSpent: talentSpent, talentCan: talentCan, talentUp: talentUp, talentReset: talentReset,
     markById: markById, markOpen: markOpen, markCap: markCap, markCost: markCost, markUp: markUp, rankReady: rankReady, rankUp: rankUp,
     circleCost: circleCost, circleTier: circleTier, circleUp: circleUp, manaForBoss: manaForBoss, trainingStats: trainingStats };
 });

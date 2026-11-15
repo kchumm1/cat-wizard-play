@@ -8,7 +8,8 @@
   function potionById(id) { for (var i = 0; i < DATA.potions.length; i++) if (DATA.potions[i].id === id) return DATA.potions[i]; return null; }
   function box(state) { if (!state.alch) state.alch = { brews: 0, until: {} }; if (!state.alch.until) state.alch.until = {}; return state.alch; }
   function alchemyOpen(state) { return (state.tier || 1) >= C.unlockTier; }
-  function alchLevel(state) { return Math.min(C.maxLv, Math.floor(((state.alch && state.alch.brews) || 0) / C.brewsPerLv)); }
+  // 한계 돌파 (2026-11-15): the level keeps going past maxLv (stronger, longer potions); maxLv is now just the old top
+  function alchLevel(state) { return Math.floor(((state.alch && state.alch.brews) || 0) / C.brewsPerLv); }
   function potionMinutes(state) { return C.minutes + alchLevel(state) * C.minPerLv; }
   function potionPower(state, id) { var p = potionById(id); return p ? p.val * (1 + alchLevel(state) * C.effPerLv) : 0; }
   function potionCost(state) { return Math.max(100, econ().goldPerSecond(state) * C.costSec); }
