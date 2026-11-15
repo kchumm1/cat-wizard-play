@@ -518,7 +518,7 @@
         for (var i = list.length - 1; i >= 0; i--) {
           var c = list[i]; c.t += dt; if (c.t >= c.life) { list.splice(i, 1); continue; }
           c.v.y -= 16 * dt; c.p.addScaledVector(c.v, dt); c.ang += dt * 14;
-          if (c.smoky && c.t < 0.5 && (c.trail -= dt) <= 0) { c.trail = 0.045; puff(c.p, { s0: c.s * 0.9, s1: c.s * 2.4, life: 0.55, vel: new T.Vector3(0, 0.3, 0), alpha: 0.6, order: 4 }); }
+          if (c.smoky && c.t < 0.5 && (c.trail -= dt) <= 0) { c.trail = 0.1; puff(c.p, { s0: c.s * 1.1, s1: c.s * 3.0, life: 0.55, vel: new T.Vector3(0, 0.3, 0), alpha: 0.6, order: 4 }); }
           if (c.p.y < c.s && c.v.y < 0) { c.p.y = c.s; c.v.y *= -0.35; c.v.x *= 0.6; c.v.z *= 0.6; }
         }
         var L = chipLayers[g];
@@ -641,8 +641,10 @@
           // smoke left behind along the path: it hangs there after the rock has gone, so its way down stays in sight
           puffT -= dt || 0;
           if (puffT <= 0) {
-            puffT = 0.038; at.copy(pos).addScaledVector(back, size * (1.4 + Math.random() * 1.2)).add(new T.Vector3((Math.random() - 0.5) * size * 0.4, (Math.random() - 0.5) * size * 0.4, 0));
-            puff(at, { s0: size * 0.28, s1: size * (0.7 + Math.random() * 0.3), life: 0.7 + Math.random() * 0.3, vel: back.clone().multiplyScalar(0.6).add(new T.Vector3(0, 0.25, 0)), dark: o.smokeDark || 0x302826, light: o.smokeLight || 0x7e746e, alpha: 0.42, order: 4 });
+            // (every 0.09 s, each puff a third bigger: at every 0.038 s a meteor rain kept about 500 puffs alive and an iPhone fell
+            // to 20-25 frames a second, 2026-11-15)
+            puffT = 0.09; at.copy(pos).addScaledVector(back, size * (1.4 + Math.random() * 1.2)).add(new T.Vector3((Math.random() - 0.5) * size * 0.4, (Math.random() - 0.5) * size * 0.4, 0));
+            puff(at, { s0: size * 0.36, s1: size * (0.95 + Math.random() * 0.4), life: 0.7 + Math.random() * 0.3, vel: back.clone().multiplyScalar(0.6).add(new T.Vector3(0, 0.25, 0)), dark: o.smokeDark || 0x302826, light: o.smokeLight || 0x7e746e, alpha: 0.42, order: 4 });
           }
         },
         kill: function () { drop(body); drop(line); drop(cap); drop(tail); drop(blaze); drop(blaze2); glow.kill(); }
@@ -888,18 +890,26 @@
     // rocks thrown out (some trailing smoke), and a scorched hollow with molten cracks that cool for a while.
     function impact(pos, o) {
       if (CW.fxOff && CW.fxOff.ground) return;
+      var OFF = CW.fxOff || {};   // (impFlash, impDome, impCurtain, impMarks, impSmoke: parts of it, for measuring on a phone)
       o = o || {}; var R = o.size || 1, x = pos.x, z = pos.z, col = o.col || 0xff9a2a, dirt = o.dirt || 0x6a5546, calm = o.calm === undefined ? 1 : o.calm;
+      if (!OFF.impFlash) {
       var fl = orb({ col: bright ? 0xffd040 : 0xfff6d0, deep: bright ? 0xff6a10 : col, alpha: 1, order: 7 }), fT = 0.2;
       fl.set(new T.Vector3(x, R * 0.35, z), R * 0.4, calm);
       add(new T.Object3D(), { life: fT, upd: function (dt, t) { var k = t / fT; fl.set(new T.Vector3(x, R * 0.35, z), R * (0.4 + 0.8 * ease(k / 0.4)), Math.max(0, 1 - k * k) * calm); if (k >= 1) { fl.kill(); return true; } } });
+      }
+      if (!OFF.impDome) {
       var fbL = 0.7, fb = add(new T.Mesh(GEO.ball, mat(FS.dome, { uCol: { value: C(col) }, uLow: { value: C(0x8a1a08) }, uHot: { value: 0.42 }, uK: { value: 0 }, uSeed: { value: Math.random() * 9 }, uAlpha: { value: 0.4 + 0.6 * calm } })), {
         order: 6, life: fbL, upd: function (dt, t) { var k = t / fbL; fb.mesh.scale.setScalar(R * (0.28 + 0.62 * ease(k / 0.28))); fb.mesh.position.y = R * (0.3 + 0.9 * ease(k)); U(fb).uK.value = Math.min(1, Math.max(0, (k - 0.1) / 0.9)); }
       });
       fb.mesh.position.set(x, R * 0.2, z); fb.mesh.scale.setScalar(R * 0.22);
+      }
+      if (!OFF.impCurtain) {
       var cuL = 0.5, cu = add(new T.Mesh(GEO.curtain, mat(FS.ejecta, { uDirt: { value: C(dirt) }, uHot: { value: C(o.hot || 0xff7a1a) }, uK: { value: 0 }, uSeed: { value: Math.random() * 9 }, uAlpha: { value: 0.8 } }, { side: T.DoubleSide, normal: true })), {
         order: 6, life: cuL, upd: function (dt, t) { var k = t / cuL, e = ease(k / 0.7); cu.mesh.scale.set(R * (0.35 + 0.9 * e), R * (0.3 + 0.85 * e) * (1 - 0.3 * k), R * (0.35 + 0.9 * e)); U(cu).uK.value = k; }
       });
       cu.mesh.position.set(x, 0.02, z); cu.mesh.scale.setScalar(R * 0.35);
+      }
+      if (!OFF.impMarks) {
       var rgL = 0.5, rg = add(new T.Mesh(GEO.flat, mat(FS.shock, { uCol: { value: C(o.ringCol || 0xff8a2a) }, uK: { value: 0 }, uW: { value: 0.09 }, uSeed: { value: Math.random() * 9 }, uAlpha: { value: 0.9 * calm } })), {
         order: 4, life: rgL, upd: function (dt, t) { U(rg).uK.value = ease(t / rgL); }
       });
@@ -908,10 +918,16 @@
       sc2.mesh.position.set(x, 0.032, z); sc2.mesh.scale.setScalar(R * 0.95);
       var ckL = 1.3, ck = add(new T.Mesh(GEO.flat, mat(FS.cracks, { uCol: { value: C(col) }, uK: { value: 0 }, uSeed: { value: Math.random() * 9 } })), { order: 4, life: ckL, upd: function (dt, t) { U(ck).uK.value = t / ckL; } });
       ck.mesh.position.set(x, 0.04, z); ck.mesh.scale.setScalar(R * 1.4);
+      }
       // dust rolling out along the ground, then smoke climbing out of the hollow
-      for (var i = 0; i < 6; i++) { var a = i / 6 * 6.283 + Math.random() * 0.5; puff(new T.Vector3(x + Math.cos(a) * R * 0.4, R * 0.18, z + Math.sin(a) * R * 0.3), { s0: R * 0.16, s1: R * 0.38, life: 0.6, vel: new T.Vector3(Math.cos(a) * R * 4.0, 0.25, Math.sin(a) * R * 3.0), drag: 3.4, dark: 0x4a3e34, light: dirt, alpha: 0.42 }); }
-      later(0.07, function () { for (var j = 0; j < 2; j++) puff(new T.Vector3(x + (Math.random() - 0.5) * R * 0.4, R * (0.3 + j * 0.18), z + (Math.random() - 0.5) * R * 0.3), { s0: R * 0.22, s1: R * (0.5 + Math.random() * 0.25), life: 1.0 + Math.random() * 0.4, vel: new T.Vector3((Math.random() - 0.5) * 0.4, 1.0 + j * 0.25, 0), drag: 1.2, dark: 0x3a3230, light: 0x8a807a, alpha: 0.38 }); });
-      for (var c = 0; c < Math.round((o.chips === undefined ? 9 : o.chips) * (0.4 + 0.6 * calm)); c++) chip(pos, R, o.hot || 0xff7a1a, c < 2);
+      if (!OFF.impSmoke) {
+      // (four puffs of dust a little bigger instead of six, one smoke instead of two when others land close by: see above)
+      for (var i = 0; i < 4; i++) { var a = i / 4 * 6.283 + Math.random() * 0.5; puff(new T.Vector3(x + Math.cos(a) * R * 0.4, R * 0.18, z + Math.sin(a) * R * 0.3), { s0: R * 0.2, s1: R * 0.46, life: 0.6, vel: new T.Vector3(Math.cos(a) * R * 4.0, 0.25, Math.sin(a) * R * 3.0), drag: 3.4, dark: 0x4a3e34, light: dirt, alpha: 0.42 }); }
+      later(0.07, function () { for (var j = 0; j < (calm < 1 ? 1 : 2); j++) puff(new T.Vector3(x + (Math.random() - 0.5) * R * 0.4, R * (0.3 + j * 0.18), z + (Math.random() - 0.5) * R * 0.3), { s0: R * 0.22, s1: R * (0.5 + Math.random() * 0.25), life: 1.0 + Math.random() * 0.4, vel: new T.Vector3((Math.random() - 0.5) * 0.4, 1.0 + j * 0.25, 0), drag: 1.2, dark: 0x3a3230, light: 0x8a807a, alpha: 0.38 }); });
+      }
+      // (one smoking rock instead of two when others land close by; a smoking rock trails a puff every 0.1 s, not 0.045:
+      // these trails were most of the 500 puffs of a meteor rain, 2026-11-15)
+      for (var c = 0; c < Math.round((o.chips === undefined ? 9 : o.chips) * (0.4 + 0.6 * calm)); c++) chip(pos, R, o.hot || 0xff7a1a, c < (calm < 1 ? 1 : 2));
     }
     // ---------- an impact on the ground: fireball dome, rolling ring, hot crater, rocks thrown out ----------
     function blast(pos, o) {
@@ -948,7 +964,7 @@
       return add(m, {
         order: 5, life: life, upd: function (dt, t) {
           v.y -= 16 * dt; m.position.addScaledVector(v, dt); ang += dt * 14;
-          if (smoky && t < 0.5 && (trail -= dt) <= 0) { trail = 0.045; puff(m.position, { s0: s * 0.9, s1: s * 2.4, life: 0.55, vel: new T.Vector3(0, 0.3, 0), alpha: 0.6, order: 4 }); }
+          if (smoky && t < 0.5 && (trail -= dt) <= 0) { trail = 0.1; puff(m.position, { s0: s * 1.1, s1: s * 3.0, life: 0.55, vel: new T.Vector3(0, 0.3, 0), alpha: 0.6, order: 4 }); }
           if (m.position.y < s && v.y < 0) { m.position.y = s; v.y *= -0.35; v.x *= 0.6; v.z *= 0.6; }
           m.quaternion.setFromAxisAngle(ax, ang); m.material.emissive.setHex(hot).multiplyScalar(Math.max(0, 1 - t / (life * 0.7)));
           if (t > life * 0.75) m.scale.setScalar(s * Math.max(0, 1 - (t - life * 0.75) / (life * 0.25)));

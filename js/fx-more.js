@@ -945,7 +945,8 @@
       }
       var falling = order.slice(0, 10), popped = order.slice(10).concat(mobs.filter(function (m) { return seen.indexOf(m) < 0; }));
       // a few monsters take several falls each (a lone boss all of them), so the storm still pours
-      var per = CW.fxOff && CW.fxOff.half ? 1 : falling.length >= 6 ? 2 : Math.ceil(10 / Math.max(1, falling.length)), drops = [];
+      // one fall for each (two each made the iPhone drop to 40 frames a second, 2026-11-15); a few monsters take several
+      var per = falling.length >= 4 ? 1 : Math.ceil(6 / Math.max(1, falling.length)), drops = [];
       for (var r = 0; r < per; r++) falling.forEach(function (m) { drops.push({ m: m, frac: 1 / per }); });
       // it starts small and builds: falls come closer and closer together (irregular, overlapping); the big ones come in
       // the thick of it, two or three at once
