@@ -48,7 +48,14 @@ ol.steps{padding-left:20px;font-size:14px;margin:8px 0}ol.steps li{margin:4px 0}
 
   <section id="keyBox">
     <h2>열쇠(토큰)</h2>
-    <div id="keyOn" class="hide"><p class="hint" style="margin:0">이 기기에 열쇠가 저장돼 있어요.</p><button class="btn ghost" id="keyForget">열쇠 지우기</button></div>
+    <div id="keyOn" class="hide"><p class="hint" style="margin:0">이 기기에 열쇠가 저장돼 있어요.</p>
+      <button class="btn" id="keyQr">다른 기기로 옮기기 (QR)</button>
+      <div id="qrBox" class="hide" style="text-align:center;margin-top:12px">
+        <div id="qr" style="display:inline-block;background:#fff;padding:12px;border-radius:12px"></div>
+        <p class="hint">폰 카메라로 찍으면 이 화면이 열리면서 열쇠가 저장돼요. 다 옮겼으면 꼭 닫으세요(QR 안에 열쇠가 들어 있어요).</p>
+        <button class="btn ghost" id="qrClose" style="margin-top:8px">QR 닫기</button>
+      </div>
+      <button class="btn ghost" id="keyForget">열쇠 지우기</button></div>
     <div id="keyOff">
       <label for="key">GitHub 열쇠 붙여 넣기</label>
       <input id="key" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_...">
@@ -149,6 +156,23 @@ ol.steps{padding-left:20px;font-size:14px;margin:8px 0}ol.steps li{margin:4px 0}
     load().then(function (cur) { say('keyMsg', '열쇠가 잘 맞아요.', 'ok'); draw(cur.doc); })
       .catch(function (e) { say('keyMsg', e.message, 'bad'); });
   };
+  // 다른 기기로 옮기기: the key rides in the part after # (never sent to any server), saved on the phone, then wiped off the address
+  $('keyQr').onclick = function () {
+    var url = location.origin + location.pathname + '#key=' + encodeURIComponent(token());
+    var draw = function () { $('qr').textContent = ''; new QRCode($('qr'), { text: url, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.L }); $('qrBox').classList.remove('hide'); };
+    if (window.QRCode) return draw();
+    var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    s.onload = draw; s.onerror = function () { say('keyMsg', 'QR 그리는 파일을 못 받았어요(인터넷 확인).', 'bad'); };
+    document.head.appendChild(s);
+  };
+  $('qrClose').onclick = function () { $('qr').textContent = ''; $('qrBox').classList.add('hide'); };
+  (function () {
+    var m = /^#key=(.+)$/.exec(location.hash); if (!m) return;
+    history.replaceState(null, '', location.pathname + location.search);
+    try { localStorage.setItem(KEY, decodeURIComponent(m[1])); say('keyMsg', '다른 기기에서 열쇠를 받았어요. 확인하는 중…'); }
+    catch (e) { say('keyMsg', '이 브라우저에 저장할 수 없어요(개인 정보 보호 모드?).', 'bad'); return; }
+    load().then(function () { say('keyMsg', '열쇠가 잘 맞아요.', 'ok'); }).catch(function (e) { say('keyMsg', e.message, 'bad'); });
+  })();
   $('keyForget').onclick = function () { if (!confirm('이 기기에서 열쇠를 지울까요?')) return; try { localStorage.removeItem(KEY); } catch (e) {} showKey(); say('keyMsg', '열쇠를 지웠어요.'); };
 
   // ---- form
