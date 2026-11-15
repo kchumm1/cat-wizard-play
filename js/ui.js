@@ -484,7 +484,10 @@
           var nd = CW.upgradeNeed(k), why = u.tier && (s.tier || 1) < u.tier ? u.tier + '차 전직 후에 열려요' : DATA.upgrades[nd.key].name + ' Lv.' + nd.lv + ' 달성하면 열려요';
           return '<div class="row lockrow"><div class="ricon">' + CW.ICO.stat(k) + '</div><div class="info"><div class="name">' + u.name + '</div><div class="desc need">' + why + '</div></div><span class="lockic">' + CW.ICO.pic('lock', 'ilock') + '</span></div>';
         }
-        return '<div class="row"><div class="ricon">' + CW.ICO.stat(k) + '</div><div class="info"><div class="name">' + u.name + '<span class="lv">' + lvTxt + '</span></div><div class="desc">' + effTxt + overTxt + '</div></div>' +
+        // plain words (js/grow-text.js): what the row does, then 지금 / 다음 / 최대 / 돌파 lines whose labels line up
+        var gl = CW.growLines(s, k, upMul > 1 ? nBuy : 1);
+        var glHtml = '<div class="gabout">' + gl.about + '</div><div class="glines">' + gl.lines.map(function (l) { return '<b class="gl-' + ({ 지금: 'now', 다음: 'next', 최대: 'max', 돌파: 'over', 피해: 'dmg' }[l[0]] || 'x') + '">' + l[0] + '</b><span>' + l[1] + '</span>'; }).join('') + '</div>';
+        return '<div class="row grow"><div class="ricon">' + CW.ICO.stat(k) + '</div><div class="info"><div class="name">' + u.name + '<span class="lv">' + lvTxt + '</span></div>' + glHtml + '</div>' +
           '<button class="buy ' + (max || s.gold < one ? 'off' : '') + '" data-up="' + k + '">' + (max ? '최대' : (upMul > 1 ? '<small>×' + nBuy + '</small>' : '') + '<i class="coin"></i>' + gh(cost)) + '</button></div>';
       }).join('') + '</div>';
     }
