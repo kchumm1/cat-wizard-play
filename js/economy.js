@@ -90,7 +90,7 @@
   }
   var BONUS_KEYS = ['weakDmg', 'surgeDmg', 'surgeRate', 'finalPct', 'atk', 'atkPct', 'critRate', 'critDmg', 'goldMul', 'skillDmg', 'speed', 'bossDmg', 'normalDmg', 'xpMul', 'superRate', 'superDmg', 'ultraRate', 'ultraDmg', 'hyperRate', 'hyperDmg', 'megaRate', 'megaDmg', 'ultimateRate', 'ultimateDmg', 'alphaRate', 'alphaDmg', 'potion', 'potionGold', 'potionXp'];
   // every source of bonuses (gear, relics, costumes, star items, skill collection) adds into one object
-  var SOURCES = [['gear', 'gearStats'], ['relics', 'relicStats'], ['costume', 'costumeStats'], ['divine', 'divineStats'], ['skills', 'skillOwnedStats'], ['training', 'trainingStats'], ['runes', 'runeStats'], ['sigil', 'sigilStats'], ['alchemy', 'alchemyStats'], ['titles', 'titleStats']];
+  var SOURCES = [['gear', 'gearStats'], ['relics', 'relicStats'], ['costume', 'costumeStats'], ['divine', 'divineStats'], ['skills', 'skillOwnedStats'], ['training', 'trainingStats'], ['runes', 'runeStats'], ['sigil', 'sigilStats'], ['alchemy', 'alchemyStats'], ['titles', 'titleStats'], ['dex', 'dexStats']];
   // the bonus of every source on its own (for the stat window); growth = the 초월 lines; total = what stats() uses
   function bonusBySource(state) {
     var parts = {}, total = {}; BONUS_KEYS.forEach(function (k) { total[k] = 0; });

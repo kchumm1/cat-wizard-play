@@ -14,6 +14,8 @@
       { name: '은하', sky: 0x120f2a, ground: 0x2a2650, accent: 0xb58cff, monsters: ['c17', 'c18', 'g01', 'g02', 's07', 's08', 's09', 'm119', 'm121', 'm129', 'm135'], minis: ['b19', 'b45', 'b33', 'b38', 'b74', 'b78', 'b64'], weak: ['sun', 'void'], boss: { art: 'b09', name: '우주 뱀' } },
       { name: '마왕성', sky: 0x1e1530, ground: 0x3a2a50, accent: 0xff3b5c, monsters: ['c19', 'c20', 'k03', 'k05', 'k07', 'k09', 'g06', 'g07', 'g08', 'g09', 'g10', 's10', 'm126', 'm131', 'm132', 'm137'], minis: ['b11', 'b39', 'b40', 'b55', 'b75', 'b80'], weak: ['sun', 'star'], boss: { art: 'b10', name: '늑대 왕' } }
     ],
+    // monster codex (2026-11-15, js/dex.js): a region whose every entry is found adds this, for good
+    dexConf: { regionBonus: { atkPct: 0.02, goldMul: 0.02 } },
     // titles (2026-11-14): earned by playing, one worn (js/titles.js); bonus = what the worn title adds
     titles: [
       { id: 'tNovice', name: '견습 냥법사', need: { kind: 'start' } },

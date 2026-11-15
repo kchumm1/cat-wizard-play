@@ -400,7 +400,7 @@
     function spawnMob(def) {
       var g = billboard(def.art, def.height || 1.25, def.tint), boss = !!def.boss, spot = freeSpot(boss);
       var entry = boss ? 'run' : def.entry || 'run';
-      var mob = { group: g, hp: def.hp, maxHp: def.hp, boss: boss, regionBoss: !!def.regionBoss, alive: true, name: def.name,
+      var mob = { group: g, hp: def.hp, maxHp: def.hp, boss: boss, regionBoss: !!def.regionBoss, alive: true, name: def.name, id: def.id,
         x: 0, z: 0, y: 0, vy: 0, tx: spot.x, tz: spot.z,
         state: 'enter', st: 0, speed: boss ? 1.5 : rr(2.6, 3.6), entry: entry, arrived: false, stun: 0, atk: 0, struck: false,
         flash: 0, frozen: 0, shocked: 0, freezeV: 0, phase: g.userData.seed, kx: spring(80, 9), face: 1, walk: 0, hurt: 0,

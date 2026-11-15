@@ -6,6 +6,8 @@
   var storage = null;
   try { storage = root.localStorage; storage.setItem('cw-probe', '1'); storage.removeItem('cw-probe'); } catch (e) { storage = null; }
   var state = CW.migrateBag(CW.load(storage) || CW.newState());
+  // monster codex (2026-11-15): an old save gets its codex filled once from how far it went
+  if (CW.dexBackfill) CW.dexBackfill(state);
   var params = new URLSearchParams(location.search);
   var FAST = Math.max(1, Math.min(60, +params.get('fast') || 1));
 
@@ -109,7 +111,7 @@
     if (!waveKinds.length || R.monsters.indexOf(waveKinds[0]) < 0) pickKinds(R);
     var id = waveKinds[Math.floor(Math.random() * waveKinds.length)], a = mobArt(id, R.monsters[0]); if (!a) return;
     var r = Math.random(), entry = r < 0.6 ? 'run' : r < 0.85 ? 'leap' : 'drop';
-    sc.spawnMob({ art: a, height: fitHeight(a, 0.9 + Math.random() * 0.14), hp: CW.stageMonsterHp(state) / CROWD, entry: entry });
+    sc.spawnMob({ art: a, id: id, height: fitHeight(a, 0.9 + Math.random() * 0.14), hp: CW.stageMonsterHp(state) / CROWD, entry: entry });
   }
   function startBoss() {
     var info = CW.stageInfo(state.stage), R = DATA.regions[info.region];
@@ -118,7 +120,7 @@
     if (!a) { needArt(sb.art); restT = 0.3; state.bossTry = true; return; }
     var name = sb.name;
     // bosses are drawn clearly bigger than the crowd: a stage boss about twice a monster, the region boss more
-    var mob = sc.spawnMob({ art: a, height: fitHeight(a, info.isRegionBoss ? 2.45 : 2.0), hp: CW.stageBossHp(state), boss: true, regionBoss: info.isRegionBoss, name: name });
+    var mob = sc.spawnMob({ art: a, id: sb.art, height: fitHeight(a, info.isRegionBoss ? 2.45 : 2.0), hp: CW.stageBossHp(state), boss: true, regionBoss: info.isRegionBoss, name: name });
     boss = { mob: mob, time: info.timeLimit, info: info, name: name };
     fx.bossEnter(mob, info.isRegionBoss);
     snd.play('boss');
@@ -149,9 +151,19 @@
       if (mob.hp <= 0) onDeath(mob, skill);
     };
   }
+  // monster codex (2026-11-15): the first kill of each kind is written down (stage fights only, never dungeons);
+  // the id is the one meant to appear even when a stand-in picture was shown
+  function dexKill(id) {
+    if (!id || !CW.dexRecord) return;
+    var r = CW.stageInfo(state.stage).region;
+    if (CW.dexRecord(state, id, r, Date.now()) !== 'new') return;
+    if (CW.dexDot) CW.dexDot(true);
+    if (CW.dexRegion(state, r).done) { refreshStats(); ui.toast('「' + DATA.regions[r].name + '」 도감 완성! 공격력·골드 +2%'); }
+  }
   function onDeath(mob, skill) {
     sc.killMob(mob, skill.color, mob.boss);
     var pos = sc.mobPos(mob);
+    if (!dun) dexKill(mob.id);
     if (mob.boss && boss && boss.mob === mob) { bossWin(pos); return; }
     if (dun) { dun.kills++; if (dun.kind === 'gold') { fx.coinPop(pos, 4); flyCoins(pos, 2); } else fx.coinPop(pos, 2); snd.play('kill'); return; }
     var gold = CW.stageGold(state, undefined, st.goldMul) * st.goldMul / CROWD * DATA.balance.killPay;
@@ -420,7 +432,7 @@
     // slider being dragged: show the numbers at that value right away, save when the finger lifts
     previewDamage: function (size, alpha) { sc.setDamageStyle(size / 100, alpha / 100); },
     showDamageSample: function () { var h = sc.heroCenter(); for (var i = 0; i < 3; i++) sc.damageText(h.clone().add(new T.Vector3(0.9 + i * 0.5, 0.6 + i * 0.25, 0)), ['1,234', '5.6만', '78억'][i], i); },
-    reset: function () { CW.clearSave(storage); state = CW.newState(); rot = CW.rotation(state); refreshStats(); clearField(true); region = -1; syncRegion(); sc.setTierAura(1); ui.renderPanel(true); ui.slots(); save(); cloudPush(true); ui.toast('처음부터 다시 시작해요'); },
+    reset: function () { CW.clearSave(storage); state = CW.newState(); if (CW.dexDot) CW.dexDot(false); rot = CW.rotation(state); refreshStats(); clearField(true); region = -1; syncRegion(); sc.setTierAura(1); ui.renderPanel(true); ui.slots(); save(); cloudPush(true); ui.toast('처음부터 다시 시작해요'); },
     storageOk: function () { return !!storage; },
     exportSave: function () { save(); return CW.exportCode(state); },
     importSave: function (code) { var st2 = CW.importCode(code); if (!st2 || !adopt(JSON.stringify(st2))) return false; save(); cloudPush(true); return true; },
@@ -448,6 +460,9 @@
     }
   };
   var ui = CW.createUI(G);
+  // monster codex page (js/dex-ui.js) reads the live state; the 더보기 tab shows a dot while something new is unseen
+  CW.dexState = function () { return state; };
+  if (CW.dexDot) CW.dexDot(CW.dexHasNew(state));
 
   function applySettings() {
     var s = state.settings;
@@ -595,11 +610,12 @@
     }).then(function () { cloud.busy = false; });
   }
   function adopt(json) {
-    var loaded = CW.load({ getItem: function () { return json; } }); if (!loaded) return false; CW.migrateBag(loaded);
+    var loaded = CW.load({ getItem: function () { return json; } }); if (!loaded) return false; CW.migrateBag(loaded); if (CW.dexBackfill) CW.dexBackfill(loaded);
     state = loaded; rot = CW.rotation(state); refreshStats(); pendingTier.length = 0; preview = null;
     clearField(true); region = -1; restT = 0.4;
     if (state.bossTry) { state.bossTry = false; state.stage = Math.max(0, state.stage - 1); state.farming = true; }
     syncRegion(); sc.setTierAura(state.tier); applySettings();
+    if (CW.dexDot) CW.dexDot(CW.dexHasNew(state));
     ui.renderPanel(true); ui.slots(); ui.hud();
     return true;
   }

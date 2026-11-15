@@ -605,7 +605,11 @@
         '<div class="row"><div class="info"><div class="name">처음부터 다시 하기</div><div class="desc">모든 진행이 지워져요</div></div><button class="btn" data-set="reset">다시 하기</button></div>' +
         '</div></details>';
       var jump = '<div class="jump three">' + ['전직', '패키지', '설정'].map(function (t, i) { return '<button data-jump="' + i + '">' + t + '</button>'; }).join('') + '</div>';
-      return jump + tiers + packs + settings;
+      // monster codex (2026-11-15): opens a full-screen page (js/dex-ui.js)
+      var dexHave = 0, dexAll = CW.dexOrder ? CW.dexOrder() : [];
+      dexAll.forEach(function (e) { if (s.dex && s.dex[e.id]) dexHave++; });
+      var dexRow = dexAll.length ? '<div class="list"><div class="row dexrow"><img class="ico" src="' + (CW.ART_BASE || 'art/') + 'dex-book.webp" alt=""><div class="info"><div class="name">몬스터 도감' + (CW.dexHasNew(s) ? ' <span class="lv">NEW</span>' : '') + '</div><div class="desc">발견 ' + dexHave + ' / ' + dexAll.length + ' · 지역을 다 채우면 능력치가 올라요</div></div><button class="btn pri" data-act="dex">열기</button></div></div>' : '';
+      return jump + dexRow + tiers + packs + settings;
     }
     function bottomInside() { try { return localStorage.getItem('cw-bottom') === 'inside'; } catch (e) { return false; } }
     // the last error the game kept going through (main.js noteError), only when there was one: to find what broke
@@ -791,6 +795,7 @@
       else if (d.act === 'rdisall') { confirmBox('모두 분해', '잠금하지 않고 장착하지 않은 룬을 모두 룬석으로 바꿀까요?', '분해하기', function () { var rn2 = G.runeDismantleAll(); toast(rn2 ? '룬석 +' + fmt(rn2) : '분해할 룬이 없어요'); selRune = null; renderPanel(true); }); }
       else if (d.pack) { var pk = CW.packById(d.pack); confirmBox('연습용 구매', pk.name + ' (' + pk.won.toLocaleString('ko-KR') + '원)<br><b>실제 결제 없음 · 연습용</b><br>누르면 바로 들어와요.', '받기', function () { var got = G.buyPack(d.pack); if (got === false) toast(CW.packOpen(G.state, d.pack) !== 'ok' ? '지금은 받을 수 없어요' : '신성력 가방에 자리가 부족해요 (최대 ' + DATA.sigilConf.cap + '개)'); else if (got.gear && got.gear.length) showGacha(got.gear); else if (got.length) showSigils(got, true); else if (pk.give.daily) showDaily(false); else toast(pk.name + '을(를) 받았어요'); renderPanel(true); hud(); }); }
       else if (d.act === 'daily') { showDaily(false); }
+      else if (d.act === 'dex') { if (CW.dexOpen) CW.dexOpen(function () { renderPanel(true); }); }
       else if (d.dockx) { if (d.dockx === 'sg') selSigil = null; else selRune = null; renderPanel(true); }
       else if (d.sgswap) { var sw = d.sgswap.split('|'); if (G.sigilSwap(sw[0], sw[1])) toast('바꿔 꼈어요'); renderPanel(true); }
       else if (d.rswap) { var rw = d.rswap.split('|'); if (G.runeSwap(rw[0], rw[1])) toast('바꿔 꼈어요'); renderPanel(true); }
@@ -959,7 +964,7 @@
       $('gainlog').innerHTML = logLines.map(function (l, i) { return '<div style="opacity:' + Math.max(0.4, 1 - i * 0.15) + '">' + l + '</div>'; }).join('');
     }
     // ---------- stat window (2026-11-14): tap the profile; final stats in groups, each opens to where it comes from; titles ----------
-    var SRC_KO = { growth: '성장(초월)', gear: '장비', relics: '유물', costume: '코스튬', divine: '삼신기', skills: '스킬 모음', training: '훈련', runes: '룬', sigil: '신성력', alchemy: '물약', titles: '타이틀' };
+    var SRC_KO = { growth: '성장(초월)', gear: '장비', relics: '유물', costume: '코스튬', divine: '삼신기', skills: '스킬 모음', training: '훈련', runes: '룬', sigil: '신성력', alchemy: '물약', titles: '타이틀', dex: '도감' };
     // one line = label | value (| second value): the same three columns everywhere, so the numbers line up;
     // its parts (where it comes from) use the same columns: source | what | amount
     function statRow(label, value, keys, by, value2, short) {

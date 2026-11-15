@@ -1470,6 +1470,59 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 .gart.gnew.gx .gimg{filter:drop-shadow(0 0 3px var(--gxc)) drop-shadow(0 0 7px var(--gxc))!important}
 .bcell:has(.gx6){background:radial-gradient(circle at 50% 40%,#0f5a4c,#06201c)}.bcell:has(.gx7){background:radial-gradient(circle at 50% 40%,#6a4c08,#221804)}
 .bcell:has(.gx8){background:radial-gradient(circle at 50% 40%,#3a1a78,#120828)}.bcell:has(.gx9){background:radial-gradient(circle at 50% 40%,#6a0c18,#200408)}
+/* monster codex page (2026-11-15, js/dex-ui.js): pieces of the picture the user sent (art/dex-*.webp), places in % of each piece */
+#dex{position:fixed;inset:0;z-index:19;display:none;background:#f3e6d3;color:#5b3b55;font-family:var(--body)}
+#dex.on{display:block}
+#dex .dxcol{position:absolute;inset:0;max-width:520px;margin:0 auto;display:flex;flex-direction:column;background:#f6ecdc;box-shadow:0 0 30px rgba(60,30,50,.25)}
+#dex img{display:block;width:100%;user-select:none;-webkit-user-select:none}
+#dex button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+#dex .dxhead{position:relative;flex:none;padding-top:env(safe-area-inset-top,0px);background:#efe2f0}
+#dex .dxback{position:absolute;left:3%;top:calc(env(safe-area-inset-top,0px) + 26%);width:9.5%;height:44%}
+#dex .dxbody{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:6px 3.5% calc(14px + env(safe-area-inset-bottom,0px))}
+#dex .dxprog{position:relative;container-type:inline-size}
+#dex .dxcount{position:absolute;left:26.3%;top:10%;font:700 5.4cqw/1.25 var(--body);color:#5b3b55;white-space:nowrap}
+#dex .dxbar{position:absolute;left:26.8%;top:71.5%;height:10.6%;border-radius:99px;background:linear-gradient(90deg,#7c4f8a,#9b6aa8);min-width:2%}
+#dex .dxpct{position:absolute;left:88.5%;top:67%;font:700 3.3cqw/1.2 var(--body)}
+#dex .dxtabs{display:flex;justify-content:space-between;gap:2%;margin:10px 0 6px}
+#dex .dxtabs button{position:relative;width:32%}
+#dex .dxtabs span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 clamp(14px,4.4vw,19px) var(--body);color:#5b3b55}
+#dex .dxtabs .on span{color:#fff}
+#dex .dxreg h4{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;margin:14px 2px 6px;font:700 16px var(--body)}
+#dex .dxrc{font-size:14px;color:#8a6a80}
+#dex .dxrb,#dex .dxdone{flex-basis:100%;font:500 12px var(--body);color:#9a7f90}
+#dex .dxdone{color:#b8862a;font-weight:700}
+#dex .dxreg.done h4 .dxrn::after{content:" ✦";color:#d4a440}
+#dex .dxgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px 3%}
+#dex .dxcard{position:relative;aspect-ratio:288/254;display:block;container-type:inline-size}
+#dex .dxframe{position:absolute;left:0;top:0;width:100%!important;height:100%}
+#dex .fresh .dxframe{left:-2.3%;top:-1.2%;width:105.2%!important;height:102.4%}
+#dex .dxnew{position:absolute;left:66%;top:6.5%;width:27%!important}
+#dex .dxno{position:absolute;left:0;right:0;top:1.8%;text-align:center;font:700 9cqw/1.75 var(--body);color:#6a4a62}
+#dex .dxpic{position:absolute;left:12%;right:12%;top:15%;height:58%;background:center/contain no-repeat;-webkit-mask:center/contain no-repeat;mask:center/contain no-repeat}
+#dex .lock .dxpic{background:#b7a1bf;-webkit-mask-size:contain;mask-size:contain;-webkit-mask-position:center;mask-position:center;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
+#dex .dxlock{position:absolute;left:43%;top:36%;width:14%!important}
+#dex .dxname{position:absolute;left:14%;right:14%;top:78.5%;height:14%;display:flex;align-items:center;justify-content:center;font:700 10.5cqw/1 var(--body);white-space:nowrap;overflow:hidden;letter-spacing:-.05em}
+#dex .dxname.long{font-size:9cqw}
+#dex .dxname.longer{font-size:7.8cqw}
+#dex .dxfoot{width:80%!important;margin:16px auto 0}
+#dex .dxempty{text-align:center;margin:30px 0;color:#9a7f90}
+#dex .dxinfo{position:absolute;inset:0;z-index:2;display:flex;align-items:flex-end;justify-content:center;background:rgba(60,30,60,.25);opacity:0;pointer-events:none;transition:opacity .2s}
+#dex .dxinfo.on{opacity:1;pointer-events:auto}
+#dex .dxsheet{position:relative;container-type:inline-size;width:min(100%,520px);margin-bottom:calc(6px + env(safe-area-inset-bottom,0px));transform:translateY(40px);transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+#dex .dxinfo.on .dxsheet{transform:none}
+#dex .dxx{position:absolute;right:3.5%;top:3%;width:9%;aspect-ratio:1;font:700 6cqw/1 var(--body)!important;color:#8a6a80!important}
+#dex .dxtitle{position:absolute;left:10%;right:14%;top:5.5%;height:12%;display:flex;align-items:center;gap:3%}
+#dex .dxtitle b{font:700 5.4cqw/1.1 var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#dex .dxtitle img{width:16%!important;flex:none}
+#dex .dxbig{position:absolute;left:5%;top:23%;width:37%;height:50%;background:center/contain no-repeat}
+#dex .dxbig.shade{background:#b7a1bf;-webkit-mask:center/contain no-repeat;mask:center/contain no-repeat}
+#dex .dxv{position:absolute;left:69%;right:4%;height:9%;display:flex;align-items:center;font:700 3.5cqw var(--body);white-space:nowrap}
+#dex .dxdate{top:28.5%}
+#dex .dxwhere{top:43.5%}
+#dex .dxnote{position:absolute;left:48%;right:4%;top:56%;font:500 2.6cqw/1.3 var(--body);color:#8a6a80}
+#dex .dxdesc{position:absolute;left:7%;right:7%;top:77.5%;height:10%;display:flex;align-items:center;justify-content:center;gap:2.5%;text-align:center;font:700 3.2cqw/1.15 var(--body)}
+#dex .dxdesc img{width:3.6%!important;flex:none}
+.dexrow .ico{width:40px;height:40px;flex:none;object-fit:contain}
 </style>
 
 <div id="topcap" aria-hidden="true"></div>
@@ -1552,6 +1605,8 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script src="js/dungeon.js"></script>
 <script src="js/runes.js"></script>
 <script src="js/titles.js"></script>
+<script src="js/dex.js"></script>
+<script src="js/dex-text.js"></script>
 <script src="js/sigil.js"></script>
 <script src="js/alchemy.js"></script>
 <script src="js/packs.js"></script>
@@ -1578,6 +1633,7 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script src="js/art-icons.js"></script>
 <script src="js/art-items.js"></script>
 <script src="js/design-cream.js"></script>
+<script src="js/dex-ui.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>
 <script>
