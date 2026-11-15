@@ -84,17 +84,18 @@
       list.push(m);
     }
     function setWant(n, picker) { want = Math.max(0, Math.min(MAX, n | 0)); pick = picker || pick; }
-    // a spell landed at (x, z): every little one within r is knocked away; returns how many and where they were
+    // a spell landed at (x, z): every little one within r is knocked away; returns how many, where they were, and the
+    // top of each one (hits: {x, y, z}) so a damage number can be shown over it (2026-11-16, user: "졸개 대미지도 보여줘")
     function hitArea(x, z, r) {
-      var n = 0, sx = 0, sz = 0;
+      var n = 0, sx = 0, sz = 0, hits = [];
       for (var i = list.length - 1; i >= 0; i--) {
         var m = list[i]; if (m.state === 'in' && Math.abs(m.x) > ctx.halfX(m.z) + 0.2) continue;   // still off screen
         if (!inReach(m.x, m.z, x, z, r)) continue;
-        list.splice(i, 1); n++; sx += m.x; sz += m.z;
+        list.splice(i, 1); n++; sx += m.x; sz += m.z; hits.push({ x: m.x, y: (m.y || 0) + m.h * 0.85, z: m.z });
         var dx = m.x - x, dz = m.z - z, dl = Math.sqrt(dx * dx + dz * dz) || 1, push = rr(2.2, 3.6);
         dying.push({ mesh: m.mesh, h: m.h, w: m.w, x: m.x, y: m.y, z: m.z, face: m.face, vx: dx / dl * push + rr(-0.4, 0.4), vz: dz / dl * push * 0.5, vy: rr(3.2, 5.2), spin: (dx > 0 ? -1 : 1) * rr(7, 13), t: 0, life: rr(0.45, 0.6) });
       }
-      return { n: n, x: n ? sx / n : x, z: n ? sz / n : z };
+      return { n: n, x: n ? sx / n : x, z: n ? sz / n : z, hits: hits };
     }
     // the boss arrives: the little ones run off the screen
     function flee(m) { m.state = 'flee'; m.sp = rr(4, 5.5); m.tx = (m.x >= 0 ? 1 : -1) * (ctx.halfX(m.z) + 3); m.tz = m.z; }

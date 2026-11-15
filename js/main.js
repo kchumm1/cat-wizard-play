@@ -184,7 +184,18 @@
       sc.hitMob(mob, crit, (power || 1) * (1 + 0.25 * Math.max(0, ct - 1)));
       sc.damageText(sc.mobTop(mob), CW.fmt(dmg), ct, hexCss(skill.color));
       // the little ones standing near where it landed are knocked out together, with one shared burst
-      if (mins && !mob.boss) { var mk = mins.hitArea(mob.x, mob.z, 0.8 + 0.25 * Math.min(2, power || 1)); if (mk.n) { fx.minionBurst(new sc.THREE.Vector3(mk.x, 0.3, mk.z), mk.n, skill.color); if (mk.n >= 2) snd.play('kill'); } }
+      if (mins && !mob.boss) {
+        var mk = mins.hitArea(mob.x, mob.z, 0.8 + 0.25 * Math.min(2, power || 1));
+        if (mk.n) {
+          fx.minionBurst(new sc.THREE.Vector3(mk.x, 0.3, mk.z), mk.n, skill.color); if (mk.n >= 2) snd.play('kill');
+          // each little one shows the damage the same spell would deal it, with its own critical roll (2026-11-16, user:
+          // "졸개도 스킬에 맞고 대미지를 몬스터 + 졸개까지 다 보여줘"); they still bring nothing and count for nothing
+          mk.hits.forEach(function (h) {
+            var mt = CW.rollCrit(st), md = CW.hitDamage(st, skill, { boss: false, critTier: mt, even: true }) * (frac === undefined ? 1 : frac) * (mul || 1);
+            sc.damageText(new sc.THREE.Vector3(h.x, h.y, h.z), CW.fmt(md), mt, hexCss(skill.color));
+          });
+        }
+      }
       if (ct >= 3) { sc.shake(Math.min(0.42, 0.08 * ct)); if (ct >= 4) sc.flash(CRIT_FLASH[Math.min(ct, 7)], ct >= 5 ? 0.24 : 0.18); }
       gained.dmg = Math.max(gained.dmg, dmg);
       snd.play(crit ? 'crit' : 'hit');
