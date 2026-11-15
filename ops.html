@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>냥법사 편지 보내기</title>
+<style>
+:root{--bg:#f6efe2;--card:#fffaf1;--ink:#3b2a1e;--soft:#8a6f58;--line:#e3d4bd;--gold:#b7832a;--accent:#7a4bb0;--accent-ink:#fff;--bad:#b23a3a;--ok:#2f7d4f}
+@media (prefers-color-scheme:dark){:root{--bg:#1a1520;--card:#241d2c;--ink:#f1e6d6;--soft:#b9a690;--line:#3d3247;--gold:#e0b25a;--accent:#9d6fd6;--bad:#e07070;--ok:#6fc28f}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;padding:16px 16px calc(24px + env(safe-area-inset-bottom))}
+main{max-width:520px;margin:0 auto}
+h1{font-size:22px;margin:4px 0 2px}
+.lead{color:var(--soft);font-size:14px;margin:0 0 16px}
+section{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+h2{font-size:16px;margin:0 0 12px}
+label{display:block;font-size:14px;color:var(--soft);margin:12px 0 4px}
+input[type=text],input[type=password],input[type=number],input[type=date]{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px}
+.row{display:flex;gap:10px}.row>*{flex:1;min-width:0}
+.seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.seg button{flex:1;border:0;background:transparent;color:var(--ink);font:inherit;padding:10px;min-height:44px}
+.seg button.on{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn{display:block;width:100%;border:0;border-radius:12px;font:inherit;font-weight:700;padding:13px;min-height:48px;margin-top:16px;background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:500}
+.btn:disabled{opacity:.5}
+.hint{font-size:13px;color:var(--soft);margin:6px 0 0}
+.msg{font-size:14px;margin-top:10px;min-height:1em}.msg.bad{color:var(--bad)}.msg.ok{color:var(--ok)}
+.letter{background:var(--bg);border:1px dashed var(--line);border-radius:12px;padding:14px;font-family:"Nanum Myeongjo","AppleMyungjo","Batang",serif;white-space:pre-line;font-size:15px}
+.letter b{display:block;font-size:17px;margin-bottom:6px;font-family:inherit}
+.letter .sign{text-align:right;margin-top:8px}
+.letter .gift{margin-top:10px;color:var(--gold);font-weight:700;font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+.list{list-style:none;padding:0;margin:0}
+.list li{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.list li:first-child{border-top:0}
+.list .t{flex:1;min-width:0}.list .t div{overflow-wrap:anywhere}
+.list small{color:var(--soft);display:block;font-size:12px}
+.list .del{border:1px solid var(--line);background:transparent;color:var(--bad);border-radius:10px;font:inherit;font-size:14px;padding:8px 12px;min-height:40px}
+.hide{display:none}
+details summary{cursor:pointer;color:var(--soft);font-size:14px}
+ol.steps{padding-left:20px;font-size:14px;margin:8px 0}ol.steps li{margin:4px 0}
+</style>
+</head>
+<body>
+<main>
+  <h1>냥법사 편지 보내기</h1>
+  <p class="lead">보내면 사이트의 편지 목록에 들어가요. 1~2분 뒤 게임을 다시 켜면 우편함에 와 있어요.</p>
+
+  <section id="keyBox">
+    <h2>열쇠(토큰)</h2>
+    <div id="keyOn" class="hide"><p class="hint" style="margin:0">이 기기에 열쇠가 저장돼 있어요.</p><button class="btn ghost" id="keyForget">열쇠 지우기</button></div>
+    <div id="keyOff">
+      <label for="key">GitHub 열쇠 붙여 넣기</label>
+      <input id="key" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_...">
+      <p class="hint">열쇠는 이 기기 안에만 저장돼요. 사이트나 게임 파일에는 들어가지 않아요.</p>
+      <details><summary>열쇠 만드는 법</summary>
+        <ol class="steps">
+          <li>github.com 로그인 → 오른쪽 위 사진 → Settings</li>
+          <li>맨 아래 Developer settings → Personal access tokens → Fine-grained tokens → Generate new token</li>
+          <li>이름은 아무거나, 기간(Expiration)은 원하는 만큼</li>
+          <li>Repository access → Only select repositories → <b>cat-wizard-play</b> 하나만</li>
+          <li>Permissions → Repository permissions → <b>Contents</b>를 Read and write</li>
+          <li>Generate token → 나온 글자를 복사해 위에 붙여 넣기</li>
+        </ol>
+      </details>
+      <button class="btn" id="keySave">열쇠 저장</button>
+    </div>
+    <div class="msg" id="keyMsg"></div>
+  </section>
+
+  <section>
+    <h2>새 편지</h2>
+    <label>받는 사람</label>
+    <div class="seg" id="toSeg"><button type="button" data-to="all" class="on">모두</button><button type="button" data-to="pid">우편번호</button></div>
+    <div id="pidBox" class="hide">
+      <label for="pids">우편번호 (여러 명이면 쉼표로)</label>
+      <input id="pids" type="text" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="AB12CD34">
+      <p class="hint">우편번호는 게임 우편함 화면에 보여요.</p>
+    </div>
+    <div class="row">
+      <div><label for="gold">골드 (조)</label><input id="gold" type="number" inputmode="numeric" min="0" max="9999" step="1" placeholder="0"></div>
+      <div><label for="gems">다이아 (개)</label><input id="gems" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></div>
+    </div>
+    <div class="row">
+      <div><label for="from">받을 수 있는 첫날</label><input id="from" type="date"></div>
+      <div><label for="until">마지막 날</label><input id="until" type="date"></div>
+    </div>
+    <label for="sub">목록에 보이는 한 줄</label>
+    <input id="sub" type="text" placeholder="자동으로 채워져요">
+    <label>미리 보기</label>
+    <div class="letter" id="preview"></div>
+    <button class="btn" id="send">보내기</button>
+    <div class="msg" id="sendMsg"></div>
+  </section>
+
+  <section>
+    <h2>보낸 편지</h2>
+    <ul class="list" id="list"><li><span class="t"><small>열쇠를 저장하면 목록이 보여요.</small></span></li></ul>
+    <button class="btn ghost" id="reload">목록 새로 보기</button>
+    <div class="msg" id="listMsg"></div>
+  </section>
+</main>
+<script src="js/mail-ops.js"></script>
+<script>
+(function () {
+  var OWNER = 'kchumm1', REPO = 'cat-wizard-play', FILE = 'mail.json', BRANCH = 'main', KEY = 'cw-ops-token';
+  var API = 'https://api.github.com/repos/' + OWNER + '/' + REPO + '/contents/' + FILE;
+  var $ = function (id) { return document.getElementById(id); };
+  var toAll = true, subTouched = false;
+  function token() { try { return localStorage.getItem(KEY) || ''; } catch (e) { return ''; } }
+  function say(id, text, kind) { var m = $(id); m.textContent = text || ''; m.className = 'msg' + (kind ? ' ' + kind : ''); }
+
+  // base64 <-> UTF-8 (the letters are Korean)
+  function fromB64(b) { var bin = atob(b.replace(/\s/g, '')), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new TextDecoder().decode(u); }
+  function toB64(s) { var u = new TextEncoder().encode(s), bin = ''; for (var i = 0; i < u.length; i += 0x8000) bin += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(bin); }
+
+  function why(r) {
+    if (r.status === 401) return '열쇠가 맞지 않거나 기간이 끝났어요. 열쇠를 지우고 새로 넣어 주세요.';
+    if (r.status === 403 || r.status === 404) return '이 열쇠로는 cat-wizard-play를 고칠 수 없어요(Contents: Read and write 권한 확인).';
+    return 'GitHub 응답 오류 (' + r.status + ')';
+  }
+  function load() {
+    return fetch(API + '?ref=' + BRANCH + '&t=' + Date.now(), { headers: { Authorization: 'Bearer ' + token(), Accept: 'application/vnd.github+json' }, cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error(why(r)); return r.json(); })
+      .then(function (j) { return { sha: j.sha, doc: JSON.parse(fromB64(j.content)) }; });
+  }
+  function save(change, message, tries) {
+    tries = tries || 0;
+    return load().then(function (cur) {
+      var doc = change(cur.doc);
+      return fetch(API, { method: 'PUT', headers: { Authorization: 'Bearer ' + token(), Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: message, content: toB64(CW.mailText(doc)), sha: cur.sha, branch: BRANCH }) })
+        .then(function (r) {
+          if ((r.status === 409 || r.status === 422) && tries < 2) return save(change, message, tries + 1); // someone saved in between
+          if (!r.ok) throw new Error(why(r));
+          return doc;
+        });
+    });
+  }
+
+  // ---- token
+  function showKey() { var on = !!token(); $('keyOn').classList.toggle('hide', !on); $('keyOff').classList.toggle('hide', on); }
+  $('keySave').onclick = function () {
+    var t = $('key').value.trim(); if (!t) return say('keyMsg', '열쇠를 붙여 넣어 주세요.', 'bad');
+    try { localStorage.setItem(KEY, t); } catch (e) { return say('keyMsg', '이 브라우저에 저장할 수 없어요(개인 정보 보호 모드?).', 'bad'); }
+    $('key').value = ''; showKey(); say('keyMsg', '확인하는 중…');
+    load().then(function (cur) { say('keyMsg', '열쇠가 잘 맞아요.', 'ok'); draw(cur.doc); })
+      .catch(function (e) { say('keyMsg', e.message, 'bad'); });
+  };
+  $('keyForget').onclick = function () { if (!confirm('이 기기에서 열쇠를 지울까요?')) return; try { localStorage.removeItem(KEY); } catch (e) {} showKey(); say('keyMsg', '열쇠를 지웠어요.'); };
+
+  // ---- form
+  $('toSeg').onclick = function (e) { var b = e.target.closest('button'); if (!b) return; toAll = b.dataset.to === 'all';
+    [].forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); }); $('pidBox').classList.toggle('hide', toAll); preview(); };
+  function form() { return { toAll: toAll, toText: $('pids').value, goldJo: $('gold').value === '' ? 0 : +$('gold').value, gems: $('gems').value === '' ? 0 : +$('gems').value, from: $('from').value, until: $('until').value, sub: $('sub').value }; }
+  function preview() {
+    var f = form();
+    if (!subTouched) $('sub').value = CW.rewardSub(f.goldJo, f.gems);
+    var gift = []; if (f.goldJo > 0) gift.push('골드 ' + CW.countText(f.goldJo) + '조'); if (f.gems > 0) gift.push('다이아 ' + CW.countText(f.gems) + '개');
+    var p = $('preview'); p.textContent = '';
+    var b = document.createElement('b'); b.textContent = '모험 응원 선물'; p.appendChild(b);
+    p.appendChild(document.createTextNode(CW.GIFT_TEXT));
+    var s = document.createElement('div'); s.className = 'sign'; s.textContent = '냥법사 운영팀 드림'; p.appendChild(s);
+    var g = document.createElement('div'); g.className = 'gift'; g.textContent = gift.length ? '선물: ' + gift.join(' · ') : '선물: (아직 없음)'; p.appendChild(g);
+  }
+  ['gold', 'gems', 'pids', 'from', 'until'].forEach(function (id) { $(id).addEventListener('input', preview); });
+  $('sub').addEventListener('input', function () { subTouched = $('sub').value.trim() !== ''; });
+  $('from').value = CW.kstDay(); $('until').value = CW.kstDay(Date.now(), 30);
+  preview();
+
+  $('send').onclick = function () {
+    if (!token()) return say('sendMsg', '먼저 위에서 열쇠를 저장해 주세요.', 'bad');
+    var f = form(), err = CW.mailCheck(f); if (err) return say('sendMsg', err, 'bad');
+    var l = CW.mailMake(f);
+    var who = l.to === 'all' ? '모두' : l.to.join(', ');
+    if (!confirm('보낼까요?\n받는 사람: ' + who + '\n선물: ' + CW.rewardSub(l.goldJo, l.gems) + '\n받을 수 있는 날: ' + (l.from || l.date) + ' ~ ' + (l.until || '계속'))) return;
+    $('send').disabled = true; say('sendMsg', '보내는 중…');
+    save(function (doc) { return CW.mailAdd(doc, l); }, '운영자 편지: ' + l.sub)
+      .then(function (doc) { say('sendMsg', '보냈어요! 1~2분 뒤 게임을 다시 켜면 우편함에 와 있어요.', 'ok'); $('gold').value = ''; $('gems').value = ''; $('pids').value = ''; subTouched = false; $('sub').value = ''; preview(); draw(doc); })
+      .catch(function (e) { say('sendMsg', '못 보냈어요: ' + e.message, 'bad'); })
+      .then(function () { $('send').disabled = false; });
+  };
+
+  // ---- list
+  function draw(doc) {
+    var ul = $('list'); ul.textContent = '';
+    var letters = (doc && doc.letters) || [];
+    if (!letters.length) { var li0 = document.createElement('li'); li0.innerHTML = '<span class="t"><small>편지가 없어요.</small></span>'; ul.appendChild(li0); return; }
+    letters.forEach(function (l) {
+      var li = document.createElement('li'), t = document.createElement('span'); t.className = 't';
+      var top = document.createElement('div'); top.textContent = (l.title || '') + ' · ' + (l.sub || '');
+      var info = document.createElement('small');
+      var gift = []; if (+l.goldJo > 0) gift.push('골드 ' + CW.countText(l.goldJo) + '조'); if (+l.gems > 0) gift.push('다이아 ' + CW.countText(l.gems) + '개');
+      info.textContent = (l.date || '') + ' · ' + (l.to === 'all' ? '모두' : (Array.isArray(l.to) ? l.to.join(', ') : '')) + (gift.length ? ' · ' + gift.join(' · ') : ' · 공지') + (l.until ? ' · ~' + l.until : '');
+      t.appendChild(top); t.appendChild(info); li.appendChild(t);
+      var d = document.createElement('button'); d.className = 'del'; d.textContent = '지우기';
+      d.onclick = function () {
+        if (!confirm('「' + (l.sub || l.title) + '」 편지를 지울까요?\n아직 안 받은 사람은 더 못 받아요. 이미 받은 사람의 선물은 그대로예요.')) return;
+        d.disabled = true; say('listMsg', '지우는 중…');
+        save(function (doc) { return CW.mailRemove(doc, l.id); }, '운영자 편지 지우기: ' + (l.sub || l.id))
+          .then(function (doc) { say('listMsg', '지웠어요.', 'ok'); draw(doc); })
+          .catch(function (e) { d.disabled = false; say('listMsg', '못 지웠어요: ' + e.message, 'bad'); });
+      };
+      li.appendChild(d); ul.appendChild(li);
+    });
+  }
+  $('reload').onclick = function () { if (!token()) return say('listMsg', '먼저 열쇠를 저장해 주세요.', 'bad'); say('listMsg', '불러오는 중…');
+    load().then(function (cur) { say('listMsg', ''); draw(cur.doc); }).catch(function (e) { say('listMsg', e.message, 'bad'); }); };
+
+  showKey();
+  if (token()) load().then(function (cur) { draw(cur.doc); }).catch(function (e) { say('listMsg', e.message, 'bad'); });
+})();
+</script>
+</body>
+</html>
