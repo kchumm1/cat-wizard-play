@@ -424,7 +424,7 @@
       superPerLevel: 0.004, ultraPerLevel: 0.003, hyperPerLevel: 0.002, superDmg: 3, ultraDmg: 4, hyperDmg: 5,
       megaPerLevel: 0.002, ultimatePerLevel: 0.0015, alphaPerLevel: 0.001, megaDmg: 6, ultimateDmg: 7, alphaDmg: 8, highDmgPerLevel: 0.05,
       skillUpBase: 150, skillOwnedPer: 0.01, skillUpGrowth: 1.6, skillLvBonus: 0.1, skillMaxLv: 50,
-      levelMax: 800, levelXpBase: 40, levelXpPow: 2, levelXpStage: 1.004, levelAtk: 0.004, levelBossXp: 30, levelGems: 20
+      levelMax: 800, levelXpBase: 40, levelXpPow: 2, levelXpStage: 1.004, levelXpPerDiff: 100, levelAtk: 0.004, levelBossXp: 30, levelGems: 20
     }
   };
   return { DATA: DATA };

@@ -4,7 +4,8 @@
   var DATA = (isNode ? require('./data.js') : root.CW).DATA;
   var B = DATA.balance;
   function xpNeed(lv) { return Math.round(B.levelXpBase * Math.pow(lv, B.levelXpPow)); }
-  function effStage(state) { return (state.stage || 0) + 310 * (state.diff || 0); }
+  // a harder difficulty counts as levelXpPerDiff more stages for experience (100: about 1.5x each; was 310 = 3.4x, 2026-11-15)
+  function effStage(state) { return (state.stage || 0) + B.levelXpPerDiff * (state.diff || 0); }
   function killXp(state) { var e = effStage(state); return (3 + e / 10) * Math.pow(B.levelXpStage, e); }
   function bossXp(state) { return killXp(state) * B.levelBossXp; }
   // returns { levels, gems } gained
