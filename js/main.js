@@ -6,6 +6,9 @@
   var storage = null;
   try { storage = root.localStorage; storage.setItem('cw-probe', '1'); storage.removeItem('cw-probe'); } catch (e) { storage = null; }
   var state = CW.migrateBag(CW.load(storage) || CW.newState());
+  // 체험판 (js/friend.js): a save brought in from a full game keeps at most the 9th job
+  function friendCap(s) { if (CW.FRIEND && s && s.tier > CW.FRIEND_MAX_TIER) s.tier = CW.FRIEND_MAX_TIER; return s; }
+  friendCap(state);
   // monster codex (2026-11-15): an old save gets its codex filled once from how far it went
   if (CW.dexBackfill) CW.dexBackfill(state);
   var params = new URLSearchParams(location.search);
@@ -402,7 +405,7 @@
     transcend: function (k) { var ok = CW.transcend(state, k); if (ok) { refreshStats(); snd.play('tier'); fx.levelUp(state.tier, 0xffd84a, true); save(); } return ok; },
     brew: function (id) { var ok = CW.brew(state, id, Date.now()); if (ok) { refreshStats(); buffKey = CW.buffKey(state); snd.play('win'); save(); } return ok; },
     runeGradeUp: function (id) { var ok = CW.runeGradeUp(state, id); if (ok) { refreshStats(); snd.play('tier'); fx.levelUp(state.tier, 0xb58cff, true); save(); } return ok; },
-    buyPack: function (id) { var got = CW.buyPack(state, id); if (got !== false) { refreshStats(); snd.play('win'); save(); } return got; },
+    buyPack: function (id) { if (CW.FRIEND) return false; var got = CW.buyPack(state, id); if (got !== false) { refreshStats(); snd.play('win'); save(); } return got; },
     // the phone's own date (the daily gems reset at its midnight)
     dayKey: function () { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); },
     dailyView: function () { return CW.dailyView(state, G.dayKey()); },
@@ -444,7 +447,7 @@
     sweep: function (kind) { var r = CW.sweep(state, kind, Date.now()); if (r) { refreshStats(); snd.play('win'); save(); } return r; },
     dunState: function () { return dun ? { kind: dun.kind, t: dun.t, kills: dun.kills, dmg: dun.dmg, name: dun.def.name, level: dun.kind === 'mana' ? CW.golemLevel(state, dun.dmg) : 0 } : null; },
     pull: function (n) { var items = CW.pull(state, n); if (items) { refreshStats(); save(); } return items; },
-    buy: function (i) { var g = CW.buy(state, i); save(); return g; },
+    buy: function (i) { if (CW.FRIEND) return 0; var g = CW.buy(state, i); save(); return g; },
     goStage: function (i) {
       if (dun) return false;
       if (!CW.goStage(state, i)) return false;
@@ -638,7 +641,7 @@
   }
   function adopt(json) {
     var loaded = CW.load({ getItem: function () { return json; } }); if (!loaded) return false; CW.migrateBag(loaded); if (CW.dexBackfill) CW.dexBackfill(loaded);
-    state = loaded; rot = CW.rotation(state); refreshStats(); pendingTier.length = 0; preview = null;
+    state = friendCap(loaded); rot = CW.rotation(state); refreshStats(); pendingTier.length = 0; preview = null;
     clearField(true); region = -1; restT = 0.4;
     if (state.bossTry) { state.bossTry = false; state.stage = Math.max(0, state.stage - 1); state.farming = true; }
     syncRegion(); sc.setTierAura(state.tier); applySettings();

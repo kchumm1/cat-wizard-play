@@ -560,7 +560,7 @@
       }).join('') + '</div>';
       var table = '<details style="margin-top:12px"><summary class="note" style="cursor:pointer">확률 보기</summary><div class="tablewrap"><table class="prob"><tr><th>레벨</th>' + DATA.grades.map(function (g) { return '<th style="color:' + g.color + '">' + g.name + '</th>'; }).join('') + '</tr>' +
         DATA.gacha.table.map(function (r, i) { return '<tr style="' + (i + 1 === lv ? 'color:var(--gold)' : '') + '"><td>' + (i + 1) + ' (' + L[i] + '회~)</td>' + DATA.grades.map(function (g, gi) { return '<td>' + (r[gi] || 0) + '%</td>'; }).join('') + '</tr>'; }).join('') + '</table></div></details>';
-      return '<div class="artban ab-gacha" aria-hidden="true"></div><h3>장비 뽑기</h3>' + head + pulls + table + '<p class="note" style="margin-top:10px">다이아가 부족하면 더보기 → 패키지에서 받을 수 있어요(연습용).</p>';
+      return '<div class="artban ab-gacha" aria-hidden="true"></div><h3>장비 뽑기</h3>' + head + pulls + table + (CW.FRIEND ? '' : '<p class="note" style="margin-top:10px">다이아가 부족하면 더보기 → 패키지에서 받을 수 있어요(연습용).</p>');
     }
     // 더보기: three parts only (2026-11-14): 전직 (when each job opens), 패키지 (everything for sale, practice only),
     // 설정 (how the game looks and plays; the rows for finding problems are folded away). Difficulty and going back to
@@ -575,12 +575,12 @@
           (nSkills ? ' · 스킬 ' + nSkills + '개' + (sk ? ' (' + sk.name + ' 등)' : '') : '') + '</div></div></div>';
       };
       var tiers = '<h3>전직</h3><div class="list">' + DATA.tiers.map(function (t, i) {
-        var n = i + 1; return tierRow(n, t.name, t.skill && CW.skillById(t.skill), DATA.skills.filter(function (x) { return x.tier === n; }).length, false);
+        var n = i + 1, shut = CW.FRIEND && n > CW.FRIEND_MAX_TIER; return tierRow(n, t.name, shut ? null : t.skill && CW.skillById(t.skill), shut ? 0 : DATA.skills.filter(function (x) { return x.tier === n; }).length, shut);
       }).join('') + (DATA.tierSoon || []).map(function (t) { return tierRow(t.n, t.name, null, 0, true); }).join('') + '</div>';
       var won = function (v) { return v.toLocaleString('ko-KR') + '원'; };
       var gems = '<div class="subh">다이아</div><div class="shop">' + DATA.shop.map(function (p, i) {
         var first = !s.firstBuy[i];
-        return '<div class="prod">' + (first ? '<span class="tag">첫 구매 2배</span>' : '') + '<div class="amt"><i class="gem"></i>' + fmt(p.gems * (first ? 2 : 1)) + '</div><div class="note">' + p.name + '</div><button class="buy gemb" data-shop="' + i + '">' + won(p.won) + '</button></div>';
+        return '<div class="prod">' + (first ? '<span class="tag">첫 구매 2배</span>' : '') + '<div class="amt"><i class="gem"></i>' + fmt(p.gems * (first ? 2 : 1)) + '</div><div class="note">' + p.name + '</div>' + (CW.FRIEND ? '<button class="buy" disabled style="opacity:.5;filter:grayscale(1)">체험판</button>' : '<button class="buy gemb" data-shop="' + i + '">' + won(p.won) + '</button>') + '</div>';
       }).join('') + '</div>';
       var packLines = function (g) {
         var lines = [];
@@ -597,7 +597,8 @@
       };
       var packRow = function (p) {
         var why = CW.packOpen(s, p.id), times = (s.packs || {})[p.id] || 0, btn;
-        if (why === 'ok') btn = '<button class="buy gemb" data-pack="' + p.id + '">' + won(p.won) + '</button>';
+        if (CW.FRIEND) btn = '<button class="buy" disabled style="opacity:.5;filter:grayscale(1)">체험판</button>';
+        else if (why === 'ok') btn = '<button class="buy gemb" data-pack="' + p.id + '">' + won(p.won) + '</button>';
         else if (why === 'tier') btn = '<button class="buy" disabled>' + p.need.tier + '차부터</button>';
         else if (why === 'limit') btn = '<button class="buy" disabled>받음</button>';
         else btn = '<button class="buy" disabled>받는 중</button>';
@@ -609,7 +610,7 @@
         return '<div class="pack"><div class="picon">' + mi('pack', p) + '</div><div class="info"><div class="name">' + p.name + (times && !p.limit && !p.give.daily ? ' <span class="lv">' + times + '번 받음</span>' : '') + '</div><div class="desc">' + packLines(p.give) + '</div>' + extra + '</div>' + btn + '</div>';
       };
       var SECTIONS = [['daily', '매일 다이아'], ['grow', '성장'], ['gear', '장비 뽑기'], ['tier', '전직 축하 (한 번만)'], ['rune', '룬·신성력']];
-      var packs = '<h3>패키지</h3><div class="notice">실제 결제 없음 · 연습용 · 누르면 바로 받아요</div>' + gems + SECTIONS.map(function (sec) {
+      var packs = '<h3>패키지</h3><div class="notice">' + (CW.FRIEND ? '체험판이라 다이아와 패키지는 받을 수 없어요' : '실제 결제 없음 · 연습용 · 누르면 바로 받아요') + '</div>' + gems + SECTIONS.map(function (sec) {
         return '<div class="subh">' + sec[1] + '</div><div class="packs">' + DATA.packs.filter(function (p) { return p.cat === sec[0]; }).map(packRow).join('') + '</div>';
       }).join('');
       var st = s.settings;
@@ -624,15 +625,15 @@
         '<div class="row"><div class="info"><div class="name">보스 자동 도전</div><div class="desc">끄면 도전 버튼을 눌러야 보스가 나와요</div></div><button class="btn" data-set="autoBoss">' + (st.autoBoss === false ? '꺼짐' : '켜짐') + '</button></div>' +
         // only in an iPhone home-screen app whose page lies under the clock (an icon added the old way), where the page
         // may be stretched to the screen (tools/build-site.cjs)
-        (root.__cwFit && document.documentElement.classList.contains('under') ? '<div class="row"><div class="info"><div class="name">아래 메뉴</div><div class="desc">아래 메뉴가 잘리면 안쪽으로 바꿔 주세요</div></div><button class="btn" data-set="bottomFit">' + (bottomInside() ? '안쪽' : '맨 아래') + '</button></div>' : '') +
-        '<div class="row"><div class="info"><div class="name">진행 옮기기</div><div class="desc">다른 기기(아이폰·갤럭시)로 옮길 때: 코드를 복사해서 다른 기기의 "코드 넣기"에 붙여요</div></div><div class="sbtns"><button class="btn" data-act="savecopy">코드 복사</button><button class="btn" data-act="savepaste">코드 넣기</button></div></div>' +
+        (!CW.FRIEND && root.__cwFit && document.documentElement.classList.contains('under') ? '<div class="row"><div class="info"><div class="name">아래 메뉴</div><div class="desc">아래 메뉴가 잘리면 안쪽으로 바꿔 주세요</div></div><button class="btn" data-set="bottomFit">' + (bottomInside() ? '안쪽' : '맨 아래') + '</button></div>' : '') +
+        (CW.FRIEND ? '' : '<div class="row"><div class="info"><div class="name">진행 옮기기</div><div class="desc">다른 기기(아이폰·갤럭시)로 옮길 때: 코드를 복사해서 다른 기기의 "코드 넣기"에 붙여요</div></div><div class="sbtns"><button class="btn" data-act="savecopy">코드 복사</button><button class="btn" data-act="savepaste">코드 넣기</button></div></div>') +
         (G.storageOk() ? '' : '<p class="note">이 브라우저에서는 저장이 안 돼요. 창을 닫으면 진행이 사라져요.</p>') + '</div>' +
-        '<details class="fold"><summary>문제 확인용</summary><div class="list">' +
+        (CW.FRIEND ? '' : '<details class="fold"><summary>문제 확인용</summary><div class="list">' +
         '<div class="row"><div class="info"><div class="name">게임 버전</div><div class="desc">새 버전이 나오면 앱을 다시 열 때 바뀌어요</div></div><b class="appver" id="appVer">' + appVersion() + '</b></div>' +
         lastErrorRow() + hitchRow() +
         '<div class="row"><div class="info"><div class="name">화면 높이</div><div class="desc" id="scrInfo">' + screenInfo() + '</div></div></div>' +
         '<div class="row"><div class="info"><div class="name">처음부터 다시 하기</div><div class="desc">모든 진행이 지워져요</div></div><button class="btn" data-set="reset">다시 하기</button></div>' +
-        '</div></details>';
+        '</div></details>');
       // each button shows only its own part (2026-11-15: they used to scroll down one long page of all three)
       var jump = '<div class="jump three" role="tablist">' + ['전직', '패키지', '설정'].map(function (t, i) { return '<button role="tab" aria-selected="' + (i === moreSub) + '" data-jump="' + i + '">' + t + '</button>'; }).join('') + '</div>';
       return jump + [tiers, packs, settings][moreSub];
@@ -867,6 +868,7 @@
       else if (d.rkf) { rnFilter = d.rkf; renderPanel(true); }
       else if (d.act === 'rbest') { G.runeEquipBest(); toast('가장 좋은 룬으로 장착했어요'); renderPanel(true); }
       else if (d.act === 'rdisall') { confirmBox('모두 분해', '잠금하지 않고 장착하지 않은 룬을 모두 룬석으로 바꿀까요?', '분해하기', function () { var rn2 = G.runeDismantleAll(); toast(rn2 ? '룬석 +' + fmt(rn2) : '분해할 룬이 없어요'); selRune = null; renderPanel(true); }); }
+      else if (d.pack && CW.FRIEND) { toast('체험판에서는 받을 수 없어요'); }
       else if (d.pack) { var pk = CW.packById(d.pack); confirmBox('연습용 구매', pk.name + ' (' + pk.won.toLocaleString('ko-KR') + '원)<br><b>실제 결제 없음 · 연습용</b><br>누르면 바로 들어와요.', '받기', function () { var got = G.buyPack(d.pack); if (got === false) toast(CW.packOpen(G.state, d.pack) !== 'ok' ? '지금은 받을 수 없어요' : '신성력 가방에 자리가 부족해요 (최대 ' + DATA.sigilConf.cap + '개)'); else if (got.gear && got.gear.length) showGacha(got.gear); else if (got.length) showSigils(got, true); else if (pk.give.daily) showDaily(false); else toast(pk.name + '을(를) 받았어요'); renderPanel(true); hud(); }); }
       else if (d.act === 'daily') { showDaily(false); }
       else if (d.dockx) { if (d.dockx === 'sg') selSigil = null; else selRune = null; renderPanel(true); }
@@ -890,6 +892,7 @@
       else if (d.act === 'best') { G.equipBest(); toast('가장 높은 장비로 장착했어요'); renderPanel(true); }
       else if (d.act === 'merge') { var n = G.mergeAll(); toast(n ? '장비 ' + n + '개를 합성했어요' : '합성할 장비가 없어요'); renderPanel(true); }
       else if (d.pull) { var n2 = +d.pull, items = G.pull(n2); if (!items) toast('다이아가 부족해요'); else { showGacha(items); renderPanel(true); hud(); } }
+      else if (d.shop !== undefined && CW.FRIEND) { toast('체험판에서는 받을 수 없어요'); }
       else if (d.shop !== undefined) { var p = DATA.shop[+d.shop]; confirmBox('연습용 구매', p.name + ' (' + p.won.toLocaleString('ko-KR') + '원)<br><b>실제 결제 없음 · 연습용</b><br>누르면 다이아가 바로 들어와요.', '받기', function () { var g = G.buy(+d.shop); toast('다이아 ' + fmt(g) + '개를 받았어요'); renderPanel(true); hud(); }); }
       else if (d.go !== undefined) { if (G.goStage(+d.go)) { toast(CW.stageLabel(+d.go) + '(으)로 이동했어요'); renderPanel(true); } }
       else if (d.act === 'savecopy') {
@@ -897,6 +900,7 @@
         var show = function () { modal('<h2>저장 코드</h2><p class="note">아래 글자를 전부 길게 눌러 복사해 주세요.</p><textarea class="codebox" readonly>' + code + '</textarea>', [{ label: '닫기', pri: true }]); var ta = $('modalCard').querySelector('textarea'); ta.focus(); ta.select(); };
         try { navigator.clipboard.writeText(code).then(done, show); } catch (err) { show(); }
       }
+      else if (d.act === 'savepaste' && CW.FRIEND) { toast('체험판에서는 쓸 수 없어요'); }
       else if (d.act === 'savepaste') {
         modal('<h2>저장 코드 넣기</h2><p class="note">다른 기기에서 복사한 코드를 붙여 넣으세요. 지금 이 기기의 진행은 코드의 진행으로 바뀌어요.</p><textarea class="codebox" placeholder="CW1:로 시작하는 코드"></textarea>',
           [{ label: '취소' }, { label: '불러오기', pri: true, fn: function () { var v = $('modalCard').querySelector('textarea').value; if (G.importSave(v)) toast('진행을 불러왔어요'); else toast('코드가 맞지 않아요. 처음부터 끝까지 다 복사했는지 확인해 주세요'); } }]);

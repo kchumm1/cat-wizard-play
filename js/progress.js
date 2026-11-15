@@ -37,7 +37,7 @@
   var TIER10 = { diff: 2, region: 4 };
   function trialTier(i, diff) {
     var info = stageInfo(i); if (!info.isRegionBoss) return 0;
-    if ((diff || 0) === TIER10.diff && info.region === TIER10.region) return 10;
+    if ((diff || 0) === TIER10.diff && info.region === TIER10.region) return root.CW && root.CW.FRIEND ? 0 : 10; // 체험판: no 10th job (js/friend.js)
     return info.region < 8 ? info.region + 2 : 0;
   }
   // a job trial: beating this boss would still raise the tier (shown as "전직 시험"; once the job is reached it is a
@@ -47,6 +47,7 @@
   function tierNeed(n) {
     if (n <= 1) return '처음부터';
     if (n <= 9) return (n - 1) + '-31 보스를 이기면';
+    if (n === 10 && root.CW && root.CW.FRIEND) return '체험판에서는 열리지 않아요';
     if (n === 10) return DATA.difficulties[TIER10.diff].name + ' ' + (TIER10.region + 1) + '-31 보스를 이기면';
     var soon = (DATA.tierSoon || []).filter(function (t) { return t.n === n; })[0];
     return soon ? DATA.difficulties[soon.diff].name + ' 10-31 보스를 이기면' : '';
