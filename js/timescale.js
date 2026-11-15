@@ -7,8 +7,8 @@
   var MAX_DEPTH = 0.7, HIT_GAP = 0.22, MAX_DIPS = 32;
   // slow motion and climaxes share one gap: with four high skills cast again and again (iPhone, 2026-11-16) they fired
   // 10+ times in 8 s and the game was slowed 7-8 s of every 8, which looked like stuttering although 57-60 frames were
-  // drawn. Now one every 3 s; the stage-clear one (deep, s <= 0.3) always goes through.
-  var SLOW_GAP = 3;
+  // drawn. Now one every 5 s (3 s at first, 5 s by choice 2026-11-16); the stage-clear one (deep, s <= 0.3) always goes through.
+  var SLOW_GAP = 5;
   function createTimeScale() {
     var clock = 0, lastStop = -9, lastSlow = -9, dips = [];
     function dip(depth, dur) {
