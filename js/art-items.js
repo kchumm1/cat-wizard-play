@@ -29,7 +29,7 @@
       : NEW_PICS.indexOf(real) >= 0 ? src('gi-' + kind + '-' + real) : gearPic(kind, real);
     grade = clamp(grade, 0, 5);
     // the drawn staff icon already carries the grade glow, the I~IV marks and the shine: keep those, swap the picture
-    return gear0('staff', grade, sub).replace('class="gart ', 'class="gart gnew ' + (real > 5 ? 'gx gx' + real + ' ' : ''))
+    return gear0('staff', grade, sub).replace('class="gart ', 'class="gart gnew ' + (real > 5 ? 'gx gx' + real + ' gk-' + kind + ' ' : ''))
       .replace(/<svg class="ico gstaff"[\s\S]*?<\/svg>/, '<img class="gimg gpic" src="' + pic + '" alt="" draggable="false">');
   };
   if (CW.GEAR_IMG) KINDS.forEach(function (k) { CW.GEAR_IMG[k] = gearPic(k, 1); });
@@ -81,6 +81,8 @@
       '.gart.gnew.g5 .gimg.gpic{filter:drop-shadow(0 0 5px rgba(255,80,110,.85))!important}' +
       // 혼돈·멸망 pictures are detailed and thin (the user, 2026-11-15: "too small"): they fill nearly the whole cell
       '.gart.gnew.gx8 .gimg.gpic,.gart.gnew.gx9 .gimg.gpic{left:2%!important;top:2%!important;width:96%!important;height:96%!important}' +
+      // the staff leans to the upper right: moved a little that way so it sits in the middle of the cell (the user, 2026-11-15)
+      '.gart.gnew.gk-staff.gx8 .gimg.gpic,.gart.gnew.gk-staff.gx9 .gimg.gpic{left:7%!important;top:-3%!important}' +
       '.ico.sgpic{position:relative}' +
       '.ico.sgpic>img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;-webkit-user-drag:none;user-select:none}' +
       '.ico.sgpic .sgmark{position:absolute;left:-8%;bottom:-6%;width:42%;height:42%;overflow:visible;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.6))}';
