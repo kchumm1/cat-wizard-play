@@ -1743,6 +1743,49 @@ html.fullh #prof{position:absolute;bottom:auto;height:var(--apph)}
 #sheet .slist.tighter .hpbox{padding:0 5px 0 3px}
 #sheet .slist.tighter .sgo{font-size:12px}
 #sheet .slist.tighter .sname{font-size:13px}
+/* 2026-11-15 돌아왔어요 (offline reward) popup, the user's picture art-src/away-20261115: lavender-rimmed cream card, the cat
+   hugging the coin bag over a lavender dome, purple badge, time pill, gold + experience cards, purple button; it moves */
+#modalCard.away{position:relative;overflow:visible;width:min(372px,100%);margin-top:clamp(110px,30vw,150px);padding:16px 18px 18px;border-radius:30px;background:#FDF1E7;box-shadow:inset 0 0 0 7px #E8C4E9,inset 0 0 0 8.5px #F3DCEC,0 0 0 2px #45283F,0 14px 36px rgba(20,6,18,.55);animation:awpop .5s cubic-bezier(.2,1.4,.4,1) both}
+.modal:has(#modalCard.away){background:rgba(30,12,28,.8)}
+#modalCard.away .awtop{position:absolute;left:0;right:0;top:0;height:0;pointer-events:none}
+#modalCard.away .awdome{position:absolute;left:50%;bottom:-2px;width:74%;height:118px;transform:translateX(-50%);border-radius:50% 50% 0 0/100% 100% 0 0;background:linear-gradient(180deg,#D9A6E8,#E2B8EC 70%,#E8C4E9);box-shadow:0 -6px 18px rgba(220,168,233,.45);animation:awglow 2.8s ease-in-out infinite}
+#modalCard.away .awcat{position:absolute;left:50%;bottom:-38px;width:min(250px,64vw);transform:translateX(-50%);transform-origin:50% 100%;filter:drop-shadow(0 6px 6px rgba(70,30,90,.25));animation:awhop .7s .1s cubic-bezier(.25,1.5,.4,1) both,awbreath 2.6s .8s ease-in-out infinite}
+#modalCard.away .awsp{position:absolute;width:20px;height:20px;background:#FCE39A;clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);animation:awtw 1.8s ease-in-out infinite}
+#modalCard.away .awsp.s1{left:17%;bottom:72px}#modalCard.away .awsp.s2{right:16%;bottom:80px;animation-delay:.6s}
+#modalCard.away .awsp.s3{left:11%;bottom:36px;width:13px;height:13px;background:#B98BEA;animation-delay:1.1s}#modalCard.away .awsp.s4{right:11%;bottom:44px;width:13px;height:13px;background:#B98BEA;animation-delay:.3s}
+#modalCard.away .awbody{position:relative;padding-top:30px}
+#modalCard.away .awbadge{display:inline-block;padding:4px 16px;border-radius:999px;background:#AA81BA;color:#F7EEEF;font:700 13px var(--body);letter-spacing:.04em;box-shadow:inset 0 0 0 1px #9A70AB}
+#modalCard.away h2{margin:6px 0 0;font:400 42px/1.05 var(--display);color:#623154;letter-spacing:.01em}
+#modalCard.away p{margin:4px 0 8px;color:#87666D;font:600 14px var(--body)}
+#modalCard.away .awtime{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:999px;background:#F3E3D6;color:#7A5F62;font:700 13px var(--body)}
+#modalCard.away .awtime i{width:13px;height:13px;border:2px solid currentColor;border-radius:50%;position:relative;box-sizing:border-box}
+#modalCard.away .awtime i::after{content:"";position:absolute;left:50%;top:1px;width:2px;height:4.5px;background:currentColor;box-shadow:2px 3.5px 0 -0.2px currentColor;transform:translateX(-50%)}
+#modalCard.away .awtiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}#modalCard.away .awtiles.one{grid-template-columns:1fr}
+#modalCard.away .awt{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;padding:12px 6px 12px;border-radius:20px;animation:awrise .45s both}
+#modalCard.away .awt.gold{background:#FDECC9;box-shadow:inset 0 0 0 2px #F8DFB0}
+#modalCard.away .awt.xp{background:#F0DFF7;box-shadow:inset 0 0 0 2px #E6CDF2;animation-delay:.08s}
+#modalCard.away .awt img{width:74px;height:66px;object-fit:contain;animation:awbob 2.2s ease-in-out infinite}
+#modalCard.away .awt.xp img{animation-delay:.5s}
+#modalCard.away .awt span{margin-top:4px;color:#87666D;font:700 15px var(--body)}#modalCard.away .awt.xp span{color:#87666D}
+#modalCard.away .awt b[data-to]{font:400 30px/1.15 var(--display);color:#4A2240;font-variant-numeric:tabular-nums;white-space:nowrap}
+#modalCard.away .awt b[data-to] .gn{font:inherit;color:inherit}#modalCard.away .awt b[data-to] small{font-size:.92em}
+#modalCard.away .awray{position:absolute;inset:-40%;background:conic-gradient(from 0deg,transparent 0 20deg,rgba(255,255,255,.35) 26deg,transparent 34deg 110deg,rgba(255,255,255,.3) 116deg,transparent 124deg 200deg,rgba(255,255,255,.35) 206deg,transparent 214deg 290deg,rgba(255,255,255,.3) 296deg,transparent 304deg);animation:awspin 9s linear infinite;pointer-events:none}
+#modalCard.away .offlv{margin-top:10px}
+#modalCard.away .btns{margin-top:14px}
+#modalCard.away .btn.pri{position:relative;overflow:hidden;min-height:58px;border-radius:999px;background:linear-gradient(180deg,#B373E6,#9650CE 45%,#7A3BA8);color:#fff;font:400 23px var(--display);letter-spacing:.03em;box-shadow:inset 0 2px 0 rgba(255,220,255,.45),inset 0 0 0 1.5px #A45EDA,0 4px 0 #5E2A86,0 8px 16px rgba(94,40,130,.35)}
+#modalCard.away .btn.pri::after{content:"";position:absolute;top:0;bottom:0;left:-40%;width:30%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);transform:skewX(-18deg);animation:awshine 2.6s 1s ease-in-out infinite}
+#modalCard.away .btn.pri:active{transform:translateY(3px);box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 0 0 1.5px #A45EDA,0 1px 0 #5E2A86}
+#modalCard.away .awstar{display:inline-block;width:20px;height:20px;margin-right:8px;vertical-align:-2px;background:#FFE07A;clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);animation:awtw 1.6s ease-in-out infinite}
+@keyframes awpop{0%{opacity:0;transform:scale(.7)}100%{opacity:1;transform:none}}
+@keyframes awhop{0%{opacity:0;transform:translateX(-50%) translateY(40px) scale(.6)}100%{opacity:1;transform:translateX(-50%)}}
+@keyframes awbreath{0%,100%{transform:translateX(-50%) scale(1,1)}50%{transform:translateX(-50%) scale(1.025,.975)}}
+@keyframes awglow{0%,100%{opacity:.85}50%{opacity:1}}
+@keyframes awtw{0%,100%{transform:scale(.55) rotate(0);opacity:.55}50%{transform:scale(1.1) rotate(25deg);opacity:1}}
+@keyframes awrise{0%{opacity:0;transform:translateY(14px)}100%{opacity:1;transform:none}}
+@keyframes awbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes awspin{to{transform:rotate(360deg)}}
+@keyframes awshine{0%{left:-40%}55%,100%{left:120%}}
+@media (prefers-reduced-motion:reduce){#modalCard.away,#modalCard.away *,#modalCard.away .btn.pri::after{animation:none!important}}
 </style>
 
 <div id="topcap" aria-hidden="true"></div>

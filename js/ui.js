@@ -377,6 +377,7 @@
 
     // ---------- modal / toast ----------
     function modal(html, buttons) {
+      $('modalCard').className = 'card';
       $('modalCard').innerHTML = html + '<div class="btns">' + buttons.map(function (b, i) { return '<button class="btn ' + (b.pri ? 'pri' : '') + '" data-mb="' + i + '">' + b.label + '</button>'; }).join('') + '</div>';
       $('modal').hidden = false;
       $('modalCard').querySelectorAll('[data-mb]').forEach(function (el) { el.onclick = function () { var b = buttons[+el.dataset.mb]; $('modal').hidden = true; if (b.fn) b.fn(); G.sound('click'); }; });
@@ -939,12 +940,33 @@
 
     // ---------- big moments ----------
     function showOffline(r, onClose) {
-      // 2026-11-15 pack: the welcome cat and one short row per reward; the numbers and the single onClose are the same as before
-      var row = function (icon, label, val, cls) { return '<div class="offrow' + (cls || '') + '">' + icon + '<span>' + label + '</span><b>+' + val + '</b></div>'; };
-      modal('<div class="offwrap"><img class="offcat" src="' + (CW.ART_BASE || 'art/') + 'ui-welcome-cat.webp" alt="" draggable="false"><h2>돌아왔어요!</h2><p>기다리는 동안 냥법사가 모았어요</p>' +
-        '<div class="offtime">' + Math.floor(r.seconds / 3600) + '시간 ' + Math.floor(r.seconds % 3600 / 60) + '분' + (r.seconds >= DATA.balance.offlineCapSec ? ' · 최대 8시간' : '') + '</div>' +
-        row('<i class="coin"></i>', '골드', gh(r.gold)) + (r.xp ? row('<b class="xpdot"></b>', '경험치', fmt(r.xp)) : '') +
-        (r.levels ? '<div class="offlv">레벨 ' + r.levels + ' 올랐어요!</div>' : '') + '</div>', [{ label: '받기', pri: true, fn: onClose }]);
+      // 2026-11-15 the user's 돌아왔어요 picture (art-src/away-20261115): the cat hugging the coin bag over a lavender dome,
+      // a purple badge, the time, a gold card and an experience card side by side, a purple claim button. The cat, coin and
+      // star are cut from that picture (tools/cut-away*.py); the rest is drawn so the words stay sharp. It moves: the card
+      // pops, the cat hops in and breathes, the sparkles twinkle, the numbers count up, a shine runs over the button.
+      var A = CW.ART_BASE || 'art/', h = Math.floor(r.seconds / 3600), m = Math.floor(r.seconds % 3600 / 60);
+      var tile = function (cls, img, label, val, to) {
+        return '<div class="awt ' + cls + '"><i class="awray"></i><img src="' + A + img + '" alt="" draggable="false"><span>' + label + '</span><b data-to="' + to + '">+' + val + '</b></div>';
+      };
+      var spark = function (k) { return '<i class="awsp s' + k + '"></i>'; };
+      modal('<div class="awtop"><div class="awdome"></div>' + spark(1) + spark(2) + spark(3) + spark(4) + '<img class="awcat" src="' + A + 'ui-away-cat.webp" alt="" draggable="false"></div>' +
+        '<div class="awbody"><div class="awbadge">오프라인 보상</div><h2>돌아왔어요!</h2><p>냥법사가 보상을 모았어요</p>' +
+        '<div class="awtime"><i></i>' + h + '시간 ' + m + '분' + (r.seconds >= DATA.balance.offlineCapSec ? ' · 최대 8시간' : '') + '</div>' +
+        '<div class="awtiles' + (r.xp ? '' : ' one') + '">' + tile('gold', 'ui-away-coin.webp', '골드', gh(r.gold), 'g') + (r.xp ? tile('xp', 'ui-away-star.webp', '경험치', fmt(r.xp), 'x') : '') + '</div>' +
+        (r.levels ? '<div class="offlv">레벨 ' + r.levels + ' 올랐어요!</div>' : '') + '</div>',
+        [{ label: '<i class="awstar"></i>보상 받기', pri: true, fn: onClose }]);
+      var card = $('modalCard'); card.classList.add('away');
+      // count up: the shown number grows from 0 to the real amount (same words as gh / fmt at every step)
+      var vals = { g: r.gold || 0, x: r.xp || 0 }, show = { g: gh, x: fmt }, t0 = performance.now(), DUR = 900, DELAY = 350;
+      var still = root.matchMedia && root.matchMedia('(prefers-reduced-motion:reduce)').matches;
+      if (still) return;
+      card.querySelectorAll('.awt b[data-to]').forEach(function (el) { el.innerHTML = '+' + show[el.dataset.to](0); });
+      (function step(now) {
+        if ($('modal').hidden || !card.classList.contains('away')) return;
+        var k = Math.max(0, Math.min(1, (now - t0 - DELAY) / DUR)), e = 1 - Math.pow(1 - k, 3);
+        card.querySelectorAll('.awt b[data-to]').forEach(function (el) { var to = el.dataset.to; el.innerHTML = '+' + show[to](k >= 1 ? vals[to] : vals[to] * e); });
+        if (k < 1) requestAnimationFrame(step);
+      })(t0);
     }
     // ---------- 7-day daily gems (2026-11-15): the popup the user drew, put together from pieces cut out of that picture
     // (tools/cut-daily.py): the frame with the cat, title, day-7 chest and button is one picture; the six day cards are
