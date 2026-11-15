@@ -21,6 +21,19 @@
     if (CW.minionsOff) n = 0;
     return n;
   }
+  // the user's own small-fry pictures (2026-11-16, user: "기존 몬스터는 안 나와도 되고 지금 준 졸개들로, 막 섞어서 랜덤으로"):
+  // every region uses all six, each spawn one picked at random. art/mn01..06.webp come from tools/cut-minions.py.
+  // fly: floats above the ground and bobs instead of hopping (the ghost and the bat)
+  var KINDS = [
+    { id: 'mn01', name: '얼음 꼬마' }, { id: 'mn02', name: '꼬마 유령', fly: true }, { id: 'mn03', name: '불꽃 꼬마' },
+    { id: 'mn04', name: '꼬마 박쥐', fly: true }, { id: 'mn05', name: '꼬마 해골' }, { id: 'mn06', name: '꼬마 멧돼지' }
+  ];
+  // one of the loaded kinds at random (rand() in 0..1); null while none is loaded yet
+  function pickKind(loaded, rand) {
+    var ok = KINDS.filter(function (k) { return loaded[k.id]; });
+    if (!ok.length) return null;
+    return ok[Math.min(ok.length - 1, Math.floor((rand || Math.random)() * ok.length))];
+  }
   // inside the hit's reach? (the field is seen at a slant, so depth counts a little less)
   function inReach(mx, mz, x, z, r) { var dx = mx - x, dz = (mz - z) / 1.15; return dx * dx + dz * dz <= r * r; }
 
@@ -62,10 +75,10 @@
       }
       m.tx = best.x; m.tz = best.z; m.retarget = rr(1.0, 2.4);
     }
-    function spawn(art, h) {
+    function spawn(art, h, fly) {
       if (list.length >= MAX) return;
       var aspect = art.aspect || 1, F = ctx.field, z = rr(F.z0 + 1, F.z1 - 0.8), side = edge;
-      var m = { mesh: meshFor(art), h: h, w: h * aspect, x: side * (ctx.halfX(z) + rr(0.9, 1.8)), z: z, y: 0, vy: 0, face: -side, faceHold: 0,
+      var m = { mesh: meshFor(art), h: h, w: h * aspect, fly: !!fly, x: side * (ctx.halfX(z) + rr(0.9, 1.8)), z: z, y: 0, vy: 0, face: -side, faceHold: 0,
         ph: rr(0, 6), sp: rr(2.6, 3.4), state: 'in', retarget: 0, tx: 0, tz: 0 };
       spot(m);
       list.push(m);
@@ -92,7 +105,7 @@
       packT -= dt;
       var staying = 0; list.forEach(function (x) { if (x.state !== 'flee') staying++; });
       if (queue <= 0 && pick && want > 0 && staying <= want * 0.8 && packT <= 0) { queue = Math.min(want - staying, 4 + Math.floor(Math.random() * 4)); edge = Math.random() < 0.5 ? -1 : 1; packT = 0; }
-      if (queue > 0 && packT <= 0) { var a = pick && pick(); if (a) spawn(a.art, a.height); queue--; packT = queue > 0 ? rr(0.04, 0.09) : rr(0.25, 0.6); }
+      if (queue > 0 && packT <= 0) { var a = pick && pick(); if (a) spawn(a.art, a.height, a.fly); queue--; packT = queue > 0 ? rr(0.04, 0.09) : rr(0.25, 0.6); }
       // fewer wanted now (the quality dropped, a boss, a dungeon): the extra ones walk off one at a time
       if (staying > want) for (var e = 0; e < list.length; e++) if (list[e].state !== 'flee') { flee(list[e]); break; }
       var si = 0;
@@ -107,6 +120,8 @@
         if (m.state === 'flee' && !moving) { free(m.mesh); list.splice(i, 1); continue; }
         var hop = moving ? Math.abs(Math.sin(m.ph)) * 0.11 : 0, sq = moving ? Math.cos(m.ph * 2) * 0.06 : Math.sin(m.ph * 0.4 + m.retarget) * 0.03;
         if (!moving) m.ph += dt * 2;
+        // fliers float a little above the ground and bob softly; their shadow stays on the ground, a bit smaller
+        if (m.fly) { hop = 0.32 + Math.sin(m.ph * 0.35) * 0.07; sq *= 0.5; m.y = hop; }
         m.mesh.position.set(m.x, hop, m.z); m.mesh.rotation.z = moving ? Math.sin(m.ph) * 0.08 : 0;
         m.mesh.scale.set(m.w * m.face * (1 - sq * 0.5), m.h * (1 + sq), 1);
         if (si < MAX) { var s = m.w * 0.6 * (1 - hop); SM.makeScale(s, 1, s * 0.55); SM.setPosition(m.x, 0.011, m.z); shadows.setMatrixAt(si++, SM); }
@@ -122,6 +137,6 @@
     }
     return { setWant: setWant, update: update, hitArea: hitArea, scatter: scatter, clear: clear, count: function () { return list.length; }, list: function () { return list; } };
   }
-  CW.minionCap = minionCap; CW.createMinions = createMinions; CW.minionInReach = inReach;
-  if (typeof module !== 'undefined' && module.exports) module.exports = { minionCap: minionCap, createMinions: createMinions, inReach: inReach };
+  CW.minionCap = minionCap; CW.createMinions = createMinions; CW.minionInReach = inReach; CW.MINION_KINDS = KINDS; CW.pickMinionKind = pickKind;
+  if (typeof module !== 'undefined' && module.exports) module.exports = { minionCap: minionCap, createMinions: createMinions, inReach: inReach, KINDS: KINDS, pickKind: pickKind };
 })(this);

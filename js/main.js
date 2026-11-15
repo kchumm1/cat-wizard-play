@@ -141,11 +141,13 @@
     var r = Math.random(), entry = r < 0.6 ? 'run' : r < 0.85 ? 'leap' : 'drop';
     sc.spawnMob({ art: a, id: id, height: fitHeight(a, 0.9 + Math.random() * 0.14), hp: CW.stageMonsterHp(state) / CROWD, entry: entry });
   }
-  // the little ones (js/minions.js): smaller copies of this wave's kinds of monster; they bring nothing and count for nothing
+  // the little ones (js/minions.js): the user's six small-fry pictures, mixed at random in every region (2026-11-16);
+  // they bring nothing and count for nothing. Their pictures are fetched once, the first time any are wanted.
+  var minionArt = {}, minionLoad = null;
   function minionPick() {
-    var R = DATA.regions[CW.stageInfo(state.stage).region], ids = waveKinds.length ? waveKinds : R.monsters;
-    var id = ids[Math.floor(Math.random() * ids.length)], a = mobArt(id, R.monsters[0]);
-    return a ? { art: a, height: fitHeight(a, 0.5 + Math.random() * 0.1) } : null;
+    if (!minionLoad) minionLoad = CW.loadArt(CW.MINION_KINDS.map(function (k) { return k.id; })).then(function (m) { minionArt = m; });
+    var k = CW.pickMinionKind(minionArt), a = k && minionArt[k.id];
+    return a ? { art: a, height: fitHeight(a, 0.5 + Math.random() * 0.1), fly: !!k.fly } : null;
   }
   var mins = sc.minions;
   function startBoss() {
