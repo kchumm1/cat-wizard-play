@@ -38,9 +38,15 @@
     var g = isRegionBoss(i) ? B.regionBossGems * (1 + region * 0.5) : B.bossGemsBase + region * B.bossGemsPerRegion;
     return Math.round(g * (first ? B.firstClearMul : 1));
   }
-  function upgradeCost(key, level) {
-    var u = DATA.upgrades[key];
-    return cap(Math.ceil(u.costBase * Math.pow(u.costGrowth, level)));
+  // state (optional): past a row's max the price follows the player's attack price (2026-11-15, the user: those levels
+  // read "1" — they cost almost nothing next to what one earns). Each level past the max costs OVER_PRICE of the next
+  // attack level, growing OVER_GROW a level, so it always takes real gold.
+  var OVER_PRICE = 0.2, OVER_GROW = 1.005;
+  function atkPrice(state) { var u = DATA.upgrades.atk; return u.costBase * Math.pow(u.costGrowth, (state.up && state.up.atk) || 0); }
+  function upgradeCost(key, level, state) {
+    var u = DATA.upgrades[key], c = u.costBase * Math.pow(u.costGrowth, level);
+    if (state && u.max !== null && level >= u.max) c = Math.max(c, atkPrice(state) * OVER_PRICE * Math.pow(OVER_GROW, level - u.max));
+    return cap(Math.ceil(c));
   }
   function upgradeNeed(key) { var u = DATA.upgrades[key]; return u && u.need ? { key: u.need[0], lv: u.need[1] } : null; }
   function upgradeOpen(state, key) {
@@ -68,7 +74,7 @@
   // total gold for the next n levels
   function upgradeCostN(state, key, n) {
     var lv = state.up[key] || 0, sum = 0;
-    for (var i = 0; i < n; i++) sum += upgradeCost(key, lv + i);
+    for (var i = 0; i < n; i++) sum += upgradeCost(key, lv + i, state);
     return cap(sum);
   }
   // buys up to n levels while gold lasts; returns how many were bought
@@ -81,7 +87,7 @@
     if (!upgradeOpen(state, key)) return false;
     var lv = state.up[key] || 0;
     if (u.max !== null && lv >= u.max && !overTarget(key)) return false;
-    var c = upgradeCost(key, lv);
+    var c = upgradeCost(key, lv, state);
     if (!(c < CAP)) return false;
     if (!(state.gold >= c)) return false;
     state.gold = Math.max(0, state.gold - c);
@@ -315,7 +321,7 @@
     stageMonsterHp: stageMonsterHp, stageBossHp: stageBossHp, stageGold: stageGold, diffOf: diffOf,
     monsterHp: monsterHp, bossHp: bossHp, monsterGold: monsterGold, bossGems: bossGems,
     isWeak: isWeak, regionOf: regionOf, surgeTick: surgeTick, surgeFactor: surgeFactor, weakFactor: weakFactor, upgradeBonus: upgradeBonus, bonusBySource: bonusBySource, upgradeCostN: upgradeCostN, tryUpgradeN: tryUpgradeN, upgradeOpen: upgradeOpen, upgradeNeed: upgradeNeed, rollCrit: rollCrit, critFactor: critFactor, upgradeCost: upgradeCost, tryUpgrade: tryUpgrade, stats: stats, overInfo: overInfo, hitDamage: hitDamage,
-    progressIndex: progressIndex, goldScale: goldScale, capGold: capGold, GOLD_MAX: GOLD_MAX, dps: dps, bossDps: bossDps, bossDpsTypical: bossDpsTypical, evenCrit: evenCrit, killsPerSecond: killsPerSecond, goldPerSecond: goldPerSecond, skillById: skillById,
+    atkPrice: atkPrice, progressIndex: progressIndex, goldScale: goldScale, capGold: capGold, GOLD_MAX: GOLD_MAX, dps: dps, bossDps: bossDps, bossDpsTypical: bossDpsTypical, evenCrit: evenCrit, killsPerSecond: killsPerSecond, goldPerSecond: goldPerSecond, skillById: skillById,
     isRegionBoss: isRegionBoss, isMiniBoss: isMiniBoss
   };
 });

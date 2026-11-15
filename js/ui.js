@@ -471,9 +471,9 @@
       });
       var mul ='<div class="mulpick" role="group" aria-label="한 번에 올릴 단계">' + [1, 10, 100].map(function (n) { return '<button class="btn' + (upMul === n ? ' on' : '') + '" data-mul="' + n + '" aria-pressed="' + (upMul === n) + '">×' + n + '</button>'; }).join('') + '</div>';
       return '<h3>성장</h3>' + mul + '<div class="note" style="margin:4px 0 8px">버튼을 꾹 누르면 계속 올라가요. ×10·×100은 골드가 되는 만큼 한 번에 올려요.</div><div class="list">' + Object.keys(DATA.upgrades).map(function (k) {
-        var u = DATA.upgrades[k], lv = s.up[k] || 0, oi = CW.overInfo(s, k), one = CW.upgradeCost(k, lv), cost = one, nBuy = 1;
+        var u = DATA.upgrades[k], lv = s.up[k] || 0, oi = CW.overInfo(s, k), one = CW.upgradeCost(k, lv, s), cost = one, nBuy = 1;
         // ×10·×100 show what the gold buys now (up to that many), so the price never runs past what one can hold
-        if (upMul > 1) { var sum = 0, n = 0; while (n < upMul && sum + CW.upgradeCost(k, lv + n) <= s.gold) { sum += CW.upgradeCost(k, lv + n); n++; } if (n > 0) { cost = sum; nBuy = n; } }
+        if (upMul > 1) { var sum = 0, n = 0; while (n < upMul && sum + CW.upgradeCost(k, lv + n, s) <= s.gold) { sum += CW.upgradeCost(k, lv + n, s); n++; } if (n > 0) { cost = sum; nBuy = n; } }
         var max = u.max !== null && lv >= u.max && !oi;
         // 한계 돌파 (2026-11-15): past the row's max, each level adds 1% to the damage it is about
         var OVK = { finalMul: '모든 피해', critDmg: '치명타 피해', superDmg: '슈퍼 피해', ultraDmg: '울트라 피해', hyperDmg: '하이퍼 피해', megaDmg: '메가 피해', ultimateDmg: '얼티밋 피해', alphaDmg: '알파 피해', bossDmg: '보스 피해', skillDmg: '스킬 피해', weakMul: '약점 피해', surgeMul: '폭주 피해' };
@@ -500,7 +500,7 @@
           '<div class="note">스킬 보유 효과: 모든 스킬 피해 +' + pct(CW.skillOwnedStats(s).skillDmg) + ' (강화 1단계마다 +' + pct(DATA.balance.skillOwnedPer) + ')</div>' +
         '<div class="note">' + (selSlot >= 0 ? (selSlot + 1) + '번 칸을 골랐어요. 아래에서 넣을 스킬을 누르세요.' : '칸을 고르지 않고 넣으면 빈 칸(없으면 4번 칸)에 들어가요.') + '</div>';
       var row = function (sk) {
-        var locked = sk.tier > s.tier, at = s.slots.indexOf(sk.id), lv = CW.skillLevel(s, sk.id), max = lv >= DATA.balance.skillMaxLv, cost = CW.skillUpCost(sk, lv);
+        var locked = sk.tier > s.tier, at = s.slots.indexOf(sk.id), lv = CW.skillLevel(s, sk.id), max = lv >= DATA.balance.skillMaxLv, cost = CW.skillUpCost(sk, lv, s);
         var act = locked ? '<span class="note">' + sk.tier + '차 전직</span>'
           : (at >= 0 ? '<button class="btn" data-unslot="' + at + '">' + (at + 1) + '번 빼기</button>' : '<button class="btn pri" data-eq="' + sk.id + '">' + (selSlot >= 0 ? (selSlot + 1) + '번에 넣기' : '넣기') + '</button>');
         var up = locked ? '' : '<button class="buy ' + (max || s.gold < cost ? 'off' : '') + '" data-sup="' + sk.id + '">' + (max ? '최대' : '강화 <i class="coin"></i>' + gh(cost)) + '</button>';

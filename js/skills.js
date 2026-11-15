@@ -38,15 +38,19 @@
   // ---------- skill enhancing: gold buys levels, each level adds damage to that one skill ----------
   var B = DATA.balance;
   function skillLevel(state, id) { return (state.skillLv && state.skillLv[id]) || 0; }
-  function skillUpCost(skill, lv) {
+  // state (optional): the price never falls under SKILL_PRICE of the next attack level, growing SKILL_GROW a level
+  // (2026-11-15, the user: late skills read "1" — almost free next to what one earns)
+  var SKILL_PRICE = 0.5, SKILL_GROW = 1.08;
+  function skillUpCost(skill, lv, state) {
     var c = B.skillUpBase * Math.pow(B.goldGrowth, 31 * (skill.tier - 1)) * Math.pow(B.skillUpGrowth, lv);
+    if (state) { var u = DATA.upgrades.atk; c = Math.max(c, u.costBase * Math.pow(u.costGrowth, (state.up && state.up.atk) || 0) * SKILL_PRICE * Math.pow(SKILL_GROW, lv)); }
     return isFinite(c) ? Math.min(Math.ceil(c), 1e300) : 1e300;
   }
   function trySkillUp(state, id) {
     var s = byId(id); if (!s || s.tier > state.tier) return false;
     if (!state.skillLv) state.skillLv = {};
     var lv = skillLevel(state, id); if (lv >= B.skillMaxLv) return false;
-    var c = skillUpCost(s, lv); if (!(state.gold >= c)) return false;
+    var c = skillUpCost(s, lv, state); if (!(state.gold >= c)) return false;
     state.gold = Math.max(0, state.gold - c); state.skillLv[id] = lv + 1;
     return true;
   }
@@ -76,7 +80,7 @@
       var best = null, bestCost = Infinity;
       unlockedSkills(state.tier).forEach(function (s) {
         var lv = skillLevel(state, s.id); if (lv >= B.skillMaxLv) return;
-        var c = skillUpCost(s, lv); if (c < bestCost) { bestCost = c; best = s; }
+        var c = skillUpCost(s, lv, state); if (c < bestCost) { bestCost = c; best = s; }
       });
       if (!best || !trySkillUp(state, best.id)) break;
       bought++;
