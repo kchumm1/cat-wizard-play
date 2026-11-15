@@ -42,6 +42,19 @@ input[type=date]::-webkit-date-and-time-value{text-align:center;margin:0}
 .hide{display:none}
 details summary{cursor:pointer;color:var(--soft);font-size:14px}
 ol.steps{padding-left:20px;font-size:14px;margin:8px 0}ol.steps li{margin:4px 0}
+/* other currencies, potions and items (2026-11-16) */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid label{margin:0 0 2px;font-size:13px}
+select{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px}
+.itemAdd{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--bg)}
+.itemAdd select,.itemAdd input{background:var(--card)}
+.row.wrap{flex-wrap:wrap;margin-top:8px}.row.wrap>*{flex:1 1 45%}
+label.small{margin:8px 0 2px;font-size:13px}
+.btn.add{margin-top:27px;min-height:44px;padding:8px}
+.items{list-style:none;padding:0;margin:8px 0 0}
+.items li{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:var(--card);border:1px solid var(--line);margin-top:6px;font-size:15px}
+.items li span{flex:1;min-width:0;overflow-wrap:anywhere}
+.items li button{border:0;background:transparent;color:var(--bad);font:inherit;font-size:20px;min-width:40px;min-height:40px}
 </style>
 </head>
 <body>
@@ -93,6 +106,19 @@ ol.steps{padding-left:20px;font-size:14px;margin:8px 0}ol.steps li{margin:4px 0}
     <p class="hint" id="goldRead">조·억·만을 붙여 적거나 숫자만 적어도 돼요.</p>
     <label for="gems">다이아 (개)</label>
     <input id="gems" type="number" inputmode="numeric" min="0" step="1" placeholder="0">
+    <label>다른 재화 (개)</label>
+    <div class="grid" id="curBox"></div>
+    <label>물약 (분, 지금 남은 시간에 더해져요)</label>
+    <div class="grid" id="potBox"></div>
+    <label>아이템</label>
+    <div class="itemAdd">
+      <select id="itType" aria-label="아이템 종류"><option value="gear">장비</option><option value="runes">룬</option><option value="sigils">신성력</option><option value="relics">유물</option><option value="costumes">코스튬</option></select>
+      <div id="itOpts" class="row wrap"></div>
+      <div class="row"><div id="itNBox"><label for="itN" class="small">개수</label><input id="itN" type="number" inputmode="numeric" min="1" step="1" value="1"></div>
+        <div><button type="button" class="btn add" id="itAdd">아이템 넣기</button></div></div>
+      <p class="hint" id="itHint"></p>
+      <ul class="items" id="itList"></ul>
+    </div>
     <div class="row">
       <div><label for="from">받을 수 있는 첫날</label><input id="from" type="date"></div>
       <div><label for="until">마지막 날</label><input id="until" type="date"></div>
@@ -112,6 +138,8 @@ ol.steps{padding-left:20px;font-size:14px;margin:8px 0}ol.steps li{margin:4px 0}
     <div class="msg" id="listMsg"></div>
   </section>
 </main>
+<script src="js/data.js"></script>
+<script src="js/mail-gift.js"></script>
 <script src="js/mail.js"></script>
 <script src="js/mail-ops.js"></script>
 <script>
@@ -195,7 +223,75 @@ ol.steps{padding-left:20px;font-size:14px;margin:8px 0}ol.steps li{margin:4px 0}
   // ---- form
   $('toSeg').onclick = function (e) { var b = e.target.closest('button'); if (!b) return; toAll = b.dataset.to === 'all';
     [].forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); }); $('pidBox').classList.toggle('hide', toAll); preview(); };
-  function form() { return { toAll: toAll, toText: $('pids').value, gold: $('gold').value, gems: $('gems').value === '' ? 0 : +$('gems').value, from: $('from').value, until: $('until').value, sub: $('sub').value }; }
+  // ---- other currencies, potions and items (2026-11-16, js/mail-gift.js)
+  var CAT = CW.giftCatalog(), items = [];
+  function opt(v, t) { var o = document.createElement('option'); o.value = v; o.textContent = t; return o; }
+  function numBox(box, id, name) {
+    var d = document.createElement('div'), lb = document.createElement('label'), inp = document.createElement('input');
+    lb.htmlFor = id; lb.textContent = name; inp.id = id; inp.type = 'number'; inp.inputMode = 'numeric'; inp.min = '0'; inp.step = '1'; inp.placeholder = '0';
+    inp.addEventListener('input', preview); d.appendChild(lb); d.appendChild(inp); box.appendChild(d);
+  }
+  CAT.currencies.forEach(function (c) { numBox($('curBox'), 'cur-' + c.key, c.icon + ' ' + c.name); });
+  CAT.potions.forEach(function (p) { numBox($('potBox'), 'pot-' + p.id, p.icon + ' ' + p.name); });
+  function sel(id, label, options) {
+    var d = document.createElement('div'), lb = document.createElement('label'), s = document.createElement('select');
+    lb.className = 'small'; lb.htmlFor = id; lb.textContent = label; s.id = id; options.forEach(function (o) { s.appendChild(opt(o[0], o[1])); });
+    d.appendChild(lb); d.appendChild(s); $('itOpts').appendChild(d); return s;
+  }
+  var HINT = { gear: '장비 가방에 바로 들어가요.', runes: '룬 가방(100칸)에 Lv.0으로 들어가요. 자리가 모자라면 정리한 뒤에 받을 수 있어요.',
+    sigils: '신성력 가방(150칸)에 들어가요. 능력을 정하지 않으면 무작위예요.', relics: '하나에 레벨 +1(소환과 같아요). 최대 레벨을 넘는 만큼은 다이아로 돌려줘요.',
+    costumes: '없는 코스튬은 Lv.1로 생기고, 이미 있으면 레벨 +1이에요.' };
+  function itForm() {
+    var t = $('itType').value; $('itOpts').textContent = '';
+    if (t === 'gear') {
+      sel('itKind', '부위', CAT.gearKinds.map(function (k) { return [k.id, k.name]; }));
+      sel('itGrade', '등급', CAT.gearGrades.map(function (g, i) { return [i, g]; }));
+      sel('itSub', '단계', [[0, 'I'], [1, 'II'], [2, 'III'], [3, 'IV']]);
+    } else if (t === 'runes') {
+      sel('itKind', '룬', CAT.runes.map(function (r) { return [r.id, r.icon + ' ' + r.name]; }));
+      sel('itGrade', '등급', CAT.hiGrades.map(function (g, i) { return [i, g]; }));
+    } else if (t === 'sigils') {
+      sel('itGrade', '등급', CAT.hiGrades.map(function (g, i) { return [i, g]; }));
+      sel('itStat', '능력', [['', '무작위']].concat(CAT.sigilStats.map(function (s) { return [s.id, s.name]; })));
+      sel('itBest', '품질', [['', '무작위'], ['1', '최상급']]);
+    } else if (t === 'relics') {
+      sel('itKind', '유물', CAT.relics.map(function (r) { return [r.id, r.icon + ' ' + r.name + (r.divine ? ' (신성)' : '')]; }));
+    } else {
+      sel('itKind', '코스튬', CAT.costumes.map(function (c) { return [c.id, c.name + (c.grade ? ' · ' + c.grade : '')]; }));
+    }
+    $('itNBox').classList.toggle('hide', t === 'costumes');
+    $('itHint').textContent = HINT[t];
+  }
+  $('itType').onchange = itForm; itForm();
+  $('itAdd').onclick = function () {
+    var t = $('itType').value, n = Math.floor(+$('itN').value || 0), v = function (id) { return $(id).value; };
+    if (t !== 'costumes' && !(n >= 1)) { $('itHint').textContent = '개수는 1 이상으로 적어 주세요.'; return; }
+    var it = t === 'gear' ? { t: t, kind: v('itKind'), grade: +v('itGrade'), sub: +v('itSub'), n: n }
+      : t === 'runes' ? { t: t, kind: v('itKind'), grade: +v('itGrade'), n: n }
+      : t === 'sigils' ? { t: t, grade: +v('itGrade'), stat: v('itStat'), best: v('itBest') === '1', n: n }
+      : t === 'relics' ? { t: t, id: v('itKind'), n: n } : { t: t, id: v('itKind') };
+    items.push(it); drawItems(); preview();
+  };
+  function give() {
+    var g = {}, p = {};
+    CAT.currencies.forEach(function (c) { var n = +$('cur-' + c.key).value || 0; if (n > 0) g[c.key] = n; });
+    CAT.potions.forEach(function (pt) { var n = +$('pot-' + pt.id).value || 0; if (n > 0) p[pt.id] = n; });
+    if (Object.keys(p).length) g.potions = p;
+    items.forEach(function (it) { var o = Object.assign({}, it); delete o.t; (g[it.t] = g[it.t] || []).push(o); });
+    return g;
+  }
+  function drawItems() {
+    var ul = $('itList'); ul.textContent = '';
+    items.forEach(function (it, i) {
+      var one = {}; var o = Object.assign({}, it); delete o.t; one[it.t] = [o];
+      var line = CW.giftLines({ give: one })[0]; if (!line) return;
+      var li = document.createElement('li'), s = document.createElement('span'), x = document.createElement('button');
+      s.textContent = line.icon + ' ' + line.text; x.type = 'button'; x.textContent = '×'; x.setAttribute('aria-label', '빼기');
+      x.onclick = function () { items.splice(i, 1); drawItems(); preview(); };
+      li.appendChild(s); li.appendChild(x); ul.appendChild(li);
+    });
+  }
+  function form() { return { toAll: toAll, toText: $('pids').value, gold: $('gold').value, gems: $('gems').value === '' ? 0 : +$('gems').value, give: give(), from: $('from').value, until: $('until').value, sub: $('sub').value }; }
   function preview() {
     var f = form(), g = CW.parseGold(f.gold), gr = $('goldRead');
     if (!f.gold.trim()) { gr.textContent = '조·억·만을 붙여 적거나 숫자만 적어도 돼요.'; gr.style.color = ''; }
@@ -203,8 +299,9 @@ ol.steps{padding-left:20px;font-size:14px;margin:8px 0}ol.steps li{margin:4px 0}
     else if (g > 9999e12) { gr.textContent = '= ' + CW.countText(g) + ' (9999조까지만 보낼 수 있어요)'; gr.style.color = 'var(--bad)'; }
     else { gr.textContent = '= 골드 ' + CW.countText(g); gr.style.color = 'var(--ok)'; }
     if (!isFinite(g)) g = 0;
-    if (!subTouched) $('sub').value = CW.rewardSub(g, f.gems);
+    if (!subTouched) $('sub').value = CW.rewardSub(g, f.gems, f.give);
     var gift = []; if (g > 0) gift.push('골드 ' + CW.countText(g)); if (f.gems > 0) gift.push('다이아 ' + CW.countText(f.gems) + '개');
+    CW.giftLines({ give: f.give }).forEach(function (x) { gift.push(x.icon + ' ' + x.text); });
     var p = $('preview'); p.textContent = '';
     var b = document.createElement('b'); b.textContent = '모험 응원 선물'; p.appendChild(b);
     p.appendChild(document.createTextNode(CW.GIFT_TEXT));
@@ -221,10 +318,10 @@ ol.steps{padding-left:20px;font-size:14px;margin:8px 0}ol.steps li{margin:4px 0}
     var f = form(), err = CW.mailCheck(f); if (err) return say('sendMsg', err, 'bad');
     var l = CW.mailMake(f);
     var who = l.to === 'all' ? '모두' : l.to.join(', ');
-    if (!confirm('보낼까요?\n받는 사람: ' + who + '\n선물: ' + CW.rewardSub(CW.mailGold(l), l.gems) + '\n받을 수 있는 날: ' + (l.from || l.date) + ' ~ ' + (l.until || '계속'))) return;
+    if (!confirm('보낼까요?\n받는 사람: ' + who + '\n선물: ' + CW.mailRewardText(l) + '\n받을 수 있는 날: ' + (l.from || l.date) + ' ~ ' + (l.until || '계속'))) return;
     $('send').disabled = true; say('sendMsg', '보내는 중…');
     save(function (doc) { return CW.mailAdd(doc, l); }, '운영자 편지: ' + l.sub)
-      .then(function (doc) { say('sendMsg', '보냈어요! 1~2분 뒤 게임을 다시 켜면 우편함에 와 있어요.', 'ok'); $('gold').value = ''; $('gems').value = ''; $('pids').value = ''; subTouched = false; $('sub').value = ''; preview(); draw(doc); })
+      .then(function (doc) { say('sendMsg', '보냈어요! 1~2분 뒤 게임을 다시 켜면 우편함에 와 있어요.', 'ok'); $('gold').value = ''; $('gems').value = ''; $('pids').value = ''; document.querySelectorAll('#curBox input,#potBox input').forEach(function (x) { x.value = ''; }); items = []; drawItems(); subTouched = false; $('sub').value = ''; preview(); draw(doc); })
       .catch(function (e) { say('sendMsg', '못 보냈어요: ' + e.message, 'bad'); })
       .then(function () { $('send').disabled = false; });
   };
@@ -239,6 +336,7 @@ ol.steps{padding-left:20px;font-size:14px;margin:8px 0}ol.steps li{margin:4px 0}
       var top = document.createElement('div'); top.textContent = (l.title || '') + ' · ' + (l.sub || '');
       var info = document.createElement('small');
       var gift = []; if (CW.mailGold(l) > 0) gift.push('골드 ' + CW.mailGoldText(l)); if (+l.gems > 0) gift.push('다이아 ' + CW.countText(l.gems) + '개');
+      if (CW.giftHas(l)) gift.push(CW.giftText(l));
       info.textContent = (l.date || '') + ' · ' + (l.to === 'all' ? '모두' : (Array.isArray(l.to) ? l.to.join(', ') : '')) + (gift.length ? ' · ' + gift.join(' · ') : ' · 공지') + (l.until ? ' · ~' + l.until : '');
       t.appendChild(top); t.appendChild(info); li.appendChild(t);
       var d = document.createElement('button'); d.className = 'del'; d.textContent = '지우기';

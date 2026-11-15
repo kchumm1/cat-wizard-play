@@ -4,6 +4,9 @@
 // goldJo (gold in 조 as the screen shows it), gems, from, until (dates) }. Every save has its own player number, shown in
 // the mailbox, so a letter can go to one player only.
 (function (root, f) { var m = f(root); if (typeof module !== 'undefined' && module.exports) module.exports = m; else { root.CW = root.CW || {}; Object.assign(root.CW, m); } })(this, function () {
+  // other currencies and items on a letter (2026-11-16): js/mail-gift.js
+  var GIFT = typeof module !== 'undefined' && module.exports ? require('./mail-gift.js') : null;
+  function gift() { return GIFT || (typeof CW !== 'undefined' && CW.giftOf ? CW : null); }
   var ABC = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
   function box(state) { if (!state.mail || typeof state.mail !== 'object') state.mail = {}; if (!state.mail.got || typeof state.mail.got !== 'object') state.mail.got = {}; return state.mail; }
   function mailPid(state) {
@@ -26,7 +29,9 @@
     return (Array.isArray(list) ? list : []).filter(function (l) { return l && typeof l.id === 'string' && l.id && forMe(state, l) && (!l.from || now >= day(l.from)) && (!l.until || now <= day(l.until, true)); });
   }
   function mailGot(state, l) { return !!(l && box(state).got[l.id]); }
-  function mailHasReward(l) { return mailGold(l) > 0 || +l.gems > 0; }
+  function mailHasReward(l) { var G = gift(); return mailGold(l) > 0 || +l.gems > 0 || !!(G && G.giftHas(l)); }
+  // why a letter cannot be claimed right now ('' = it can): runes or sigils that do not fit their bag
+  function mailClaimBlock(state, l) { var G = gift(); return G && G.giftHas(l) ? G.giftRoom(state, l) : ''; }
   // when it was sent, the way a letter says it: 오늘 · 어제 · 11월 3일 (Korean time)
   function mailWhen(l, now) {
     if (!l || !l.date) return '';
@@ -38,9 +43,11 @@
   // claim one letter: gold in 조 as shown, times the gold scale the game divides by; returns false if it was taken already
   function mailClaim(state, l, goldScale, now) {
     var m = box(state); if (!l || !l.id || m.got[l.id]) return false;
-    var g = mailGold(l), d = +l.gems || 0;
+    if (mailClaimBlock(state, l)) return false;   // nothing is given until everything fits
+    var g = mailGold(l), d = +l.gems || 0, G = gift();
     if (g > 0) state.gold = (state.gold || 0) + g * (goldScale > 0 ? goldScale : 1);
     if (d > 0) state.gems = (state.gems || 0) + Math.floor(d);
+    if (G && G.giftHas(l)) G.giftApply(state, l, null, now);
     m.got[l.id] = now || Date.now();
     return true;
   }
@@ -56,8 +63,9 @@
   }
   function mailGoldText(l) { return goldWords(mailGold(l)); }
   function mailRewardText(l) {
-    var a = []; if (mailGold(l) > 0) a.push('골드 ' + mailGoldText(l)); if (+l.gems > 0) a.push('다이아 ' + l.gems);
+    var a = [], G = gift(); if (mailGold(l) > 0) a.push('골드 ' + mailGoldText(l)); if (+l.gems > 0) a.push('다이아 ' + l.gems);
+    if (G && G.giftHas(l)) a.push(G.giftText(l));
     return a.join(' · ');
   }
-  return { mailAll: mailAll, mailGot: mailGot, mailHasReward: mailHasReward, mailWhen: mailWhen, mailPid: mailPid, mailWaiting: mailWaiting, mailClaim: mailClaim, mailRewardText: mailRewardText, mailGold: mailGold, mailGoldText: mailGoldText, goldWords: goldWords };
+  return { mailClaimBlock: mailClaimBlock, mailAll: mailAll, mailGot: mailGot, mailHasReward: mailHasReward, mailWhen: mailWhen, mailPid: mailPid, mailWaiting: mailWaiting, mailClaim: mailClaim, mailRewardText: mailRewardText, mailGold: mailGold, mailGoldText: mailGoldText, goldWords: goldWords };
 });

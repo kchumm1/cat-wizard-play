@@ -37,6 +37,18 @@
     var a = [];
     if (+l.gems > 0) a.push('<span><img src="art/mail-ico-gem.webp" alt="">다이아 ' + ko(l.gems) + '</span>');
     if (CW.mailGold(l) > 0) a.push('<span><img src="art/mail-ico-gold.webp" alt="">골드 ' + CW.mailGoldText(l) + '</span>');
+    // other currencies and items (js/mail-gift.js): the first one, and how many more
+    // with items on it the small pill just says how many gifts (the letter itself lists them)
+    var gl = CW.giftLines ? CW.giftLines(l) : [];
+    if (gl.length) return '<span><i class="mbgi">🎁</i>선물 ' + (a.length + gl.length) + '가지</span>';
+    return a.join('');
+  }
+  // any item on a letter (2026-11-16): small chips, each with its picture, in the reward box (it slides when full)
+  function manyReward(l) {
+    var a = [];
+    if (+l.gems > 0) a.push('<span class="mlchip"><img src="art/mail-ico-gem.webp" alt="">다이아 ' + ko(l.gems) + '</span>');
+    if (CW.mailGold(l) > 0) a.push('<span class="mlchip"><img src="art/mail-ico-gold.webp" alt="">골드 ' + CW.mailGoldText(l) + '</span>');
+    (CW.giftLines ? CW.giftLines(l) : []).forEach(function (x) { a.push('<span class="mlchip"><i>' + esc(x.icon) + '</i>' + esc(x.text) + '</span>'); });
     return a.join('');
   }
   // two rewards on a letter: the pill halved, each with its picture, a line between
@@ -78,7 +90,7 @@
       '<button class="mbcopy e" data-mbcopy aria-label="우편번호 복사"></button><button class="mbclose" data-mbx aria-label="닫기"></button></div>';
   }
   function letterHtml(l) {
-    var s = state(), got = CW.mailGot(s, l), has = CW.mailHasReward(l), n = (+l.gems > 0) + (CW.mailGold(l) > 0);
+    var s = state(), got = CW.mailGot(s, l), has = CW.mailHasReward(l), gn = CW.giftLines ? CW.giftLines(l).length : 0, n = (+l.gems > 0) + (CW.mailGold(l) > 0) + gn;
     // paragraphs (a blank line between) and lines, as on the drawn letter
     var body = String(l.text || '').split(/\n\s*\n/).map(function (p) { return '<p>' + esc(p).replace(/\n/g, '<br>') + '</p>'; }).join('');
     return '<div class="mbw mbletter"><img class="mbbg" src="art/mail-letter.webp" alt="" draggable="false">' +
@@ -87,7 +99,8 @@
       (got ? '' : '<b class="mlnew">' + PAW + '새 편지</b>') +
       '<div class="mlbody">' + body + (l.sign ? '<p class="mlsign">' + esc(l.sign) + '</p>' : '') + '</div>' +
       '<b class="mlcnt">' + n + '개</b>' +
-      '<div class="mlrew' + (n > 1 ? ' two' : n ? ' one' : '') + '">' + (n === 1 ? oneReward(l) : n === 2 ? twoReward(l) : has ? rewardPill(l) : '<span class="none">첨부된 보상이 없어요</span>') + '</div>' +
+      (gn ? '<div class="mlrew many">' + manyReward(l) + '</div>' :
+      '<div class="mlrew' + (n > 1 ? ' two' : n ? ' one' : '') + '">' + (n === 1 ? oneReward(l) : n === 2 ? twoReward(l) : has ? rewardPill(l) : '<span class="none">첨부된 보상이 없어요</span>') + '</div>') +
       '<button class="mlget' + (got ? ' done' : '') + '" data-mbget="' + esc(l.id) + '"><span>' + (got ? (has ? '수령 완료' : '읽음') : has ? '보상 받기' : '확인') + '</span></button>' +
       '<button class="mllist" data-mbback aria-label="목록으로 돌아가기"></button></div>';
   }
@@ -106,6 +119,7 @@
   }
   function claim(l) {
     var g = G(); if (!l || CW.mailGot(state(), l)) return false;
+    var why = CW.mailClaimBlock(state(), l); if (why) { g.ui.toast(why + '. 정리하고 다시 받아 주세요.'); return false; }
     if (!g.G.claimMail(l)) return false;
     if (CW.mailHasReward(l)) g.ui.toast('우편 보상 획득 · ' + CW.mailRewardText(l));
     g.ui.hud(); return true;

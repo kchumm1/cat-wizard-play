@@ -2,7 +2,7 @@
 // letter and to change mail.json on the site; tools/build-site.cjs uses mailMerge so a rebuilt site keeps what was sent
 // from ops.html. Letters always read the same way (the user's picture): 「안녕하세요, 냥법사님!」, a blank line, three short
 // lines, 「냥법사 운영팀 드림」; a gift letter is titled 「모험 응원 선물」. Not loaded by the game itself.
-(function (root, f) { if (typeof module !== 'undefined' && module.exports) module.exports = f(require('./mail.js')); else { root.CW = root.CW || {}; Object.assign(root.CW, f(root.CW)); } })(this, function (M) {
+(function (root, f) { if (typeof module !== 'undefined' && module.exports) module.exports = f(require('./mail.js'), require('./mail-gift.js')); else { root.CW = root.CW || {}; Object.assign(root.CW, f(root.CW, root.CW)); } })(this, function (M, GF) {
   var GIFT_TEXT = '안녕하세요, 냥법사님!\n\n오늘도 모험을 즐겨주셔서 고마워요.\n작은 응원 선물을 준비했어요.\n새로운 모험도 함께해 주세요!';
   var GOLD_MAX = 9999e12;       // the most gold a player can hold: 9999조 (js/economy.js capGold)
   var GEMS_MAX = 100000000;     // 1억 diamonds per letter at most, so a typo cannot break a save
@@ -34,7 +34,15 @@
     var n = m[1].replace(/^0+/, ''); if (/0$/.test(n)) return true; // 십 · 백 · 천
     return '013678'.indexOf(n.slice(-1)) >= 0;                      // 일 삼 육 칠 팔 (영)
   }
-  function rewardSub(gold, gems) {
+  // give: the other currencies and items (js/mail-gift.js, 2026-11-16). With them the line names the first thing and
+  // how many more: 「마력석 3만 외 2가지 선물이에요」
+  function rewardSub(gold, gems, give) {
+    var gl = give && GF && GF.giftLines ? GF.giftLines({ give: give }) : [];
+    if (gl.length) {
+      var all = []; if (+gold > 0) all.push('골드 ' + countText(gold)); if (+gems > 0) all.push('다이아 ' + countText(gems) + '개');
+      all = all.concat(gl.map(function (x) { return x.text; }));
+      return all.length === 1 ? all[0] + ' 선물이에요' : all[0] + ' 외 ' + (all.length - 1) + '가지 선물이에요';
+    }
     var g = +gold > 0, d = +gems > 0, w = g ? countText(gold) : '';
     if (g && d) return '골드 ' + w + (closed(w) ? '과' : '와') + ' 다이아 ' + countText(gems) + '개를 보내요';
     if (g) return '골드 ' + w + (closed(w) ? '을' : '를') + ' 보내요';
@@ -47,9 +55,9 @@
   }
   // what is wrong with the form, or '' when it can be sent. f.gold is the 골드 box as typed
   function mailCheck(f) {
-    var g = parseGold(f.gold), d = +f.gems || 0;
+    var g = parseGold(f.gold), d = +f.gems || 0, items = f.give && GF ? GF.giftHas({ give: f.give }) : false;
     if (!isFinite(g)) return '골드를 읽지 못했어요. 「1조 5000억」이나 「300」처럼 적어 주세요.';
-    if (!(g > 0) && !(d > 0)) return '골드나 다이아 중 하나는 넣어 주세요.';
+    if (!(g > 0) && !(d > 0) && !items) return '골드나 다이아, 다른 재화나 아이템 중 하나는 넣어 주세요.';
     if (d < 0 || Math.floor(d) !== d) return '다이아는 0 이상의 정수로 적어 주세요.';
     if (g > GOLD_MAX) return '골드는 한 번에 9999조까지예요(가질 수 있는 최대 골드).';
     if (d > GEMS_MAX) return '다이아는 한 번에 1억 개까지예요.';
@@ -69,7 +77,7 @@
     var l = {
       id: 'gift-' + stamp + '-' + Math.random().toString(36).slice(2, 6),
       title: '모험 응원 선물',
-      sub: String(f.sub || '').trim() || rewardSub(g, f.gems),
+      sub: String(f.sub || '').trim() || rewardSub(g, f.gems, f.give),
       text: GIFT_TEXT,
       sign: '냥법사 운영팀 드림',
       sender: '운영팀',
@@ -80,6 +88,7 @@
     if (f.until) l.until = f.until;
     if (g > 0) l.goldJo = g / 1e12;
     if (+f.gems > 0) l.gems = +f.gems;
+    if (f.give && GF && GF.giftHas({ give: f.give })) l.give = GF.giftOf({ give: f.give });
     l.by = 'ops';
     return l;
   }
