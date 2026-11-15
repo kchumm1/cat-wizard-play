@@ -79,6 +79,8 @@
       '.gart.gnew.g0 .gimg.gpic{filter:grayscale(.9) brightness(1.05) drop-shadow(0 2px 2px rgba(0,0,0,.35))!important}' +
       '.gart.gnew.g4 .gimg.gpic{filter:drop-shadow(0 0 4px rgba(255,200,60,.7))!important}' +
       '.gart.gnew.g5 .gimg.gpic{filter:drop-shadow(0 0 5px rgba(255,80,110,.85))!important}' +
+      // 혼돈·멸망 pictures are detailed and thin (the user, 2026-11-15: "too small"): they fill nearly the whole cell
+      '.gart.gnew.gx8 .gimg.gpic,.gart.gnew.gx9 .gimg.gpic{left:2%!important;top:2%!important;width:96%!important;height:96%!important}' +
       '.ico.sgpic{position:relative}' +
       '.ico.sgpic>img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;-webkit-user-drag:none;user-select:none}' +
       '.ico.sgpic .sgmark{position:absolute;left:-8%;bottom:-6%;width:42%;height:42%;overflow:visible;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.6))}';
