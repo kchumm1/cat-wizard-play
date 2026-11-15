@@ -138,10 +138,24 @@
       var cond = next ? '<div class="rankup"><div class="note">다음: <b style="color:#fff">' + next + '</b><br>조건 · 기본 징표 6개 ' + cap + ' · 계정 Lv.' + RC.rankLevel[r + 1] + ' · ' + CW.ICO.cur('mana') + ' ' + fmt(RC.rankCost[r + 1]) + '</div><button class="buy' + (ready.ok ? '' : ' off') + '" data-act="rankup">승급</button></div>' : '<p class="note">가장 높은 계급이에요.</p>';
       return head + '<div class="list">' + list + '</div>' + cond;
     }
+    // the user's mana circle (2026-11-15) cut into three rings that turn on their own: the inner blades light up first,
+    // the star lattice at 2서클, the rune band at 3서클; the band fills with light as levels go toward the next circle,
+    // each level-up sends a pulse out, a new circle a big burst. Rings keep their angle across redraws (delay from the clock).
+    // the panel is redrawn often; keepCircle (after each redraw) sets the ring angles from the clock and replays the pulse
+    var lastCircle = null, circleFx = '';
+    function circleArt(lv, tier, prog) {
+      if (lastCircle && lv > lastCircle.lv) circleFx = tier > lastCircle.tier ? 'tierup' : 'lvup';
+      lastCircle = { lv: lv, tier: tier };
+      var ring = function (name, lit) { return '<div class="mcl mc-' + name + (lit ? ' lit' : '') + '"><i></i></div>'; };
+      return '<div class="mcircle mcx t' + Math.min(8, tier) + '" style="--p:' + Math.round(Math.max(0, Math.min(1, prog)) * 360) + 'deg">' +
+        '<div class="mc-glow"></div>' + ring('out', tier >= 2) + '<div class="mcl mc-arc"><i></i></div>' +
+        ring('mid', tier >= 1) + ring('in', true) + '<div class="mc-core"></div><div class="mc-burst"></div>' +
+        '<b class="mc-lv">' + (tier + 1) + '</b></div>';
+    }
     function circlePanel() {
       var s = G.state, CC = DATA.circleConf, lv = s.circle || 0, tier = CW.circleTier(s), cost = CW.circleCost(lv), max = lv >= CC.maxLv;
       var toNext = (tier + 1) * CC.tierEvery - lv;
-      return '<div class="mcircle t' + Math.min(8, tier) + '"><div class="mcart"></div><div class="mtext"><small>마나서클 레벨</small><b>Lv.' + lv + '</b><span>' + (tier + 1) + '서클 마법사</span></div></div>' +
+      return circleArt(lv, tier, max ? 1 : (lv - tier * CC.tierEvery) / CC.tierEvery) + '<div class="mtext mcname"><small>마나서클 레벨</small><b>Lv.' + lv + '</b><span>' + (tier + 1) + '서클 마법사</span></div>' +
         '<div class="ceff"><div><span>레벨 효과</span><b>스킬 피해 +' + pct(lv * CC.perLv) + '</b></div><div class="hi"><span>서클 효과</span><b>모든 피해 +' + pct(tier * CC.tierFinal) + '</b></div></div>' +
         '<p class="note" style="text-align:center">' + (max ? '최고 서클이에요' : toNext + '레벨 더 올리면 ' + (tier + 2) + '서클 (모든 피해 +' + pct(CC.tierFinal) + ')') + '</p>' +
         '<div class="btns" style="justify-content:center"><button class="buy gemb' + (max || (s.mana || 0) < cost ? ' off' : '') + '" data-circle="1">' + (max ? '최대' : '레벨업 ' + CW.ICO.cur('mana') + ' ' + fmt(cost)) + '</button></div><p class="note" style="text-align:center">버튼을 꾹 누르면 계속 올라가요.</p>';
@@ -668,12 +682,28 @@
       return head + '<div class="slist">' + rows + '</div>';
     }
     var PANELS = { dungeon: dungeonPanel, stage: stagePanel, up: trainPanel, skill: skillPanel, gear: gearPanel, gacha: gachaPanel, more: morePanel };
+    // a redraw puts a fresh mana circle in the panel; its rings take their angle from the clock (so they never jump back to
+    // the start) and a level-up pulse / new-circle burst that is still playing carries on from where it was
+    var circleFxNow = null, MC_SPIN = [['.mc-out i', 90], ['.mc-arc i', 90], ['.mc-mid i', 60], ['.mc-in i', 24]];
+    function keepCircle() {
+      var nm = panel.querySelector('.mcx'), t = performance.now() / 1000;
+      if (circleFx) { circleFxNow = { k: circleFx, at: t }; circleFx = ''; }
+      if (!nm) return;
+      MC_SPIN.forEach(function (r) { var el = nm.querySelector(r[0]); if (el) el.style.animationDelay = -(t % r[1]).toFixed(3) + 's'; });
+      var f = circleFxNow, e = f ? t - f.at : 9, dur = f && f.k === 'tierup' ? 1.3 : 0.7;
+      if (!f || e >= dur) return;
+      nm.classList.add(f.k);
+      var d = -e.toFixed(3) + 's', core = nm.querySelector('.mc-core'), burst = nm.querySelector('.mc-burst'), fl = f.k === 'tierup' ? 1 : 0.5;
+      burst.style.animationDelay = d; if (f.k === 'tierup') nm.style.animationDelay = d;
+      core.style.animationDelay = d + ',' + (fl - e).toFixed(3) + 's';
+    }
     function renderPanel(force) {
       if (tab === 'battle') return;
       dockHtml = '';
       var html = PANELS[tab](), dh = dockHtml, key = html + '|dock|' + dh;
       if (!force && key === lastPanel) return;
       var y = panel.scrollTop; panel.innerHTML = html; panel.scrollTop = y; lastPanel = key;
+      keepCircle();
       // the selected 신성력/룬 sits at the bottom of the sheet, always in sight (2026-11-15); it slides up when it opens
       var was = !dock.hidden; dock.innerHTML = dh; dock.hidden = !dh;
       if (dh && !was) { dock.classList.remove('pop'); void dock.offsetWidth; dock.classList.add('pop'); var sl = panel.querySelector('.sel'); if (sl) sl.scrollIntoView({ block: 'nearest' }); }
