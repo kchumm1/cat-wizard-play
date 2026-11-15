@@ -696,13 +696,12 @@
       var best = d === (s.diff || 0) ? s.best : ((s.diffBest || {})[d] ? s.diffBest[d].best : -1), frontier = Math.min(309, best + 1), here = d === (s.diff || 0) ? s.stage : -1;
       var st = CW.stats(s), reg = DATA.regions[R], open = d <= (s.diffUnlocked || 0);
       var head = '<div class="dsel"><button class="btn" data-dsel="-1" aria-label="이전 난이도">◀</button><b>' + DATA.difficulties[d].name + (open ? '' : ' (잠김)') + '</b><button class="btn" data-dsel="1" aria-label="다음 난이도">▶</button></div>' +
-        // what this difficulty is like (this used to be the 난이도 part of 더보기), and a way straight to its front line
-        '<div class="note dnote">' + (open ? '보스 체력 ×' + fmt(DATA.difficulties[d].bossMul) + ' · 몬스터 +' + DATA.difficulties[d].extraMobs + '마리 · 다이아 ×' + DATA.difficulties[d].gemMul
-          : '앞 난이도의 10-31 늑대 왕을 이기면 열려요') + '</div>' +
+        // only when the difficulty is locked: what opens it (2026-11-15: the 보스 체력/몬스터/다이아 line and the help lines were taken out)
+        (open ? '' : '<div class="note dnote">앞 난이도의 10-31 늑대 왕을 이기면 열려요</div>') +
         (open ? '<button class="btn pri dgo" data-sgo="' + frontier + '" data-sd="' + d + '">' + (d === (s.diff || 0) ? '도전 중인 판으로' : DATA.difficulties[d].name + ' 도전 중인 판으로') + ' (' + CW.stageLabel(frontier) + ')</button>' : '') +
         worldMap(d, open, frontier, here) +
         '<div class="rsel">' + DATA.regions.map(function (r, i) { return '<button class="rchip' + (i === R ? ' on' : '') + (i * 31 > frontier ? ' lock' : '') + '" data-rsel="' + i + '">' + (i + 1) + '</button>'; }).join('') + '</div>' +
-        '<div class="note" style="margin:6px 0 8px">' + reg.name + ' · 판을 누르면 그곳으로 가요</div><div class="note slegend"><i class="coin"></i> 골드 <b class="xpdot"></b> 경험치 <b class="hpdot"></b><span class="hpbox"><b class="hpheart"></b>HP</span> · 몬스터 한 마리 (보스 판은 보스를 이겼을 때)</div>';
+        '<div style="height:8px"></div>';
       var rows = '';
       for (var n = 0; n < 31; n++) {
         var i = R * 31 + n, info = CW.stageInfo(i), lock = !open || i > frontier, tmp = { stage: i, diff: d, up: s.up };

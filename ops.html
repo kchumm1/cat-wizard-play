@@ -18,6 +18,9 @@ h2{font-size:16px;margin:0 0 12px}
 label{display:block;font-size:14px;color:var(--soft);margin:12px 0 4px}
 input[type=text],input[type=password],input[type=number],input[type=date]{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px}
 .row{display:flex;gap:10px}.row>*{flex:1;min-width:0}
+input[type=date]{box-sizing:border-box;display:block;min-width:0;max-width:100%;-webkit-appearance:none;appearance:none;text-align:center}
+input[type=date]::-webkit-date-and-time-value{text-align:center;margin:0}
+.row>div{min-width:0;overflow:hidden}
 .seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .seg button{flex:1;border:0;background:transparent;color:var(--ink);font:inherit;padding:10px;min-height:44px}
 .seg button.on{background:var(--accent);color:var(--accent-ink);font-weight:600}
