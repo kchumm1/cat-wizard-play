@@ -5,8 +5,12 @@
   // is a dip: the speed drops at once, never below 30%, and comes back smoothly (fastest at the start, flat at the end).
   // Several dips at once do not add up: the deepest one at each moment wins.
   var MAX_DEPTH = 0.7, HIT_GAP = 0.22, MAX_DIPS = 32;
+  // slow motion and climaxes share one gap: with four high skills cast again and again (iPhone, 2026-11-16) they fired
+  // 10+ times in 8 s and the game was slowed 7-8 s of every 8, which looked like stuttering although 57-60 frames were
+  // drawn. Now one every 3 s; the stage-clear one (deep, s <= 0.3) always goes through.
+  var SLOW_GAP = 3;
   function createTimeScale() {
-    var clock = 0, lastStop = -9, dips = [];
+    var clock = 0, lastStop = -9, lastSlow = -9, dips = [];
     function dip(depth, dur) {
       if (!(depth > 0) || !(dur > 0)) return;
       dips.push({ d: Math.min(MAX_DEPTH, depth), t: dur, all: dur });
@@ -19,14 +23,17 @@
     }
     // slow motion at speed s; one that was meant to hold and then jump back (ease false) gets a longer smooth return,
     // so about the same amount of slow motion is seen
-    function slowmo(sec, s, ease) { dip(1 - s, ease ? sec : sec * 1.6); }
+    function slowmo(sec, s, ease) {
+      if (1 - s < MAX_DEPTH && clock - lastSlow < SLOW_GAP) return;
+      lastSlow = clock; dip(1 - s, ease ? sec : sec * 1.6);
+    }
     // the one big moment of a skill (the black hole bursting): time nearly stands still at first, then comes back
     // smoothly (flat at the start, unlike a dip). Never a full stop, and at most one every 1.5 s, so it cannot turn
     // back into the game that keeps stopping.
     var lastClimax = -9, climaxes = [];
     function climax(depth, dur) {
-      if (!(depth > 0) || !(dur > 0) || clock - lastClimax < 1.5) return;
-      lastClimax = clock; climaxes.push({ d: Math.min(0.92, depth), t: dur, all: dur });
+      if (!(depth > 0) || !(dur > 0) || clock - lastClimax < 1.5 || clock - lastSlow < SLOW_GAP) return;
+      lastClimax = clock; lastSlow = clock; climaxes.push({ d: Math.min(0.92, depth), t: dur, all: dur });
     }
     function scaleDt(dt) {
       var deficit = 0;
