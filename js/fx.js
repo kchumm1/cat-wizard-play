@@ -1272,6 +1272,15 @@
       for (var i = 0; i < N(20); i++) E({ pos: V(mob.tx + rr(-1, 1), rr(0, 0.3), mob.z + rr(-0.4, 0.4)), vel: V(0, rr(1.5, 3.5), 0), frame: 'dot', color: [0xffffff, region ? 0xff3b5c : 0xffd84a], size: [0.1, 0], life: rr(0.6, 1.1), delay: rr(0, 0.6) });
       return p;
     }
+    // little monsters knocked out by one hit (js/minions.js): one shared burst for all of them, bigger the more there were,
+    // instead of a death effect each — that is what keeps a crowd of them cheap on a phone
+    function minionBurst(pos, n, col) {
+      col = col || 0xffd84a; var k = Math.min(1, (n - 1) / 6);
+      flare(pos, 0xffffff, 0.8 + 0.7 * k, 0.16, { white: true });
+      shock(pos, col, 1.1 + 1.2 * k, 0.3);
+      for (var i = 0; i < N(Math.min(18, 5 + n * 2)); i++) E({ sys: 'norm', pos: pos.clone().add(V(rr(-0.5, 0.5) * (0.6 + k), rr(-0.1, 0.3), rr(-0.2, 0.2))), vel: V(rr(-2.4, 2.4), rr(2, 4.5), rr(-0.6, 0.6)), frame: pick(['dot', 'star']), color: [0xffffff, col], size: [rr(0.08, 0.14), 0], life: rr(0.35, 0.6), grav: 9, white: true });
+      if (n >= 3) smoke(V(pos.x, 0.15, pos.z), dustCol, 1, { size: 0.9 + 0.5 * k, rise: 0.25, alpha: 0.32 });
+    }
     function coinPop(pos, n) {
       for (var i = 0; i < Math.min(8, n || 4); i++) E({ sys: 'norm', pos: pos, vel: rdir(1.6).add(V(0, 3.2, 0)), frame: 'dot', color: 0xffcf3a, size: 0.14, life: rr(0.45, 0.7), grav: 9, white: true });
     }
@@ -1354,7 +1363,7 @@
     function setBright(v) { vx.setBright(v); P3.setBright(v); }
     function setRegion(regionData) { dustCol = new T.Color(regionData.ground).lerp(new T.Color(0xffffff), 0.45).getHex(); P3.warm(); warmPics(); }
     function clear() { epoch++; timers.length = 0; ticks.length = 0; vx.clear(); P3.clear(); picClear(); if (BEASTS) BEASTS.clear(); sc.mobs().forEach(function (m) { m.pull = undefined; m.pullZ = undefined; m.lift = undefined; }); }
-    return { setStaffColor: function (c) { staffCol = c; }, setCostume: function (f) { cosFx = f; cosAcc = 0; }, cast: cast, update: update, setQuality: setQuality, setBright: setBright, setRegion: setRegion, clear: clear, count: vx.count,
+    return { setStaffColor: function (c) { staffCol = c; }, setCostume: function (f) { cosFx = f; cosAcc = 0; }, cast: cast, update: update, setQuality: setQuality, setBright: setBright, setRegion: setRegion, clear: clear, count: vx.count, minionBurst: minionBurst,
       impact: impact, levelUp: levelUp, bossEnter: bossEnter, coinPop: coinPop, burst: function (pos, col) { impact(pos, col, 0.8); }, vfx: vx,
       // for checks: 3D parts alive, and painted heads alive (only those of the given pictures when names are given)
       count3d: function () { return P3.count(); }, bm3d: function (k) { return P3.bmList(k); }, beasts: function () { return BEASTS ? BEASTS.count() : 0; }, spikeTops: function () { return P3.spikeTops(); }, batchSmoke: function (v) { P3.setBatchSmoke(v); }, smoke3d: function () { return P3.smoke(); }, batchChips: function (v) { P3.setBatchChips(v); }, watch: function (fn) { watcher = fn || null; }, picCount: function (names) { return picHeads.filter(function (h) { return !names || names.indexOf(h.name) >= 0; }).length; } };

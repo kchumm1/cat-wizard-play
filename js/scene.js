@@ -536,8 +536,11 @@
       mob.alive = false; mobs.splice(mobs.indexOf(mob), 1); if (HB.focus === mob) HB.focus = null;
       mobGroup.remove(mob.group); disposeGroup(mob.group);
     }
+    // the little ones milling round the fight (js/minions.js): cheap stiff pictures that burst in crowds where spells land
+    var minions = CW.createMinions ? CW.createMinions({ T: T, group: mobGroup, tilt: TILT, clampField: clampField, halfX: halfX, field: FIELD,
+      hero: function () { return HB; }, mobs: function () { return mobs; } }) : null;
     function disposeGroup(g) { g.traverse(function (x) { if (x.geometry && !x.geometry.userData.cached) x.geometry.dispose(); if (x.material && x.material.dispose) x.material.dispose(); }); }
-    function clearMobs() { HB.focus = null; mobs.slice().forEach(function (m) { m.alive = false; mobGroup.remove(m.group); disposeGroup(m.group); }); mobs.length = 0; dying.forEach(function (m) { mobGroup.remove(m.group); disposeGroup(m.group); }); dying.length = 0; }
+    function clearMobs() { if (minions) minions.clear(); HB.focus = null; mobs.slice().forEach(function (m) { m.alive = false; mobGroup.remove(m.group); disposeGroup(m.group); }); mobs.length = 0; dying.forEach(function (m) { mobGroup.remove(m.group); disposeGroup(m.group); }); dying.length = 0; }
     function mobPos(mob) { var g = mob.group, h = g.userData.h * 0.5; return new T.Vector3(g.position.x, h * COS_T + g.position.y, g.position.z - h * SIN_T + 0.15); }
     function mobTop(mob) { var g = mob.group, h = g.userData.h * 0.92; return new T.Vector3(g.position.x, h * COS_T + g.position.y, g.position.z - h * SIN_T + 0.15); }
 
@@ -1019,6 +1022,7 @@
         dd.shadow.position.y = 0.012 - m.y; dd.shadow.material.opacity = 0.2 * (1 - k2);
         if (k2 >= 1) { mobGroup.remove(g); disposeGroup(g); dying.splice(i, 1); }
       }
+      if (minions) minions.update(dt);
       lights.forEach(function (L) { L.t += dt; }); while (lights.length && lights[0].t >= lights[0].life) lights.shift();
       if (painted) painted.update(dt, vh * renderer.getPixelRatio());
       // numbers
@@ -1116,7 +1120,7 @@
       THREE: T, scene: scene, camera: camera, renderer: renderer, fxGroup: fxGroup, glow: GLOW, hooks: hooks,
       size: size, setRegion: setRegion, setHero: setHero, setHeroTexture: setHeroTexture, setHeroViews: setHeroViews, setCostumeFx: setCostumeFx, heroTip: heroTip, heroPaw: heroPaw, heroCenter: heroCenter, heroPose: heroPose, heroBeatAt: function () { return beatT; }, heroGlow: heroGlowPulse, ghost: ghost,
       castPulse: function () { heroGlow = 1; }, heroState: function () { return HB; }, heroFaceTo: heroFaceTo, heroCheer: heroCheer, setViewShift: setViewShift,
-      spawnMob: spawnMob, hitMob: hitMob, killMob: killMob, dismissMob: dismissMob, clearMobs: clearMobs, mobs: function () { return mobs; }, mobPos: mobPos, mobTop: mobTop,
+      minions: minions, spawnMob: spawnMob, hitMob: hitMob, killMob: killMob, dismissMob: dismissMob, clearMobs: clearMobs, mobs: function () { return mobs; }, mobPos: mobPos, mobTop: mobTop,
       setTierAura: setTierAura, damageText: damageText, screenPos: screenPos, flash: flash, dim: dim, shake: shake, punch: camPunch, light: light,
       hitStop: hitStop, slowmo: slowmo, climax: climax, scaleDt: scaleDt, update: update, render: render, lens: lens, warmLens: warmLens,
       setPixel: setPixel, setDamageStyle: setDamageStyle, setQuality: setQuality, getQuality: function () { return quality; }

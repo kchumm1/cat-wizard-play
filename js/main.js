@@ -141,8 +141,16 @@
     var r = Math.random(), entry = r < 0.6 ? 'run' : r < 0.85 ? 'leap' : 'drop';
     sc.spawnMob({ art: a, id: id, height: fitHeight(a, 0.9 + Math.random() * 0.14), hp: CW.stageMonsterHp(state) / CROWD, entry: entry });
   }
+  // the little ones (js/minions.js): smaller copies of this wave's kinds of monster; they bring nothing and count for nothing
+  function minionPick() {
+    var R = DATA.regions[CW.stageInfo(state.stage).region], ids = waveKinds.length ? waveKinds : R.monsters;
+    var id = ids[Math.floor(Math.random() * ids.length)], a = mobArt(id, R.monsters[0]);
+    return a ? { art: a, height: fitHeight(a, 0.5 + Math.random() * 0.1) } : null;
+  }
+  var mins = sc.minions;
   function startBoss() {
     var info = CW.stageInfo(state.stage), R = DATA.regions[info.region];
+    if (mins) mins.scatter();
     clearField(false);
     var sb = CW.stageBoss(state.stage, state.diff || 0), a = mobArt(sb.art, R.boss.art) || mobArt(R.boss.art);
     if (!a) { needArt(sb.art); restT = 0.3; state.bossTry = true; return; }
@@ -173,6 +181,8 @@
       if (skill.status === 'shock') mob.shocked = 2.2;
       sc.hitMob(mob, crit, (power || 1) * (1 + 0.25 * Math.max(0, ct - 1)));
       sc.damageText(sc.mobTop(mob), CW.fmt(dmg), ct, hexCss(skill.color));
+      // the little ones standing near where it landed are knocked out together, with one shared burst
+      if (mins && !mob.boss) { var mk = mins.hitArea(mob.x, mob.z, 0.8 + 0.25 * Math.min(2, power || 1)); if (mk.n) { fx.minionBurst(new sc.THREE.Vector3(mk.x, 0.3, mk.z), mk.n, skill.color); if (mk.n >= 2) snd.play('kill'); } }
       if (ct >= 3) { sc.shake(Math.min(0.42, 0.08 * ct)); if (ct >= 4) sc.flash(CRIT_FLASH[Math.min(ct, 7)], ct >= 5 ? 0.24 : 0.18); }
       gained.dmg = Math.max(gained.dmg, dmg);
       snd.play(crit ? 'crit' : 'hit');
@@ -532,6 +542,8 @@
   function tick(dt) {
     buffT -= dt; if (buffT <= 0) { buffT = 1; var bk = CW.buffKey(state); if (bk !== buffKey) { buffKey = bk; refreshStats(); } }
     for (var i = pendingTier.length - 1; i >= 0; i--) { pendingTier[i].at -= dt; if (pendingTier[i].at <= 0) { doTierUp(pendingTier[i].tier); pendingTier.splice(i, 1); } }
+    // how many little ones: only in a plain stage fight (not a boss, not a dungeon), fewer on a phone and at lower quality
+    if (mins) mins.setWant(dun || boss || state.bossTry ? 0 : CW.minionCap(sc.getQuality(), CW.PHONE), minionPick);
     if (dun) dunTick(dt);
     else if (restT > 0) { restT -= dt; if (restT <= 0) syncRegion(); }
     else if (boss) {
