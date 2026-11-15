@@ -53,9 +53,9 @@
       var R = ROW[key], st = econ.stats(state), nx = econ.stats(withLevel(state, key, to));
       about = R.about;
       lines.push(['지금', R.val(st)]);
-      if (R.dmg) lines.push(['피해', '터지면 ' + R.dmg(st)]);
       var capped = R.cap && R.val(st) === R.cap;
       if (!atMax && !capped) lines.push(['다음', R.val(nx) + (R.rise ? R.rise(st, nx) : '')]);
+      if (R.dmg) lines.push(['피해', '터지면 ' + R.dmg(st)]);
       if (R.cap) lines.push(['최대', R.cap + (u.max !== null ? ' (Lv.' + u.max + ')' : '')]);
       else if (u.max !== null) lines.push(['최대', 'Lv.' + u.max]);
     }

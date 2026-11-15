@@ -487,8 +487,8 @@
         // plain words (js/grow-text.js): what the row does, then 지금 / 다음 / 최대 / 돌파 lines whose labels line up
         var gl = CW.growLines(s, k, upMul > 1 ? nBuy : 1);
         var glHtml = '<div class="gabout">' + gl.about + '</div><div class="glines">' + gl.lines.map(function (l) { return '<b class="gl-' + ({ 지금: 'now', 다음: 'next', 최대: 'max', 돌파: 'over', 피해: 'dmg' }[l[0]] || 'x') + '">' + l[0] + '</b><span>' + l[1] + '</span>'; }).join('') + '</div>';
-        return '<div class="row grow"><div class="ricon">' + CW.ICO.stat(k) + '</div><div class="info"><div class="name">' + u.name + '<span class="lv">' + lvTxt + '</span></div>' + glHtml + '</div>' +
-          '<button class="buy ' + (max || s.gold < one ? 'off' : '') + '" data-up="' + k + '">' + (max ? '최대' : (upMul > 1 ? '<small>×' + nBuy + '</small>' : '') + '<i class="coin"></i>' + gh(cost)) + '</button></div>';
+        return '<div class="row grow"><div class="ricon">' + CW.ICO.stat(k) + '</div><div class="info"><div class="name"><span class="nm">' + u.name + '</span><span class="lv">' + lvTxt + '</span></div>' + glHtml + '</div>' +
+          '<button class="buy ' + (max || s.gold < one ? 'off' : '') + '" data-up="' + k + '">' + (max ? '최대' : '<span class="bp"><i class="coin"></i>' + gh(cost) + '</span>') + '</button></div>';
       }).join('') + '</div>';
     }
     function skillPanel() {
@@ -719,6 +719,19 @@
     // STAGE_NAME_MIN px: when the rewards would take that (the long numbers of hard difficulties) they get a smaller size.
     // A name that still does not fit in two lines gets the smaller size too.
     var STAGE_NAME_MIN = 56;
+    // a growth row's name and level share one line: a long name gets just small enough to fit beside its level
+    function fitGrowNames() {
+      // every buy button as wide as the widest price in the list (so the boxes end in one line), never cutting a price
+      var list = panel.querySelector('.list'), bw = 0, buys = panel.querySelectorAll('.row.grow .buy');
+      if (list) list.style.removeProperty('--buyw');
+      buys.forEach(function (b) { b.style.width = 'max-content'; bw = Math.max(bw, b.getBoundingClientRect().width); b.style.width = ''; });
+      if (list && bw) list.style.setProperty('--buyw', Math.ceil(bw) + 'px');
+      panel.querySelectorAll('.row.grow .name').forEach(function (n) {
+        var nm = n.querySelector('.nm'); if (!nm) return; nm.style.fontSize = '';
+        var full = nm.scrollWidth, room = nm.clientWidth;
+        if (full > room + 0.5) nm.style.fontSize = Math.max(10, parseFloat(getComputedStyle(nm).fontSize) * (room - 1) / full).toFixed(2) + 'px';
+      });
+    }
     function fitStageRows() {
       var list = panel.querySelector('.slist'), row = list && list.querySelector('.srow'); if (!row) return;
       list.classList.remove('tight', 'tighter'); list.style.removeProperty('--srw');
@@ -741,7 +754,7 @@
       var html = PANELS[tab](), dh = dockHtml, key = html + '|dock|' + dh;
       if (!force && key === lastPanel) return;
       var y = panel.scrollTop; panel.innerHTML = html; panel.scrollTop = y; lastPanel = key;
-      keepCircle(); if (tab === 'stage') fitStageRows();
+      keepCircle(); if (tab === 'stage') fitStageRows(); if (tab === 'up') fitGrowNames();
       // the selected 신성력/룬 sits at the bottom of the sheet, always in sight (2026-11-15); it slides up when it opens
       var was = !dock.hidden; dock.innerHTML = dh; dock.hidden = !dh;
       if (dh && !was) { dock.classList.remove('pop'); void dock.offsetWidth; dock.classList.add('pop'); var sl = panel.querySelector('.sel'); if (sl) sl.scrollIntoView({ block: 'nearest' }); }

@@ -38,6 +38,22 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 /* the region's picture behind the fight (scene.js), stretched to the screen: all of it shows, nothing cut off */
 /* 성장 rows (js/grow-text.js): a plain sentence, then a soft box of label | value lines. Every label is the same-width
    chip, so the values start at the same place in every line of every row */
+.row.grow .name{display:flex;align-items:center;gap:5px;white-space:nowrap;min-width:0}
+.row.grow .name .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.03em}
+.row.grow .name .lv{flex:none;margin-left:0;font-size:10.5px;padding:1px 5px}
+/* the row as a grid: the name line runs the full width on top (never pushed by the button); the sentence, the box and
+   the buy button share the lines under it. The button stacks ×N over the price, and every button in the list is as wide
+   as the widest price (ui.js fitGrowNames) */
+#sheet .row.grow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"ic nm nm" "ic ab bu" "gl gl gl";column-gap:10px;row-gap:0;align-items:center}
+#sheet .row.grow .info{display:contents}
+#sheet .row.grow .ricon{grid-area:ic;align-self:center}
+#sheet .row.grow .name{grid-area:nm}
+#sheet .row.grow .gabout{grid-area:ab;align-self:end}
+#sheet .row.grow .glines{grid-area:gl;align-self:start;margin-top:8px}
+#sheet .row.grow .buy{grid-area:bu;min-width:0;width:var(--buyw,auto);min-height:42px;padding:5px 9px;align-self:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;line-height:1.15;white-space:nowrap;font-size:14.5px}
+#sheet .row.grow .buy small{font:700 10.5px/1.1 var(--body);opacity:.75}
+#sheet .row.grow .buy .bp{display:inline-flex;align-items:center;gap:3px}
+#sheet .row.grow .buy .coin{width:16px;height:16px;flex:none}
 .row.grow .gabout{font:500 12px/1.4 var(--body);color:var(--muted);margin:3px 0 6px}
 .row.grow .glines{display:grid;grid-template-columns:34px minmax(0,1fr);gap:4px 8px;align-items:center;padding:6px 8px;border-radius:10px;background:rgba(150,115,70,.08);box-shadow:inset 0 0 0 1px rgba(150,115,70,.12)}
 .row.grow .glines b{display:flex;align-items:center;justify-content:center;height:19px;border-radius:6px;font:700 10.5px/1 var(--body);letter-spacing:.02em;color:#7a6a5a;background:rgba(150,115,70,.14)}
