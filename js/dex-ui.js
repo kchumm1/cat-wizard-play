@@ -34,7 +34,7 @@
     var s = CW.dexState(), order = CW.dexOrder(), have = 0;
     order.forEach(function (e) { if (s.dex && s.dex[e.id]) have++; });
     var pct = Math.floor(have / order.length * 100);
-    var bonus = DATA.dexConf.regionBonus, bonusTxt = '공격력 +' + Math.round(bonus.atkPct * 100) + '% 골드 +' + Math.round(bonus.goldMul * 100) + '%';
+    var bonusTxt = CW.dexBonusText(), anyNew = CW.dexHasNew(s);
     var groups = DATA.regions.map(function (R, r) {
       var list = order.filter(function (e) {
         if (e.region !== r) return false;
@@ -54,6 +54,7 @@
       '<div class="dxtabs">' + [['all', '전체'], ['found', '발견'], ['missing', '미발견']].map(function (t) {
         return '<button data-dxf="' + t[0] + '"' + (filter === t[0] ? ' class="on"' : '') + '><img src="' + A() + (filter === t[0] ? 'dex-tab-on' : 'dex-tab-off') + '.webp" alt="" draggable="false"><span>' + t[1] + '</span></button>';
       }).join('') + '</div>' +
+      (anyNew ? '<button class="dxall" data-dxall="1">NEW 모두 확인</button>' : '') +
       (groups || '<p class="dxempty">아직 여기에 들어갈 몬스터가 없어요</p>') +
       '<img class="dxfoot" src="' + A() + 'dex-foot.webp" alt="새로운 만남을 도감에 모아보세요" draggable="false">';
     watchPics();
@@ -106,6 +107,7 @@
       var t = e.target;
       if (t.closest('.dxback')) { close(); return; }
       if (t.closest('.dxx') || t === panel) { panel.classList.remove('on'); return; }
+      if (t.closest('[data-dxall]')) { var st = CW.dexState(), y = page.querySelector('.dxbody').scrollTop; CW.dexSeenAll(st); dexDot(false); render(); page.querySelector('.dxbody').scrollTop = y; return; }
       var f = t.closest('[data-dxf]'); if (f) { filter = f.dataset.dxf; panel.classList.remove('on'); render(); page.querySelector('.dxbody').scrollTop = 0; return; }
       var c = t.closest('[data-dx]'); if (c) showInfo(c.dataset.dx);
     });

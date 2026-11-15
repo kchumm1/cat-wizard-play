@@ -151,19 +151,19 @@
       if (mob.hp <= 0) onDeath(mob, skill);
     };
   }
-  // monster codex (2026-11-15): the first kill of each kind is written down (stage fights only, never dungeons);
-  // the id is the one meant to appear even when a stand-in picture was shown
+  // monster codex (2026-11-15): the first kill of each kind is written down, in stage fights and dungeons alike;
+  // the id is the one meant to appear even when a stand-in picture was shown, the region is the monster's own
   function dexKill(id) {
     if (!id || !CW.dexRecord) return;
-    var r = CW.stageInfo(state.stage).region;
-    if (CW.dexRecord(state, id, r, Date.now()) !== 'new') return;
+    if (CW.dexRecord(state, id, null, Date.now()) !== 'new') return;
+    var r = state.dex[id].r;
     if (CW.dexDot) CW.dexDot(true);
-    if (CW.dexRegion(state, r).done) { refreshStats(); ui.toast('「' + DATA.regions[r].name + '」 도감 완성! 공격력·골드 +2%'); }
+    if (CW.dexRegion(state, r).done) { refreshStats(); ui.toast('「' + DATA.regions[r].name + '」 도감 완성! ' + CW.dexBonusText()); }
   }
   function onDeath(mob, skill) {
     sc.killMob(mob, skill.color, mob.boss);
     var pos = sc.mobPos(mob);
-    if (!dun) dexKill(mob.id);
+    dexKill(mob.id);
     if (mob.boss && boss && boss.mob === mob) { bossWin(pos); return; }
     if (dun) { dun.kills++; if (dun.kind === 'gold') { fx.coinPop(pos, 4); flyCoins(pos, 2); } else fx.coinPop(pos, 2); snd.play('kill'); return; }
     var gold = CW.stageGold(state, undefined, st.goldMul) * st.goldMul / CROWD * DATA.balance.killPay;
@@ -255,9 +255,9 @@
   function dunDef(kind) { for (var i = 0; i < DATA.dungeons.length; i++) if (DATA.dungeons[i].id === kind) return DATA.dungeons[i]; return null; }
   function spawnDun() {
     var info = CW.stageInfo(Math.max(0, state.best)), R = DATA.regions[info.region];
-    var a = mobArt(R.monsters[Math.floor(Math.random() * R.monsters.length)], R.monsters[0]); if (!a) return;
+    var did = R.monsters[Math.floor(Math.random() * R.monsters.length)], a = mobArt(did, R.monsters[0]); if (!a) return;
     var hp = CW.stageMonsterHp({ stage: Math.max(0, state.best), diff: state.diff || 0 }) / CW.DUN_CROWD * 0.6;
-    sc.spawnMob({ art: a, tint: dun.kind === 'gold' ? 0xffd84a : dun.kind === 'rune' ? 0xc49bff : 0x8ff0ff, height: fitHeight(a, 0.88 + Math.random() * 0.14), hp: hp, entry: Math.random() < 0.7 ? 'run' : 'leap' });
+    sc.spawnMob({ art: a, id: did, tint: dun.kind === 'gold' ? 0xffd84a : dun.kind === 'rune' ? 0xc49bff : 0x8ff0ff, height: fitHeight(a, 0.88 + Math.random() * 0.14), hp: hp, entry: Math.random() < 0.7 ? 'run' : 'leap' });
   }
   function dungeonStart(kind) {
     var def = dunDef(kind); if (!def) return 'none';

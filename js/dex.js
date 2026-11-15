@@ -21,15 +21,22 @@
   function entry(id) { dexOrder(); return INDEX[id] ? ORDER[INDEX[id] - 1] : null; }
   function book(state) { return state.dex || (state.dex = {}); }
 
-  // the kill hot path: one lookup when already known
+  // the kill hot path: one lookup when already known; region null = the entry's own region (dungeon kills)
   function dexRecord(state, id, region, now) {
-    if (!entry(id)) return null;
+    var e = entry(id); if (!e) return null;
     var d = book(state);
     if (d[id]) return 'old';
-    d[id] = { t: now, r: region, n: 1 };
+    d[id] = { t: now, r: region === null || region === undefined ? e.region : region, n: 1 };
     return 'new';
   }
   function dexSeen(state, id) { var e = state.dex && state.dex[id]; if (e) delete e.n; }
+  function dexSeenAll(state) { var d = state.dex || {}, n = 0; for (var k in d) if (d[k] && d[k].n) { delete d[k].n; n++; } return n; }
+  // the reward line, read from DATA.dexConf so the words follow the numbers
+  function dexBonusText() {
+    var b = (DATA.dexConf && DATA.dexConf.regionBonus) || {}, NAME = { atkPct: '공격력', goldMul: '골드' }, out = [];
+    for (var k in b) out.push((NAME[k] || k) + ' +' + Math.round(b[k] * 1000) / 10 + '%');
+    return out.join(' ');
+  }
   function dexHasNew(state) { var d = state.dex || {}; for (var k in d) if (d[k] && d[k].n) return true; return false; }
   function dexRegion(state, r) {
     var d = state.dex || {}, have = 0, total = 0;
@@ -70,6 +77,6 @@
     }
     return { region: e.region, diff: diff, diffOpen: diff === null || diff <= (state.diffUnlocked || 0) };
   }
-  return { dexOrder: dexOrder, dexRecord: dexRecord, dexSeen: dexSeen, dexHasNew: dexHasNew, dexRegion: dexRegion, dexStats: dexStats,
+  return { dexOrder: dexOrder, dexRecord: dexRecord, dexSeen: dexSeen, dexSeenAll: dexSeenAll, dexBonusText: dexBonusText, dexHasNew: dexHasNew, dexRegion: dexRegion, dexStats: dexStats,
     dexBackfill: dexBackfill, dexHint: dexHint };
 });
