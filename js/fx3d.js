@@ -600,6 +600,7 @@
     // three random numbers too: it is in parts, first moved in the frame after it was made, and ended, like a single puff.
     // id: which of two puffs at exactly the same depth was made first)
     function puff(pos, o) {
+      if (CW.fxOff && CW.fxOff.smoke) return;   // (switches for measuring on a phone, dev/phone-perf-*.html)
       o = o || {}; if (!batchSmoke) return puffMesh(pos, o);
       var life = o.life || 0.9, s0 = o.s0 || 0.2, s1 = o.s1 || 0.6, v = o.vel ? o.vel.clone() : new T.Vector3(0, 0.6, 0), drag = o.drag === undefined ? 1.5 : o.drag;
       var q = { puff: true, id: ++puffId, z: 0, p: pos.clone(), q: null, s: s0, k: 0, dark: C(o.dark || 0x2c2624), light: C(o.light || 0x9a908a), seed: Math.random() * 9, alpha: o.alpha === undefined ? 0.85 : o.alpha, order: o.order === 4 ? 4 : 5 };
@@ -886,6 +887,7 @@
     // rises and burns away, a ring rolling over the ground, a puff ring of dust and a column of smoke that rise after it,
     // rocks thrown out (some trailing smoke), and a scorched hollow with molten cracks that cool for a while.
     function impact(pos, o) {
+      if (CW.fxOff && CW.fxOff.ground) return;
       o = o || {}; var R = o.size || 1, x = pos.x, z = pos.z, col = o.col || 0xff9a2a, dirt = o.dirt || 0x6a5546, calm = o.calm === undefined ? 1 : o.calm;
       var fl = orb({ col: bright ? 0xffd040 : 0xfff6d0, deep: bright ? 0xff6a10 : col, alpha: 1, order: 7 }), fT = 0.2;
       fl.set(new T.Vector3(x, R * 0.35, z), R * 0.4, calm);
@@ -913,6 +915,7 @@
     }
     // ---------- an impact on the ground: fireball dome, rolling ring, hot crater, rocks thrown out ----------
     function blast(pos, o) {
+      if (CW.fxOff && CW.fxOff.ground) return;
       o = o || {}; var R = o.size || 1, life = o.life || 0.9, col = o.col || 0xffa030, x = pos.x, z = pos.z;
       var dome = add(new T.Mesh(o.ball ? GEO.ball : GEO.dome, mat(FS.dome, { uCol: { value: C(col) }, uLow: { value: C(o.low === undefined ? 0x6b0d12 : o.low) }, uHot: { value: o.hotness === undefined ? 0.4 : o.hotness }, uK: { value: 0 }, uSeed: { value: Math.random() * 9 }, uAlpha: { value: 1 } }, { side: T.DoubleSide, keepAdd: o.keepAdd })), {
         order: 6, life: life, upd: function (dt, t) { var k = t / life; dome.mesh.scale.setScalar(R * (0.25 + 0.95 * ease(k / 0.35))); U(dome).uK.value = Math.min(1, Math.max(0, (k - 0.12) / 0.88)); }
@@ -953,6 +956,7 @@
       });
     }
     function chip(pos, R, hot, smoky) {
+      if (CW.fxOff && CW.fxOff.chips) return;
       if (!batchChips) return chipMesh(pos, R, hot, smoky);
       var a = Math.random() * 6.283, sp = (2 + Math.random() * 3.5) * Math.sqrt(R), list = chips[(Math.random() * 3) | 0];
       if (list.length >= CHIP_CAP) list.shift();

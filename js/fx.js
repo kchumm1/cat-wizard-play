@@ -616,7 +616,7 @@
       fieldRain(c, 18, c.D(0.6), { y: function () { return rr(4.2, 5.8); }, vel: function () { return V(rr(-2.6, -1.6), rr(-6.5, -4), 0.3); }, frames: ['streak', 'dot'], cols: [0xffffff, 0xffd080, 0xff9a40], size: function () { return [rr(0.08, 0.13), 0.02]; }, life: 0.45, stretch: 0.07 });
       // dirt for the crown thrown up at each hit: the ground of this place, darkened to earth
       var dirt = new T.Color(dustCol).lerp(new T.Color(0x4a382c), 0.75).getHex(), landed = [];
-      volley(c, { shots: 12, t0: 0.14, span: 0.55, fire: function (mob, frac, m, n) {
+      volley(c, { shots: CW.fxOff && CW.fxOff.half ? 6 : 12, t0: 0.14, span: 0.55, fire: function (mob, frac, m, n) {
         var big = c.tier >= 7 && m === n - 1, land = mob ? sc.mobPos(mob) : fieldPt(0.1), cs = Math.min(1.6, c.s), P = big ? 2.0 : 1, R = 0.3 * cs * P;
         // they come in steep from high up and off to the side, so the fall crosses most of the screen
         var from = land.clone().add(V(rr(2.0, 2.6), rr(5.0, 5.6), -1.0));

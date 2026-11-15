@@ -179,6 +179,8 @@
     var qf = 1, bright = false, pool = [], camPos = new T.Vector3(), camDir = new T.Vector3();
 
     function emit(o) {
+      // (measuring on a phone, dev/phone-perf-*.html: CW.fxOff.bits leaves out the little flying bits; unset in the game)
+      if (CW.fxOff && CW.fxOff.bits && o.vel && !o.upd) return { x: 0, y: 0, z: 0 };
       var name = o.sys || 'add';
       if ((name === 'add' && bright && !o.white) || name === 'col') name = 'addB';
       if (name === 'gadd' && bright && !o.white) name = 'gnorm';

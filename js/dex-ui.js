@@ -107,6 +107,9 @@
 
   function build() {
     page = document.createElement('div'); page.id = 'dex'; page.setAttribute('role', 'dialog'); page.setAttribute('aria-label', '몬스터 도감');
+    // Android only (2026-11-15, a friend's phone): the gap kept for the iPhone clock showed as an empty lilac strip above
+    // the title picture there; the iPhone keeps its gap (index.html #dex.android)
+    if (/Android/i.test(navigator.userAgent || '')) page.classList.add('android');
     page.innerHTML = '<div class="dxcol"><div class="dxhead"><img src="' + A() + 'dex-head.webp" alt="몬스터 도감" draggable="false"><button class="dxback" aria-label="돌아가기"></button></div>' +
       '<div class="dxbody"></div></div><div class="dxinfo"></div>';
     document.body.appendChild(page);
