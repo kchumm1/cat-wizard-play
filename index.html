@@ -1472,15 +1472,18 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 #sheet .mcircle.mcx{width:min(300px,80vw);aspect-ratio:1;margin:4px auto 0;display:block;--gl:110,200,255}
 #sheet .mcircle.mcx.t3,#sheet .mcircle.mcx.t4{--gl:176,120,255}
 #sheet .mcircle.mcx.t5,#sheet .mcircle.mcx.t6,#sheet .mcircle.mcx.t7,#sheet .mcircle.mcx.t8{--gl:255,190,80}
-.mcx .mc-glow{position:absolute;inset:2%;border-radius:50%;background:radial-gradient(closest-side,rgba(22,28,68,.97) 0 80%,rgba(34,44,98,.55) 91%,rgba(40,52,110,0) 100%)}
+/* the dark disc reaches the ring's outer edge (2026-11-15: the unlit part of the outer ring sat on the fading rim and looked empty) */
+.mcx .mc-glow{position:absolute;inset:0;border-radius:50%;background:radial-gradient(closest-side,rgba(22,28,68,.97) 0 90%,rgba(30,38,86,.8) 96%,rgba(40,52,110,0) 100%)}
 .mcx .mcl{position:absolute;inset:0;pointer-events:none}
 .mcx .mcl i{position:absolute;inset:0;background:50% 50%/100% 100% no-repeat;animation:spin 60s linear infinite;will-change:transform}
 .mcx .mc-out i,.mcx .mc-arc i{background-image:url(art/ui-mc-out.webp);animation-duration:90s}
 .mcx .mc-mid i{background-image:url(art/ui-mc-mid.webp);animation-duration:60s;animation-direction:reverse}
 .mcx .mc-in i{background-image:url(art/ui-mc-in.webp);animation-duration:24s}
 .mcx .mcl{opacity:.3;filter:grayscale(1) brightness(.85)}
+/* the outer ring's not-yet-filled part: a plain grey track, clearly drawn all the way round */
+.mcx .mc-out:not(.lit){opacity:.55;filter:grayscale(1) brightness(1.15)}
 .mcx .mcl.lit{opacity:1;filter:drop-shadow(0 0 4px rgba(var(--gl),.85))}
-.mcx .mc-arc{opacity:1;filter:brightness(1.5) saturate(1.8) drop-shadow(0 0 6px rgba(var(--gl),1));-webkit-mask:conic-gradient(#000 var(--p),transparent 0);mask:conic-gradient(#000 var(--p),transparent 0)}
+.mcx .mc-arc{opacity:1;filter:brightness(1.5) saturate(1.8) drop-shadow(0 0 6px rgba(var(--gl),1));-webkit-mask:conic-gradient(transparent 0,#000 4deg,#000 calc(var(--p) - 5deg),transparent var(--p));mask:conic-gradient(transparent 0,#000 4deg,#000 calc(var(--p) - 5deg),transparent var(--p))}
 .mcx .mc-core{position:absolute;left:50%;top:50%;width:26%;aspect-ratio:1;margin:-13% 0 0 -13%;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.95) 0 18%,rgba(var(--gl),.55) 42%,rgba(var(--gl),0) 70%);animation:mcbreath 2.6s ease-in-out infinite}
 .mcx .mc-lv{position:absolute;left:50%;top:50%;transform:translate(-50%,-52%);font:400 30px/1 var(--display);color:#fff;text-shadow:0 0 6px rgba(var(--gl),1),0 0 2px #1b2250,0 1px 0 #1b2250}
 .mcx .mc-burst{position:absolute;inset:0;border-radius:50%;opacity:0;pointer-events:none}
