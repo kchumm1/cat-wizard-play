@@ -22,7 +22,7 @@
     st = CW.stats(state);
     // titles earned along the way (2026-11-14)
     var got = CW.titleCheck ? CW.titleCheck(state) : [];
-    if (got.length && typeof ui !== 'undefined' && ui && ui.toast) got.forEach(function (id) { ui.toast('타이틀 「' + CW.titleById(id).name + '」 획득! 프로필을 눌러 달 수 있어요'); });
+    if (got.length && typeof ui !== 'undefined' && ui && ui.toast) got.forEach(function (id) { ui.toast('새 칭호 획득 · ' + CW.titleById(id).name + ' — 프로필에서 장착할 수 있어요.'); });
   }
   // equipment changes the wizard's picture (hat/robe colour, jewellery, staff glow)
   var lastLook = null;
@@ -95,7 +95,7 @@
     if (!useViews) sc.setHeroViews(null);
     else if (base.id !== 'hero') sc.setHeroViews(vset.map(function (id) { return art[id]; }), vset.map(function (id) { return art[id].tex; }), null);
     if (cl.id !== lastCos) { lastCos = cl.id; sc.setCostumeFx(cl.fx); fx.setCostume(cl.fx); }
-    if (!first && !silent) { fx.levelUp(state.tier, CW.staffColor(l), true); ui.toast('모습이 바뀌었어요'); }
+    if (!first && !silent) { fx.levelUp(state.tier, CW.staffColor(l), true); ui.toast('캐릭터 모습이 변경됐어요.'); }
   }
   function hexCss(h) { return '#' + ('000000' + h.toString(16)).slice(-6); }
   function isBright(R) { var c = new T.Color(R.sky); return c.r * 0.3 + c.g * 0.59 + c.b * 0.11 > 0.55; }
@@ -156,7 +156,7 @@
   function onStageMoved(kind) {
     smallKills = 0;
     syncRegion();
-    if (kind === 'hold') { ui.toast('보스를 잡으려면 도전 버튼을 눌러 주세요'); return; }
+    if (kind === 'hold') { ui.toast('도전 버튼을 눌러 보스전을 시작하세요.'); return; }
     if (kind === 'boss') startBoss();
   }
 
@@ -186,7 +186,7 @@
     if (CW.dexRecord(state, id, null, Date.now()) !== 'new') return;
     var r = state.dex[id].r;
     if (CW.dexDot) CW.dexDot(true);
-    if (CW.dexRegion(state, r).done) { refreshStats(); ui.toast('「' + DATA.regions[r].name + '」 도감 완성! ' + CW.dexBonusText()); }
+    if (CW.dexRegion(state, r).done) { refreshStats(); ui.toast(DATA.regions[r].name + ' 도감 완성! ' + CW.dexBonusText()); }
   }
   function onDeath(mob, skill) {
     sc.killMob(mob, skill.color, mob.boss);
@@ -231,8 +231,8 @@
     if (res.tierUp) pendingTier.push({ tier: res.tierUp, at: 1.1 });
     if (res.final) setTimeout(function () {
       var nd = res.unlocked !== null && res.unlocked !== undefined ? DATA.difficulties[res.unlocked] : null;
-      ui.modal('<h2 style="color:var(--gold)">늑대 왕 토벌!</h2><p>' + CW.diffOf(state).name + ' 난이도의 늑대 왕을 물리쳤어요.</p>' + (nd ? '<p>새 난이도 <b style="color:#fff">' + nd.name + '</b>이(가) 열렸어요. 몬스터와 보스가 훨씬 강하고 더 많이 몰려와요.</p>' : '<p>원하는 지역에서 계속 사냥할 수 있어요.</p>'),
-        nd ? [{ label: '나중에' }, { label: nd.name + ' 도전', pri: true, fn: function () { G.setDifficulty(res.unlocked); } }] : [{ label: '좋아요', pri: true }]);
+      ui.modal('<h2>늑대 왕 토벌 완료</h2><p class="guide-lead">' + CW.diffOf(state).name + ' 난이도를 완료했어요.</p>' + (nd ? '<div class="guide-section"><h3>다음 난이도 해금 · <strong>' + nd.name + '</strong></h3><p>몬스터와 보스가 더 강해지고 등장 수가 늘어요.</p></div>' : '<div class="guide-section"><p>원하는 지역에서 계속 사냥할 수 있어요.</p></div>'),
+        nd ? [{ label: '나중에' }, { label: nd.name + ' 도전', pri: true, fn: function () { G.setDifficulty(res.unlocked); } }] : [{ label: '확인', pri: true }], { variant: 'guide' });
     }, 1400);
     castT = Math.max(castT, 0.9); restT = 1.1;
     save();
@@ -241,14 +241,14 @@
     if (!r || !r.levels) return;
     refreshStats(); fx.levelUp(state.tier, 0x7fe3ff, true); snd.play('tier');
     ui.banner('Lv.' + state.level + '!');
-    if (r.gems) ui.toast('레벨 ' + state.level + ' 달성! 다이아 +' + r.gems);
+    if (r.gems) ui.toast('Lv.' + state.level + ' 달성 · 다이아 +' + r.gems);
   }
   function bossFail() {
     var mob = boss.mob; boss = null;
     CW.onBossResult(state, false);
     sc.killMob(mob, 0x777788, false);
-    ui.banner('시간 초과!'); snd.play('lose');
-    ui.toast('강화를 하고 "보스 다시 도전"을 눌러 보세요');
+    ui.banner('도전 시간이 끝났어요'); snd.play('lose');
+    ui.toast('성장을 강화한 뒤 ‘보스 다시 도전’을 눌러 보세요.');
     restT = 0.8; save();
   }
   function doTierUp(t) {
@@ -313,10 +313,10 @@
     var d = dun, res = { kills: d.kills, dmg: d.dmg }, r = CW.dungeonReward(state, d.kind, res);
     CW.recordBest(state, d.kind, res); CW.applyReward(state, r);
     dun = null; clearField(true); restT = 0.6; ui.dunHud(null);
-    snd.play('win'); ui.banner('던전 완료!'); save();
+    snd.play('win'); ui.banner('던전 클리어!'); save();
     var lines = d.kind === 'mana' ? '<p>골렘에게 준 피해 <b>' + CW.fmt(d.dmg) + '</b> (Lv.' + r.level + ')</p><p style="color:#8fd8ff;font:400 22px var(--display)">마력석 +' + CW.fmt(r.mana) + '</p>'
       : '<p>잡은 몬스터 <b>' + d.kills + '마리</b></p><p style="color:' + (d.kind === 'gold' ? 'var(--gold)' : d.kind === 'rune' ? '#d8b8ff' : 'var(--gem)') + ';font:400 22px var(--display)">' + (d.kind === 'gold' ? '골드 +' + CW.fmtGold(r.gold) : d.kind === 'rune' ? '룬석 +' + CW.fmt(r.runeStone) + (r.got && r.got.length ? ' · 룬 ' + r.got.length + '개' : '') + (r.overflow ? ' · 가방이 꽉 차 룬석 +' + CW.fmt(r.overflow) : '') : '다이아 +' + CW.fmt(r.gems)) + '</p>';
-    ui.modal('<h2>' + d.def.name + '</h2>' + lines + '<p class="note">남은 입장권 ' + CW.ticketsLeft(state, d.kind, Date.now()) + '장 · 기록이 좋으면 소탕으로 같은 보상을 바로 받을 수 있어요.</p>', [{ label: '좋아요', pri: true }]);
+    ui.modal('<h2>' + d.def.name + '</h2>' + lines + '<p class="note">남은 입장권 ' + CW.ticketsLeft(state, d.kind, Date.now()) + '장<br>소탕으로 최고 기록의 보상을 바로 받을 수 있어요.</p>', [{ label: '확인', pri: true }]);
   }
 
   // ---------- coins flying to the gold counter ----------
@@ -465,7 +465,7 @@
     // slider being dragged: show the numbers at that value right away, save when the finger lifts
     previewDamage: function (size, alpha) { sc.setDamageStyle(size / 100, alpha / 100); },
     showDamageSample: function () { var h = sc.heroCenter(); for (var i = 0; i < 3; i++) sc.damageText(h.clone().add(new T.Vector3(0.9 + i * 0.5, 0.6 + i * 0.25, 0)), ['1,234', '5.6만', '78억'][i], i); },
-    reset: function () { CW.clearSave(storage); state = CW.newState(); if (CW.dexDot) CW.dexDot(false); rot = CW.rotation(state); refreshStats(); clearField(true); region = -1; syncRegion(); sc.setTierAura(1); ui.renderPanel(true); ui.slots(); save(); cloudPush(true); ui.toast('처음부터 다시 시작해요'); },
+    reset: function () { CW.clearSave(storage); state = CW.newState(); if (CW.dexDot) CW.dexDot(false); rot = CW.rotation(state); refreshStats(); clearField(true); region = -1; syncRegion(); sc.setTierAura(1); ui.renderPanel(true); ui.slots(); save(); cloudPush(true); ui.toast('새 모험을 시작해요'); },
     storageOk: function () { return !!storage; },
     exportSave: function () { save(); return CW.exportCode(state); },
     importSave: function (code) { var st2 = CW.importCode(code); if (!st2 || !adopt(JSON.stringify(st2))) return false; save(); cloudPush(true); return true; },
@@ -487,9 +487,9 @@
     previewSkill: function (id) {
       var sk = CW.skillById(id); if (!sk) return;
       preview = { skill: sk, t: 0 }; castT = Math.max(castT, 1.6);
-      var tg = pickTargets(sk); if (!tg.length) { ui.toast('몬스터가 오면 보여 줄게요'); preview = null; return; }
+      var tg = pickTargets(sk); if (!tg.length) { ui.toast('몬스터 등장 후 미리보기를 사용할 수 있어요.'); preview = null; return; }
       fx.cast(sk, Math.max(state.tier, sk.tier), tg, function (m, f, p) { if (m.alive) sc.hitMob(m, false, p || 1); }, 1);
-      ui.toast(sk.name + ' 미리 보기');
+      ui.toast(sk.name + ' 스킬 미리보기');
     }
   };
   var ui = CW.createUI(G);
@@ -665,7 +665,7 @@
         var localSeen = state.lastSeen || 0, earlyEnough = Date.now() - cloud.startedAt < 20000;
         if (d && typeof d.json === 'string' && (d.lastSeen || 0) > localSeen + 1000 && earlyEnough) {
           var keepSeen = localSeen;
-          if (adopt(d.json)) { cloud.last = d.json; ui.toast('다른 기기에서 하던 진행을 불러왔어요'); giveOffline(); return; }
+          if (adopt(d.json)) { cloud.last = d.json; ui.toast('저장한 진행을 불러왔어요.'); giveOffline(); return; }
           state.lastSeen = keepSeen;
         }
         cloudPush(true);
@@ -676,7 +676,7 @@
   document.addEventListener('visibilitychange', function () { if (document.hidden) cloudPush(false); });
 
   // ---------- start ----------
-  $('banner').textContent = '불러오는 중…'; $('banner').classList.add('on');
+  $('banner').textContent = '게임을 불러오고 있어요…'; $('banner').classList.add('on');
   applySettings();
   CW.loadArt(CW.ART_IDS.concat(regionArt(CW.stageInfo(state.stage).region))).then(function (a) {
     for (var k in a) art[k] = a[k];

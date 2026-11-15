@@ -17,21 +17,21 @@
   // the base rows: the plain sentence, the stat it shows, how it reads, where the stat stops (if it does) and, for the
   // crit tiers, the damage that tier does when it lands
   var ROW = {
-    atk: { about: '모든 공격의 기본 힘이에요', val: function (s) { return N().fmt(s.atk); }, rise: function (a, b) { return ' (+' + Math.round((b.atk / a.atk - 1) * 100) + '%)'; } },
-    speed: { about: '스킬을 쓰는 빠르기예요', val: function (s) { return x(s.speedMul); }, cap: '×2.00' },
-    crit: { about: '공격이 치명타로 들어갈 확률이에요', val: function (s) { return pct(s.critRate); }, cap: '70%' },
-    critDmg: { about: '치명타가 들어가면 피해가 이만큼 곱해져요', val: function (s) { return x(s.critDmg); } },
-    gold: { about: '몬스터와 보스에게서 받는 골드가 늘어요', val: function (s) { return '+' + pct(s.goldMul - 1); } },
-    mastery: { about: '모든 스킬 피해가 이만큼 곱해져요', val: function (s) { return x(s.mastery); } },
-    superCrit: { about: '치명타가 슈퍼 크리티컬로 한 번 더 터질 확률이에요', val: function (s) { return pct(s.superRate); }, cap: '60%', dmg: function (s) { return x(s.superDmg); } },
-    ultraCrit: { about: '슈퍼 크리티컬이 울트라로 한 번 더 터질 확률이에요', val: function (s) { return pct(s.ultraRate); }, cap: '50%', dmg: function (s) { return x(s.ultraDmg); } },
-    hyperCrit: { about: '울트라가 하이퍼로 한 번 더 터질 확률이에요', val: function (s) { return pct(s.hyperRate); }, cap: '40%', dmg: function (s) { return x(s.hyperDmg); } },
-    megaCrit: { about: '하이퍼가 메가로 한 번 더 터질 확률이에요', val: function (s) { return pct(s.megaRate); }, cap: '30%' },
-    megaDmg: { about: '메가 크리티컬이 터지면 피해가 이만큼 곱해져요', val: function (s) { return x(s.megaDmg); } },
-    ultimateCrit: { about: '메가가 얼티밋으로 한 번 더 터질 확률이에요', val: function (s) { return pct(s.ultimateRate); }, cap: '25%' },
-    ultimateDmg: { about: '얼티밋 크리티컬이 터지면 피해가 이만큼 곱해져요', val: function (s) { return x(s.ultimateDmg); } },
-    alphaCrit: { about: '얼티밋이 알파로 한 번 더 터질 확률이에요', val: function (s) { return pct(s.alphaRate); }, cap: '20%' },
-    alphaDmg: { about: '알파 크리티컬이 터지면 피해가 이만큼 곱해져요', val: function (s) { return x(s.alphaDmg); } }
+    atk: { about: '모든 공격의 기본이 되는 힘', val: function (s) { return N().fmt(s.atk); }, rise: function (a, b) { return ' (+' + Math.round((b.atk / a.atk - 1) * 100) + '%)'; } },
+    speed: { about: '스킬을 사용하는 속도', val: function (s) { return x(s.speedMul); }, cap: '×2.00' },
+    crit: { about: '공격이 치명타로 적중할 확률', val: function (s) { return pct(s.critRate); }, cap: '70%' },
+    critDmg: { about: '치명타가 적중했을 때의 피해 배율', val: function (s) { return x(s.critDmg); } },
+    gold: { about: '몬스터·보스 처치 시 골드 획득량', val: function (s) { return '+' + pct(s.goldMul - 1); } },
+    mastery: { about: '모든 스킬에 적용되는 피해 배율', val: function (s) { return x(s.mastery); } },
+    superCrit: { about: '치명타가 슈퍼 크리티컬로 이어질 확률', val: function (s) { return pct(s.superRate); }, cap: '60%', dmg: function (s) { return x(s.superDmg); } },
+    ultraCrit: { about: '슈퍼 크리티컬이 울트라로 이어질 확률', val: function (s) { return pct(s.ultraRate); }, cap: '50%', dmg: function (s) { return x(s.ultraDmg); } },
+    hyperCrit: { about: '울트라가 하이퍼로 이어질 확률', val: function (s) { return pct(s.hyperRate); }, cap: '40%', dmg: function (s) { return x(s.hyperDmg); } },
+    megaCrit: { about: '하이퍼가 메가로 이어질 확률', val: function (s) { return pct(s.megaRate); }, cap: '30%' },
+    megaDmg: { about: '메가 크리티컬 적중 시 피해 배율', val: function (s) { return x(s.megaDmg); } },
+    ultimateCrit: { about: '메가가 얼티밋으로 이어질 확률', val: function (s) { return pct(s.ultimateRate); }, cap: '25%' },
+    ultimateDmg: { about: '얼티밋 크리티컬 적중 시 피해 배율', val: function (s) { return x(s.ultimateDmg); } },
+    alphaCrit: { about: '얼티밋이 알파로 이어질 확률', val: function (s) { return pct(s.alphaRate); }, cap: '20%' },
+    alphaDmg: { about: '알파 크리티컬 적중 시 피해 배율', val: function (s) { return x(s.alphaDmg); } }
   };
   function withLevel(state, key, lv) { var up = {}; for (var k in state.up) up[k] = state.up[k]; up[key] = lv; var c = {}; for (var j in state) c[j] = state[j]; c.up = up; return c; }
   function overText(key, lv) {

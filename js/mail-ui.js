@@ -68,7 +68,7 @@
       '<b class="mbnew">' + PAW + '새 편지 ' + wait.length + '</b>' +
       '<button class="mbtab l' + (tab === 'all' ? ' on' : '') + '" data-mbtab="all"><span><i class="mbti"></i>전체</span></button>' +
       '<button class="mbtab r' + (tab === 'wait' ? ' on' : '') + '" data-mbtab="wait"><span><i class="mbti"></i>받지 않은 우편</span></button>' +
-      '<div class="mbscroll">' + (cards || '<p class="mbnone">받지 않은 우편이 없어요</p>') + '</div>' +
+      '<div class="mbscroll">' + (cards || '<p class="mbnone">새로 받을 우편이 없어요</p>') + '</div>' +
       '<button class="mball' + (wait.some(CW.mailHasReward) ? '' : ' off') + '" data-mball aria-label="보상 모두 받기"></button>' +
       '<b class="mbpid">' + CW.mailPid(s) + '</b><button class="mbcopy" data-mbcopy aria-label="우편번호 복사"></button></div>';
   }
@@ -87,7 +87,7 @@
       (got ? '' : '<b class="mlnew">' + PAW + '새 편지</b>') +
       '<div class="mlbody">' + body + (l.sign ? '<p class="mlsign">' + esc(l.sign) + '</p>' : '') + '</div>' +
       '<b class="mlcnt">' + n + '개</b>' +
-      '<div class="mlrew' + (n > 1 ? ' two' : n ? ' one' : '') + '">' + (n === 1 ? oneReward(l) : n === 2 ? twoReward(l) : has ? rewardPill(l) : '<span class="none">첨부 보상이 없어요</span>') + '</div>' +
+      '<div class="mlrew' + (n > 1 ? ' two' : n ? ' one' : '') + '">' + (n === 1 ? oneReward(l) : n === 2 ? twoReward(l) : has ? rewardPill(l) : '<span class="none">첨부된 보상이 없어요</span>') + '</div>' +
       '<button class="mlget' + (got ? ' done' : '') + '" data-mbget="' + esc(l.id) + '"><span>' + (got ? (has ? '수령 완료' : '읽음') : has ? '보상 받기' : '확인') + '</span></button>' +
       '<button class="mllist" data-mbback aria-label="목록으로 돌아가기"></button></div>';
   }
@@ -107,7 +107,7 @@
   function claim(l) {
     var g = G(); if (!l || CW.mailGot(state(), l)) return false;
     if (!g.G.claimMail(l)) return false;
-    if (CW.mailHasReward(l)) g.ui.toast('받았어요! ' + CW.mailRewardText(l));
+    if (CW.mailHasReward(l)) g.ui.toast('우편 보상 획득 · ' + CW.mailRewardText(l));
     g.ui.hud(); return true;
   }
   function close() { page.classList.remove('on', 'fan', 'rise'); if (G()) G().ui.renderPanel(true); }
@@ -130,10 +130,10 @@
       }
       if (t.closest('[data-mball]')) {
         var n = 0; waiting().filter(CW.mailHasReward).forEach(function (x) { if (claim(x)) n++; });
-        if (n > 1) g.ui.toast('편지 ' + n + '통의 보상을 받았어요'); render(); return;
+        if (n > 1) g.ui.toast('우편 ' + n + '통의 보상을 받았어요.'); render(); return;
       }
       if (t.closest('[data-mbcopy]')) {
-        var pid = CW.mailPid(state()), done = function () { g.ui.toast('우편번호 ' + pid + '를 복사했어요'); };
+        var pid = CW.mailPid(state()), done = function () { g.ui.toast('우편번호를 복사했어요. (' + pid + ')'); };
         if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(pid).then(done, done); else done();
       }
     });

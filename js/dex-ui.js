@@ -54,7 +54,7 @@
         return '<button data-dxf="' + t[0] + '"' + (filter === t[0] ? ' class="on"' : '') + '><img src="' + A() + (filter === t[0] ? 'dex-tab-on' : 'dex-tab-off') + '.webp" alt="" draggable="false"><span>' + t[1] + '</span></button>';
       }).join('') + '</div>' +
       (anyNew ? '<button class="dxall" data-dxall="1">NEW 모두 확인</button>' : '') +
-      (groups || '<p class="dxempty">아직 여기에 들어갈 몬스터가 없어요</p>') +
+      (groups || '<p class="dxempty">이 조건에 맞는 몬스터가 없어요.</p>') +
       '<img class="dxfoot" src="' + A() + 'dex-foot.webp" alt="새로운 만남을 도감에 모아보세요" draggable="false">';
     watchPics(); fitNames();
   }
@@ -99,7 +99,7 @@
       '<span class="dxv dxdate">' + (got ? (got.t ? day(got.t) : '기록 전부터 만남') : '-') + '</span>' +
       '<span class="dxv dxwhere">' + (got ? esc(R.name || '') : '-') + '</span>' +
       '<span class="dxnote">' + (got ? '' : where) + '</span>' +
-      '<span class="dxdesc"><img src="' + A() + 'dex-leaf-l.webp" alt=""><span>' + (got ? esc((CW.DEX_TEXT || {})[id] || '') : '아직 만나지 못했어요') + '</span><img src="' + A() + 'dex-leaf-r.webp" alt=""></span></div>';
+      '<span class="dxdesc"><img src="' + A() + 'dex-leaf-l.webp" alt=""><span>' + (got ? esc((CW.DEX_TEXT || {})[id] || '') : '아직 발견하지 못했어요') + '</span><img src="' + A() + 'dex-leaf-r.webp" alt=""></span></div>';
     panel.classList.add('on');
     var c = page.querySelector('[data-dx="' + id + '"]');
     if (c && c.classList.contains('fresh')) { c.classList.remove('fresh'); c.querySelector('.dxframe').src = A() + 'dex-card.webp'; var nw = c.querySelector('.dxnew'); if (nw) nw.remove(); }
