@@ -789,6 +789,7 @@
     function ez(x) { x = Math.max(0, Math.min(1, x)); return 1 - (1 - x) * (1 - x) * (1 - x); }
     // a little spray of an element's own bits: fire flames and embers, lightning crackle, stars, snow, green wisps
     function e9sparks(i, p, n, sp) {
+      if (CW.fxOff && CW.fxOff.shards) return;
       if (i === 0) { fire(p, n, { size: 0.5, speed: sp * 0.5, up: 1.4 }); embers(p, [0xffe080, E9[0]], n, { speed: sp, up: 1.6 }); return; }
       if (i === 1) for (var b = 0; b < Math.min(3, n); b++) vx.lightning(p.clone(), p.clone().add(rdir(0.25 * sp)), { w: 0.05, color: E9[1], life: 0.12, branches: 0, segs: 5, amp: 0.3 });
       for (var k = 0; k < n; k++) E({ sys: i === 3 ? 'norm' : 'add', pos: p.clone().add(rdir(0.1)), vel: rdir(sp).add(V(0, sp * 0.3, 0)), frame: E9F[i], color: [0xffffff, E9[i]], size: [rr(0.14, 0.26), 0.03], life: rr(0.35, 0.6), drag: 1.4, spin: rr(-10, 10), white: i === 3 });
@@ -824,8 +825,8 @@
       var from = skyStart(g0, SLANT, -0.35), T_ = c.D(big ? 0.5 : 0.4), t = 0, cur = V(), last = from.clone(), vel = V(), side = rr(-1, 1) > 0 ? 1 : -1;
       var spot = E({ sys: 'gadd', pos: V(g0.x, 0.04, g0.z), frame: 'glow', color: col, size: [0.4, 1.4 * B], ease: 1, life: T_ + 0.06, alpha: 0.6, fadeIn: 0.3, fadeOut: 0.3 });
       // a short trail that breaks off behind it
-      var rib = vx.ribbon({ solid: true, mode: 'trail', w: [0.42, 0, 0.22, 0.14][kind] * B, color: deep(col), core: 0.85, maxPts: kind === 0 ? 8 : 12, shrink: 70, minDist: 0.03 });
-      var halo = vx.ribbon({ mode: 'trail', w: [1.1, 0, 0.7, 0.5][kind] * B, color: col, core: 0, alpha: 0.4, maxPts: kind === 0 ? 8 : 12, shrink: 70, minDist: 0.03 });
+      var noTrail = CW.fxOff && CW.fxOff.trails, rib = noTrail ? null : vx.ribbon({ solid: true, mode: 'trail', w: [0.42, 0, 0.22, 0.14][kind] * B, color: deep(col), core: 0.85, maxPts: kind === 0 ? 8 : 12, shrink: 70, minDist: 0.03 });
+      var halo = noTrail ? null : vx.ribbon({ mode: 'trail', w: [1.1, 0, 0.7, 0.5][kind] * B, color: col, core: 0, alpha: 0.4, maxPts: kind === 0 ? 8 : 12, shrink: 70, minDist: 0.03 });
       var body = kind === 0 ? P3.fireball({ size: 0.32 * B, col: 0xff6a1a })
         : kind === 3 ? P3.iceSpear({ size: 1.5 * B, thin: 0.075 })
         : P3.fireball({ size: 0.22 * B, col: 0xb070ff, deep: 0x3a0c70, hot: 0xf6e6ff, glowDeep: 0x7a2cff, smoke: [0x3a2a5a, 0x9a80d0] });
@@ -871,7 +872,7 @@
       if (big) heavy(0.5);
       if (big) sc.light(q, col, 2.6, 0.3); gRing(g, col, 1.9 * B, 0.4); gGlow(g, col, 1.6 * B, 0.45); if (big) shock(q, col, 2.0 * B, 0.32, { alpha: 0.45 });
       if (kind === 0) {
-        P3.blast(g, { size: (big ? 0.6 : 0.45) * B, col: 0xff8a2b, flash: big, chips: big ? 4 : 2, ring: 2, life: 0.7 });
+        P3.blast(g, { size: (big ? 0.42 : 0.32) * B, col: 0xff8a2b, flash: big, chips: big ? 4 : 2, ring: 2, life: 0.7 });
         fire(q, N(8, c), { size: 0.85 * B, speed: 2.6, up: 2.6 }); embers(q, [0xffe080, 0xff6a2b], N(big ? 18 : 9, c), { speed: 3, up: 3, grav: 3 }); scorch(g, 1.0 * B, 3.2);
         // what stays: a wisp of smoke and embers glowing a while
         after(0.3, function () { smoke(V(g.x, 0.35, g.z), [0x6a5a54, 0x2e2624], N(2, c), { size: 0.7 * B, rise: 1.0, speed: 0.4, life: 1.4, alpha: 0.6 }); });
@@ -1161,6 +1162,7 @@
     // a spear of an element's light shot out from a spot: a bright crystal pointing the way it flies, a streak of its
     // colour behind it; it slows hard and shrinks away
     function lightSpear(k, p, vel, len, life) {
+      if (CW.fxOff && CW.fxOff.shards) return;
       P3.crystal({ pos: p, vel: vel, col: new T.Color(E9[k]).lerp(new T.Color(0xffffff), 0.35).getHex(), line: E9[k], len: len, thin: 0.22, grav: 0, drag: 3.5, life: life, spin: 0 });
       E({ pos: p.clone(), vel: vel.clone().multiplyScalar(0.8), frame: 'streak', color: [E9[k], deep(E9[k])], size: [len * 1.4, 0.1], life: life * 0.6, drag: 3.5, stretch: 0.16, alpha: 0.7 });
     }
@@ -1171,10 +1173,14 @@
     // smaller and hotter — so it rolls out instead of popping once (one inner boom, small and short: the big see-through
     // balls drawn over each other are what cost the graphics chip the most, 2026-11-15)
     function boomMotion(p, s, col, low, ringCol) {
+      if (CW.fxOff && CW.fxOff.domes) return;
       var heart = P3.orb({ col: 0xffe0ff, deep: col }), t = 0, at = p.clone();
-      tick(function (dt) { t += dt; var k = Math.min(1, t / 0.14); heart.set(at, s * (0.12 + 0.45 * ez(k)), 1 - k * k); if (k < 1) return false; heart.kill(); return true; });
-      P3.blast(at, { ball: true, y: at.y, size: s, col: col, low: low, hotness: 0.12, ringCol: ringCol, ring: 5, chips: 0, crater: false, life: 0.65, flash: false, keepAdd: true });
-      after(0.13, function () { P3.blast(at, { ball: true, y: at.y, size: s * 0.45, col: col, low: low, hotness: 0.2, ringAlpha: 0, chips: 0, crater: false, life: 0.38, flash: false, keepAdd: true }); sc.shake(0.35); sc.punch(0.06); });
+      tick(function (dt) { t += dt; var k = Math.min(1, t / 0.14); heart.set(at, s * (0.1 + 0.3 * ez(k)), 1 - k * k); if (k < 1) return false; heart.kill(); return true; });
+      // one ball, not as wide and gone sooner: the big see-through balls covering the screen were what made the iPhone
+      // stutter (2026-11-15, dev/phone-perf9.html: with them off 60 frames a second, with them on 52); the second beat
+      // is a jolt of the camera instead of a second ball
+      P3.blast(at, { ball: true, y: at.y, size: s * 0.62, col: col, low: low, hotness: 0.12, ringCol: ringCol, ring: 5 / 0.62, chips: 0, crater: false, life: 0.5, flash: false, keepAdd: true });
+      after(0.13, function () { sc.shake(0.35); sc.punch(0.06); });
     }
     function elemBlast(k, q, s, few, c) {
       var col = E9[k], g = V(q.x, 0, q.z);
@@ -1252,7 +1258,7 @@
         // the screen all but stops; a huge blast of five-coloured fire and a wave that crosses the whole screen
         sc.flash('rgba(235,180,255,0.55)', 0.4); sc.climax(1.0, 0.85); sc.shake(1.0); sc.punch(0.2);
         boomMotion(C, 1.8 * cs, 0xb050f0, 0x22073e, 0xffd8ff);
-        P3.blast(G, { size: 1.1 * cs, col: 0xff8a2b, flash: false, chips: 6, ring: 3, life: 0.9 });
+        P3.blast(G, { size: 0.65 * cs, col: 0xff8a2b, flash: false, chips: 6, ring: 3, life: 0.6 });
         E({ sys: 'col', pos: C, frame: 'shock', color: 0xd890ff, size: [1, 16], ease: 1, life: 0.7, alpha: 0.75, big: true, fadeOut: 0.3 });
         fieldWave(G, 0xd8a8ff, 0.9, 0xff6ad8); gGlow(G, 0xd890ff, 5, 0.8); scorch(G, 2.8, 2.8);
         E9.forEach(function (col, j) { shock(C, col, (4.5 + j * 1.8) * c.s, 0.6 + j * 0.07, { delay: j * 0.04, alpha: 0.5 }); });

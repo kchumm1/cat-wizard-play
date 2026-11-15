@@ -49,7 +49,7 @@
     function fieldWave(pos, col, life, col2) {
       var G = V(pos.x, 0.035, pos.z);
       E({ sys: 'gadd', pos: G, frame: 'shock', color: col, size: [0.6, 11], ease: 1, life: life || 0.7, fadeOut: 0.35, rot: 0, alpha: 0.8 });
-      E({ sys: 'gadd', pos: G, frame: 'ring', color: 0xffffff, size: [0.4, 8], ease: 1, life: (life || 0.7) * 0.8, fadeOut: 0.3, rot: 0, alpha: 0.5 });
+      if (!(CW.fxOff && CW.fxOff.white)) E({ sys: 'gadd', pos: G, frame: 'ring', color: 0xffffff, size: [0.4, 8], ease: 1, life: (life || 0.7) * 0.8, fadeOut: 0.3, rot: 0, alpha: 0.5 });
       E({ sys: 'gadd', pos: G, frame: 'shock', color: col2 || col, size: [0.3, 9.5], ease: 1, life: (life || 0.7) * 1.25, delay: 0.09, fadeOut: 0.4, rot: 0, alpha: 0.55 });
     }
     // things falling (or rising) over the whole field
@@ -97,7 +97,7 @@
     }
     function shock(pos, col, r, life, o) {
       r = Math.min(r, 8.5);
-      E(clone({ pos: pos, frame: 'ring', color: 0xffffff, size: [r * 0.15, r * 0.92], ease: 1, life: (life || 0.35) * 0.8, fadeOut: 0.2, rot: 0, alpha: 0.5, white: true }, o));
+      if (!(CW.fxOff && CW.fxOff.white)) E(clone({ pos: pos, frame: 'ring', color: 0xffffff, size: [r * 0.15, r * 0.92], ease: 1, life: (life || 0.35) * 0.8, fadeOut: 0.2, rot: 0, alpha: 0.5, white: true }, o));   // (CW.fxOff: switches for measuring on a phone, dev/phone-perf9.html)
       return E(clone({ sys: 'col', pos: pos, frame: 'shock', color: col, size: [r * 0.15, r], ease: 1, life: life || 0.35, fadeOut: 0.3, rot: 0, alpha: 0.75 }, o));
     }
     function ring(pos, col, r, life, o) { r = Math.min(r, 7.5); return E(clone({ pos: pos, frame: 'ring', color: col, size: [r * 0.2, r], ease: 1, life: life || 0.3, fadeOut: 0.2, rot: 0 }, o)); }
