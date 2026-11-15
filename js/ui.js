@@ -77,6 +77,7 @@
         '<div class="codexbar"><span>장비 초월 통합 성급 (★' + ns + ')</span><b>모든 피해 +' + pct(ns * BG.starFinal) + '</b></div>' +
         guideRow('gear', '같은 장비 ' + DATA.bagConf.mergeCount + '개 → 한 단계 위 · 초월로 더 강하게');
     }
+    var ghdSeen = null, ghdPlay = false, ghdFrom = 0, ghdBar = 0;   // 뽑기 레벨 칸 움직임
     var selDiff = -1, selRegion = -1, gearSub = 'gear', upMul = 1, trainSub = 'grow', selTalent = null, selRune = null, fxRune = null, rnFilter = 'all', selSigil = null, sgFilter = -1, moreSub = 0;
     function mmss(sec) { sec = Math.ceil(sec); return Math.floor(sec / 60) + ':' + ('0' + sec % 60).slice(-2); }
     function alchPanel() {
@@ -589,6 +590,8 @@
       var nextNeed = lv < L.length ? L[lv] : null, prev = L[lv - 1], rowNow = DATA.gacha.table[lv - 1];
       var newOdds = rowNow.slice(6).reduce(function (a, p) { return a + (p || 0); }, 0);   // 태초 and up (2026-11-15)
       var bar = nextNeed ? Math.min(100, (s.pulls - prev) / (nextNeed - prev) * 100) : 100;
+      // 움직임은 값이 바뀌었을 때(탭을 열 때·뽑은 뒤)만 한 번 — 그냥 다시 그릴 때는 가만히 (renderPanel 이 class 를 붙인다)
+      var gk = lv + '|' + s.pulls + '|' + s.pity; if (gk !== ghdSeen) { ghdPlay = true; ghdFrom = ghdSeen === null ? 0 : ghdBar; } ghdSeen = gk; ghdBar = bar;
       // 뽑기 레벨 칸 (2026-11-15, 사용자 그림): 다음 레벨 · 전설 확정 · 현재 확률을 한 줄씩 정리
       var head = '<div class="gacha-head ghd"><div class="lvl">' + lv + '<small>뽑기 레벨</small></div><div class="ghrows">' +
         '<p><em>다음 레벨까지</em><b>' + (nextNeed ? (nextNeed - s.pulls) + '회' : '최고 레벨') + '</b></p><div class="ghbar"><i style="width:' + bar + '%"></i></div>' +
@@ -821,6 +824,7 @@
       var html = PANELS[tab](), dh = dockHtml, key = html + '|dock|' + dh;
       if (!force && key === lastPanel) return;
       var y = panel.scrollTop; panel.innerHTML = html; panel.scrollTop = y; lastPanel = key;
+      if (ghdPlay) { ghdPlay = false; var ghd = panel.querySelector('.ghd'); if (ghd) { ghd.style.setProperty('--from', ghdFrom + '%'); ghd.classList.add('play'); } }
       keepCircle(); if (tab === 'stage') fitStageRows(); if (tab === 'up') fitGrowNames();
       // the selected 신성력/룬 sits at the bottom of the sheet, always in sight (2026-11-15); it slides up when it opens
       var was = !dock.hidden; dock.innerHTML = dh; dock.hidden = !dh;
@@ -986,6 +990,7 @@
     });
     $('pre').addEventListener('click', function (e) { var b = e.target.closest('[data-pre]'); if (!b) return; G.switchPreset(+b.dataset.pre); G.sound('click'); toast('스킬 프리셋 ' + (+b.dataset.pre + 1) + ' 적용'); slots(); if (tab === 'skill') renderPanel(true); });
     function openTab(name) {
+      if (name === 'gacha') ghdSeen = null;
       tab = name; document.querySelectorAll('#tabs [data-tab]').forEach(function (x) { x.setAttribute('aria-selected', x.dataset.tab === name ? 'true' : 'false'); });
       var open = name !== 'battle';
       $('sheet').classList.toggle('on', open); $('sheet').classList.toggle('tall', name !== 'more' && name !== 'gacha'); G.setSheet(open);
