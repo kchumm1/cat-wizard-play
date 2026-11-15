@@ -655,6 +655,7 @@
     syncRegion();
     $('banner').classList.remove('on');
     ready = true; CW.setGoldScale(CW.capGold(state)); ui.hud(); ui.slots(); ui.renderPanel(true);
+    if (CW.mailStart) CW.mailStart();   // 우편함: read mail.json now and every few minutes (js/mail-ui.js)
     giveOffline();
     cloudInit();
   });

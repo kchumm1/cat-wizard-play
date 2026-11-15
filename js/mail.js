@@ -20,6 +20,21 @@
       return l && typeof l.id === 'string' && l.id && !got[l.id] && forMe(state, l) && (!l.from || now >= day(l.from)) && (!l.until || now <= day(l.until, true));
     });
   }
+  // every letter for this player that is in its days, claimed or not, newest first (the 전체 tab)
+  function mailAll(state, list, now) {
+    now = now || Date.now();
+    return (Array.isArray(list) ? list : []).filter(function (l) { return l && typeof l.id === 'string' && l.id && forMe(state, l) && (!l.from || now >= day(l.from)) && (!l.until || now <= day(l.until, true)); });
+  }
+  function mailGot(state, l) { return !!(l && box(state).got[l.id]); }
+  function mailHasReward(l) { return +l.goldJo > 0 || +l.gems > 0; }
+  // when it was sent, the way a letter says it: 오늘 · 어제 · 11월 3일 (Korean time)
+  function mailWhen(l, now) {
+    if (!l || !l.date) return '';
+    var k = function (t) { var d = new Date(t + 9 * 3600e3); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()); };
+    var d0 = Date.parse(l.date + 'T12:00:00+09:00'); if (!isFinite(d0)) return '';
+    var diff = Math.round((k(now || Date.now()) - k(d0)) / 864e5), dd = new Date(d0 + 9 * 3600e3);
+    return diff === 0 ? '오늘' : diff === 1 ? '어제' : (dd.getUTCMonth() + 1) + '월 ' + dd.getUTCDate() + '일';
+  }
   // claim one letter: gold in 조 as shown, times the gold scale the game divides by; returns false if it was taken already
   function mailClaim(state, l, goldScale, now) {
     var m = box(state); if (!l || !l.id || m.got[l.id]) return false;
@@ -33,5 +48,5 @@
     var a = []; if (+l.goldJo > 0) a.push('골드 ' + l.goldJo + '조'); if (+l.gems > 0) a.push('다이아 ' + l.gems);
     return a.join(' · ');
   }
-  return { mailPid: mailPid, mailWaiting: mailWaiting, mailClaim: mailClaim, mailRewardText: mailRewardText };
+  return { mailAll: mailAll, mailGot: mailGot, mailHasReward: mailHasReward, mailWhen: mailWhen, mailPid: mailPid, mailWaiting: mailWaiting, mailClaim: mailClaim, mailRewardText: mailRewardText };
 });

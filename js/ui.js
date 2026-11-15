@@ -908,44 +908,17 @@
     panel.addEventListener('click', onClick); dock.addEventListener('click', onClick);
     CW.ICO.onTint = function () { if (tab === 'gear' || tab === 'gacha') renderPanel(true); };
     document.querySelectorAll('#tabs [data-tab]').forEach(function (b) { var x = CW.ICO.misc && CW.ICO.misc('tab', b.dataset.tab), sv = b.querySelector('svg'); if (x && sv) sv.outerHTML = x; });
-    // ---------- 우편함 (2026-11-15): letters from mail.json on the site (js/mail.js), read at start and every 5 minutes ----------
-    var MAIL_ICO = '<svg class="ico" viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="11" width="38" height="27" rx="5" fill="#fff3dc" stroke="#a8692f" stroke-width="2.6"/><path d="M6.5 13.5 24 27l17.5-13.5" fill="none" stroke="#a8692f" stroke-width="2.6" stroke-linejoin="round"/><path d="M6.5 36 19 24.5M41.5 36 29 24.5" fill="none" stroke="#d9b07a" stroke-width="2"/><circle cx="24" cy="27" r="6" fill="#e0463a"/><path d="M24 30.3c-2.2-1.5-3.4-2.7-3.4-4 0-1 .8-1.7 1.7-1.7.7 0 1.3.4 1.7 1 .4-.6 1-1 1.7-1 .9 0 1.7.7 1.7 1.7 0 1.3-1.2 2.5-3.4 4z" fill="#fff"/></svg>';
-    var mailList = [];
-    function mailDot() { var b = document.querySelector('#quick [data-quick="mail"]'); if (!b) return; var on = CW.mailWaiting(G.state, mailList).length > 0, d = b.querySelector('.qdot'); if (on && !d) { d = document.createElement('b'); d.className = 'qdot'; b.appendChild(d); } else if (!on && d) d.remove(); }
-    function fetchMail() {
-      if (typeof fetch !== 'function') return;
-      fetch('mail.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (m) { if (m && Array.isArray(m.letters)) { mailList = m.letters; mailDot(); if (!$('modal').hidden && $('modalCard').querySelector('.mailwin')) openMail(); } }).catch(function () {});
-    }
-    function mailHtml() {
-      var s = G.state, wait = CW.mailWaiting(s, mailList);
-      var cards = wait.map(function (l) { return '<div class="mcard"><span class="mico">' + MAIL_ICO + '</span><span class="mtxt"><b>' + esc(l.title || '편지') + '</b>' + (l.text ? '<small>' + esc(l.text) + '</small>' : '') + '<span class="mrew">' + esc(CW.mailRewardText(l)) + '</span></span><button class="buy" data-mailget="' + esc(l.id) + '">받기</button></div>'; }).join('');
-      return '<div class="mailwin"><h2>우편함</h2>' + (cards ? '<div class="mlist">' + cards + '</div>' : '<div class="mempty">새 편지가 없어요</div>') +
-        '<p class="mpid">내 번호 <b>' + CW.mailPid(s) + '</b> · 나에게만 오는 선물은 이 번호로 보내요</p></div>';
-    }
-    function openMail() {
-      var wait = CW.mailWaiting(G.state, mailList), btns = [{ label: '닫기' }];
-      if (wait.length > 1) btns.push({ label: '모두 받기', pri: true, fn: function () { var n = 0; CW.mailWaiting(G.state, mailList).forEach(function (l) { if (G.claimMail(l)) n++; }); if (n) toast('편지 ' + n + '통을 받았어요'); mailDot(); hud(); renderPanel(true); } });
-      modal(mailHtml(), btns); mailDot();
-    }
-    $('modalCard').addEventListener('click', function (e) {
-      var b = e.target.closest('[data-mailget]'); if (!b) return;
-      var l = mailList.filter(function (x) { return x.id === b.dataset.mailget; })[0];
-      if (l && G.claimMail(l)) { toast('받았어요! ' + CW.mailRewardText(l)); hud(); renderPanel(true); }
-      openMail();
-    });
-    fetchMail(); setInterval(fetchMail, 5 * 60 * 1000);
-    document.addEventListener('visibilitychange', function () { if (!document.hidden) fetchMail(); });
     // the rune and sigil shortcuts use the user's pictures (art/ic-rune.webp, ic-sigil.webp, 2026-11-14)
     var QI = { map: CW.ICO.misc('quick', 'map'), alch: CW.ICO.misc('potion', 'rage'), rune: '<img class="ico" src="art/ic-rune.webp" alt="">', sigil: '<img class="ico" src="art/ic-sigil.webp" alt="">',
       // the monster codex (2026-11-15): the book off the user's codex picture, opens the full-screen page (js/dex-ui.js)
-      dex: '<img class="ico" src="art/dex-book.webp" alt="">', mail: MAIL_ICO };
+      dex: '<img class="ico" src="art/dex-book.webp" alt="">', mail: '<img class="ico" src="art/mail-box.webp" alt="">' };   // 우편함 (2026-11-15): the user's mailbox picture, js/mail-ui.js
     document.querySelectorAll('#quick [data-quick]').forEach(function (b) { b.querySelector('i').innerHTML = QI[b.dataset.quick] || ''; });
     $('quick').addEventListener('click', function (e) {
       var b = e.target.closest('[data-quick]'); if (!b) return; var q = b.dataset.quick; G.sound('click');
       if (q === 'map') { selDiff = selRegion = -1; openTab(tab === 'stage' ? 'battle' : 'stage'); }
       else if (q === 'alch') { trainSub = 'alch'; openTab('up'); }
       else if (q === 'dex') { if (CW.dexOpen) CW.dexOpen(); }
-      else if (q === 'mail') { openMail(); }
+      else if (q === 'mail') { if (CW.mailOpen) CW.mailOpen(); }
       else { gearSub = q; openTab('gear'); }
     });
     $('pre').addEventListener('click', function (e) { var b = e.target.closest('[data-pre]'); if (!b) return; G.switchPreset(+b.dataset.pre); G.sound('click'); toast((+b.dataset.pre + 1) + '번 프리셋으로 바꿨어요'); slots(); if (tab === 'skill') renderPanel(true); });
