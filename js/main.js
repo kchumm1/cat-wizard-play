@@ -656,7 +656,8 @@
     $('banner').classList.remove('on');
     ready = true; CW.setGoldScale(CW.capGold(state)); ui.hud(); ui.slots(); ui.renderPanel(true);
     if (CW.mailStart) CW.mailStart();   // 우편함: read mail.json now and every few minutes (js/mail-ui.js)
-    giveOffline();
+    // the 돌아왔어요 popup waits for 모험 시작 on the update screen (js/update-screen.js)
+    (CW.afterStart || function (f) { f(); })(giveOffline);
     cloudInit();
   });
   requestAnimationFrame(frame);
