@@ -1007,42 +1007,92 @@
     }
     // ---------- stat window (2026-11-14): tap the profile; final stats in groups, each opens to where it comes from; titles ----------
     var SRC_KO = { growth: '성장(초월)', gear: '장비', relics: '유물', costume: '코스튬', divine: '삼신기', skills: '스킬 모음', training: '훈련', runes: '룬', sigil: '신성력', alchemy: '물약', titles: '타이틀', dex: '도감' };
-    // one line = label | value (| second value): the same three columns everywhere, so the numbers line up;
-    // its parts (where it comes from) use the same columns: source | what | amount
-    function statRow(label, value, keys, by, value2, short) {
+    // 냥법사 기록 (2026-11-15, the user's picture art-src/prof/mockup.webp): a full page. The top is the picture itself
+    // (art/prof-top.webp, the example name and numbers wiped) with the real ones written in the same places; under it the
+    // boxes of the picture: 공격 효과 (open), 크리티컬, 특수 효과 and 타이틀. A line opens to where its bonus comes from.
+    var profEl = null, profOpen = { atk: true }, profSrc = null;
+    function profParts(keys, by, short) {
       var parts = [];
       Object.keys(by.parts).forEach(function (src) {
         keys.forEach(function (k, i) { var v = by.parts[src][k]; if (v) parts.push('<li><span>' + (SRC_KO[src] || src) + '</span><i>' + (short ? short[i] : '') + '</i><b>' + CW.bonusAmount(k, v) + '</b></li>'); });
       });
-      var cells = '<span>' + label + '</span>' + (value2 === undefined ? '<b class="w2">' + value + '</b>' : '<b>' + value + '</b><b>' + value2 + '</b>');
-      if (!parts.length) return '<div class="strow"><div class="stl">' + cells + '</div></div>';
-      return '<details class="strow"><summary class="stl">' + cells + '</summary><ul>' + parts.join('') + '</ul></details>';
+      return parts.join('');
     }
-    function statWindow() {
-      var s = G.state, st = CW.stats(s), by = CW.bonusBySource(s), tier = DATA.tiers[s.tier - 1], worn = CW.titleWorn(s), owned = CW.titlesOwned(s);
-      var x = function (v) { return '×' + (Math.round(v * 100) / 100); };
+    // one line of a box: name | value (| second value); with parts it opens to them
+    function profRow(label, value, keys, by, value2, short) {
+      var parts = profParts(keys, by, short);
+      var cells = '<span>' + label + '</span>' + (value2 === undefined ? '<b class="w2">' + value + '</b>' : '<b>' + value + '</b><b>' + value2 + '</b>');
+      if (!parts) return '<div class="pfrow"><div class="pfl">' + cells + '</div></div>';
+      return '<details class="pfrow"><summary class="pfl">' + cells + '</summary><ul>' + parts + '</ul></details>';
+    }
+    function profBox(id, ico, name, sum, body) {
+      var on = !!profOpen[id];
+      return '<section class="pfbox' + (on ? ' on' : '') + '"><button class="pfhd" data-pfsec="' + id + '" aria-expanded="' + on + '"><img src="art/prof-ico-' + ico + '.webp" alt="">' +
+        '<b>' + name + '</b>' + (sum ? '<small>' + sum + '</small>' : '') + '<i class="pfchev"></i></button><div class="pfin">' + body + '</div></section>';
+    }
+    function profHtml() {
+      var s = G.state, st = CW.stats(s), by = CW.bonusBySource(s), tier = DATA.tiers[s.tier - 1] || {}, worn = CW.titleWorn(s), owned = CW.titlesOwned(s);
+      var x = function (v) { return '×' + (Math.round(v * 100) / 100).toFixed(2); };
       var crit = [['치명타', 'critRate', 'critDmg'], ['슈퍼', 'superRate', 'superDmg'], ['울트라', 'ultraRate', 'ultraDmg'], ['하이퍼', 'hyperRate', 'hyperDmg'], ['메가', 'megaRate', 'megaDmg'], ['얼티밋', 'ultimateRate', 'ultimateDmg'], ['알파', 'alphaRate', 'alphaDmg']]
-        .map(function (c) { return statRow(c[0], pct(st[c[1]] || 0), [c[1], c[2]], by, x(st[c[2]] || 0), ['확률', '피해']); }).join('');
+        .map(function (c) { return profRow(c[0], pct(st[c[1]] || 0), [c[1], c[2]], by, x(st[c[2]] || 0), ['확률', '피해']); }).join('');
       var titles = DATA.titles.map(function (t) {
         var have = owned.indexOf(t.id) >= 0, on = worn === t.id;
         var eff = t.bonus ? Object.keys(t.bonus).map(function (k) { return (STAT_KO[k] || k) + ' ' + CW.bonusAmount(k, t.bonus[k]); }).join(' · ') : '효과 없음';
         return '<button class="ttl' + (on ? ' on' : '') + (have ? '' : ' lock') + '" data-title="' + t.id + '"' + (have ? '' : ' disabled') + '><b>' + (have ? '' : '🔒 ') + t.name + '</b><small>' + (have ? eff : CW.titleNeedText(t)) + '</small></button>';
       }).join('');
-      return '<div class="statwin"><div class="sthead"><b>' + $('nick').textContent + '</b><span>Lv.' + s.level + '</span><span class="sttitle">' + CW.titleById(worn).name + '</span></div>' +
-        '<div class="stpow"><small>전투력 (초당 피해)</small><b>' + fmt(CW.dps(s, st)) + '</b><p class="stboss">보스에게는 1초에 <em>약 ' + fmt(CW.bossDpsTypical(s, st, (CW.stageInfo(s.stage) || {}).timeLimit || 30)) + '씩</em><br>피해가 들어가요</p></div>' +
-        '<h4>공격</h4>' + statRow('공격력', fmt(st.atk), ['atkPct'], by) + statRow('공격 속도', x(st.speedMul), ['speed'], by) + statRow('스킬 피해', x(st.skillDmg * st.mastery), ['skillDmg'], by) +
-        statRow('보스 피해', x(st.bossDmg), ['bossDmg'], by) + statRow('모든 피해', x(st.finalMul), ['finalPct', 'potion'], by) +
-        '<h4>크리티컬<small><em>확률</em><em>배율</em></small></h4>' + crit +
-        '<h4>특수</h4>' + statRow('약점 피해', x(st.weakMul), ['weakDmg'], by) + statRow('폭주 피해', x(st.surgeMul), ['surgeDmg', 'surgeRate'], by) +
-        statRow('골드 획득', x(st.goldMul), ['goldMul', 'potionGold'], by) + statRow('경험치 획득', x(st.xpMul), ['xpMul', 'potionXp'], by) +
-        '<p class="note">줄을 누르면 어디서 얼마나 붙었는지 볼 수 있어요.</p><h4>타이틀</h4><div class="ttls">' + titles + '</div></div>';
+      var srcBox = '';
+      if (profSrc) {
+        var SRC = { atk: ['공격력', ['atkPct']], speed: ['공격 속도', ['speed']] }[profSrc], parts = SRC ? profParts(SRC[1], by) : '';
+        srcBox = '<div class="pfsrc"><b>' + (SRC ? SRC[0] : '') + ' 증가 내역</b>' + (parts ? '<ul>' + parts + '</ul>' : '<p>아직 더해진 게 없어요</p>') + '</div>';
+      }
+      var top = '<div class="pftop"><button class="pfx" aria-label="닫기"></button>' +
+        '<b class="pfname">' + esc($('nick').textContent) + '</b><span class="pflv">Lv.' + s.level + ' · ' + esc(tier.name || '') + '</span>' +
+        '<b class="pfv pfcp">' + fmt(CW.dps(s, st)) + '</b>' +
+        '<button class="pfv pfatk" data-pfsrc="atk" aria-label="공격력 증가 내역">' + fmt(st.atk) + '</button>' +
+        '<button class="pfv pfspd" data-pfsrc="speed" aria-label="공격 속도 증가 내역">' + x(st.speedMul) + '</button>' +
+        '<b class="pfboss">' + fmt(CW.bossDpsTypical(s, st, (CW.stageInfo(s.stage) || {}).timeLimit || 30)) + '</b></div>';
+      var titleBox = '<section class="pfbox pftbox' + (profOpen.title ? ' on' : '') + '"><button class="pfhd" data-pfsec="title" aria-expanded="' + !!profOpen.title + '"><img src="art/prof-ico-title.webp" alt="">' +
+        '<b>타이틀</b><span class="pfbar"></span><span class="pfbadge">' + esc(CW.titleById(worn).name) + '</span><em>변경</em></button><div class="pfin"><div class="ttls">' + titles + '</div></div></section>';
+      return top + '<div class="pfbody">' + srcBox +
+        profBox('atk', 'atk', '공격 효과', '', profRow('스킬 피해', x(st.skillDmg * st.mastery), ['skillDmg'], by) + profRow('보스 피해', x(st.bossDmg), ['bossDmg'], by) + profRow('모든 피해', x(st.finalMul), ['finalPct', 'potion'], by)) +
+        profBox('crit', 'crit', '크리티컬', '확률 ' + pct(st.critRate || 0) + ' · 배율 ' + x(st.critDmg || 0), '<div class="pfcols"><span></span><em>확률</em><em>배율</em></div>' + crit) +
+        profBox('spec', 'spec', '특수 효과', '', profRow('약점 피해', x(st.weakMul), ['weakDmg'], by) + profRow('폭주 피해', x(st.surgeMul), ['surgeDmg', 'surgeRate'], by) +
+          profRow('골드 획득', x(st.goldMul), ['goldMul', 'potionGold'], by) + profRow('경험치 획득', x(st.xpMul), ['xpMul', 'potionXp'], by)) +
+        titleBox + '<p class="pfnote"><img src="art/prof-ico-hand.webp" alt="">능력치 항목을 누르면 증가 내역을 볼 수 있어요</p></div>';
     }
-    function openStats() { modal(statWindow(), [{ label: '닫기', pri: true }]); }
+    // long numbers or names never spill out of their place: the font shrinks until it fits
+    function profFit() {
+      if (!profEl) return;
+      profEl.querySelectorAll('.pfv,.pfboss,.pfname,.pflv,.pfbadge,.pfhd small').forEach(function (el) {
+        el.style.fontSize = ''; var max = parseFloat(getComputedStyle(el).maxWidth) || 0, f = parseFloat(getComputedStyle(el).fontSize);
+        if (!max) return;
+        for (var i = 0; i < 30 && el.scrollWidth > max + 0.5; i++) { f *= 0.95; el.style.fontSize = f + 'px'; }
+      });
+    }
+    function profRender(keepScroll) {
+      var col = profEl.querySelector('.pfcol'), y = col.scrollTop, open = [];
+      profEl.querySelectorAll('details.pfrow[open] .pfl span').forEach(function (n) { open.push(n.textContent); });
+      col.innerHTML = '<div class="pfpage">' + profHtml() + '<img class="pfcorner l" src="art/prof-corner-l.webp" alt=""><img class="pfcorner r" src="art/prof-corner-r.webp" alt=""></div>';
+      profEl.querySelectorAll('details.pfrow').forEach(function (d) { if (open.indexOf(d.querySelector('.pfl span').textContent) >= 0) d.open = true; });
+      col.scrollTop = keepScroll ? y : 0; profFit();
+    }
+    function openStats() {
+      if (!profEl) {
+        profEl = document.createElement('div'); profEl.id = 'prof'; profEl.setAttribute('role', 'dialog'); profEl.setAttribute('aria-label', '냥법사 기록');
+        profEl.innerHTML = '<div class="pfcol"></div>'; document.body.appendChild(profEl);
+        profEl.addEventListener('click', function (e) {
+          var t = e.target;
+          if (t.closest('.pfx') || t === profEl) { G.sound('click'); profEl.classList.remove('on'); return; }
+          var sec = t.closest('[data-pfsec]'); if (sec) { G.sound('click'); profOpen[sec.dataset.pfsec] = !profOpen[sec.dataset.pfsec]; profRender(true); return; }
+          var src = t.closest('[data-pfsrc]'); if (src) { G.sound('click'); profSrc = profSrc === src.dataset.pfsrc ? null : src.dataset.pfsrc; profRender(true); return; }
+          var b = t.closest('[data-title]');
+          if (b && G.titleWear(b.dataset.title)) { toast('타이틀 「' + CW.titleById(b.dataset.title).name + '」을(를) 달았어요'); profRender(true); hud(); }
+        });
+        window.addEventListener('resize', function () { if (profEl.classList.contains('on')) profFit(); });
+      }
+      profSrc = null; profEl.classList.add('on'); profRender(false);
+    }
     document.querySelector('#hud .prof').addEventListener('click', function () { G.sound('click'); openStats(); });
-    $('modalCard').addEventListener('click', function (e) {
-      var b = e.target.closest('[data-title]'); if (!b) return;
-      if (G.titleWear(b.dataset.title)) { toast('타이틀 「' + CW.titleById(b.dataset.title).name + '」을(를) 달았어요'); openStats(); hud(); }
-    });
     return { surgeGauge: surgeGauge, dunHud: dunHud, gainLog: gainLog, openTab: openTab, hud: hud, slots: slots, renderPanel: renderPanel, toast: toast, banner: banner, showOffline: showOffline, showDaily: showDaily, showTierUp: showTierUp, showGacha: showGacha, modal: modal, currentTab: function () { return tab; } };
   }
   CW.createUI = createUI;

@@ -34,7 +34,7 @@
   function titleNeedText(t) {
     var c = t.need;
     return c.kind === 'start' ? '처음부터' : c.kind === 'boss' ? '보스 ' + c.n + '마리 처치' : c.kind === 'runes' ? '룬 ' + c.n + '칸 모두 채우기'
-      : c.kind === 'tier' ? c.n + '차 전직' : c.kind === 'slayer' ? '난이도 「슬레이어 킹」 보스 처치' : '';
+      : c.kind === 'tier' ? c.n + '차 전직' : c.kind === 'slayer' ? '난이도 슬레이어 킹 보스 처치' : '';
   }
   return { titleById: titleById, titleCheck: titleCheck, titlesOwned: titlesOwned, titleWorn: titleWorn, titleWear: titleWear, titleStats: titleStats,
     titleNeedText: titleNeedText, titleBossCount: bossCount };
