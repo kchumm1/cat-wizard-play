@@ -242,10 +242,20 @@
     function cmpRow(label, ico, color, name, sub) {
       return '<div class="cmprow"><span class="cmpic">' + ico + '</span><div class="cmpt"><small>' + label + '</small><b style="color:' + color + '">' + name + '</b><span>' + sub + '</span></div></div>';
     }
+    // worn (2026-11-15, the user: 장착 효과 … 중 이 룬이 … 는 무슨 말인지 모르겠다): what this one gives, big; then how much of
+    // all the worn ones' total for the same effect comes from it, as a bar
+    function wornBox(what, nm, v, tot) {
+      var share = tot > 0 ? Math.max(0, Math.min(1, v / tot)) : 1, sp = Math.round(share * 100);
+      var c0 = nm.charCodeAt(nm.length - 1) - 0xAC00, eul = nm + (c0 >= 0 && c0 < 11172 && c0 % 28 ? '을' : '를');
+      var foot = share >= 0.999 ? '<p class="wsolo">끼고 있는 ' + what + ' 중 ' + eul + ' 올려 주는 건 이 ' + what + ' 하나예요</p>'
+        : '<div class="wshare"><p><span>끼고 있는 ' + what + ' 전부 합치면</span><b>' + nm + ' +' + pct(tot) + '</b></p><div class="wbar"><i style="width:' + Math.max(3, sp) + '%"></i></div><small>그중 <b>' + sp + '%</b>가 이 ' + what + ' 덕분이에요</small></div>';
+      return '<div class="cmp worn"><div class="wtop"><span class="wbadge">✓ 장착 중</span><span class="wlab">이 ' + what + '이 주는 힘</span></div>' +
+        '<p class="wbig"><span>' + nm + '</span><b>+' + pct(v) + '</b></p>' + foot + '</div>';
+    }
     function sigilCmp(s, sel, sum) {
       var c = CW.sigilCompare(s, sel.id), stat = sel.stat, nm = STAT_KO[stat] || stat, v = CW.sigilValue(sel), tot = sum[stat] || 0;
       if (!c) return '';
-      if (c.mode === 'worn') return '<div class="cmp"><p class="cmphead">지금 끼고 있어요</p><p class="cmpnote">장착 효과 ' + nm + ' +' + pct(tot) + ' 중 이 신성력이 +' + pct(v) + '</p></div>';
+      if (c.mode === 'worn') return wornBox('신성력', nm, v, tot);
       if (c.mode === 'free') return '<div class="cmp"><p class="cmphead">빈 칸이 있어서 끼면 더해져요</p>' + cmpLine(nm, tot, tot + v) + '</div>';
       var t = c.target, tv = CW.sigilValue(t), tn = STAT_KO[t.stat] || t.stat, fullHead = cmpFullHead(sigilWorse(sel, c));
       var row = cmpRow(c.mode === 'same' ? '지금 낀 것 · 같은 효과 중 가장 약한 것' : '지금 낀 것 · 가장 약한 것', CW.ICO.sigil(t.stat, t.grade, hc(t.grade), t.q), hc(t.grade), hn(t.grade) + ' ' + tn, CW.qualityName(t.q) + ' (' + Math.round(t.q * 100) + '%) · ' + tn + ' +' + pct(tv));
@@ -260,7 +270,7 @@
       if (!c) return '';
       CW.runeEquipped(s).forEach(function (x) { var kk = CW.runeById(x.kind); sum[kk.stat] = (sum[kk.stat] || 0) + CW.runeValue(x); });
       var tot = sum[k.stat] || 0, resLine = function (r2) { return r2 === res ? '' : cmpLine('룬 공명 (모든 피해)', res * RC.resFinal, r2 * RC.resFinal, function (x) { return Math.round(x / RC.resFinal) + '단계'; }); };
-      if (c.mode === 'worn') return '<div class="cmp"><p class="cmphead">지금 끼고 있어요</p><p class="cmpnote">장착 효과 ' + nm + ' +' + pct(tot) + ' 중 이 룬이 +' + pct(v) + '</p></div>';
+      if (c.mode === 'worn') return wornBox('룬', nm, v, tot);
       if (c.mode === 'free') return '<div class="cmp"><p class="cmphead">빈 칸이 있어서 끼면 더해져요</p>' + cmpLine(nm, tot, tot + v) + resLine(runeResAfter(s, b.eq.indexOf(null), it.id)) + '</div>';
       var t = c.target, tk = CW.runeById(t.kind), tv = CW.runeValue(t), tn = STAT_KO[tk.stat] || tk.stat, slot = b.eq.indexOf(t.id), fullHead = cmpFullHead(runeWorse(s, it, c));
       var row = cmpRow(c.mode === 'same' ? '지금 낀 것 · 같은 룬 중 가장 약한 것' : '지금 낀 것 · 가장 약한 것', CW.ICO.rune(t.kind, tk.color, t.grade, hc(t.grade)), hc(t.grade), hn(t.grade) + ' ' + tk.name + ' Lv.' + t.lv, tn + ' +' + pct(tv));

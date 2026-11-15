@@ -1326,6 +1326,21 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 .cmp{background:#FBF4E6;border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:5px}
 .cmphead{margin:0;font:700 12px var(--body);color:#8a7a66}
 .cmpnote{margin:0;font:700 13px var(--body);color:#5b4f44}
+/* worn: what this one gives, big; its share of the worn total as a bar (2026-11-15) */
+.cmp.worn{padding:12px 14px 13px;gap:9px;margin:2px 0 4px;background:linear-gradient(180deg,#FFF9EE,#FBF1DE);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--gc,#c9a24a) 35%,#EFE3CC)}
+.cmp.worn .wtop{display:flex;align-items:center;gap:8px}
+.cmp.worn .wbadge{flex:none;padding:3px 9px;border-radius:999px;background:#4f9a5e;color:#fff;font:800 11px/1.2 var(--body);letter-spacing:.2px}
+.cmp.worn .wlab{font:700 12px var(--body);color:#8a7a66}
+.cmp.worn .wbig{margin:0;display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.cmp.worn .wbig span{font:700 15px var(--body);color:#5b4f44}
+.cmp.worn .wbig b{font:400 26px/1.05 var(--display);color:var(--gc,#b0402c);text-shadow:0 1px 0 #fff;word-break:break-all}
+.cmp.worn .wsolo{margin:0;padding-top:8px;border-top:1px dashed #E6D7BC;font:700 12px/1.45 var(--body);color:#8a7a66}
+.cmp.worn .wshare{display:flex;flex-direction:column;gap:5px;padding-top:9px;border-top:1px dashed #E6D7BC}
+.cmp.worn .wshare p{margin:0;display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;font:700 12px var(--body);color:#8a7a66}
+.cmp.worn .wshare p b{font:400 14px var(--display);color:#443C35}
+.cmp.worn .wbar{height:8px;border-radius:9px;background:#EDE2CC;overflow:hidden}
+.cmp.worn .wbar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,color-mix(in srgb,var(--gc,#c9a24a) 70%,#fff),var(--gc,#c9a24a))}
+.cmp.worn .wshare small{font:700 12px var(--body);color:#5b4f44}.cmp.worn .wshare small b{color:var(--gc,#b0402c);font-size:14px}
 .cmprow{display:flex;align-items:center;gap:8px;padding-bottom:6px;border-bottom:1px solid #EFE3CC}
 .cmpic{width:42px;height:42px;flex:none;display:grid;place-items:center}.cmpic>*{width:100%;height:100%}
 .cmpt{display:flex;flex-direction:column;min-width:0}.cmpt small{font:700 11px var(--body);color:#8f8272}.cmpt b{font:400 15px var(--display)}.cmpt span{font:700 12px var(--body);color:#6e6255}
