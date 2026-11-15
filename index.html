@@ -623,6 +623,7 @@ table.prob th:first-child,table.prob td:first-child{text-align:left}
 #quick button:active{transform:translateY(2px)}
 #quick i{width:28px;height:28px;display:block}#quick i .ico{width:28px;height:28px}
 #quick span{font:700 10.5px var(--body);color:#fff;text-shadow:0 1px 2px #000}
+#quick button{position:relative}#quick .qdot{position:absolute;top:3px;right:4px;width:9px;height:9px;border-radius:50%;background:#ff4d6a;box-shadow:0 0 0 1.5px #fff}
 #qrow{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-width:0}
 #qrow #quest{min-width:0;flex:0 1 auto}
 #pre{display:flex;gap:4px;flex:none;pointer-events:auto}
@@ -1569,7 +1570,7 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
       <div id="bossbox"><div class="boss-top"><span id="bossName">보스</span><span id="bossTime">30.0초</span></div><div class="bossrow"><div class="bar"><i id="bossHp"></i></div><b id="bossPct">100%</b></div></div>
       <button id="retry">보스 도전</button>
     </div>
-    <div id="quick" aria-label="바로가기"><button data-quick="map"><i></i><span>지도</span></button><button data-quick="alch"><i></i><span>물약</span></button><button data-quick="rune"><i></i><span>룬</span></button><button data-quick="sigil"><i></i><span>신성력</span></button></div>
+    <div id="quick" aria-label="바로가기"><button data-quick="map"><i></i><span>지도</span></button><button data-quick="alch"><i></i><span>물약</span></button><button data-quick="rune"><i></i><span>룬</span></button><button data-quick="sigil"><i></i><span>신성력</span></button><button data-quick="dex"><i></i><span>도감</span></button></div>
     <div id="banner"></div>
     <div id="dunHud"></div>
     <div id="gainlog" aria-live="off"></div>

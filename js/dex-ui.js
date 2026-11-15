@@ -13,9 +13,9 @@
   function day(t) { var d = new Date(t); return d.getFullYear() + '.' + ('0' + (d.getMonth() + 1)).slice(-2) + '.' + ('0' + d.getDate()).slice(-2); }
 
   function dexDot(on) {
-    var b = document.querySelector('#tabs [data-tab="more"] span'); if (!b) return;
-    var d = b.querySelector('.dot');
-    if (on && !d) { d = document.createElement('i'); d.className = 'dot'; b.appendChild(d); }
+    var b = document.querySelector('#quick [data-quick="dex"]'); if (!b) return;
+    var d = b.querySelector('.qdot');
+    if (on && !d) { d = document.createElement('b'); d.className = 'qdot'; b.appendChild(d); }
     if (!on && d) d.remove();
   }
 

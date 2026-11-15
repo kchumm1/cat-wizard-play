@@ -605,11 +605,7 @@
         '<div class="row"><div class="info"><div class="name">처음부터 다시 하기</div><div class="desc">모든 진행이 지워져요</div></div><button class="btn" data-set="reset">다시 하기</button></div>' +
         '</div></details>';
       var jump = '<div class="jump three">' + ['전직', '패키지', '설정'].map(function (t, i) { return '<button data-jump="' + i + '">' + t + '</button>'; }).join('') + '</div>';
-      // monster codex (2026-11-15): opens a full-screen page (js/dex-ui.js)
-      var dexHave = 0, dexAll = CW.dexOrder ? CW.dexOrder() : [];
-      dexAll.forEach(function (e) { if (s.dex && s.dex[e.id]) dexHave++; });
-      var dexRow = dexAll.length ? '<div class="list"><div class="row dexrow"><img class="ico" src="' + (CW.ART_BASE || 'art/') + 'dex-book.webp" alt=""><div class="info"><div class="name">몬스터 도감' + (CW.dexHasNew(s) ? ' <span class="lv">NEW</span>' : '') + '</div><div class="desc">발견 ' + dexHave + ' / ' + dexAll.length + ' · 지역을 다 채우면 능력치가 올라요</div></div><button class="btn pri" data-act="dex">열기</button></div></div>' : '';
-      return jump + dexRow + tiers + packs + settings;
+      return jump + tiers + packs + settings;
     }
     function bottomInside() { try { return localStorage.getItem('cw-bottom') === 'inside'; } catch (e) { return false; } }
     // the last error the game kept going through (main.js noteError), only when there was one: to find what broke
@@ -820,7 +816,6 @@
       else if (d.act === 'rdisall') { confirmBox('모두 분해', '잠금하지 않고 장착하지 않은 룬을 모두 룬석으로 바꿀까요?', '분해하기', function () { var rn2 = G.runeDismantleAll(); toast(rn2 ? '룬석 +' + fmt(rn2) : '분해할 룬이 없어요'); selRune = null; renderPanel(true); }); }
       else if (d.pack) { var pk = CW.packById(d.pack); confirmBox('연습용 구매', pk.name + ' (' + pk.won.toLocaleString('ko-KR') + '원)<br><b>실제 결제 없음 · 연습용</b><br>누르면 바로 들어와요.', '받기', function () { var got = G.buyPack(d.pack); if (got === false) toast(CW.packOpen(G.state, d.pack) !== 'ok' ? '지금은 받을 수 없어요' : '신성력 가방에 자리가 부족해요 (최대 ' + DATA.sigilConf.cap + '개)'); else if (got.gear && got.gear.length) showGacha(got.gear); else if (got.length) showSigils(got, true); else if (pk.give.daily) showDaily(false); else toast(pk.name + '을(를) 받았어요'); renderPanel(true); hud(); }); }
       else if (d.act === 'daily') { showDaily(false); }
-      else if (d.act === 'dex') { if (CW.dexOpen) CW.dexOpen(function () { renderPanel(true); }); }
       else if (d.dockx) { if (d.dockx === 'sg') selSigil = null; else selRune = null; renderPanel(true); }
       else if (d.sgswap) { var sw = d.sgswap.split('|'); if (G.sigilSwap(sw[0], sw[1])) toast('바꿔 꼈어요'); renderPanel(true); }
       else if (d.rswap) { var rw = d.rswap.split('|'); if (G.runeSwap(rw[0], rw[1])) toast('바꿔 꼈어요'); renderPanel(true); }
@@ -872,12 +867,15 @@
     CW.ICO.onTint = function () { if (tab === 'gear' || tab === 'gacha') renderPanel(true); };
     document.querySelectorAll('#tabs [data-tab]').forEach(function (b) { var x = CW.ICO.misc && CW.ICO.misc('tab', b.dataset.tab), sv = b.querySelector('svg'); if (x && sv) sv.outerHTML = x; });
     // the rune and sigil shortcuts use the user's pictures (art/ic-rune.webp, ic-sigil.webp, 2026-11-14)
-    var QI = { map: CW.ICO.misc('quick', 'map'), alch: CW.ICO.misc('potion', 'rage'), rune: '<img class="ico" src="art/ic-rune.webp" alt="">', sigil: '<img class="ico" src="art/ic-sigil.webp" alt="">' };
+    var QI = { map: CW.ICO.misc('quick', 'map'), alch: CW.ICO.misc('potion', 'rage'), rune: '<img class="ico" src="art/ic-rune.webp" alt="">', sigil: '<img class="ico" src="art/ic-sigil.webp" alt="">',
+      // the monster codex (2026-11-15): the book off the user's codex picture, opens the full-screen page (js/dex-ui.js)
+      dex: '<img class="ico" src="art/dex-book.webp" alt="">' };
     document.querySelectorAll('#quick [data-quick]').forEach(function (b) { b.querySelector('i').innerHTML = QI[b.dataset.quick] || ''; });
     $('quick').addEventListener('click', function (e) {
       var b = e.target.closest('[data-quick]'); if (!b) return; var q = b.dataset.quick; G.sound('click');
       if (q === 'map') { selDiff = selRegion = -1; openTab(tab === 'stage' ? 'battle' : 'stage'); }
       else if (q === 'alch') { trainSub = 'alch'; openTab('up'); }
+      else if (q === 'dex') { if (CW.dexOpen) CW.dexOpen(); }
       else { gearSub = q; openTab('gear'); }
     });
     $('pre').addEventListener('click', function (e) { var b = e.target.closest('[data-pre]'); if (!b) return; G.switchPreset(+b.dataset.pre); G.sound('click'); toast((+b.dataset.pre + 1) + '번 프리셋으로 바꿨어요'); slots(); if (tab === 'skill') renderPanel(true); });
