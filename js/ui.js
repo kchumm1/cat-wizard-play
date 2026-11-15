@@ -688,7 +688,7 @@
         // the same numbers the game uses (stage-rewards.js): one monster, or the boss and what beating it gives
         var img = G.thumb(res.id), rw = CW.stageRewards(tmp, st, !(s.firstClear || {})[CW.clearKey({ diff: d }, i)]);
         rows += '<button class="srow' + (i === here ? ' here' : '') + (info.isBoss ? ' boss' : '') + '" data-sgo="' + i + '" data-sd="' + d + '"' + (lock ? ' disabled' : '') + '>' +
-          '<span class="sname"><small><span class="sdn">' + DATA.difficulties[d].name + (rw.gems ? ' · ' : '') + '</span>' + (rw.gems ? '<i class="gem"></i>' + fmt(rw.gems) : '') + '</small>' + CW.stageLabel(i) + '</span>' +
+          '<span class="sname">' + (rw.gems ? '<small><i class="gem"></i>' + fmt(rw.gems) + '</small>' : '') + CW.stageLabel(i) + '</span>' +
           '<span class="smon">' + (img ? '<img src="' + img + '" alt="" style="' + (res.tint ? 'filter:hue-rotate(' + (R * 36) + 'deg)' : '') + '">' : '') + '</span>' +
           '<span class="snm">' + (kind ? '<small>' + kind + '</small>' : '') + '<b>' + mname + '</b></span>' +
           '<span class="srews"><span class="srew"><i class="coin"></i>' + gh(rw.gold) + '</span><span class="srew"><b class="xpdot"></b>' + fmt(rw.xp) + '</span>' +

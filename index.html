@@ -1537,7 +1537,12 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 #sheet .srow.boss .snm{color:#ffd6f0}
 #sheet.cream .srow .snm{color:#5a4636}
 #sheet.cream .srow.boss .snm{color:#8a3a5a}
-#sheet .srow .sname small{display:block;white-space:normal;font-size:10px;line-height:1.15}
+/* the stage number in the middle of its cell; on a boss stage the gems for the first win sit just above it and the two are
+   centred together as one block */
+#sheet .srow .sname{align-self:stretch;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;text-align:center;white-space:nowrap}
+#sheet .srow .sname small{display:flex;align-items:center;justify-content:center;gap:2px;font:700 10.5px/1.1 var(--body);font-variant-numeric:tabular-nums;color:#4a8fd8}
+#sheet .srow .sname small .gem{width:12px;height:12px;flex:none}
+#sheet.cream .srow .sname small{color:#3f7fc4}
 #sheet .slist.tight .srew{font-size:10px}
 #sheet .slist.tight .srews{column-gap:5px}
 #sheet .slist.tight .hpbox{font-size:10.5px;padding:0 6px 0 4px;gap:3px}
@@ -1548,8 +1553,6 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 #sheet .slist.tighter .hpbox{padding:0 5px 0 3px}
 #sheet .slist.tighter .sgo{font-size:12px}
 #sheet .slist.tighter .sname{font-size:13px}
-#sheet .slist.tighter .sdn{display:none}
-#sheet .slist.tighter .sname small{min-height:1.15em}
 </style>
 
 <div id="topcap" aria-hidden="true"></div>
