@@ -8,7 +8,6 @@
 
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function nameOf(id) { var b = CW.BESTIARY && CW.BESTIARY[id]; return (b && b.name) || id; }
-  function nameCls(n) { return n.length > 8 ? ' longer' : n.length > 6 ? ' long' : ''; }
   function pad3(n) { return ('00' + n).slice(-3); }
   function day(t) { var d = new Date(t); return d.getFullYear() + '.' + ('0' + (d.getMonth() + 1)).slice(-2) + '.' + ('0' + d.getDate()).slice(-2); }
 
@@ -27,7 +26,7 @@
       '<b class="dxno">' + pad3(e.no) + '</b>' +
       '<i class="dxpic" data-pic="' + e.id + '"></i>' +
       (got ? '' : '<img class="dxlock" src="' + A() + 'dex-lock.webp" alt="" draggable="false">') +
-      '<span class="dxname' + (got ? nameCls(nameOf(e.id)) : '') + '">' + (got ? esc(nameOf(e.id)) : '???') + '</span></button>';
+      '<span class="dxname">' + (got ? esc(nameOf(e.id)) : '???') + '</span></button>';
   }
 
   function render() {
@@ -57,7 +56,16 @@
       (anyNew ? '<button class="dxall" data-dxall="1">NEW 모두 확인</button>' : '') +
       (groups || '<p class="dxempty">아직 여기에 들어갈 몬스터가 없어요</p>') +
       '<img class="dxfoot" src="' + A() + 'dex-foot.webp" alt="새로운 만남을 도감에 모아보세요" draggable="false">';
-    watchPics();
+    watchPics(); fitNames();
+  }
+  // a long name is made just small enough to fit its pill
+  function fitNames() {
+    page.querySelectorAll('.dxname').forEach(function (n) {
+      n.style.fontSize = '';
+      var room = n.clientWidth - 2, r = document.createRange(); r.selectNodeContents(n);
+      var w = r.getBoundingClientRect().width;
+      if (w > room && room > 0) n.style.fontSize = (parseFloat(getComputedStyle(n).fontSize) * room / w).toFixed(2) + 'px';
+    });
   }
 
   // a card's picture is set when it comes near the screen; a locked one is the same picture as a purple shadow (CSS mask)

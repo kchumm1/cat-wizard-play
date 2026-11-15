@@ -1498,13 +1498,16 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 #dex .dxframe{position:absolute;left:0;top:0;width:100%!important;height:100%}
 #dex .fresh .dxframe{left:-2.3%;top:-1.2%;width:105.2%!important;height:102.4%}
 #dex .dxnew{position:absolute;left:66%;top:6.5%;width:27%!important}
-#dex .dxno{position:absolute;left:0;right:0;top:1.8%;text-align:center;font:700 9cqw/1.75 var(--body);color:#6a4a62}
+/* the number sits inside the little label at the card's top, measured on art/dex-card.webp: 95-198 px of 288 across,
+   0-29 px of 254 down (the gold card's label is 1 px higher and a little further left once that card is drawn 5% larger) */
+#dex .dxno{position:absolute;left:33%;width:35.8%;top:0;height:11.4%;display:flex;align-items:center;justify-content:center;font:700 7.6cqw/1 var(--body);font-variant-numeric:tabular-nums;color:#6a4a62}
+#dex .fresh .dxno{left:32.7%;top:-.8%}
 #dex .dxpic{position:absolute;left:12%;right:12%;top:15%;height:58%;background:center/contain no-repeat;-webkit-mask:center/contain no-repeat;mask:center/contain no-repeat}
 #dex .lock .dxpic{background:#b7a1bf;-webkit-mask-size:contain;mask-size:contain;-webkit-mask-position:center;mask-position:center;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
 #dex .dxlock{position:absolute;left:43%;top:36%;width:14%!important}
-#dex .dxname{position:absolute;left:14%;right:14%;top:78.5%;height:14%;display:flex;align-items:center;justify-content:center;font:700 10.5cqw/1 var(--body);white-space:nowrap;overflow:hidden;letter-spacing:-.05em}
-#dex .dxname.long{font-size:9cqw}
-#dex .dxname.longer{font-size:7.8cqw}
+/* the name inside the pill at the card's bottom (art/dex-card.webp: 62-228 px of 288 across, 198-236 px of 254 down);
+   js/dex-ui.js fitNames shrinks a name that is wider than the pill */
+#dex .dxname{position:absolute;left:21.5%;right:20.8%;top:78%;height:14.9%;display:flex;align-items:center;justify-content:center;font:700 10.5cqw/1 var(--body);white-space:nowrap;letter-spacing:-.05em}
 #dex .dxfoot{width:80%!important;margin:16px auto 0}
 #dex .dxall{display:block;margin:2px 0 0 auto;padding:5px 12px;border-radius:99px;background:#fbf3e6!important;box-shadow:inset 0 0 0 1.5px #c9a35d;font:700 12.5px var(--body)!important;color:#7c4f8a!important}
 #dex .dxempty{text-align:center;margin:30px 0;color:#9a7f90}
