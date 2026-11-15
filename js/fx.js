@@ -636,7 +636,7 @@
             var gp2 = V(p.x, 0.03, p.z);
             rock.kill(); spot.kill();
             var near2 = 0; landed = landed.filter(function (q) { return time - q.t < 0.4; }); landed.forEach(function (q) { if ((q.x - p.x) * (q.x - p.x) + (q.z - p.z) * (q.z - p.z) < 1.2) near2++; }); landed.push({ x: p.x, z: p.z, t: time });
-            P3.impact(gp2, { size: 0.55 * cs * P, col: 0xff9a2a, hot: 0xff6a1a, dirt: dirt, chips: big ? 20 : 10, ring: big ? 4.2 : 2.8, calm: big ? 1 : 1 / (1 + 0.7 * near2) });
+            P3.impact(gp2, { size: 0.55 * cs * P, col: 0xff9a2a, hot: 0xff6a1a, dirt: dirt, chips: big ? 20 : 10, ring: big ? 4.2 : 2.8, calm: big ? 1 : 1 / (1 + 0.7 * near2), lite: !big && landed.length > 1 });
             // flames and sparks thrown up out of the hit
             fire(V(p.x, 0.3, p.z), N(big ? 16 : 7, c), { size: 0.85 * cs * P, speed: 3.8, up: 3.2, life: 0.7 });
             sparks(p, [0xffffff, 0xffd060, 0xff8a2b], N(big ? 40 : 20, c), 8.5, { size: 0.18, up: 2.8, stretch: 0.12 });
