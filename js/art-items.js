@@ -20,10 +20,13 @@
   // 태초·불멸·혼돈·멸망 (grades 6..9, 2026-11-15): until the user's pictures come they show the 신화 picture and frame
   // with their own grade colour around it (class gx gx6..gx9 in index.html). When pictures art/gi-<kind>-6..9.webp
   // arrive, list the grades here and they are used instead.
-  var NEW_PICS = [];
+  // 혼돈 (8) and 멸망 (9) came 2026-11-15 as four pictures each, one per step I..IV: art/gi-<kind>-<grade>-<1..4>.webp
+  // (tools/cut-gear-doom.py; 혼돈 is the 멸망 picture turned purple).
+  var NEW_PICS = [], STEP_PICS = [8, 9];
   I.gear = function (kind, grade, sub, img) {
     if (KINDS.indexOf(kind) < 0) return gear0(kind, grade, sub, img);
-    var real = clamp(grade, 0, 9), pic = NEW_PICS.indexOf(real) >= 0 ? src('gi-' + kind + '-' + real) : gearPic(kind, real);
+    var real = clamp(grade, 0, 9), pic = STEP_PICS.indexOf(real) >= 0 ? src('gi-' + kind + '-' + real + '-' + clamp(sub, 1, 4))
+      : NEW_PICS.indexOf(real) >= 0 ? src('gi-' + kind + '-' + real) : gearPic(kind, real);
     grade = clamp(grade, 0, 5);
     // the drawn staff icon already carries the grade glow, the I~IV marks and the shine: keep those, swap the picture
     return gear0('staff', grade, sub).replace('class="gart ', 'class="gart gnew ' + (real > 5 ? 'gx gx' + real + ' ' : ''))
