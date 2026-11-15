@@ -186,25 +186,30 @@
     // many times it can be bought. give: gems, goldMin (minutes of hunting gold at the current stage), potionMin (every
     // potion runs that much longer), pulls (free gear pulls), daily { days, gems } (claimed once a day), runeStone,
     // sigils, sigilStone. The plain gem shop is DATA.shop.
+    // gems (2026-11-15, the user: "119,000원이 너무 짜, 5만으로, 전체 다이아 수정"): every package and the gem shop give gems
+    // on one curve — 0.30 a won at 1,200원 rising to 0.42 at 119,000원 (bigger buys a little kinder), rounded.
+    // 마력석 (mana) packages are new: 꾸러미 ≈ 60 stage-boss wins at 6-x, 상자 ≈ 400.
     packs: [
-      { id: 'dailyGem', cat: 'daily', name: '매일 다이아 7일', won: 6900, icon: '📅', give: { daily: { days: 7, gems: 300 } } },
-      { id: 'goldS', cat: 'grow', name: '골드 꾸러미', won: 3300, icon: '💰', give: { goldMin: 120 } },
-      { id: 'goldL', cat: 'grow', name: '골드 금고', won: 12000, icon: '💰', give: { goldMin: 600 } },
-      { id: 'potion', cat: 'grow', name: '물약 꾸러미', won: 4900, icon: '🧪', give: { potionMin: 120 } },
-      { id: 'grow', cat: 'grow', name: '성장 한 번에', won: 15000, icon: '🎁', give: { goldMin: 300, potionMin: 180, gems: 800 } },
-      { id: 'gear10', cat: 'gear', name: '장비 뽑기 10번', won: 3300, icon: '🎰', give: { pulls: 10 } },
-      { id: 'gear30', cat: 'gear', name: '장비 뽑기 30번', won: 8900, icon: '🎰', give: { pulls: 30 } },
-      { id: 'gear100', cat: 'gear', name: '장비 뽑기 100번', won: 27000, icon: '🎰', give: { pulls: 100 } },
-      { id: 'tier5', cat: 'tier', name: '5차 전직 축하', won: 9900, icon: '🎉', need: { tier: 5 }, limit: 1, give: { gems: 2000, runeStone: 3000 } },
-      { id: 'tier8', cat: 'tier', name: '8차 전직 축하', won: 19900, icon: '🎉', need: { tier: 8 }, limit: 1, give: { gems: 5000, sigils: [{ grade: 4, n: 2 }], sigilStone: 5000 } },
-      { id: 'tier10', cat: 'tier', name: '불사조 전직 축하', won: 29900, icon: '🔥', need: { tier: 10 }, limit: 1, give: { gems: 10000, runeStone: 10000, sigils: [{ grade: 6, n: 1 }] } },
-      { id: 'runeS', cat: 'rune', name: '룬석 꾸러미', won: 5900, icon: '🔮', give: { runeStone: 1500 } },
-      { id: 'runeL', cat: 'rune', name: '룬 승급 상자', won: 33000, icon: '🔮', give: { runeStone: 12000 } },
-      { id: 'sigilA', cat: 'rune', name: '신성력 전설 패키지', won: 12000, icon: '💠', give: { sigils: [{ grade: 3, n: 3 }], sigilStone: 2000 } },
-      { id: 'sigilB', cat: 'rune', name: '신성력 고대 패키지', won: 33000, icon: '💠', give: { sigils: [{ grade: 5, n: 2 }, { grade: 4, n: 2 }], sigilStone: 8000 } },
-      { id: 'sigilC', cat: 'rune', name: '신성력 불멸 패키지', won: 59000, icon: '💠', give: { sigils: [{ grade: 7, n: 1 }, { grade: 6, n: 2 }], sigilStone: 20000 } },
-      { id: 'sigilD', cat: 'rune', name: '신성력 멸망 패키지', won: 119000, icon: '💠', give: { sigils: [{ grade: 10, n: 1 }, { grade: 8, n: 2 }], sigilStone: 60000 } },
-      { id: 'mixed', cat: 'rune', name: '룬·신성력 성장 세트', won: 22000, icon: '🎁', give: { runeStone: 5000, sigils: [{ grade: 4, n: 1 }], sigilStone: 5000 } }
+      { id: 'dailyGem', cat: 'daily', name: '매일 다이아 7일', won: 6900, icon: '📅', give: { daily: { days: 7, gems: 340 } } },
+      { id: 'goldS', cat: 'grow', name: '골드 꾸러미', won: 3300, icon: '💰', give: { goldMin: 120, gems: 1100 } },
+      { id: 'goldL', cat: 'grow', name: '골드 금고', won: 12000, icon: '💰', give: { goldMin: 600, gems: 4500 } },
+      { id: 'potion', cat: 'grow', name: '물약 꾸러미', won: 4900, icon: '🧪', give: { potionMin: 120, gems: 1700 } },
+      { id: 'grow', cat: 'grow', name: '성장 한 번에', won: 15000, icon: '🎁', give: { goldMin: 300, potionMin: 180, gems: 5500 } },
+      { id: 'manaS', cat: 'grow', name: '마력석 꾸러미', won: 5900, icon: '🔷', give: { mana: 30000, gems: 2000 } },
+      { id: 'manaL', cat: 'grow', name: '마력석 상자', won: 33000, icon: '🔷', give: { mana: 200000, gems: 13000 } },
+      { id: 'gear10', cat: 'gear', name: '장비 뽑기 10번', won: 3300, icon: '🎰', give: { pulls: 10, gems: 1100 } },
+      { id: 'gear30', cat: 'gear', name: '장비 뽑기 30번', won: 8900, icon: '🎰', give: { pulls: 30, gems: 3100 } },
+      { id: 'gear100', cat: 'gear', name: '장비 뽑기 100번', won: 27000, icon: '🎰', give: { pulls: 100, gems: 10300 } },
+      { id: 'tier5', cat: 'tier', name: '5차 전직 축하', won: 9900, icon: '🎉', need: { tier: 5 }, limit: 1, give: { gems: 3500, runeStone: 3000 } },
+      { id: 'tier8', cat: 'tier', name: '8차 전직 축하', won: 19900, icon: '🎉', need: { tier: 8 }, limit: 1, give: { gems: 7400, sigils: [{ grade: 4, n: 2 }], sigilStone: 5000 } },
+      { id: 'tier10', cat: 'tier', name: '불사조 전직 축하', won: 29900, icon: '🔥', need: { tier: 10 }, limit: 1, give: { gems: 11500, runeStone: 10000, sigils: [{ grade: 6, n: 1 }] } },
+      { id: 'runeS', cat: 'rune', name: '룬석 꾸러미', won: 5900, icon: '🔮', give: { runeStone: 1500, gems: 2000 } },
+      { id: 'runeL', cat: 'rune', name: '룬 승급 상자', won: 33000, icon: '🔮', give: { runeStone: 12000, gems: 13000 } },
+      { id: 'sigilA', cat: 'rune', name: '신성력 전설 패키지', won: 12000, icon: '💠', give: { sigils: [{ grade: 3, n: 3 }], sigilStone: 2000, gems: 4500 } },
+      { id: 'sigilB', cat: 'rune', name: '신성력 고대 패키지', won: 33000, icon: '💠', give: { sigils: [{ grade: 5, n: 2 }, { grade: 4, n: 2 }], sigilStone: 8000, gems: 13000 } },
+      { id: 'sigilC', cat: 'rune', name: '신성력 불멸 패키지', won: 59000, icon: '💠', give: { sigils: [{ grade: 7, n: 1 }, { grade: 6, n: 2 }], sigilStone: 20000, gems: 24000 } },
+      { id: 'sigilD', cat: 'rune', name: '신성력 멸망 패키지', won: 119000, icon: '💠', give: { sigils: [{ grade: 10, n: 1 }, { grade: 8, n: 2 }], sigilStone: 60000, gems: 50000 } },
+      { id: 'mixed', cat: 'rune', name: '룬·신성력 성장 세트', won: 22000, icon: '🎁', give: { runeStone: 5000, sigils: [{ grade: 4, n: 1 }], sigilStone: 5000, gems: 8300 } }
     ],
     // the three star items (staff, cape, charm): level with gold, stars from boss shards
     divine: [
@@ -239,7 +244,8 @@
       { id: 'mArcane', name: '비전의 징표', stat: 'alphaDmg', per: 0.02, icon: '🔮', extra: true, openRank: 3 },
       { id: 'mJudge', name: '심판의 징표', stat: 'bossDmg', per: 0.02, icon: '⚖️', extra: true, openRank: 3 }
     ],
-    rankConf: { names: ['견습 마법사', '정식 마법사', '숙련 마법사', '상급 마법사', '대마법사', '현자', '천상 마법사'], capPerRank: 20, rankLevel: [0, 60, 150, 260, 400, 560, 720], rankCost: [0, 300, 1500, 6000, 25000, 100000, 400000], rankFinal: 0.5, markBase: 5, markGrowth: 1.07 },
+    // 2026-11-15 (user): 6 → 10 steps, the four new ones packed between Lv.745 and 800 (the level cap stays 800)
+    rankConf: { names: ['견습 마법사', '정식 마법사', '숙련 마법사', '상급 마법사', '대마법사', '현자', '천상 마법사', '성좌 마법사', '별빛 군주', '시공의 지배자', '태초의 마법왕'], capPerRank: 20, rankLevel: [0, 60, 150, 260, 400, 560, 720, 745, 765, 785, 800], rankCost: [0, 300, 1500, 6000, 25000, 100000, 400000, 1600000, 6400000, 25000000, 100000000], rankFinal: 0.5, markBase: 5, markGrowth: 1.07 },
     circleConf: { base: 20, growth: 1.06, perLv: 0.02, tierEvery: 25, tierFinal: 0.5, maxLv: 225 },
     manaConf: { bossBase: 2, bossPerStage: 0.3, bossGrowth: 1.012, regionMul: 5 },
     // element weakness: a skill whose element the region is weak to hits ×weak (×(1 + 약점 피해) on top)
@@ -365,24 +371,32 @@
       { id: 2, name: '희귀', color: '#3d8bfd', mainMul: 6, subs: 1 },
       { id: 3, name: '영웅', color: '#a259ff', mainMul: 15, subs: 1 },
       { id: 4, name: '전설', color: '#ff9f1c', mainMul: 40, subs: 2 },
-      { id: 5, name: '신화', color: '#ff4d6d', mainMul: 110, subs: 3 }
+      { id: 5, name: '신화', color: '#ff4d6d', mainMul: 110, subs: 3 },
+      // 2026-11-15 (user): four more grades after 신화, I~IV each like the others. Same colours as the sigil grades of the
+      // same name; the power keeps the step of the grades below (about ×2.75). Merging 신화 IV makes 태초 I.
+      { id: 6, name: '태초', color: '#2fd6b3', mainMul: 300, subs: 3 },
+      { id: 7, name: '불멸', color: '#ffc21a', mainMul: 820, subs: 3 },
+      { id: 8, name: '혼돈', color: '#7b3cff', mainMul: 2250, subs: 3 },
+      { id: 9, name: '멸망', color: '#ff2a3a', mainMul: 6200, subs: 3 }
     ],
     gacha: {
-      levels: [0, 50, 150, 300, 500, 800, 1200, 1700, 2300, 3000],
+      // levels 11-13 (2026-11-15): past 3000 pulls the new grades (태초…멸망) can come, very rarely; rows are % per grade
+      levels: [0, 50, 150, 300, 500, 800, 1200, 1700, 2300, 3000, 4000, 5500, 7500],
       table: [
         [60, 30, 8, 1.8, 0.2, 0], [55, 31, 11, 2.6, 0.4, 0], [50, 32, 14, 3.4, 0.6, 0], [45, 32, 17, 5, 1, 0], [40, 32, 20, 6.5, 1.5, 0],
-        [35, 31, 23, 8.5, 2.4, 0.1], [30, 30, 26, 10.6, 3.1, 0.3], [25, 29, 28, 13, 4.5, 0.5], [20, 28, 30, 15.5, 5.8, 0.7], [15, 27, 31, 18, 8, 1]
+        [35, 31, 23, 8.5, 2.4, 0.1], [30, 30, 26, 10.6, 3.1, 0.3], [25, 29, 28, 13, 4.5, 0.5], [20, 28, 30, 15.5, 5.8, 0.7], [15, 27, 31, 18, 8, 1],
+        [12, 26, 31, 20, 8, 2, 0.8, 0.2, 0, 0], [10, 25, 31, 21, 8.5, 3, 1, 0.4, 0.1, 0], [8, 24, 31, 22, 9, 4, 1.3, 0.5, 0.15, 0.05]
       ],
       cost: { 1: 30, 10: 280, 30: 800, 100: 2500 },
       pity: 200
     },
     shop: [
-      { name: '다이아 한 줌', won: 1200, gems: 100 },
-      { name: '다이아 주머니', won: 5900, gems: 550 },
-      { name: '다이아 상자', won: 12000, gems: 1200 },
-      { name: '다이아 궤짝', won: 33000, gems: 3500 },
-      { name: '다이아 보물상자', won: 59000, gems: 6500 },
-      { name: '다이아 산더미', won: 119000, gems: 14000 }
+      { name: '다이아 한 줌', won: 1200, gems: 400 },
+      { name: '다이아 주머니', won: 5900, gems: 2000 },
+      { name: '다이아 상자', won: 12000, gems: 4500 },
+      { name: '다이아 궤짝', won: 33000, gems: 13000 },
+      { name: '다이아 보물상자', won: 59000, gems: 24000 },
+      { name: '다이아 산더미', won: 119000, gems: 50000 }
     ],
     balance: {
       startGems: 300,
@@ -407,7 +421,7 @@
       mergeCount: 5,
       superPerLevel: 0.004, ultraPerLevel: 0.003, hyperPerLevel: 0.002, superDmg: 3, ultraDmg: 4, hyperDmg: 5,
       megaPerLevel: 0.002, ultimatePerLevel: 0.0015, alphaPerLevel: 0.001, megaDmg: 6, ultimateDmg: 7, alphaDmg: 8, highDmgPerLevel: 0.05,
-      skillUpBase: 150, skillOwnedPer: 0.01, skillUpGrowth: 1.6, skillLvBonus: 0.1, skillMaxLv: 20,
+      skillUpBase: 150, skillOwnedPer: 0.01, skillUpGrowth: 1.6, skillLvBonus: 0.1, skillMaxLv: 50,
       levelMax: 800, levelXpBase: 40, levelXpPow: 2, levelXpStage: 1.004, levelAtk: 0.004, levelBossXp: 30, levelGems: 20
     }
   };

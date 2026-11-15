@@ -463,7 +463,7 @@
       // 초월 lines: what each level grows, e.g. 하이퍼 크리티컬 피해 +0.20배 (1레벨당 +0.02배)
       Object.keys(DATA.upgrades).forEach(function (k) {
         var a = DATA.upgrades[k].adds; if (!a) return;
-        var lv = s.up[k] || 0;
+        var u0 = DATA.upgrades[k], lv = Math.min(s.up[k] || 0, u0.max === null ? Infinity : u0.max);
         eff[k] = Object.keys(a).map(function (b) {
           var f = function (v) { return CW.bonusAmount(b, v); };
           return STAT_KO[b] + ' ' + f(lv * a[b]) + ' (1레벨당 ' + f(a[b]) + ')';
@@ -471,12 +471,17 @@
       });
       var mul ='<div class="mulpick" role="group" aria-label="한 번에 올릴 단계">' + [1, 10, 100].map(function (n) { return '<button class="btn' + (upMul === n ? ' on' : '') + '" data-mul="' + n + '" aria-pressed="' + (upMul === n) + '">×' + n + '</button>'; }).join('') + '</div>';
       return '<h3>성장</h3>' + mul + '<div class="note" style="margin:4px 0 8px">버튼을 꾹 누르면 계속 올라가요. ×10·×100은 골드가 되는 만큼 한 번에 올려요.</div><div class="list">' + Object.keys(DATA.upgrades).map(function (k) {
-        var u = DATA.upgrades[k], lv = s.up[k] || 0, max = u.max !== null && lv >= u.max, one = CW.upgradeCost(k, lv), cost = upMul > 1 ? CW.upgradeCostN(s, k, upMul) : one;
+        var u = DATA.upgrades[k], lv = s.up[k] || 0, oi = CW.overInfo(s, k), one = CW.upgradeCost(k, lv), cost = upMul > 1 ? CW.upgradeCostN(s, k, upMul) : one;
+        var max = u.max !== null && lv >= u.max && !oi;
+        // 한계 돌파 (2026-11-15): past the row's max, each level adds 1% to the damage it is about
+        var OVK = { finalMul: '모든 피해', critDmg: '치명타 피해', superDmg: '슈퍼 피해', ultraDmg: '울트라 피해', hyperDmg: '하이퍼 피해', megaDmg: '메가 피해', ultimateDmg: '얼티밋 피해', alphaDmg: '알파 피해', bossDmg: '보스 피해', skillDmg: '스킬 피해', weakMul: '약점 피해', surgeMul: '폭주 피해' };
+        var overTxt = oi && u.max !== null && lv >= u.max ? '<div class="desc over">한계 돌파 +' + oi.levels + ' · ' + OVK[oi.stat] + ' +' + Math.round(oi.pct * 100) + '% (1단계마다 +1%)</div>' : '';
+        var lvTxt = u.max !== null && lv > u.max ? 'Lv.' + u.max + ' <b class="ovlv">+' + (lv - u.max) + '</b>' : 'Lv.' + lv;
         if (!CW.upgradeOpen(s, k)) {
           var nd = CW.upgradeNeed(k), why = u.tier && (s.tier || 1) < u.tier ? u.tier + '차 전직 후에 열려요' : DATA.upgrades[nd.key].name + ' Lv.' + nd.lv + ' 달성하면 열려요';
           return '<div class="row lockrow"><div class="ricon">' + CW.ICO.stat(k) + '</div><div class="info"><div class="name">' + u.name + '</div><div class="desc need">' + why + '</div></div><span class="lockic">' + CW.ICO.pic('lock', 'ilock') + '</span></div>';
         }
-        return '<div class="row"><div class="ricon">' + CW.ICO.stat(k) + '</div><div class="info"><div class="name">' + u.name + '<span class="lv">Lv.' + lv + '</span></div><div class="desc">' + eff[k] + '</div></div>' +
+        return '<div class="row"><div class="ricon">' + CW.ICO.stat(k) + '</div><div class="info"><div class="name">' + u.name + '<span class="lv">' + lvTxt + '</span></div><div class="desc">' + eff[k] + '</div>' + overTxt + '</div>' +
           '<button class="buy ' + (max || s.gold < one ? 'off' : '') + '" data-up="' + k + '">' + (max ? '최대' : (upMul > 1 ? '<small>×' + upMul + '</small>' : '') + '<i class="coin"></i>' + gh(cost)) + '</button></div>';
       }).join('') + '</div>';
     }
@@ -517,14 +522,15 @@
     }
     function gachaPanel() {
       var s = G.state, lv = CW.gachaLevel(s.pulls), L = DATA.gacha.levels;
-      var nextNeed = lv < 10 ? L[lv] : null, prev = L[lv - 1];
+      var nextNeed = lv < L.length ? L[lv] : null, prev = L[lv - 1], rowNow = DATA.gacha.table[lv - 1];
+      var newOdds = rowNow.slice(6).reduce(function (a, p) { return a + (p || 0); }, 0);   // 태초 and up (2026-11-15)
       var bar = nextNeed ? Math.min(100, (s.pulls - prev) / (nextNeed - prev) * 100) : 100;
-      var head = '<div class="gacha-head"><div class="lvl">' + lv + '<small>뽑기 레벨</small></div><div style="flex:1;min-width:0"><div class="note">' + (nextNeed ? '다음 레벨까지 ' + (nextNeed - s.pulls) + '회' : '최고 레벨') + '</div><div class="bar" style="margin:6px 0"><i style="width:' + bar + '%"></i></div><div class="note">전설 확정까지 ' + (DATA.gacha.pity - s.pity) + '회 · 지금 전설 ' + DATA.gacha.table[lv - 1][4] + '% · 신화 ' + DATA.gacha.table[lv - 1][5] + '%</div></div></div>';
+      var head = '<div class="gacha-head"><div class="lvl">' + lv + '<small>뽑기 레벨</small></div><div style="flex:1;min-width:0"><div class="note">' + (nextNeed ? '다음 레벨까지 ' + (nextNeed - s.pulls) + '회' : '최고 레벨') + '</div><div class="bar" style="margin:6px 0"><i style="width:' + bar + '%"></i></div><div class="note">전설 확정까지 ' + (DATA.gacha.pity - s.pity) + '회 · 지금 전설 ' + rowNow[4] + '% · 신화 ' + rowNow[5] + '%' + (newOdds > 0 ? ' · 태초 이상 ' + Math.round(newOdds * 100) / 100 + '%' : '') + '</div></div></div>';
       var pulls = '<div class="pulls">' + [1, 10, 30, 100].map(function (n) {
         return '<button class="pull ' + (n === 100 ? 'big' : '') + '" data-pull="' + n + '"><b>' + n + '회 뽑기</b><span><i class="gem"></i>' + fmt(CW.gachaCost(n)) + '</span><small class="note">' + (n >= 100 ? '영웅 이상 1개 보장' : n >= 10 ? '희귀 이상 1개 보장' : '장비 1개') + '</small></button>';
       }).join('') + '</div>';
       var table = '<details style="margin-top:12px"><summary class="note" style="cursor:pointer">확률 보기</summary><div class="tablewrap"><table class="prob"><tr><th>레벨</th>' + DATA.grades.map(function (g) { return '<th style="color:' + g.color + '">' + g.name + '</th>'; }).join('') + '</tr>' +
-        DATA.gacha.table.map(function (r, i) { return '<tr style="' + (i + 1 === lv ? 'color:var(--gold)' : '') + '"><td>' + (i + 1) + ' (' + L[i] + '회~)</td>' + r.map(function (p) { return '<td>' + p + '%</td>'; }).join('') + '</tr>'; }).join('') + '</table></div></details>';
+        DATA.gacha.table.map(function (r, i) { return '<tr style="' + (i + 1 === lv ? 'color:var(--gold)' : '') + '"><td>' + (i + 1) + ' (' + L[i] + '회~)</td>' + DATA.grades.map(function (g, gi) { return '<td>' + (r[gi] || 0) + '%</td>'; }).join('') + '</tr>'; }).join('') + '</table></div></details>';
       return '<div class="artban ab-gacha" aria-hidden="true"></div><h3>장비 뽑기</h3>' + head + pulls + table + '<p class="note" style="margin-top:10px">다이아가 부족하면 더보기 → 패키지에서 받을 수 있어요(연습용).</p>';
     }
     // 더보기: three parts only (2026-11-14): 전직 (when each job opens), 패키지 (everything for sale, practice only),
@@ -555,6 +561,7 @@
         if (g.potionMin) lines.push('물약 3종 ' + (g.potionMin >= 60 ? g.potionMin / 60 + '시간' : g.potionMin + '분'));
         if (g.pulls) lines.push('장비 뽑기 ' + g.pulls + '번 (다이아 안 씀)');
         if (g.runeStone) lines.push(CW.ICO.cur('rune') + ' 룬석 ' + fmt(g.runeStone));
+        if (g.mana) lines.push(CW.ICO.cur('mana') + ' 마력석 ' + fmt(g.mana));
         (g.sigils || []).forEach(function (x) { lines.push('<b style="color:' + hc(x.grade) + '">' + hn(x.grade) + '</b> 신성력 ' + x.n + '개'); });
         if (g.sigilStone) lines.push(CW.ICO.cur('sigil') + ' 신성석 ' + fmt(g.sigilStone));
         return lines.join(' · ');

@@ -16,7 +16,9 @@
   // grade colours as hue/saturation for recolouring, and a hex for jewels
   var GRADE = [
     { h: 215, s: 0.1, gem: 0xc8ccd4 }, { h: 135, s: 0.62, gem: 0x5ce07a }, { h: 214, s: 0.78, gem: 0x4f9bff },
-    { h: 282, s: 0.72, gem: 0xb46cff }, { h: 32, s: 0.9, gem: 0xffa21c }, { h: 352, s: 0.8, gem: 0xff4d6d }
+    { h: 282, s: 0.72, gem: 0xb46cff }, { h: 32, s: 0.9, gem: 0xffa21c }, { h: 352, s: 0.8, gem: 0xff4d6d },
+    // 태초·불멸·혼돈·멸망 (2026-11-15)
+    { h: 168, s: 0.78, gem: 0x2fd6b3 }, { h: 45, s: 0.9, gem: 0xffc21a }, { h: 262, s: 0.8, gem: 0x7b3cff }, { h: 356, s: 0.88, gem: 0xff2a3a }
   ];
   function rgb2hsv(r, g, b) {
     var mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn, h = 0;

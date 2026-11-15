@@ -17,12 +17,17 @@
   var KINDS = ['staff', 'necklace', 'ear', 'ring', 'belt', 'hat', 'robe'];
   function gearPic(kind, grade) { return src('gi-' + kind + '-' + Math.max(1, clamp(grade, 0, 5))); }
   var gear0 = I.gear;
+  // 태초·불멸·혼돈·멸망 (grades 6..9, 2026-11-15): until the user's pictures come they show the 신화 picture and frame
+  // with their own grade colour around it (class gx gx6..gx9 in index.html). When pictures art/gi-<kind>-6..9.webp
+  // arrive, list the grades here and they are used instead.
+  var NEW_PICS = [];
   I.gear = function (kind, grade, sub, img) {
     if (KINDS.indexOf(kind) < 0) return gear0(kind, grade, sub, img);
+    var real = clamp(grade, 0, 9), pic = NEW_PICS.indexOf(real) >= 0 ? src('gi-' + kind + '-' + real) : gearPic(kind, real);
     grade = clamp(grade, 0, 5);
     // the drawn staff icon already carries the grade glow, the I~IV marks and the shine: keep those, swap the picture
-    return gear0('staff', grade, sub).replace('class="gart ', 'class="gart gnew ')
-      .replace(/<svg class="ico gstaff"[\s\S]*?<\/svg>/, '<img class="gimg gpic" src="' + gearPic(kind, grade) + '" alt="" draggable="false">');
+    return gear0('staff', grade, sub).replace('class="gart ', 'class="gart gnew ' + (real > 5 ? 'gx gx' + real + ' ' : ''))
+      .replace(/<svg class="ico gstaff"[\s\S]*?<\/svg>/, '<img class="gimg gpic" src="' + pic + '" alt="" draggable="false">');
   };
   if (CW.GEAR_IMG) KINDS.forEach(function (k) { CW.GEAR_IMG[k] = gearPic(k, 1); });
 

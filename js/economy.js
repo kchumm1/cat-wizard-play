@@ -48,11 +48,28 @@
     if (u.tier && (state.tier || 1) < u.tier) return false;
     return !u.need || ((state.up || {})[u.need[0]] || 0) >= u.need[1];
   }
-  // total gold for the next n levels (stops at the max level)
+  // 한계 돌파 (2026-11-15, the user: rows that stopped at '최대' keep going). A row's own effect (a rate, a damage line, a
+  // 초월 bonus) stops at its max as before; every level past it adds OVER_PER (1%) to the damage the row is about —
+  // added, not multiplied, so it can never outgrow attack (which multiplies) however far it goes. The cost keeps growing.
+  var OVER_PER = 0.01;
+  // which stat the levels past the max raise: a crit-rate row raises that crit's damage, speed raises all damage,
+  // a 초월 row raises what it adds
+  var OVER_TO = { speed: 'finalMul', crit: 'critDmg', superCrit: 'superDmg', ultraCrit: 'ultraDmg', hyperCrit: 'hyperDmg',
+    megaCrit: 'megaDmg', megaDmg: 'megaDmg', ultimateCrit: 'ultimateDmg', ultimateDmg: 'ultimateDmg', alphaCrit: 'alphaDmg', alphaDmg: 'alphaDmg' };
+  var ADD_TO = { superDmg: 'superDmg', hyperDmg: 'hyperDmg', megaDmg: 'megaDmg', ultimateDmg: 'ultimateDmg', alphaDmg: 'alphaDmg',
+    bossDmg: 'bossDmg', finalPct: 'finalMul', skillDmg: 'skillDmg', weakDmg: 'weakMul', surgeDmg: 'surgeMul' };
+  function overTarget(key) {
+    var u = DATA.upgrades[key]; if (!u || u.max === null) return null;
+    if (OVER_TO[key]) return OVER_TO[key];
+    var a = u.adds && Object.keys(u.adds)[0]; return a && ADD_TO[a] || null;
+  }
+  function overLevels(state, key) { var u = DATA.upgrades[key], lv = (state.up || {})[key] || 0; return u && u.max !== null ? Math.max(0, lv - u.max) : 0; }
+  function cappedLv(state, key) { var u = DATA.upgrades[key], lv = (state.up || {})[key] || 0; return u && u.max !== null ? Math.min(lv, u.max) : lv; }
+  // total gold for the next n levels
   function upgradeCostN(state, key, n) {
-    var u = DATA.upgrades[key], lv = state.up[key] || 0, sum = 0;
-    for (var i = 0; i < n && (u.max === null || lv + i < u.max); i++) sum += upgradeCost(key, lv + i);
-    return sum;
+    var lv = state.up[key] || 0, sum = 0;
+    for (var i = 0; i < n; i++) sum += upgradeCost(key, lv + i);
+    return cap(sum);
   }
   // buys up to n levels while gold lasts; returns how many were bought
   function tryUpgradeN(state, key, n) {
@@ -63,8 +80,9 @@
     var u = DATA.upgrades[key];
     if (!upgradeOpen(state, key)) return false;
     var lv = state.up[key] || 0;
-    if (u.max !== null && lv >= u.max) return false;
+    if (u.max !== null && lv >= u.max && !overTarget(key)) return false;
     var c = upgradeCost(key, lv);
+    if (!(c < CAP)) return false;
     if (!(state.gold >= c)) return false;
     state.gold = Math.max(0, state.gold - c);
     state.up[key] = lv + 1;
@@ -99,16 +117,26 @@
   function upgradeBonus(state) {
     var r = {}, up = state.up || {};
     Object.keys(DATA.upgrades).forEach(function (k) {
-      var a = DATA.upgrades[k].adds, lv = up[k] || 0; if (!a || !lv) return;
+      var a = DATA.upgrades[k].adds, lv = cappedLv(state, k); if (!a || !lv) return;
       for (var s in a) r[s] = (r[s] || 0) + a[s] * lv;
     });
     return r;
   }
   function stats(state) {
-    var u = state.up, gb = gearBonus(state), ub = upgradeBonus(state);
+    // the rows' own effects use levels up to their max; what is past it is added at the end (한계 돌파)
+    var u = {}; for (var uk in state.up) u[uk] = cappedLv(state, uk);
+    var gb = gearBonus(state), ub = upgradeBonus(state);
     for (var bk in ub) if (gb[bk] !== undefined) gb[bk] += ub[bk];
     var atk = B.atkBase * (1 + u.atk * B.atkPerLevel) * Math.pow(B.atkCompound, u.atk);
     atk = atk * (1 + gb.atk) * (1 + gb.atkPct) * (1 + B.levelAtk * ((state.level || 1) - 1));
+    var st = statsBase(state, u, gb, atk), over = {};
+    Object.keys(DATA.upgrades).forEach(function (k) { var t = overTarget(k), n = overLevels(state, k); if (t && n) over[t] = (over[t] || 0) + n; });
+    for (var t in over) st[t] = cap(st[t] * (1 + OVER_PER * over[t]));
+    return st;
+  }
+  // the stat bonus 한계 돌파 gives a row right now: { stat, pct } (for the 성장 list)
+  function overInfo(state, key) { var t = overTarget(key), n = overLevels(state, key); return t ? { stat: t, levels: n, pct: n * OVER_PER } : null; }
+  function statsBase(state, u, gb, atk) {
     return {
       atk: cap(atk),
       speedMul: Math.min(2, 1 + u.speed * B.speedPerLevel + gb.speed),
@@ -252,7 +280,7 @@
   return {
     stageMonsterHp: stageMonsterHp, stageBossHp: stageBossHp, stageGold: stageGold, diffOf: diffOf,
     monsterHp: monsterHp, bossHp: bossHp, monsterGold: monsterGold, bossGems: bossGems,
-    isWeak: isWeak, regionOf: regionOf, surgeTick: surgeTick, surgeFactor: surgeFactor, weakFactor: weakFactor, upgradeBonus: upgradeBonus, bonusBySource: bonusBySource, upgradeCostN: upgradeCostN, tryUpgradeN: tryUpgradeN, upgradeOpen: upgradeOpen, upgradeNeed: upgradeNeed, rollCrit: rollCrit, critFactor: critFactor, upgradeCost: upgradeCost, tryUpgrade: tryUpgrade, stats: stats, hitDamage: hitDamage,
+    isWeak: isWeak, regionOf: regionOf, surgeTick: surgeTick, surgeFactor: surgeFactor, weakFactor: weakFactor, upgradeBonus: upgradeBonus, bonusBySource: bonusBySource, upgradeCostN: upgradeCostN, tryUpgradeN: tryUpgradeN, upgradeOpen: upgradeOpen, upgradeNeed: upgradeNeed, rollCrit: rollCrit, critFactor: critFactor, upgradeCost: upgradeCost, tryUpgrade: tryUpgrade, stats: stats, overInfo: overInfo, hitDamage: hitDamage,
     dps: dps, bossDps: bossDps, bossDpsTypical: bossDpsTypical, evenCrit: evenCrit, killsPerSecond: killsPerSecond, goldPerSecond: goldPerSecond, skillById: skillById,
     isRegionBoss: isRegionBoss, isMiniBoss: isMiniBoss
   };

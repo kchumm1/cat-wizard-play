@@ -23,7 +23,7 @@
   --ink:#0f1019; --panel:#181a28; --panel-2:#22253a; --line:#2c2f47; --text:#f3f3f8; --muted:#a9abc3; --faint:#7d809e; --gold-ink:#3a2600; --tabh:64px; --sel:#ffffff; --sel-ink:#14151f; --sel-grad:linear-gradient(180deg,#ffffff,#e6e7ef);
   --gold-soft:#ffd76e; --gem-soft:#8fe4ff;
   --gold:#ffcf4a; --gem:#7fe3ff; --accent:#ff8fd0; --ok:#6fe08a; --bad:#ff6b7f;
-  --g0:#a3a7ad; --g1:#4fc46a; --g2:#3d8bfd; --g3:#a259ff; --g4:#ff9f1c; --g5:#ff4d6d;
+  --g0:#a3a7ad; --g1:#4fc46a; --g2:#3d8bfd; --g3:#a259ff; --g4:#ff9f1c; --g5:#ff4d6d; --g6:#2fd6b3; --g7:#ffc21a; --g8:#7b3cff; --g9:#ff2a3a;
   --display:'Jua','Noto Sans KR',system-ui,sans-serif; --body:'Noto Sans KR',system-ui,-apple-system,sans-serif;
   color-scheme:dark;
 }
@@ -1463,6 +1463,13 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 @keyframes mcpop{0%{transform:scale(.92)}100%{transform:none}}
 .mcname{margin:2px 0 6px}
 @media (prefers-reduced-motion:reduce){.mcx .mcl i,.mcx .mc-core{animation:none!important}.mcx.lvup,.mcx.tierup,.mcx .mc-burst{animation:none!important}}
+/* 한계 돌파 line in 성장 (2026-11-15) */
+.row .desc.over{color:#B5523A;font-weight:800}.row .lv .ovlv{color:#B5523A;font-weight:900}
+/* gear grades 태초·불멸·혼돈·멸망 (2026-11-15): the 신화 picture until their own come, in their own colour glow */
+.gart.gx6{--gxc:#2fd6b3}.gart.gx7{--gxc:#ffc21a}.gart.gx8{--gxc:#9b5cff}.gart.gx9{--gxc:#ff2a3a}
+.gart.gnew.gx .gimg{filter:drop-shadow(0 0 3px var(--gxc)) drop-shadow(0 0 7px var(--gxc))!important}
+.bcell:has(.gx6){background:radial-gradient(circle at 50% 40%,#0f5a4c,#06201c)}.bcell:has(.gx7){background:radial-gradient(circle at 50% 40%,#6a4c08,#221804)}
+.bcell:has(.gx8){background:radial-gradient(circle at 50% 40%,#3a1a78,#120828)}.bcell:has(.gx9){background:radial-gradient(circle at 50% 40%,#6a0c18,#200408)}
 </style>
 
 <div id="topcap" aria-hidden="true"></div>

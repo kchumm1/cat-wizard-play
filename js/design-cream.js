@@ -16,7 +16,7 @@
     mark: { mStar: 'mark-star', mClaw: 'mark-claw', mMoon: 'mark-moon', mComet: 'mark-comet', mCrown: 'mark-crown', mBook: 'mark-book', mArcane: 'pk-mark-mArcane', mJudge: 'pk-mark-mJudge' },
     // packages that only had an emoji (2026-11-15 pack); names, prices and contents stay in js/data.js
     pack: { dailyGem: 'pk-pack-dailyGem', goldS: 'pk-pack-goldS', goldL: 'pk-pack-goldL', potion: 'pk-pack-potion', grow: 'pk-pack-grow',
-      gear10: 'pk-pack-gear10', gear30: 'pk-pack-gear30', gear100: 'pk-pack-gear100', tier5: 'pk-pack-tier5', tier8: 'pk-pack-tier8', tier10: 'pk-pack-tier10' },
+      gear10: 'pk-pack-gear10', gear30: 'pk-pack-gear30', gear100: 'pk-pack-gear100', tier5: 'pk-pack-tier5', tier8: 'pk-pack-tier8', tier10: 'pk-pack-tier10', manaS: 'currency-mana', manaL: 'currency-mana' },
     potion: { rage: 'potion-rage', luck: 'potion-luck', wisdom: 'potion-wisdom' },
     cur: { mana: 'currency-mana' },
     pic: { lock: 'state-lock', cauldron: 'alchemy-cauldron' }

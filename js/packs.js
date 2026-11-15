@@ -31,6 +31,7 @@
     if (g.pulls) { var GA = mod('./gacha.js'), cost = GA.gachaCost(g.pulls); state.gems += cost; got.gear = GA.pull(state, g.pulls, rng) || []; }
     if (g.daily) { var dd = daily(state); dd.left = g.daily.days; dd.total = g.daily.days; dd.gems = g.daily.gems; dd.last = ''; dd.hide = ''; }
     if (g.runeStone) state.runeStone = (state.runeStone || 0) + g.runeStone;
+    if (g.mana) state.mana = (state.mana || 0) + g.mana;   // 마력석 packages (2026-11-15)
     (g.sigils || []).forEach(function (x) { for (var i = 0; i < x.n; i++) got.push(S.addSigil(state, x.grade, rng)); });
     if (g.sigilStone) state.sigil.stone += g.sigilStone;
     state.packs = state.packs || {}; state.packs[id] = (state.packs[id] || 0) + 1;
