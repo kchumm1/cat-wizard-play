@@ -458,6 +458,9 @@
       clearField(true); region = -1; syncRegion(); refreshStats(); smallKills = 0; save(); ui.banner(CW.diffOf(state).name); return true;
     },
     retryBoss: function () { if (boss || dun) return; if (CW.retryBoss(state)) { syncRegion(); startBoss(); } },
+    // the player's own name (empty = the default: the owner's 귤귤귤귤귤, 체험판 냥법사)
+    nickName: function () { return state.nick || (CW.FRIEND ? '냥법사' : '귤귤귤귤귤'); },
+    setNick: function (v) { state.nick = v; save(); },
     setSetting: function (k, v) { state.settings[k] = v; applySettings(); save(); },
     // slider being dragged: show the numbers at that value right away, save when the finger lifts
     previewDamage: function (size, alpha) { sc.setDamageStyle(size / 100, alpha / 100); },

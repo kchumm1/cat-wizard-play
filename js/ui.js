@@ -441,7 +441,7 @@
       var lastT = CW.FRIEND ? CW.FRIEND_MAX_TIER : DATA.tiers.length; // 체험판 ends at the 9th job
       var next = s.tier < lastT ? CW.tierNeed(s.tier + 1) + ' ' + (s.tier + 1) + '차' : (s.best >= 309 ? '마왕 토벌 완료!' : '최종 목표 10-31 늑대 왕');
       var wornT = CW.titleWorn ? CW.titleWorn(s) : 'tNovice';
-      var tTxt = wornT !== 'tNovice' ? CW.titleById(wornT).name : s.tier + '차 ' + tier.name; if ($('tierTag').textContent !== tTxt) $('tierTag').textContent = tTxt; $('tierTag').classList.toggle('ttl', wornT !== 'tNovice'); if ($('questTxt').textContent !== next) $('questTxt').textContent = next;
+      var tTxt = wornT !== 'tNovice' ? CW.titleById(wornT).name : s.tier + '차 ' + tier.name; if ($('tierTag').textContent !== tTxt) $('tierTag').textContent = tTxt; $('tierTag').classList.toggle('ttl', wornT !== 'tNovice'); var nk = G.nickName(); if ($('nick').textContent !== nk) $('nick').textContent = nk; if ($('questTxt').textContent !== next) $('questTxt').textContent = next;
     }
     function slots() {
       var s = G.state, now = G.castingSlot();
@@ -618,6 +618,7 @@
       }).join('');
       var st = s.settings;
       var settings = '<h3>설정</h3><div class="list">' +
+        '<div class="row"><div class="info"><div class="name">닉네임</div><div class="desc">' + esc(G.nickName()) + '</div></div><button class="btn" data-act="nick">바꾸기</button></div>' +
         '<div class="row"><div class="info"><div class="name">화질</div><div class="desc">버벅이면 낮춰 보세요</div></div><button class="btn" data-set="quality">' + ({ auto: '자동', high: '높음', mid: '보통', low: '낮음' })[st.quality] + '</button></div>' +
         // 절전 (2026-11-15): the picture stays the same, only fewer pictures a second (js/framepace.js); 30 is the even one
         '<div class="row"><div class="info"><div class="name">절전 (발열 줄이기)</div><div class="desc">화질은 그대로, 1초에 그리는 장수만 줄여요' + (G.screenHz && G.screenHz() ? ' · 이 폰 화면 ' + G.screenHz() + 'Hz' : '') + '</div></div><button class="btn" data-set="fpsCap">' + ({ 60: '끄기', 50: '50장', 40: '40장', 30: '30장' })[st.fpsCap || 60] + '</button></div>' +
@@ -905,6 +906,10 @@
         var code = G.exportSave(), done = function () { toast('저장 코드를 복사했어요. 다른 기기에서 "코드 넣기"에 붙여 주세요'); };
         var show = function () { modal('<h2>저장 코드</h2><p class="note">아래 글자를 전부 길게 눌러 복사해 주세요.</p><textarea class="codebox" readonly>' + code + '</textarea>', [{ label: '닫기', pri: true }]); var ta = $('modalCard').querySelector('textarea'); ta.focus(); ta.select(); };
         try { navigator.clipboard.writeText(code).then(done, show); } catch (err) { show(); }
+      }
+      else if (d.act === 'nick') {
+        modal('<h2>닉네임 바꾸기</h2><p class="note">1~8글자</p><input class="nickin" type="text" maxlength="8" autocomplete="off" value="' + esc(G.nickName()) + '">',
+          [{ label: '취소' }, { label: '바꾸기', pri: true, fn: function () { var v = ($('modalCard').querySelector('.nickin').value || '').replace(/s+/g, ' ').trim(); if (!v || v.length > 8) { toast('닉네임은 1~8글자로 적어 주세요'); return; } G.setNick(v); toast('닉네임을 ' + v + '(으)로 바꿨어요'); renderPanel(true); hud(); } }]);
       }
       else if (d.act === 'savepaste' && CW.FRIEND) { toast('체험판에서는 쓸 수 없어요'); }
       else if (d.act === 'savepaste') {
