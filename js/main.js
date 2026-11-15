@@ -50,7 +50,7 @@
   var VIEW_IDS = ['hero-v0', 'hero-v1', 'hero-v2', 'hero-v3'];
   // pictures that have four views (the user's turnarounds, 2026-11-15): the plain wizard (staff cut out and put in its
   // paw), and costumes (staff drawn in); a costume's views are fetched when it is worn
-  var VIEW_SETS = { hero: VIEW_IDS, cos11: ['cos11-v0', 'cos11-v1', 'cos11-v2', 'cos11-v3'] };
+  var VIEW_SETS = { hero: VIEW_IDS, cos11: ['cos11-v0', 'cos11-v1', 'cos11-v2', 'cos11-v3'], cos16: ['cos16-v0', 'cos16-v1', 'cos16-v2', 'cos16-v3'] };
   // the staff cut out of the plain wizard's picture, trimmed to itself, with where the paw holds it (rig armL.p) and
   // where its star is (armL.tip), in picture heights from its bottom-left — for the side views' paws (scene.js)
   function staffPiece(cv, base, mk) {
