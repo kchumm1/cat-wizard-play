@@ -1,6 +1,7 @@
 (function (root) {
   var CW = root.CW = root.CW || {};
-  var AVAILABLE = ['hero', 'hero-cheese'];
+  // hero-v0..v3: the plain wizard seen from four sides (2026-11-15), used while no costume is worn (scene.js setHeroViews)
+  var AVAILABLE = ['hero', 'hero-cheese', 'hero-v0', 'hero-v1', 'hero-v2', 'hero-v3'];
   // monster and boss pictures (js/bestiary.js): fetched when their region is reached, never all at the start
   var BEST = CW.BESTIARY || (typeof module !== 'undefined' && module.exports ? require('./bestiary.js').BESTIARY : {});
   var MON_ART = Object.keys(BEST);

@@ -47,6 +47,20 @@
   function regionArt(r) { var R = DATA.regions[r]; return R ? R.monsters.concat(R.minis || [], [R.boss.art]) : []; }
   // wide pictures (crabs, turtles, snakes) are drawn a little shorter so every monster takes about the same room
   function fitHeight(a, h) { return a.aspect > 1.05 ? h / Math.pow(a.aspect, 0.45) : h; }
+  var VIEW_IDS = ['hero-v0', 'hero-v1', 'hero-v2', 'hero-v3'];
+  // the staff cut out of the plain wizard's picture, trimmed to itself, with where the paw holds it (rig armL.p) and
+  // where its star is (armL.tip), in picture heights from its bottom-left — for the side views' paws (scene.js)
+  function staffPiece(cv, base, mk) {
+    var W = cv.width, H = cv.height, d = cv.getContext('2d').getImageData(0, 0, W, H).data, x0 = W, y0 = H, x1 = -1, y1 = -1;
+    for (var y = 0; y < H; y++) for (var x = 0; x < W; x++) if (d[(y * W + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    if (x1 < 0) return null;
+    var bw = x1 - x0 + 1, bh = y1 - y0 + 1, c = document.createElement('canvas'); c.width = bw; c.height = bh;
+    c.getContext('2d').drawImage(cv, x0, y0, bw, bh, 0, 0, bw, bh);
+    var cr = base.crop, k = W / cr.cw, A = base.rig.armL;
+    function at(q) { return [((q[0] - cr.x0) * k - x0) / H, (y1 + 1 - (q[1] - cr.y0) * k) / H]; }
+    var g = at(A.p), t = at(A.tip);
+    return { tex: mk(c), w: bw / H, h: bh / H, gx: g[0], gy: g[1], tx: t[0], ty: t[1] };
+  }
   function applyLook(silent) {
     var l = CW.lookOf(state), cl = CW.costumeLook(state), key = CW.lookKey(l) + '|' + cl.id + '|' + (art[cl.art] ? cl.art : 'hero');
     if (key === lastLook || !art.hero) return;
@@ -65,7 +79,14 @@
       if (lastLook !== key) return;
       try { var parts = CW.splitStaff(painted, base.crop, base.rig, base.id === 'hero' ? 'hero|' + CW.lookKey(l) : base.id); sc.setHeroTexture(tex, { body: mk(parts.body), staff: mk(parts.staff) }); }
       catch (e) { /* the whole picture stays */ }
+      // the plain wizard with no costume turns to where it looks, drawn from four sides (2026-11-15): each side view gets
+      // the same hat and cape colours, and the staff just cut out goes into its paw
+      try {
+        if (parts && useViews) sc.setHeroViews(VIEW_IDS.map(function (id) { return art[id]; }), VIEW_IDS.map(function (id) { return mk(CW.paintHero(art[id], l)); }), staffPiece(parts.staff, base, mk));
+      } catch (e) { sc.setHeroViews(null); }
     }, 60);
+    var useViews = base.id === 'hero' && !cl.fx && !l.outfit && VIEW_IDS.every(function (id) { return art[id]; });
+    if (!useViews) sc.setHeroViews(null);
     if (cl.id !== lastCos) { lastCos = cl.id; sc.setCostumeFx(cl.fx); fx.setCostume(cl.fx); }
     if (!first && !silent) { fx.levelUp(state.tier, CW.staffColor(l), true); ui.toast('모습이 바뀌었어요'); }
   }

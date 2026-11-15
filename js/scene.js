@@ -245,6 +245,7 @@
       return step;
     }
     function setHero(art) {
+      if (views) setHeroViews(null);
       if (hero) heroGroup.remove(hero);
       hero = billboard(art, HERO_H); hero.userData.seed = 0.5; hero.userData.art = art; heroGroup.add(hero); cos.aura = null; if (cos.fx) attachAura();
       ghosts.forEach(function (gh) { heroGroup.remove(gh.mesh); }); ghosts.length = 0;
@@ -282,6 +283,64 @@
       var now = [d.u.map.value, d.staffMesh && d.staffMesh.material.uniforms.map.value, tex];
       old.forEach(function (o) { if (o && o._look && now.indexOf(o) < 0) o.dispose(); });
     }
+    // ---------- the plain wizard seen from four sides (2026-11-15, the user's turnaround) ----------
+    // While no costume is worn the wizard is drawn from one of four pictures (art/hero-v0..v3: front, three-quarter,
+    // side, back), picked from where it is looking: at its target while it fights, otherwise where it walks — toward the
+    // camera the front, across the side, away the back, in between the three-quarter — and mirrored for the left.
+    // The front-facing picture (hero) still runs the brain, springs and spell poses, unseen; the shown view copies its
+    // bend, squash, flash and light and moves its own bones with the same walk and arm settings. The staff is the piece
+    // cut out of the plain wizard's picture (staff-split.js), held at the paw (rig armL.grip) and turned with the arm.
+    var views = null;
+    // which way the staff leans in each view for a wizard looking right (the cut-out staff leans up and to the left)
+    var VIEW_STAFF = [1, -1, -1, -1];
+    function setHeroViews(arts, texs, staff) {
+      if (views) views.list.forEach(function (g) { heroGroup.remove(g); });
+      views = null;
+      if (hero) hero.userData.body.visible = true;
+      if (!arts || !hero || !staff) return;
+      var list = arts.map(function (a, i) {
+        var g = billboard(a, HERO_H); g.userData.art = a; g.userData.u.map.value = texs[i]; g.userData.shadow.visible = false; g.visible = false;
+        var sg = new T.PlaneGeometry(staff.w, staff.h); sg.translate(staff.w / 2 - staff.gx, staff.h / 2 - staff.gy, 0);
+        var sm = new T.Mesh(sg, new T.MeshBasicMaterial({ map: staff.tex, transparent: true, depthWrite: false, side: T.DoubleSide }));
+        // in front of the body, behind it in the back view
+        sm.renderOrder = i === 3 ? 2 : 4; g.userData.body.add(sm); g.userData.staff = sm;
+        heroGroup.add(g);
+        return g;
+      });
+      views = { list: list, cur: 0, want: 0, wantT: 0, hold: 0, face: 1, staff: staff };
+      hero.userData.body.visible = false;
+    }
+    function viewsTick(dt, arms) {
+      var V = views, hd = hero.userData, f = HB.focus, lx = 0, lz = 0, want = V.cur;
+      if (f && f.alive && HB.cheer <= 0 && f.arrived) { lx = f.x - HB.x; lz = f.z - HB.z; }
+      else if (HB.sp > 0.35) { lx = HB.vx; lz = HB.vz; }
+      if (HB.cheer > 0) want = 0;
+      else if (lx * lx + lz * lz > 0.02) {
+        var a = Math.atan2(-lz, Math.abs(lx)) * 57.3;   // + is up the screen (away from the camera)
+        want = a < -55 ? 0 : a < -20 ? 1 : a < 40 ? 2 : 3;
+        if (Math.abs(lx) > 0.15) V.face = lx < 0 ? -1 : 1;
+      } else { want = f ? V.cur : 1; V.face = HB.faceT; }   // standing and looking around: three-quarter, the way it turned
+      V.hold -= dt;
+      if (want !== V.cur) { V.wantT += dt; if (V.wantT > 0.1 && V.hold <= 0) { V.cur = want; V.hold = 0.22; V.wantT = 0; hd.sq.v -= 0.5; } }
+      else V.wantT = 0;
+      var g = V.list[V.cur], d = g.userData, u = d.u, hu = hd.u;
+      for (var i = 0; i < V.list.length; i++) V.list[i].visible = i === V.cur;
+      u.uBend.value = hu.uBend.value; u.uScale.value.set(Math.abs(hu.uScale.value.x) * V.face, hu.uScale.value.y);
+      u.uLight.value.copy(hu.uLight.value); u.uFlash.value = hu.uFlash.value; u.uFlashCol.value.copy(hu.uFlashCol.value);
+      u.uFreeze.value = hu.uFreeze.value; u.uOpacity.value = hu.uOpacity.value; u.uDissolve.value = hu.uDissolve.value; u.uTint.value.copy(hu.uTint.value);
+      animRig(g, dt, arms);
+      g.position.copy(hero.position);
+      var st = d.staff, gr = d.rig.armL.grip, c = d.crop, p = pointOn(g, (gr[0] - c.x0) / c.cw, 1 - (gr[1] - c.y0) / c.ch);
+      var s = VIEW_STAFF[V.cur] * V.face;
+      st.position.set(p.x / HERO_H, p.y / HERO_H, V.cur === 3 ? -0.006 : 0.006);
+      st.scale.set(s * Math.abs(u.uScale.value.x), u.uScale.value.y, 1);
+      st.rotation.z = u.uBA.value[1] * s;
+    }
+    var tipV = new T.Vector3();
+    function viewTip() {
+      var st = views.list[views.cur].userData.staff, S = views.staff;
+      st.updateMatrixWorld(true); return tipV.set(S.tx - S.gx, S.ty - S.gy, 0).applyMatrix4(st.matrixWorld).clone();
+    }
     var HERO_H = 1.02, CUTE = HERO_H / 1.45, TILT = 0.6, COS_T = Math.cos(TILT), SIN_T = Math.sin(TILT);
     auraGroup.scale.setScalar(CUTE);
     // Staff star position inside the hero art (fraction of width from the left, of height from the feet).
@@ -297,7 +356,7 @@
       var d = hero.userData, a = d.rig && d.rig.armL, c = d.crop, q = a && (a.tip || a.cap);
       return q && c ? [(q[0] - c.x0) / c.cw, 1 - (q[1] - c.y0) / c.ch] : [TIP_U, TIP_V];
     }
-    function heroTip() { if (!hero) return new T.Vector3(-1.85, 1.1, 0.35); var t = tipUV(); return heroLocal(t[0], t[1]); }
+    function heroTip() { if (!hero) return new T.Vector3(-1.85, 1.1, 0.35); if (views) return viewTip(); var t = tipUV(); return heroLocal(t[0], t[1]); }
     // spells leave from just in front of the raised paw so they never cross the face
     function heroPaw() { var p = hero ? heroLocal(0.86, 0.5) : new T.Vector3(-0.75, 0.9, 0.35); p.z += 0.12; return p; }
     function heroCenter() { var h = HERO_H * 0.5; return new T.Vector3(heroGroup.position.x + (hero ? hero.position.x : 0), h * COS_T + (hero ? hero.position.y : 0), heroGroup.position.z - h * SIN_T); }
@@ -334,6 +393,7 @@
       var u = gh.mesh.material.uniforms, hu = hero.userData.u;
       u.uBend.value = hu.uBend.value; u.uScale.value.copy(hu.uScale.value); u.uH.value = hu.uH.value;
       for (var b = 0; b < 8; b++) { u.uBP.value[b].copy(hu.uBP.value[b]); u.uBT.value[b].copy(hu.uBT.value[b]); u.uBA.value[b] = hu.uBA.value[b]; }
+      if (views) { var vd = views.list[views.cur].userData; gh.mesh.geometry = vd.body.geometry; u.map.value = vd.u.map.value; u.uScale.value.copy(vd.u.uScale.value); for (var vb = 0; vb < 8; vb++) { u.uBP.value[vb].copy(vd.u.uBP.value[vb]); u.uBT.value[vb].copy(vd.u.uBT.value[vb]); u.uBA.value[vb] = vd.u.uBA.value[vb]; } if (gh.staff) gh.staff.visible = false; }
       u.uFlash.value = 0.55; u.uFlashCol.value.setHex(color); u.uOpacity.value = 0.55;
       gh.wx = HB.x + hero.position.x; gh.wy = hero.position.y; gh.wz = HB.z - 0.05; gh.vx = still ? 0 : -0.9 * HB.faceT; gh.life = still ? 0.26 : 0.35;
       gh.mesh.position.set(hero.position.x, gh.wy, -0.05); gh.mesh.visible = true; gh.t = 0;
@@ -847,6 +907,7 @@
         hd.shadow.scale.setScalar(1 - Math.min(0.5, hero.position.y * 0.6));
         lightAt(heroCenter(), hd.light); hd.light.r += heroGlowCol.r * heroGlow * 0.22; hd.light.g += heroGlowCol.g * heroGlow * 0.22; hd.light.b += heroGlowCol.b * heroGlow * 0.22;
         hd.u.uLight.value.copy(hd.light);
+        if (views) viewsTick(dt, arms);
         heroGlow = Math.max(0, heroGlow - dt * 2.6);
       }
       ghosts.forEach(function (gh) {
@@ -1033,7 +1094,7 @@
     size();
     return {
       THREE: T, scene: scene, camera: camera, renderer: renderer, fxGroup: fxGroup, glow: GLOW, hooks: hooks,
-      size: size, setRegion: setRegion, setHero: setHero, setHeroTexture: setHeroTexture, setCostumeFx: setCostumeFx, heroTip: heroTip, heroPaw: heroPaw, heroCenter: heroCenter, heroPose: heroPose, heroBeatAt: function () { return beatT; }, heroGlow: heroGlowPulse, ghost: ghost,
+      size: size, setRegion: setRegion, setHero: setHero, setHeroTexture: setHeroTexture, setHeroViews: setHeroViews, setCostumeFx: setCostumeFx, heroTip: heroTip, heroPaw: heroPaw, heroCenter: heroCenter, heroPose: heroPose, heroBeatAt: function () { return beatT; }, heroGlow: heroGlowPulse, ghost: ghost,
       castPulse: function () { heroGlow = 1; }, heroState: function () { return HB; }, heroFaceTo: heroFaceTo, heroCheer: heroCheer, setViewShift: setViewShift,
       spawnMob: spawnMob, hitMob: hitMob, killMob: killMob, dismissMob: dismissMob, clearMobs: clearMobs, mobs: function () { return mobs; }, mobPos: mobPos, mobTop: mobTop,
       setTierAura: setTierAura, damageText: damageText, screenPos: screenPos, flash: flash, dim: dim, shake: shake, punch: camPunch, light: light,

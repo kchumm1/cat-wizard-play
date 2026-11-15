@@ -40,11 +40,13 @@
     var k = W / crop.cw;
     function P(x, y) { return [(x - crop.x0) * k, (y - crop.y0) * k]; }
     // recolour the purple hat (top) and the purple cape (middle)
-    var OUT = look.outfit, zoned = !OUT && (!art.id || art.id === 'hero');
+    // the four side views of the plain wizard (2026-11-15) have their hat and cape at other heights (1254 units)
+    var VZ = { 'hero-v0': [650, 700, 1090], 'hero-v1': [650, 700, 1090], 'hero-v2': [690, 720, 1080], 'hero-v3': [690, 720, 1100] }[art.id] || [480, 610, 1010];
+    var OUT = look.outfit, zoned = !OUT && (!art.id || art.id === 'hero' || /^hero-v/.test(art.id));
     if (OUT || (zoned && (look.hat >= 0 || look.robe >= 0))) {
       var img = g.getImageData(0, 0, W, H), d = img.data;
       for (var y = 0; y < H; y++) {
-        var Y = crop.y0 + y / k, part = OUT ? 'all' : Y < 480 ? 'hat' : Y > 610 && Y < 1010 ? 'robe' : null;
+        var Y = crop.y0 + y / k, part = OUT ? 'all' : Y < VZ[0] ? 'hat' : Y > VZ[1] && Y < VZ[2] ? 'robe' : null;
         if (!part || (!OUT && look[part] < 0)) continue;
         var T = OUT || GRADE[look[part]], shine = OUT ? 1.04 : look[part] >= 4 ? 1.12 : 1;
         for (var x = 0; x < W; x++) {
