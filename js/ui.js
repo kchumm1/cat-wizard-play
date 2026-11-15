@@ -746,8 +746,8 @@
       else if (d.rkf) { rnFilter = d.rkf; renderPanel(true); }
       else if (d.act === 'rbest') { G.runeEquipBest(); toast('가장 좋은 룬으로 장착했어요'); renderPanel(true); }
       else if (d.act === 'rdisall') { confirmBox('모두 분해', '잠금하지 않고 장착하지 않은 룬을 모두 룬석으로 바꿀까요?', '분해하기', function () { var rn2 = G.runeDismantleAll(); toast(rn2 ? '룬석 +' + fmt(rn2) : '분해할 룬이 없어요'); selRune = null; renderPanel(true); }); }
-      else if (d.pack) { var pk = CW.packById(d.pack); confirmBox('연습용 구매', pk.name + ' (' + pk.won.toLocaleString('ko-KR') + '원)<br><b>실제 결제 없음 · 연습용</b><br>누르면 바로 들어와요.', '받기', function () { var got = G.buyPack(d.pack); if (got === false) toast(CW.packOpen(G.state, d.pack) !== 'ok' ? '지금은 받을 수 없어요' : '신성력 가방에 자리가 부족해요 (최대 ' + DATA.sigilConf.cap + '개)'); else if (got.gear && got.gear.length) showGacha(got.gear); else if (got.length) showSigils(got, true); else toast(pk.name + '을(를) 받았어요'); renderPanel(true); hud(); }); }
-      else if (d.act === 'daily') { var dg = G.claimDaily(); toast(dg ? '다이아 ' + fmt(dg) + '개를 받았어요' : '오늘은 이미 받았어요'); renderPanel(true); hud(); }
+      else if (d.pack) { var pk = CW.packById(d.pack); confirmBox('연습용 구매', pk.name + ' (' + pk.won.toLocaleString('ko-KR') + '원)<br><b>실제 결제 없음 · 연습용</b><br>누르면 바로 들어와요.', '받기', function () { var got = G.buyPack(d.pack); if (got === false) toast(CW.packOpen(G.state, d.pack) !== 'ok' ? '지금은 받을 수 없어요' : '신성력 가방에 자리가 부족해요 (최대 ' + DATA.sigilConf.cap + '개)'); else if (got.gear && got.gear.length) showGacha(got.gear); else if (got.length) showSigils(got, true); else if (pk.give.daily) showDaily(false); else toast(pk.name + '을(를) 받았어요'); renderPanel(true); hud(); }); }
+      else if (d.act === 'daily') { showDaily(false); }
       else if (d.dockx) { if (d.dockx === 'sg') selSigil = null; else selRune = null; renderPanel(true); }
       else if (d.sgswap) { var sw = d.sgswap.split('|'); if (G.sigilSwap(sw[0], sw[1])) toast('바꿔 꼈어요'); renderPanel(true); }
       else if (d.rswap) { var rw = d.rswap.split('|'); if (G.runeSwap(rw[0], rw[1])) toast('바꿔 꼈어요'); renderPanel(true); }
@@ -831,6 +831,55 @@
         row('<i class="coin"></i>', '골드', gh(r.gold)) + (r.xp ? row('<b class="xpdot"></b>', '경험치', fmt(r.xp)) : '') +
         (r.levels ? '<div class="offlv">레벨 ' + r.levels + ' 올랐어요!</div>' : '') + '</div>', [{ label: '받기', pri: true, fn: onClose }]);
     }
+    // ---------- 7-day daily gems (2026-11-15): the popup the user drew, put together from pieces cut out of that picture
+    // (tools/cut-daily.py): the frame with the cat, title, day-7 chest and button is one picture; the six day cards are
+    // laid on it (taken / today / still to come) and the game writes the day number on each. Every place is in the
+    // picture's own units (1086 x 1448) as percent, so it keeps the picture's look at any phone size.
+    // auto: opened by itself (on entering the game): only when today's gems are waiting and "오늘 하루 보지 않기" is off.
+    var DW = 1086, DH = 1448, DCOL = [105, 400, 695], DROW = [[447, 243], [700, 229]];
+    function dbox(x, y, w, h) { return 'left:' + (x / DW * 100) + '%;top:' + (y / DH * 100) + '%;width:' + (w / DW * 100) + '%;height:' + (h / DH * 100) + '%'; }
+    function showDaily(auto) {
+      var v = G.dailyView();
+      if (auto && (!v.today || v.hidden)) return;
+      if (!v.total) return;
+      var fx = $('dailyFx');
+      if (!fx) { fx = document.createElement('div'); fx.id = 'dailyFx'; document.body.appendChild(fx); }
+      var A = CW.ART_BASE || 'art/', hide = v.hidden;
+      function draw(fresh) {
+        v = G.dailyView();
+        var cards = '';
+        for (var i = 0; i < 6; i++) {
+          var day = i + 1, r = DROW[i < 3 ? 0 : 1], x = DCOL[i % 3], y = r[0], h = r[1];
+          var st = day <= v.taken ? 'done' : (day === v.taken + 1 && v.today ? 'today' : 'lock');
+          // each picture keeps its own margin around the card: done/lock 3 px, today 4 px left and its ribbon on the right
+          // the picture's place inside the card box, in card pixels: [left, top, width, height] (the today picture's card is
+          // 296 x 245 in the drawing, so it is scaled to the 288-wide slot; its ribbon sticks out on the right like in the drawing)
+          var k = 288 / 296, kv = h / 245;
+          var p = st === 'today' ? [-4 * k, -3 * kv, 315 * k, 251 * kv] : [-3, -3, 295, h + 6];
+          cards += '<div class="dgcard dg-' + st + (fresh === day ? ' got' : '') + '"' + (st === 'today' ? ' data-dclaim="1"' : '') + ' style="' + dbox(x, y, 288, h) + '">' +
+            '<img src="' + A + 'ui-daily-' + st + '.webp" alt="" draggable="false" style="left:' + (p[0] / 288 * 100) + '%;top:' + (p[1] / h * 100) + '%;width:' + (p[2] / 288 * 100) + '%;height:' + (p[3] / h * 100) + '%">' +
+            '<b class="dgday" style="top:' + (37 / h * 100) + '%">' + day + '일차</b></div>';
+        }
+        var d7 = v.taken >= 7 ? 'done' : (v.taken === 6 && v.today ? 'today' : 'lock');
+        var d7html = d7 === 'lock' ? '' : '<div class="dg7 dg7-' + d7 + (fresh === 7 ? ' got' : '') + '"' + (d7 === 'today' ? ' data-dclaim="1"' : '') + ' style="' + dbox(102, 943, 882, 209) + '"><img src="' + A + 'ui-daily-d7.webp" alt="" draggable="false">' +
+          (d7 === 'today' ? '<span class="dpill">받기 가능</span>' : '<img class="dchk" src="' + A + 'ui-daily-check.webp" alt="" draggable="false">') + '</div>';
+        var btn = v.today ? '<button class="dmain" data-dclaim="1" style="' + dbox(178, 1172, 730, 130) + '" aria-label="오늘의 다이아 받기"></button>'
+          : '<button class="dmain dclose" data-dclose="1" style="' + dbox(178, 1172, 730, 130) + '"><img src="' + A + 'ui-daily-btn.webp" alt="" draggable="false"><span>' + (v.left ? '내일 또 받아요 · 닫기' : '다 받았어요 · 닫기') + '</span></button>';
+        fx.innerHTML = '<div class="dwrap"><div class="dpop"><img class="dbase" src="' + A + 'ui-daily-base.webp" alt="" draggable="false">' + cards + d7html + btn +
+          '<button class="dx" data-dclose="1" style="' + dbox(948, 138, 96, 96) + '" aria-label="닫기"></button>' +
+          '<button class="dhide' + (hide ? ' on' : '') + '" data-dhide="1" style="' + dbox(380, 1312, 330, 60) + '" aria-label="오늘 하루 보지 않기"><i style="left:' + (8 / 330 * 100) + '%;top:' + (8 / 60 * 100) + '%;width:' + (44 / 330 * 100) + '%;height:' + (44 / 60 * 100) + '%"></i></button>' +
+          '</div></div>';
+      }
+      draw();
+      fx.hidden = false;
+      fx.onclick = function (e) {
+        var t = e.target.closest('[data-dclaim],[data-dclose],[data-dhide]'); if (!t) return;
+        if (t.dataset.dhide) { hide = !hide; G.hideDaily(hide); t.classList.toggle('on', hide); G.sound('click'); return; }
+        if (t.dataset.dclose) { fx.hidden = true; G.sound('click'); renderPanel(true); return; }
+        var day = G.dailyView().taken + 1, n = G.claimDaily();
+        if (n) { draw(day); toast('다이아 ' + fmt(n) + '개를 받았어요'); hud(); renderPanel(true); }
+      };
+    }
     function showTierUp(tier, skill) {
       var t = DATA.tiers[tier - 1];
       $('flashbg').classList.remove('go'); void $('flashbg').offsetWidth; $('flashbg').classList.add('go');
@@ -903,7 +952,7 @@
       var b = e.target.closest('[data-title]'); if (!b) return;
       if (G.titleWear(b.dataset.title)) { toast('타이틀 「' + CW.titleById(b.dataset.title).name + '」을(를) 달았어요'); openStats(); hud(); }
     });
-    return { surgeGauge: surgeGauge, dunHud: dunHud, gainLog: gainLog, openTab: openTab, hud: hud, slots: slots, renderPanel: renderPanel, toast: toast, banner: banner, showOffline: showOffline, showTierUp: showTierUp, showGacha: showGacha, modal: modal, currentTab: function () { return tab; } };
+    return { surgeGauge: surgeGauge, dunHud: dunHud, gainLog: gainLog, openTab: openTab, hud: hud, slots: slots, renderPanel: renderPanel, toast: toast, banner: banner, showOffline: showOffline, showDaily: showDaily, showTierUp: showTierUp, showGacha: showGacha, modal: modal, currentTab: function () { return tab; } };
   }
   CW.createUI = createUI;
 })(this);

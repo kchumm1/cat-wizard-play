@@ -29,7 +29,7 @@
       DATA.potions.forEach(function (pt) { state.alch.until[pt.id] = Math.max(now, state.alch.until[pt.id] || 0) + g.potionMin * 60000; });
     }
     if (g.pulls) { var GA = mod('./gacha.js'), cost = GA.gachaCost(g.pulls); state.gems += cost; got.gear = GA.pull(state, g.pulls, rng) || []; }
-    if (g.daily) { var dd = daily(state); dd.left = g.daily.days; dd.gems = g.daily.gems; dd.last = ''; }
+    if (g.daily) { var dd = daily(state); dd.left = g.daily.days; dd.total = g.daily.days; dd.gems = g.daily.gems; dd.last = ''; dd.hide = ''; }
     if (g.runeStone) state.runeStone = (state.runeStone || 0) + g.runeStone;
     (g.sigils || []).forEach(function (x) { for (var i = 0; i < x.n; i++) got.push(S.addSigil(state, x.grade, rng)); });
     if (g.sigilStone) state.sigil.stone += g.sigilStone;
@@ -42,5 +42,12 @@
     d.left -= 1; d.last = dayKey; state.gems += d.gems || 0;
     return d.gems || 0;
   }
-  return { packById: packById, packSigils: packSigils, packOpen: packOpen, buyPack: buyPack, claimDaily: claimDaily };
+  // the 7-day popup (2026-11-15): how many days are bought (total), taken so far, whether today's can be taken now, and
+  // whether the player ticked "오늘 하루 보지 않기" today (then it does not open by itself, only from the shop)
+  function dailyView(state, dayKey) {
+    var d = daily(state), left = d.left || 0, total = d.total || (left ? 7 : 0);
+    return { total: total, taken: Math.max(0, total - left), left: left, today: left > 0 && d.last !== dayKey, hidden: d.hide === dayKey, gems: d.gems || 0 };
+  }
+  function hideDaily(state, dayKey, on) { daily(state).hide = on ? dayKey : ''; }
+  return { dailyView: dailyView, hideDaily: hideDaily, packById: packById, packSigils: packSigils, packOpen: packOpen, buyPack: buyPack, claimDaily: claimDaily };
 });

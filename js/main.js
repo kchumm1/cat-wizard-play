@@ -366,6 +366,8 @@
     buyPack: function (id) { var got = CW.buyPack(state, id); if (got !== false) { refreshStats(); snd.play('win'); save(); } return got; },
     // the phone's own date (the daily gems reset at its midnight)
     dayKey: function () { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); },
+    dailyView: function () { return CW.dailyView(state, G.dayKey()); },
+    hideDaily: function (on) { CW.hideDaily(state, G.dayKey(), on); save(); },
     claimDaily: function () { var n = CW.claimDaily(state, G.dayKey()); if (n) { snd.play('win'); save(); } return n; },
     runeUp: function (id) { var ok = CW.runeUp(state, id); if (ok) { refreshStats(); snd.play('click'); } return ok; },
     runeSwap: function (oldId, newId) { var ok = CW.runeSwap(state, oldId, newId); if (ok) { refreshStats(); snd.play('click'); save(); } return ok; },
@@ -542,9 +544,9 @@
   // ---------- leaving and coming back ----------
   function giveOffline() {
     var r = CW.offlineReward(state, Date.now());
-    if (r.seconds < 60) return;
+    if (r.seconds < 60) { ui.showDaily(true); return; }
     state.gold += r.gold; state.gems += r.gems; var lv = CW.gainXp(state, r.xp || 0); r.levels = lv.levels; if (lv.levels) refreshStats(); save();
-    ui.showOffline(r);
+    ui.showOffline(r, function () { ui.showDaily(true); });
   }
   document.addEventListener('visibilitychange', function () {
     if (document.hidden) { CW.onHidden(state); clearField(true); save(); }

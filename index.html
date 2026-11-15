@@ -1396,6 +1396,36 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 #tabs button::after{content:'';position:absolute;left:50%;bottom:1px;width:30px;height:3px;margin-left:-15px;border-radius:3px;background:transparent}
 #tabs button[aria-selected=true]::after{left:50%;right:auto;background:#E3B24E}
 #tabs button span{display:block;padding-bottom:7px}
+/* 7-day daily gems popup (2026-11-15, the picture the user sent; pieces from tools/cut-daily.py, placed by js/ui.js showDaily) */
+#dailyFx{position:fixed;inset:0;z-index:27;background:rgba(20,8,30,.62);display:flex;align-items:center;justify-content:center;padding:calc(10px + env(safe-area-inset-top,0px)) 10px calc(10px + env(safe-area-inset-bottom,0px))}
+#dailyFx[hidden]{display:none}
+#dailyFx .dwrap{width:min(100%,460px,calc((100dvh - 20px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)) * 1086 / 1448));container-type:inline-size;animation:dpop .32s cubic-bezier(.3,1.5,.5,1)}
+#dailyFx .dpop{position:relative;width:100%;aspect-ratio:1086/1448}
+#dailyFx .dpop>*{position:absolute}
+#dailyFx img{display:block;pointer-events:none;-webkit-user-select:none;user-select:none}
+#dailyFx .dbase{inset:0;width:100%;height:100%}
+#dailyFx .dgcard img,#dailyFx .dg7>img:first-child{position:absolute;max-width:none}
+#dailyFx .dg7>img:first-child{inset:0;width:100%;height:100%}
+#dailyFx .dgday{position:absolute;left:0;right:0;transform:translateY(-50%);text-align:center;font:400 calc(33 / 1086 * 100cqw)/1 var(--display);color:#fffaf2;letter-spacing:.02em;text-shadow:0 1px 0 rgba(70,40,60,.35)}
+#dailyFx .dg-today{cursor:pointer;animation:dglow 1.6s ease-in-out infinite}
+#dailyFx .got{animation:dgot .5s cubic-bezier(.3,1.6,.5,1)}
+#dailyFx .dg7-today{cursor:pointer;animation:dglow 1.6s ease-in-out infinite}
+#dailyFx .dg7-done>img:first-child{filter:grayscale(.85) brightness(1.04)}
+#dailyFx .dpill{position:absolute;left:84%;top:65%;transform:translate(-50%,-50%);padding:calc(9 / 1086 * 100cqw) calc(20 / 1086 * 100cqw);border-radius:999px;background:linear-gradient(180deg,#fffaf7,#f5e9ef);box-shadow:inset 0 0 0 calc(2.5 / 1086 * 100cqw) #c7a3c0;font:400 calc(28 / 1086 * 100cqw)/1 var(--display);color:#6b2f7a;white-space:nowrap}
+#dailyFx .dchk{position:absolute;left:84%;top:65%;width:7%;transform:translate(-50%,-50%);border-radius:50%}
+#dailyFx button{appearance:none;-webkit-appearance:none;border:0;padding:0;margin:0;background:none;min-height:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#dailyFx .dmain{border-radius:999px}
+#dailyFx .dmain:active{transform:scale(.97)}
+#dailyFx .dclose img{position:absolute;inset:0;width:100%;height:100%}
+#dailyFx .dclose span{position:relative;font:400 calc(46 / 1086 * 100cqw)/1 var(--display);color:#fff;text-shadow:0 2px 0 rgba(60,20,80,.45)}
+#dailyFx .dx{border-radius:50%}
+#dailyFx .dhide i{position:absolute;border-radius:22%}
+#dailyFx .dhide.on i{background:#7b3f8f;box-shadow:inset 0 0 0 calc(3 / 1086 * 100cqw) #5d2b6f}
+#dailyFx .dhide.on i::after{content:'';position:absolute;left:32%;top:14%;width:28%;height:52%;border:solid #fff;border-width:0 calc(6 / 1086 * 100cqw) calc(6 / 1086 * 100cqw) 0;transform:rotate(42deg)}
+@keyframes dpop{from{transform:scale(.88);opacity:0}to{transform:none;opacity:1}}
+@keyframes dglow{0%,100%{filter:drop-shadow(0 0 0 rgba(255,214,120,0))}50%{filter:drop-shadow(0 0 calc(14 / 1086 * 100cqw) rgba(255,214,120,.85))}}
+@keyframes dgot{0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){#dailyFx .dwrap,#dailyFx .dg-today,#dailyFx .dg7-today,#dailyFx .got{animation:none}}
 </style>
 
 <div id="topcap" aria-hidden="true"></div>
