@@ -1487,14 +1487,14 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 #prof .pfpage{position:relative;min-height:100%;box-sizing:border-box;padding-top:env(safe-area-inset-top);padding-bottom:calc(12cqw + env(safe-area-inset-bottom))}
 #prof .pftop{position:relative;aspect-ratio:1024/756;background:url(art/prof-top.webp) 0 0/100% 100% no-repeat}
 #prof .pfx{position:absolute;left:90.6%;top:1.4%;width:8%;height:10.6%;border:0;background:none;padding:0;cursor:pointer}
-#prof .pfname,#prof .pflv,#prof .pfv,#prof .pfboss{position:absolute;white-space:nowrap;line-height:1;transform:translateY(-50%)}
+#prof .pfname,#prof .pflv,#prof .pfv,#prof .pfboss{position:absolute;white-space:nowrap;transform:translateY(-50%)}
 #prof .pfboss span{margin-right:.55em;font:700 .76em/1 var(--body);color:#2c2420;letter-spacing:-.01em}
 #prof .pfname{left:13.96%;top:16.1%;max-width:42cqw;font:900 3.5cqw/1 var(--body);color:#170c09}
 #prof .pflv{left:14.06%;top:21.25%;max-width:44cqw;font:400 2.35cqw/1 var(--body);color:#564c46}
 #prof .pfv{right:6%;max-width:20cqw;text-align:right;border:0;background:none;padding:0;color:#1b130f;font:700 4.75cqw/1 'Noto Serif KR',Georgia,serif;font-variant-numeric:lining-nums tabular-nums;letter-spacing:-.02em}
 #prof button.pfv{cursor:pointer}
 #prof .pfcp{top:37.45%}#prof .pfatk{top:52.8%}#prof .pfspd{top:68.35%}
-#prof .pfboss{left:29.3%;top:95.1%;width:41.4cqw;overflow:hidden;text-align:center;font:700 3.05cqw/1 'Noto Serif KR',Georgia,serif;color:#23180f;font-variant-numeric:lining-nums}
+#prof .pfboss{left:29.3%;top:94.55%;width:41.4cqw;overflow:hidden;text-align:center;line-height:1.4;font:700 3.05cqw/1.4 'Noto Serif KR',Georgia,serif;color:#23180f;font-variant-numeric:lining-nums}
 #prof .pfbody{position:relative;padding:1.2cqw 2.45cqw 0}
 #prof .pfsrc{margin:0 0 2cqw;padding:2cqw 3.2cqw;border-radius:1.6cqw;background:#fffaf4;border:.2cqw solid #c7b6a8;font-size:2.8cqw}
 #prof .pfsrc>b{display:block;margin-bottom:.8cqw;font-size:3cqw;color:#6c442f}
@@ -1510,6 +1510,10 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 #prof .pfbox.on .pfhd img{filter:none}
 #prof .pfbox.on .pfchev{border-color:#fff;transform:translateY(25%) rotate(-135deg)}
 #prof .pfbox.on .pfhd small{color:#e8e2da}
+/* an open box: its title in the middle of the dark bar (the user, 2026-11-15); the critical summary is in the table below then */
+#prof .pfhd{position:relative}
+#prof .pfbox.on:not(.pftbox) .pfhd b{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+#prof .pfbox.on:not(.pftbox) .pfhd small{visibility:hidden}
 #prof .pfin{display:none;padding:.3cqw 4cqw .7cqw 5.4cqw}
 #prof .pfbox.on .pfin{display:block}
 #prof .pfrow{border-bottom:.15cqw solid #d6c7ba}
