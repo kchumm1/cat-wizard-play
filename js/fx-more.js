@@ -1166,15 +1166,15 @@
     }
     // an element bursting on a monster: a flash of its colour, a star of light spears flying out of it, its own bits, a
     // ring on the ground (in colour, never white: a whole crowd bursts at once and white on white went to a white field)
-    // The burst of a big element blast, in three beats (2026-11-15 the user: make the explosion move well): a hot heart
+    // The burst of a big element blast, in beats (2026-11-15 the user: make the explosion move well): a hot heart
     // flashes and swells in a blink; the fire dome bursts out round it; a moment later it booms again from inside,
-    // smaller and hotter, and once more, a little higher — so it rolls out instead of popping once.
+    // smaller and hotter — so it rolls out instead of popping once (one inner boom, small and short: the big see-through
+    // balls drawn over each other are what cost the graphics chip the most, 2026-11-15)
     function boomMotion(p, s, col, low, ringCol) {
       var heart = P3.orb({ col: 0xffe0ff, deep: col }), t = 0, at = p.clone();
       tick(function (dt) { t += dt; var k = Math.min(1, t / 0.14); heart.set(at, s * (0.12 + 0.45 * ez(k)), 1 - k * k); if (k < 1) return false; heart.kill(); return true; });
-      P3.blast(at, { ball: true, y: at.y, size: s, col: col, low: low, hotness: 0.12, ringCol: ringCol, ring: 5, chips: 0, crater: false, life: 0.8, flash: false, keepAdd: true });
-      after(0.13, function () { P3.blast(at, { ball: true, y: at.y, size: s * 0.6, col: col, low: low, hotness: 0.2, ringAlpha: 0, chips: 0, crater: false, life: 0.55, flash: false, keepAdd: true }); sc.shake(0.35); sc.punch(0.06); });
-      after(0.26, function () { P3.blast(at, { ball: true, y: at.y + 0.2 * s, size: s * 0.35, col: col, low: low, hotness: 0.25, ringAlpha: 0, chips: 0, crater: false, life: 0.4, flash: false, keepAdd: true }); });
+      P3.blast(at, { ball: true, y: at.y, size: s, col: col, low: low, hotness: 0.12, ringCol: ringCol, ring: 5, chips: 0, crater: false, life: 0.65, flash: false, keepAdd: true });
+      after(0.13, function () { P3.blast(at, { ball: true, y: at.y, size: s * 0.45, col: col, low: low, hotness: 0.2, ringAlpha: 0, chips: 0, crater: false, life: 0.38, flash: false, keepAdd: true }); sc.shake(0.35); sc.punch(0.06); });
     }
     function elemBlast(k, q, s, few, c) {
       var col = E9[k], g = V(q.x, 0, q.z);
