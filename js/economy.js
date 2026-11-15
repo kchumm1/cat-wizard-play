@@ -275,6 +275,38 @@
     return time > 0 ? cap(dmg / time) : 0;
   }
   function killsPerSecond(state, st) { st = st || stats(state); return Math.max(0.02, Math.min(dps(state, st) / stageMonsterHp(state), 2.5)); }
+  // ---------- gold read in Korean units, at most 9999조 (2026-11-15, the user) ----------
+  // The game's gold grows ×1.2 a stage, so by 엘리멘탈 it is 10^120 and more. What the player sees and holds is that gold
+  // divided by goldScale: 1 until the frontier monster pays 1억 (about 4-8), then it follows the frontier so that the
+  // shown monster gold climbs only from 1억 to 100조 over the whole game. Rewards and every price are divided by the same
+  // number, so what a reward buys is exactly as before; only the numbers are smaller. The scale only grows: it moves
+  // when a new stage is reached, and if a price would pass the cap anyway (a long stay on one stage) it moves with that
+  // price. Holdings stop at 9999조.
+  var GOLD_MAX = 9999e12, SHOW_FROM = 95, SHOW_TOP = 14;
+  function progressIndex(state) {
+    var p = Math.max(0, (state.diff || 0) * SPAN + (state.best === undefined ? -1 : state.best)), db = state.diffBest || {};
+    Object.keys(db).forEach(function (d) { var b = db[d] && db[d].best; if (typeof b === 'number') p = Math.max(p, d * SPAN + b); });
+    return p;
+  }
+  function shownFrontierLog(p) {
+    var end = SPAN * ((DATA.difficulties && DATA.difficulties.length) || 1) - 1, from = Math.log10(monsterGold(SHOW_FROM));
+    if (p <= SHOW_FROM) return Math.log10(monsterGold(p));
+    return from + (SHOW_TOP - from) * Math.min(1, (p - SHOW_FROM) / (end - SHOW_FROM));
+  }
+  function goldScale(state) {
+    var p = progressIndex(state), d = Math.max(1, monsterGold(p) / Math.pow(10, shownFrontierLog(p)));
+    var price = upgradeCost('atk', (state.up && state.up.atk) || 0) / (GOLD_MAX / 10);
+    d = Math.max(d, price, state.goldScale || 1);
+    if (!(d < CAP)) d = CAP;
+    state.goldScale = d;
+    return d;
+  }
+  // keeps holdings under 9999조 (as shown); returns the scale
+  function capGold(state) {
+    var d = goldScale(state);
+    if (state.gold > GOLD_MAX * d) state.gold = GOLD_MAX * d;
+    return d;
+  }
   function goldPerSecond(state) {
     var st = stats(state);
     return cap(killsPerSecond(state, st) * stageGold(state, undefined, st.goldMul) * st.goldMul * B.killPay);
@@ -283,7 +315,7 @@
     stageMonsterHp: stageMonsterHp, stageBossHp: stageBossHp, stageGold: stageGold, diffOf: diffOf,
     monsterHp: monsterHp, bossHp: bossHp, monsterGold: monsterGold, bossGems: bossGems,
     isWeak: isWeak, regionOf: regionOf, surgeTick: surgeTick, surgeFactor: surgeFactor, weakFactor: weakFactor, upgradeBonus: upgradeBonus, bonusBySource: bonusBySource, upgradeCostN: upgradeCostN, tryUpgradeN: tryUpgradeN, upgradeOpen: upgradeOpen, upgradeNeed: upgradeNeed, rollCrit: rollCrit, critFactor: critFactor, upgradeCost: upgradeCost, tryUpgrade: tryUpgrade, stats: stats, overInfo: overInfo, hitDamage: hitDamage,
-    dps: dps, bossDps: bossDps, bossDpsTypical: bossDpsTypical, evenCrit: evenCrit, killsPerSecond: killsPerSecond, goldPerSecond: goldPerSecond, skillById: skillById,
+    progressIndex: progressIndex, goldScale: goldScale, capGold: capGold, GOLD_MAX: GOLD_MAX, dps: dps, bossDps: bossDps, bossDpsTypical: bossDpsTypical, evenCrit: evenCrit, killsPerSecond: killsPerSecond, goldPerSecond: goldPerSecond, skillById: skillById,
     isRegionBoss: isRegionBoss, isMiniBoss: isMiniBoss
   };
 });

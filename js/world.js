@@ -262,10 +262,14 @@
       while (group.children.length) { var o = group.children.pop(); o.traverse(function (x) { if (x.geometry) x.geometry.dispose(); if (x.material) { if (x.material.map && !x.material.map._cached) x.material.map.dispose(); if (x.material.uniforms && x.material.uniforms.map && !x.material.uniforms.map.value._cached) x.material.uniforms.map.value.dispose(); x.material.dispose(); } }); }
       sway.length = 0; amb = null;
     }
-    function build(r, regionData, quality) {
+    // backdrop: the region's picture is shown behind the canvas (scene.js), so no drawn ground, props, sky or fog — only the
+    // drifting particles
+    function build(r, regionData, quality, backdrop) {
       disposeAll(); built = r;
       var spec = REGIONS[r % REGIONS.length], P = spec.P, R = rng(97 + r * 131), low = quality === 'low';
       var sky = new T.Color(regionData.sky), fogCol = new T.Color(P.g0).lerp(sky, 0.35);
+      if (backdrop) { scene.background = null; scene.fog = null; }
+      else {
       scene.background = fogCol.clone().lerp(new T.Color(0x000000), 0.15); scene.fog = new T.Fog(fogCol, 30, 62);
       // ground tile
       var tc = cvs(TS, TS), tg = tc.getContext('2d'); GROUNDS[spec.ground](tg, R, P);
@@ -300,6 +304,7 @@
         sh.rotation.x = -Math.PI / 2; sh.position.set(p.x, 0.012, p.z); sh.renderOrder = 1; group.add(sh);
         group.add(m); sway.push(mat);
       });
+      }
       // drifting particles
       ambSpec = AMB[spec.amb];
       var N = Math.round(ambSpec.n * (low ? 0.5 : 1)), pos = new Float32Array(N * 3), size = new Float32Array(N), col = new Float32Array(N * 3), ph = new Float32Array(N);

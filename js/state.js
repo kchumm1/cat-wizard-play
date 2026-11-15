@@ -18,6 +18,7 @@
       inv: [], bag: {}, equip: { hat: null, staff: null, robe: null, belt: null, necklace: null, ear: null, ring: null },
       pulls: 0, pity: 0, uidSeq: 0, firstBuy: {}, firstClear: {}, dex: {},
       settings: { sound: true, pixel: false, quality: 'auto', autoBoss: true, dmgSize: 60, dmgAlpha: 85, fpsCap: 60 },
+      goldScale: 1,
       lastSeen: Date.now()
     };
   }

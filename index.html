@@ -35,6 +35,8 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 /* the battle fills the whole phone; menus slide up over it */
 #stage{position:absolute;inset:0;overflow:hidden}
 #cv{position:absolute;inset:0;width:100%;height:100%;display:block}
+/* the region's picture behind the fight (scene.js), stretched to the screen: all of it shows, nothing cut off */
+.stagebg{position:absolute;inset:0;display:none;pointer-events:none;background:center/100% 100% no-repeat;will-change:transform}
 #ov{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .dmg{position:absolute;left:0;top:0;font:400 19px var(--display);color:#fff;-webkit-text-stroke:4px #2a1030;paint-order:stroke fill;opacity:0;white-space:nowrap;will-change:transform}
 .dmg.crit{color:var(--gold);font-size:26px}

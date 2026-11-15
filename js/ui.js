@@ -1,8 +1,8 @@
 (function (root) {
   var CW = root.CW = root.CW || {};
   var DATA = CW.DATA, fmt = CW.fmt, fmtG = CW.fmtGold;
-  // gold in a page: the number with its letter unit a little smaller ("6.5B", "81.4AO"), one size in every menu (.gn)
-  function gh(n) { var m = /^([0-9.,]+)([A-Z]*)$/.exec(fmtG(n)) || [0, fmtG(n), '']; return '<b class="gn">' + m[1] + (m[2] ? '<small>' + m[2] + '</small>' : '') + '</b>'; }
+  // gold in a page: the number with its Korean unit a little smaller ("6.5억", "1589조"), one size in every menu (.gn)
+  function gh(n) { var m = /^([0-9.,]+)(\D*)$/.exec(fmtG(n)) || [0, fmtG(n), '']; return '<b class="gn">' + m[1] + (m[2] ? '<small>' + m[2] + '</small>' : '') + '</b>'; }
   var lastGoldTxt = '';
   var $ = function (id) { return document.getElementById(id); };
   var STAT_NAME = { atk: '공격력', atkPct: '공격력', critRate: '치명타 확률', critDmg: '치명타 피해', goldMul: '골드 획득', skillDmg: '스킬 피해', speed: '공격 속도', bossDmg: '보스 피해', speedBoss: '공격 속도·보스 피해' };
@@ -471,7 +471,9 @@
       });
       var mul ='<div class="mulpick" role="group" aria-label="한 번에 올릴 단계">' + [1, 10, 100].map(function (n) { return '<button class="btn' + (upMul === n ? ' on' : '') + '" data-mul="' + n + '" aria-pressed="' + (upMul === n) + '">×' + n + '</button>'; }).join('') + '</div>';
       return '<h3>성장</h3>' + mul + '<div class="note" style="margin:4px 0 8px">버튼을 꾹 누르면 계속 올라가요. ×10·×100은 골드가 되는 만큼 한 번에 올려요.</div><div class="list">' + Object.keys(DATA.upgrades).map(function (k) {
-        var u = DATA.upgrades[k], lv = s.up[k] || 0, oi = CW.overInfo(s, k), one = CW.upgradeCost(k, lv), cost = upMul > 1 ? CW.upgradeCostN(s, k, upMul) : one;
+        var u = DATA.upgrades[k], lv = s.up[k] || 0, oi = CW.overInfo(s, k), one = CW.upgradeCost(k, lv), cost = one, nBuy = 1;
+        // ×10·×100 show what the gold buys now (up to that many), so the price never runs past what one can hold
+        if (upMul > 1) { var sum = 0, n = 0; while (n < upMul && sum + CW.upgradeCost(k, lv + n) <= s.gold) { sum += CW.upgradeCost(k, lv + n); n++; } if (n > 0) { cost = sum; nBuy = n; } }
         var max = u.max !== null && lv >= u.max && !oi;
         // 한계 돌파 (2026-11-15): past the row's max, each level adds 1% to the damage it is about
         var OVK = { finalMul: '모든 피해', critDmg: '치명타 피해', superDmg: '슈퍼 피해', ultraDmg: '울트라 피해', hyperDmg: '하이퍼 피해', megaDmg: '메가 피해', ultimateDmg: '얼티밋 피해', alphaDmg: '알파 피해', bossDmg: '보스 피해', skillDmg: '스킬 피해', weakMul: '약점 피해', surgeMul: '폭주 피해' };
@@ -483,7 +485,7 @@
           return '<div class="row lockrow"><div class="ricon">' + CW.ICO.stat(k) + '</div><div class="info"><div class="name">' + u.name + '</div><div class="desc need">' + why + '</div></div><span class="lockic">' + CW.ICO.pic('lock', 'ilock') + '</span></div>';
         }
         return '<div class="row"><div class="ricon">' + CW.ICO.stat(k) + '</div><div class="info"><div class="name">' + u.name + '<span class="lv">' + lvTxt + '</span></div><div class="desc">' + effTxt + overTxt + '</div></div>' +
-          '<button class="buy ' + (max || s.gold < one ? 'off' : '') + '" data-up="' + k + '">' + (max ? '최대' : (upMul > 1 ? '<small>×' + upMul + '</small>' : '') + '<i class="coin"></i>' + gh(cost)) + '</button></div>';
+          '<button class="buy ' + (max || s.gold < one ? 'off' : '') + '" data-up="' + k + '">' + (max ? '최대' : (upMul > 1 ? '<small>×' + nBuy + '</small>' : '') + '<i class="coin"></i>' + gh(cost)) + '</button></div>';
       }).join('') + '</div>';
     }
     function skillPanel() {

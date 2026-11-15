@@ -17,12 +17,17 @@
     var s = (r % 1 === 0) ? String(r) : r.toFixed(1);
     return s + unit(k);
   }
-  // Gold only (2026-11-14, the user: 100만 -> 1M): letter units every 10^3, all capitals — K, M, B, T, then AA (10^15),
-  // AB … AZ, BA … At most three digits: 1.2K, 12.3K, 123K.
+  // Gold (2026-11-15, the user): Korean units like everything else, as the player holds it — the game's gold divided by
+  // the gold scale (economy.goldScale, set by the game with setGoldScale). Holdings stop at 9999조.
+  var goldDiv = 1;
+  function setGoldScale(d) { goldDiv = d > 0 && isFinite(d) ? d : 1; }
+  function fmtGold(n) { if (!(typeof n === 'number' && isFinite(n) && n > 0)) return '0'; var v = n / goldDiv; return v < 1 ? '1' : fmt(v); }
+  // the old letter form (K, M, B, T, AA …), kept only for reading old notes
+  function fmtGoldLetters(n) { return fmtGoldOld(n); }
   var BIG = ['', 'K', 'M', 'B', 'T'];
   function goldUnit(k) { if (k < BIG.length) return BIG[k]; var i = k - BIG.length; return String.fromCharCode(65 + Math.floor(i / 26) % 26) + String.fromCharCode(65 + i % 26); }
   function cut(v) { return v < 100 ? Math.floor(v * 10) / 10 : Math.floor(v); }
-  function fmtGold(n) {
+  function fmtGoldOld(n) {
     if (typeof n !== 'number' || !isFinite(n) || n <= 0) return '0';
     if (n < 1000) return group(n);
     var k = Math.floor(Math.log10(n) / 3);
@@ -49,5 +54,5 @@
     if (r >= 10000) { k += 1; r = Math.round(n / Math.pow(10, 4 * k)); }
     return r + unit(k);
   }
-  return { fmt: fmt, fmtGold: fmtGold, fmtHp: fmtHp, bonusAmount: bonusAmount };
+  return { fmt: fmt, fmtGold: fmtGold, setGoldScale: setGoldScale, fmtGoldLetters: fmtGoldLetters, fmtHp: fmtHp, bonusAmount: bonusAmount };
 });

@@ -562,7 +562,7 @@
         lookT -= rdt; if (lookT <= 0) { lookT = 0.25; applyLook(); }
         gained.t += rdt; if (gained.t >= 1) { ui.gainLog(gained); gained.gold = gained.xp = gained.gems = gained.dmg = 0; gained.t = 0; gained.more.length = 0; }
         uiT += rdt; panelT += rdt; saveT += rdt;
-        if (uiT > 0.1) { uiT = 0; ui.hud(); if (nowSlot !== lastSlot) { lastSlot = nowSlot; ui.slots(); } }
+        if (uiT > 0.1) { uiT = 0; CW.setGoldScale(CW.capGold(state)); ui.hud(); if (nowSlot !== lastSlot) { lastSlot = nowSlot; ui.slots(); } }
         if (panelT > 0.3) { panelT = 0; ui.renderPanel(); }
         if (saveT > 5) { saveT = 0; save(); }
         watchFps(rdt, aim);
@@ -575,7 +575,7 @@
   function giveOffline() {
     var r = CW.offlineReward(state, Date.now());
     if (r.seconds < 60) { ui.showDaily(true); return; }
-    state.gold += r.gold; state.gems += r.gems; var lv = CW.gainXp(state, r.xp || 0); r.levels = lv.levels; if (lv.levels) refreshStats(); save();
+    state.gold += r.gold; state.gems += r.gems; CW.setGoldScale(CW.capGold(state)); var lv = CW.gainXp(state, r.xp || 0); r.levels = lv.levels; if (lv.levels) refreshStats(); save();
     ui.showOffline(r, function () { ui.showDaily(true); });
   }
   document.addEventListener('visibilitychange', function () {
@@ -652,7 +652,7 @@
     if (state.bossTry) { state.bossTry = false; state.stage = Math.max(0, state.stage - 1); state.farming = true; }
     syncRegion();
     $('banner').classList.remove('on');
-    ready = true; ui.hud(); ui.slots(); ui.renderPanel(true);
+    ready = true; CW.setGoldScale(CW.capGold(state)); ui.hud(); ui.slots(); ui.renderPanel(true);
     giveOffline();
     cloudInit();
   });

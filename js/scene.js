@@ -84,7 +84,7 @@
 
   function createScene(canvas, overlay) {
     var GLOW = CW.GLOW = CW.GLOW || glowTexture();
-    var renderer = new T.WebGLRenderer({ canvas: canvas, antialias: true, powerPreference: 'high-performance' });
+    var renderer = new T.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
     if (T.sRGBEncoding) renderer.outputEncoding = T.sRGBEncoding;
     var scene = new T.Scene();
     var camera = new T.PerspectiveCamera(38, 1, 0.5, 140);
@@ -144,10 +144,22 @@
       function castle(R) { for (var i = 0; i < 7; i++) { var x = -6 + i * 2, z = -6 - (i % 2) * 2, h = 2 + R() * 3; add(new T.CylinderGeometry(0.5, 0.6, h, 8), lambert(0x2a2038), x, h / 2, z); add(new T.ConeGeometry(0.7, 1.2, 8), lambert(0x4a1f3a), x, h + 0.6, z); add(new T.SphereGeometry(0.08, 6, 4), new T.MeshBasicMaterial({ color: 0xff3b5c }), x, h * 0.7, z + 0.6); } }
     ];
     var painted = null;
+    // the region's picture (data.js bg, the user's art) stretched to fill the screen behind the see-through canvas: nothing
+    // cut off, no empty band. Fetched when the region is reached; until then (or without one: 화산) the drawn ground shows.
+    renderer.setClearColor(0x000000, 0);
+    var bgEl = document.createElement('div'); bgEl.className = 'stagebg'; canvas.parentNode.insertBefore(bgEl, canvas);
+    var bgReady = {};
+    function showBackdrop(id) { bgEl.style.backgroundImage = id ? 'url(' + (CW.ART_BASE || 'art/') + id + '.webp)' : ''; bgEl.style.display = id ? 'block' : 'none'; }
     function setRegion(r, regionData) {
       if (r === region) return; region = r;
       if (!painted) painted = CW.createWorld(scene, { tilt: TILT, halfX: halfX, field: FIELD });
-      painted.build(r, regionData, quality);
+      var id = regionData.bg;
+      if (id && bgReady[id]) { painted.build(r, regionData, quality, true); showBackdrop(id); return; }
+      painted.build(r, regionData, quality, false); showBackdrop(null);
+      if (!id) return;
+      var img = new Image();
+      img.onload = function () { bgReady[id] = 1; if (region === r) { painted.build(r, regionData, quality, true); showBackdrop(id); } };
+      img.src = (CW.ART_BASE || 'art/') + id + '.webp';
     }
 
 
@@ -913,6 +925,8 @@
       punchV += (-punch * 140 - punchV * 16) * rdt; punch += punchV * rdt;
       kick.multiplyScalar(Math.max(0, 1 - rdt * 7));
       if (Math.abs(viewShift - viewShiftT) > 0.001) { viewShift += (viewShiftT - viewShift) * Math.min(1, rdt * 9); applyShift(); }
+      // the picture moves up with the ground when a menu sheet pushes the view up
+      var bgY = -Math.round(viewShift * cssH); if (bgY !== bgEl._y) { bgEl._y = bgY; bgEl.style.transform = bgY ? 'translateY(' + bgY + 'px)' : ''; }
       var fk = Math.min(1, rdt * 2.2); pan.x += (HB.x * 0.3 - pan.x) * fk; pan.z += (HB.z * 0.22 - pan.z) * fk;
       camera.position.set(camBase.x + pan.x + sx + kick.x + Math.sin(time * 0.35) * 0.06, camBase.y + sy + kick.y + Math.sin(time * 0.5) * 0.03, camBase.z + pan.z + kick.z);
       camera.lookAt(lookAt.x + pan.x + sx * 0.3, lookAt.y + sy * 0.3, lookAt.z + pan.z);
