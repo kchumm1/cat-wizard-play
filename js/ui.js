@@ -396,7 +396,11 @@
         // "전직 시험" only while beating it still gives a new job (progress.js isTierTrial), not after the job is reached
         $('bossName').textContent = (CW.isTierTrial(s, s.stage) ? '전직 시험 · ' : '') + boss.name;
         $('bossTime').textContent = Math.max(0, boss.time).toFixed(1) + '초';
-        $('bossHp').style.width = Math.max(0, boss.mob.hp / boss.mob.maxHp * 100) + '%';
+        var hpPct = Math.max(0, boss.mob.hp / boss.mob.maxHp * 100);
+        $('bossHp').style.width = hpPct + '%';
+        // health left as a percent: whole numbers, and a tenth below 1% so a boss still standing never reads 0%
+        var pctTxt = (hpPct >= 1 ? Math.floor(hpPct) : hpPct > 0 ? Math.max(0.1, Math.floor(hpPct * 10) / 10) : 0) + '%';
+        if ($('bossPct').textContent !== pctTxt) $('bossPct').textContent = pctTxt;
       } else {
         kp = G.killProgress();
         sub = s.farming ? '' : '<i class="mk">' + mark + '</i><b>' + kp.n + '</b><em>/' + kp.max + '</em>';

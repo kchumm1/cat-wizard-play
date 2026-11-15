@@ -1230,6 +1230,9 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 #bossTime{color:#8a5a2a}
 #bossbox .bar{background:#ECE5D1;box-shadow:inset 0 0 0 1.2px #D6C8A6,inset 0 2px 0 rgba(120,100,60,.12)}
 #bossbox .bar i{background:linear-gradient(180deg,#F6B8A0,#E58C74 60%,#D5735E);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -1.5px 0 rgba(120,40,20,.22)}
+/* the boss's health left, just right of the bar (2026-11-15): same brown as the time, numbers don't jiggle */
+#bossbox .bossrow{display:flex;align-items:center;gap:6px}#bossbox .bossrow .bar{flex:1;min-width:0}
+#bossPct{flex:none;min-width:30px;text-align:right;font:900 11px/1 var(--body);font-variant-numeric:tabular-nums;color:#8a5a2a}
 #retry{background:linear-gradient(180deg,#FFFBF3,#F5ECDC);color:#5c4330;box-shadow:inset 0 0 0 1.5px #CDB07A,0 0 0 1px rgba(92,67,48,.28),0 3px 8px rgba(40,30,20,.3);-webkit-text-stroke:0}
 #banner{color:#6b4a2a;-webkit-text-stroke:6px #FFF6E4;text-shadow:0 3px 8px rgba(40,30,20,.45)}
 /* rune ring with seven slots (2026-11-14) */
@@ -1442,7 +1445,7 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
         <div class="wallet"><div class="chip"><i class="coin"></i><span id="goldTxt">0</span></div><div class="chip"><i class="gem"></i><span id="gemTxt">0</span></div></div>
       </div>
       <button class="place stg" id="placeBtn" aria-label="스테이지 선택 열기"><span id="placeName">꽃밭 1-1</span><span class="pmap">지도<svg viewBox="0 0 12 12" aria-hidden="true"><path d="m3 4.5 3 3 3-3"/></svg></span><span class="bar" id="killBar"><i></i></span><small id="placeSub">몬스터 0 / 10</small></button>
-      <div id="bossbox"><div class="boss-top"><span id="bossName">보스</span><span id="bossTime">30.0초</span></div><div class="bar"><i id="bossHp"></i></div></div>
+      <div id="bossbox"><div class="boss-top"><span id="bossName">보스</span><span id="bossTime">30.0초</span></div><div class="bossrow"><div class="bar"><i id="bossHp"></i></div><b id="bossPct">100%</b></div></div>
       <button id="retry">보스 도전</button>
     </div>
     <div id="quick" aria-label="바로가기"><button data-quick="map"><i></i><span>지도</span></button><button data-quick="alch"><i></i><span>물약</span></button><button data-quick="rune"><i></i><span>룬</span></button><button data-quick="sigil"><i></i><span>신성력</span></button></div>
