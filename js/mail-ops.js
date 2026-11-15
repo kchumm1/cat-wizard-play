@@ -2,9 +2,9 @@
 // letter and to change mail.json on the site; tools/build-site.cjs uses mailMerge so a rebuilt site keeps what was sent
 // from ops.html. Letters always read the same way (the user's picture): 「안녕하세요, 냥법사님!」, a blank line, three short
 // lines, 「냥법사 운영팀 드림」; a gift letter is titled 「모험 응원 선물」. Not loaded by the game itself.
-(function (root, f) { var m = f(); if (typeof module !== 'undefined' && module.exports) module.exports = m; else { root.CW = root.CW || {}; Object.assign(root.CW, m); } })(this, function () {
+(function (root, f) { if (typeof module !== 'undefined' && module.exports) module.exports = f(require('./mail.js')); else { root.CW = root.CW || {}; Object.assign(root.CW, f(root.CW)); } })(this, function (M) {
   var GIFT_TEXT = '안녕하세요, 냥법사님!\n\n오늘도 모험을 즐겨주셔서 고마워요.\n작은 응원 선물을 준비했어요.\n새로운 모험도 함께해 주세요!';
-  var GOLD_MAX = 9999;          // the most gold a player can hold, in 조 (js/economy.js capGold)
+  var GOLD_MAX = 9999e12;       // the most gold a player can hold: 9999조 (js/economy.js capGold)
   var GEMS_MAX = 100000000;     // 1억 diamonds per letter at most, so a typo cannot break a save
   var PID = /^[0-9A-HJ-NP-Z]{8}$/; // player numbers (js/mail.js mailPid: no I, no O)
 
@@ -13,17 +13,31 @@
     var d = new Date((now || Date.now()) + 9 * 3600e3 + (plusDays || 0) * 864e5);
     return d.toISOString().slice(0, 10);
   }
-  // 500000 → 50만, 120000000 → 1억 2000만, 3000 → 3000
-  function countText(n) {
-    n = Math.floor(+n || 0); if (n < 10000) return String(n);
-    var eok = Math.floor(n / 1e8), man = Math.floor((n % 1e8) / 1e4), rest = n % 1e4, a = [];
-    if (eok) a.push(eok + '억'); if (man) a.push(man + '만'); if (rest) a.push(String(rest));
-    return a.join(' ');
+  // 500000 → 50만, 1500000000300 → 1조 5000억 300 (the same words the game's mailbox uses)
+  function countText(n) { return M.goldWords(n); }
+  // what the 골드 box says, as gold: "1조 5000억 300", "5000억", "1,000,000", "1.5조", "골드 300" → a whole number;
+  // '' → 0; anything it cannot read → NaN (2026-11-15, the user: 1원부터 9999조까지)
+  function parseGold(text) {
+    var t = String(text == null ? '' : text).replace(/[,\s]|골드|원/g, '');
+    if (!t) return 0;
+    if (!/^(\d+(\.\d+)?(조|억|만)?)+$/.test(t)) return NaN;
+    var sum = 0, unit = { '조': 1e12, '억': 1e8, '만': 1e4, '': 1 };
+    t.replace(/(\d+(?:\.\d+)?)(조|억|만)?/g, function (m, n, u) { sum += parseFloat(n) * unit[u || '']; return m; });
+    var r = Math.round(sum);
+    return Math.abs(r - sum) < 1e-6 ? r : NaN;
   }
-  function rewardSub(goldJo, gems) {
-    var g = +goldJo > 0, d = +gems > 0;
-    if (g && d) return '골드 ' + countText(goldJo) + '조와 다이아 ' + countText(gems) + '개를 보내요';
-    if (g) return '골드 ' + countText(goldJo) + '조를 보내요';
+  // does the words end with a sound that takes 과/을 (조 → 와/를, 억 · 만 · 300 (삼백) → 과/을)
+  function closed(words) {
+    var c = words.slice(-1);
+    if (c === '조') return false; if (c === '억' || c === '만') return true;
+    var m = /(\d+)$/.exec(words); if (!m) return false;
+    var n = m[1].replace(/^0+/, ''); if (/0$/.test(n)) return true; // 십 · 백 · 천
+    return '013678'.indexOf(n.slice(-1)) >= 0;                      // 일 삼 육 칠 팔 (영)
+  }
+  function rewardSub(gold, gems) {
+    var g = +gold > 0, d = +gems > 0, w = g ? countText(gold) : '';
+    if (g && d) return '골드 ' + w + (closed(w) ? '과' : '와') + ' 다이아 ' + countText(gems) + '개를 보내요';
+    if (g) return '골드 ' + w + (closed(w) ? '을' : '를') + ' 보내요';
     if (d) return '다이아 ' + countText(gems) + '개를 보내요';
     return '';
   }
@@ -31,12 +45,13 @@
   function parseTo(text) {
     return String(text || '').toUpperCase().split(/[\s,;·]+/).filter(Boolean);
   }
-  // what is wrong with the form, or '' when it can be sent
+  // what is wrong with the form, or '' when it can be sent. f.gold is the 골드 box as typed
   function mailCheck(f) {
-    var g = +f.goldJo || 0, d = +f.gems || 0;
+    var g = parseGold(f.gold), d = +f.gems || 0;
+    if (!isFinite(g)) return '골드를 읽지 못했어요. 「1조 5000억」이나 「300」처럼 적어 주세요.';
     if (!(g > 0) && !(d > 0)) return '골드나 다이아 중 하나는 넣어 주세요.';
-    if (g < 0 || d < 0 || Math.floor(g) !== g || Math.floor(d) !== d) return '골드와 다이아는 0 이상의 정수로 적어 주세요.';
-    if (g > GOLD_MAX) return '골드는 한 번에 ' + GOLD_MAX + '조까지예요(가질 수 있는 최대 골드).';
+    if (d < 0 || Math.floor(d) !== d) return '다이아는 0 이상의 정수로 적어 주세요.';
+    if (g > GOLD_MAX) return '골드는 한 번에 9999조까지예요(가질 수 있는 최대 골드).';
     if (d > GEMS_MAX) return '다이아는 한 번에 1억 개까지예요.';
     if (f.toAll === false) {
       var to = parseTo(f.toText);
@@ -47,14 +62,14 @@
     if (f.from && f.until && f.until < f.from) return '받을 수 있는 마지막 날이 첫날보다 빨라요.';
     return '';
   }
-  // the letter as mail.json keeps it
+  // the letter as mail.json keeps it; gold is written in 조 like the letters before (0.5 = 5000억, 1e-12 = 1 gold)
   function mailMake(f, now) {
     now = now || Date.now();
-    var stamp = new Date(now + 9 * 3600e3).toISOString().replace(/[-:T]/g, '').slice(0, 14);
+    var g = parseGold(f.gold), stamp = new Date(now + 9 * 3600e3).toISOString().replace(/[-:T]/g, '').slice(0, 14);
     var l = {
       id: 'gift-' + stamp + '-' + Math.random().toString(36).slice(2, 6),
       title: '모험 응원 선물',
-      sub: String(f.sub || '').trim() || rewardSub(f.goldJo, f.gems),
+      sub: String(f.sub || '').trim() || rewardSub(g, f.gems),
       text: GIFT_TEXT,
       sign: '냥법사 운영팀 드림',
       sender: '운영팀',
@@ -63,7 +78,7 @@
     };
     if (f.from && f.from > kstDay(now)) l.from = f.from;
     if (f.until) l.until = f.until;
-    if (+f.goldJo > 0) l.goldJo = +f.goldJo;
+    if (g > 0) l.goldJo = g / 1e12;
     if (+f.gems > 0) l.gems = +f.gems;
     l.by = 'ops';
     return l;
@@ -92,5 +107,5 @@
     return clean({ note: m.note || s.note, letters: out, removed: removed });
   }
   function mailText(doc) { return JSON.stringify(doc, null, 2) + '\n'; }
-  return { GIFT_TEXT: GIFT_TEXT, kstDay: kstDay, countText: countText, rewardSub: rewardSub, parseTo: parseTo, mailCheck: mailCheck, mailMake: mailMake, mailAdd: mailAdd, mailRemove: mailRemove, mailMerge: mailMerge, mailText: mailText };
+  return { GIFT_TEXT: GIFT_TEXT, kstDay: kstDay, countText: countText, parseGold: parseGold, rewardSub: rewardSub, parseTo: parseTo, mailCheck: mailCheck, mailMake: mailMake, mailAdd: mailAdd, mailRemove: mailRemove, mailMerge: mailMerge, mailText: mailText };
 });

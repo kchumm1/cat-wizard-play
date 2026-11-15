@@ -77,10 +77,11 @@ ol.steps{padding-left:20px;font-size:14px;margin:8px 0}ol.steps li{margin:4px 0}
       <input id="pids" type="text" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="AB12CD34">
       <p class="hint">우편번호는 게임 우편함 화면에 보여요.</p>
     </div>
-    <div class="row">
-      <div><label for="gold">골드 (조)</label><input id="gold" type="number" inputmode="numeric" min="0" max="9999" step="1" placeholder="0"></div>
-      <div><label for="gems">다이아 (개)</label><input id="gems" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></div>
-    </div>
+    <label for="gold">골드 (1골드 ~ 9999조)</label>
+    <input id="gold" type="text" autocomplete="off" spellcheck="false" placeholder="예: 1조 5000억 · 5000억 · 300">
+    <p class="hint" id="goldRead">조·억·만을 붙여 적거나 숫자만 적어도 돼요.</p>
+    <label for="gems">다이아 (개)</label>
+    <input id="gems" type="number" inputmode="numeric" min="0" step="1" placeholder="0">
     <div class="row">
       <div><label for="from">받을 수 있는 첫날</label><input id="from" type="date"></div>
       <div><label for="until">마지막 날</label><input id="until" type="date"></div>
@@ -100,6 +101,7 @@ ol.steps{padding-left:20px;font-size:14px;margin:8px 0}ol.steps li{margin:4px 0}
     <div class="msg" id="listMsg"></div>
   </section>
 </main>
+<script src="js/mail.js"></script>
 <script src="js/mail-ops.js"></script>
 <script>
 (function () {
@@ -152,11 +154,16 @@ ol.steps{padding-left:20px;font-size:14px;margin:8px 0}ol.steps li{margin:4px 0}
   // ---- form
   $('toSeg').onclick = function (e) { var b = e.target.closest('button'); if (!b) return; toAll = b.dataset.to === 'all';
     [].forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); }); $('pidBox').classList.toggle('hide', toAll); preview(); };
-  function form() { return { toAll: toAll, toText: $('pids').value, goldJo: $('gold').value === '' ? 0 : +$('gold').value, gems: $('gems').value === '' ? 0 : +$('gems').value, from: $('from').value, until: $('until').value, sub: $('sub').value }; }
+  function form() { return { toAll: toAll, toText: $('pids').value, gold: $('gold').value, gems: $('gems').value === '' ? 0 : +$('gems').value, from: $('from').value, until: $('until').value, sub: $('sub').value }; }
   function preview() {
-    var f = form();
-    if (!subTouched) $('sub').value = CW.rewardSub(f.goldJo, f.gems);
-    var gift = []; if (f.goldJo > 0) gift.push('골드 ' + CW.countText(f.goldJo) + '조'); if (f.gems > 0) gift.push('다이아 ' + CW.countText(f.gems) + '개');
+    var f = form(), g = CW.parseGold(f.gold), gr = $('goldRead');
+    if (!f.gold.trim()) { gr.textContent = '조·억·만을 붙여 적거나 숫자만 적어도 돼요.'; gr.style.color = ''; }
+    else if (!isFinite(g)) { gr.textContent = '읽지 못했어요. 「1조 5000억」이나 「300」처럼 적어 주세요.'; gr.style.color = 'var(--bad)'; }
+    else if (g > 9999e12) { gr.textContent = '= ' + CW.countText(g) + ' (9999조까지만 보낼 수 있어요)'; gr.style.color = 'var(--bad)'; }
+    else { gr.textContent = '= 골드 ' + CW.countText(g); gr.style.color = 'var(--ok)'; }
+    if (!isFinite(g)) g = 0;
+    if (!subTouched) $('sub').value = CW.rewardSub(g, f.gems);
+    var gift = []; if (g > 0) gift.push('골드 ' + CW.countText(g)); if (f.gems > 0) gift.push('다이아 ' + CW.countText(f.gems) + '개');
     var p = $('preview'); p.textContent = '';
     var b = document.createElement('b'); b.textContent = '모험 응원 선물'; p.appendChild(b);
     p.appendChild(document.createTextNode(CW.GIFT_TEXT));
@@ -173,7 +180,7 @@ ol.steps{padding-left:20px;font-size:14px;margin:8px 0}ol.steps li{margin:4px 0}
     var f = form(), err = CW.mailCheck(f); if (err) return say('sendMsg', err, 'bad');
     var l = CW.mailMake(f);
     var who = l.to === 'all' ? '모두' : l.to.join(', ');
-    if (!confirm('보낼까요?\n받는 사람: ' + who + '\n선물: ' + CW.rewardSub(l.goldJo, l.gems) + '\n받을 수 있는 날: ' + (l.from || l.date) + ' ~ ' + (l.until || '계속'))) return;
+    if (!confirm('보낼까요?\n받는 사람: ' + who + '\n선물: ' + CW.rewardSub(CW.mailGold(l), l.gems) + '\n받을 수 있는 날: ' + (l.from || l.date) + ' ~ ' + (l.until || '계속'))) return;
     $('send').disabled = true; say('sendMsg', '보내는 중…');
     save(function (doc) { return CW.mailAdd(doc, l); }, '운영자 편지: ' + l.sub)
       .then(function (doc) { say('sendMsg', '보냈어요! 1~2분 뒤 게임을 다시 켜면 우편함에 와 있어요.', 'ok'); $('gold').value = ''; $('gems').value = ''; $('pids').value = ''; subTouched = false; $('sub').value = ''; preview(); draw(doc); })
@@ -190,7 +197,7 @@ ol.steps{padding-left:20px;font-size:14px;margin:8px 0}ol.steps li{margin:4px 0}
       var li = document.createElement('li'), t = document.createElement('span'); t.className = 't';
       var top = document.createElement('div'); top.textContent = (l.title || '') + ' · ' + (l.sub || '');
       var info = document.createElement('small');
-      var gift = []; if (+l.goldJo > 0) gift.push('골드 ' + CW.countText(l.goldJo) + '조'); if (+l.gems > 0) gift.push('다이아 ' + CW.countText(l.gems) + '개');
+      var gift = []; if (CW.mailGold(l) > 0) gift.push('골드 ' + CW.mailGoldText(l)); if (+l.gems > 0) gift.push('다이아 ' + CW.countText(l.gems) + '개');
       info.textContent = (l.date || '') + ' · ' + (l.to === 'all' ? '모두' : (Array.isArray(l.to) ? l.to.join(', ') : '')) + (gift.length ? ' · ' + gift.join(' · ') : ' · 공지') + (l.until ? ' · ~' + l.until : '');
       t.appendChild(top); t.appendChild(info); li.appendChild(t);
       var d = document.createElement('button'); d.className = 'del'; d.textContent = '지우기';

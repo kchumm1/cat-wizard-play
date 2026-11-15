@@ -26,7 +26,7 @@
     return (Array.isArray(list) ? list : []).filter(function (l) { return l && typeof l.id === 'string' && l.id && forMe(state, l) && (!l.from || now >= day(l.from)) && (!l.until || now <= day(l.until, true)); });
   }
   function mailGot(state, l) { return !!(l && box(state).got[l.id]); }
-  function mailHasReward(l) { return +l.goldJo > 0 || +l.gems > 0; }
+  function mailHasReward(l) { return mailGold(l) > 0 || +l.gems > 0; }
   // when it was sent, the way a letter says it: 오늘 · 어제 · 11월 3일 (Korean time)
   function mailWhen(l, now) {
     if (!l || !l.date) return '';
@@ -38,15 +38,26 @@
   // claim one letter: gold in 조 as shown, times the gold scale the game divides by; returns false if it was taken already
   function mailClaim(state, l, goldScale, now) {
     var m = box(state); if (!l || !l.id || m.got[l.id]) return false;
-    var g = +l.goldJo || 0, d = +l.gems || 0;
-    if (g > 0) state.gold = (state.gold || 0) + g * 1e12 * (goldScale > 0 ? goldScale : 1);
+    var g = mailGold(l), d = +l.gems || 0;
+    if (g > 0) state.gold = (state.gold || 0) + g * (goldScale > 0 ? goldScale : 1);
     if (d > 0) state.gems = (state.gems || 0) + Math.floor(d);
     m.got[l.id] = now || Date.now();
     return true;
   }
+  // the letter's gold as the screen shows it, a whole number (goldJo may be a part of 조: 0.5 = 5000억, 1e-12 = 1)
+  function mailGold(l) { return Math.round((+(l && l.goldJo) || 0) * 1e12); }
+  // 1500000000300 → 1조 5000억 300 (2026-11-15, the user: 1원부터 9999조까지)
+  function goldWords(n) {
+    n = Math.round(+n || 0); if (n <= 0) return '0';
+    var u = [[1e12, '조'], [1e8, '억'], [1e4, '만']], a = [];
+    u.forEach(function (x) { var k = Math.floor(n / x[0]); if (k) { a.push(k + x[1]); n -= k * x[0]; } });
+    if (n) a.push(String(n));
+    return a.join(' ');
+  }
+  function mailGoldText(l) { return goldWords(mailGold(l)); }
   function mailRewardText(l) {
-    var a = []; if (+l.goldJo > 0) a.push('골드 ' + l.goldJo + '조'); if (+l.gems > 0) a.push('다이아 ' + l.gems);
+    var a = []; if (mailGold(l) > 0) a.push('골드 ' + mailGoldText(l)); if (+l.gems > 0) a.push('다이아 ' + l.gems);
     return a.join(' · ');
   }
-  return { mailAll: mailAll, mailGot: mailGot, mailHasReward: mailHasReward, mailWhen: mailWhen, mailPid: mailPid, mailWaiting: mailWaiting, mailClaim: mailClaim, mailRewardText: mailRewardText };
+  return { mailAll: mailAll, mailGot: mailGot, mailHasReward: mailHasReward, mailWhen: mailWhen, mailPid: mailPid, mailWaiting: mailWaiting, mailClaim: mailClaim, mailRewardText: mailRewardText, mailGold: mailGold, mailGoldText: mailGoldText, goldWords: goldWords };
 });

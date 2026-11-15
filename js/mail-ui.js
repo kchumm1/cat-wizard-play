@@ -36,19 +36,19 @@
   function rewardPill(l) {
     var a = [];
     if (+l.gems > 0) a.push('<span><img src="art/mail-ico-gem.webp" alt="">다이아 ' + ko(l.gems) + '</span>');
-    if (+l.goldJo > 0) a.push('<span><img src="art/mail-ico-gold.webp" alt="">골드 ' + Number(l.goldJo).toLocaleString('ko-KR') + '조</span>');
+    if (CW.mailGold(l) > 0) a.push('<span><img src="art/mail-ico-gold.webp" alt="">골드 ' + CW.mailGoldText(l) + '</span>');
     return a.join('');
   }
   // two rewards on a letter: the pill halved, each with its picture, a line between
   function twoReward(l) {
     return '<span class="half"><img class="gem" src="art/mail-gem-big.webp" alt=""><b>다이아<br>' + ko(l.gems) + '</b></span><i class="mldiv"></i>' +
-      '<span class="half"><img class="gold" src="art/mail-ico-gold.webp" alt=""><b>골드<br>' + Number(l.goldJo).toLocaleString('ko-KR') + '조</b></span>';
+      '<span class="half"><img class="gold" src="art/mail-ico-gold.webp" alt=""><b>골드<br>' + CW.mailGoldText(l) + '</b></span>';
   }
   // one reward on a letter, as drawn: the big picture on the left, a line, the words on the right
   function oneReward(l) {
-    var gem = +l.gems > 0, n = gem ? +l.gems : +l.goldJo;
+    var gem = +l.gems > 0, n = gem ? +l.gems : 0;
     var star = function (c) { return '<svg class="mlstar ' + c + '" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 0c.8 5.6 3.4 8.6 10 10-6.6 1.4-9.2 4.4-10 10-.8-5.6-3.4-8.6-10-10 6.6-1.4 9.2-4.4 10-10z"/></svg>'; };
-    return '<span class="mlri' + (gem ? '' : ' sp') + '">' + (gem ? '' : star('a') + star('b') + star('c')) + '<img class="' + (gem ? 'gem' : 'gold') + '" src="art/' + (gem ? 'mail-gem-big' : 'mail-ico-gold') + '.webp" alt=""></span><i class="mldiv"></i><span class="mlrt">' + (gem ? '다이아 ' + ko(n) : '골드 ' + n.toLocaleString('ko-KR') + '조') + '</span>';
+    return '<span class="mlri' + (gem ? '' : ' sp') + '">' + (gem ? '' : star('a') + star('b') + star('c')) + '<img class="' + (gem ? 'gem' : 'gold') + '" src="art/' + (gem ? 'mail-gem-big' : 'mail-ico-gold') + '.webp" alt=""></span><i class="mldiv"></i><span class="mlrt">' + (gem ? '다이아 ' + ko(n) : '골드 ' + CW.mailGoldText(l)) + '</span>';
   }
   function sender(l) { var w = CW.mailWhen(l); return esc(l.sender || '운영팀') + (w ? ' · ' + w : ''); }
   function firstLine(l) { return l.sub || String(l.text || '').split('\n').filter(Boolean)[0] || ''; }
@@ -78,7 +78,7 @@
       '<button class="mbcopy e" data-mbcopy aria-label="우편번호 복사"></button><button class="mbclose" data-mbx aria-label="닫기"></button></div>';
   }
   function letterHtml(l) {
-    var s = state(), got = CW.mailGot(s, l), has = CW.mailHasReward(l), n = (+l.gems > 0) + (+l.goldJo > 0);
+    var s = state(), got = CW.mailGot(s, l), has = CW.mailHasReward(l), n = (+l.gems > 0) + (CW.mailGold(l) > 0);
     // paragraphs (a blank line between) and lines, as on the drawn letter
     var body = String(l.text || '').split(/\n\s*\n/).map(function (p) { return '<p>' + esc(p).replace(/\n/g, '<br>') + '</p>'; }).join('');
     return '<div class="mbw mbletter"><img class="mbbg" src="art/mail-letter.webp" alt="" draggable="false">' +
