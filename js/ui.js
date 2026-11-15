@@ -596,7 +596,7 @@
       var head = '<div class="gacha-head ghd"><div class="lvl">' + lv + '<small>뽑기 레벨</small></div><div class="ghrows">' +
         '<p><em>다음 레벨까지</em><b>' + (nextNeed ? (nextNeed - s.pulls) + '회' : '최고 레벨') + '</b></p><div class="ghbar"><i style="width:' + bar + '%"></i></div>' +
         '<p><em>전설 확정까지</em><b>' + (DATA.gacha.pity - s.pity) + '회</b></p>' +
-        '<p><em>현재 확률</em><b>전설 ' + rowNow[4] + '% · 신화 ' + rowNow[5] + '%' + (newOdds > 0 ? ' · 태초+ ' + Math.round(newOdds * 100) / 100 + '%' : '') + '</b></p></div></div>';
+        '<p><em>전설 확률</em><b>' + rowNow[4] + '%</b></p><p><em>신화 확률</em><b>' + rowNow[5] + '%</b></p><p><em>태초 이상</em><b>' + Math.round(newOdds * 100) / 100 + '%</b></p></div></div>';
       var pulls = '<div class="pulls">' + [1, 10, 30, 100].map(function (n) {
         return '<button class="pull ' + (n === 100 ? 'big' : '') + '" data-pull="' + n + '"><b>' + n + '회 뽑기</b><span><i class="gem"></i>' + fmt(CW.gachaCost(n)) + '</span><small class="note">' + (n >= 100 ? '영웅 이상 1개 보장' : n >= 10 ? '희귀 이상 1개 보장' : '장비 1개') + '</small></button>';
       }).join('') + '</div>';

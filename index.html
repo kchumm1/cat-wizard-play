@@ -1847,9 +1847,9 @@ body{font-family:'Noto Sans KR',"Malgun Gothic","Apple SD Gothic Neo",system-ui,
 #panel .gacha-head.ghd .lvl{color:#fff;font:800 40px/1 var(--body);min-width:64px;text-align:center}
 #panel .gacha-head.ghd .lvl small{display:block;color:#a9a6b0;font:500 12px var(--body);margin-top:10px}
 .ghd .ghrows{flex:1;min-width:0}
-.ghd .ghrows p{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0;padding:4px 0;font:500 14px/1.5 var(--body);color:#a9a6b0}
-.ghd .ghrows p em{font-style:normal}
-.ghd .ghrows p b{color:#fff;font:700 14px/1.5 var(--body);text-align:right}
+.ghd .ghrows p{display:flex;align-items:baseline;gap:12px;margin:0;padding:4px 0;font:500 14px/1.5 var(--body);color:#a9a6b0}
+.ghd .ghrows p em{font-style:normal;flex:none;width:6.2em}
+.ghd .ghrows p b{color:#fff;font:700 14px/1.5 var(--body);text-align:left}
 .ghd .ghbar{height:6px;border-radius:6px;background:#3a3940;margin:4px 0 8px;overflow:hidden}
 .ghd .ghbar i{display:block;height:100%;min-width:6px;border-radius:6px;background:#d9b8e6}
 .ghd .ghbar i{position:relative;overflow:hidden}
@@ -1857,7 +1857,7 @@ body{font-family:'Noto Sans KR',"Malgun Gothic","Apple SD Gothic Neo",system-ui,
 .ghd.play .lvl{animation:ghpop .55s cubic-bezier(.3,1.6,.5,1) both}
 .ghd.play .lvl small{animation:ghin .4s .15s ease-out both}
 .ghd.play .ghrows>*{animation:ghin .45s ease-out both}
-.ghd.play .ghrows>:nth-child(1){animation-delay:.08s}.ghd.play .ghrows>:nth-child(2){animation-delay:.14s}.ghd.play .ghrows>:nth-child(3){animation-delay:.2s}.ghd.play .ghrows>:nth-child(4){animation-delay:.26s}
+.ghd.play .ghrows>:nth-child(1){animation-delay:.08s}.ghd.play .ghrows>:nth-child(2){animation-delay:.14s}.ghd.play .ghrows>:nth-child(3){animation-delay:.2s}.ghd.play .ghrows>:nth-child(4){animation-delay:.26s}.ghd.play .ghrows>:nth-child(5){animation-delay:.32s}.ghd.play .ghrows>:nth-child(6){animation-delay:.38s}
 .ghd.play .ghbar i{animation:ghfill 1s .25s cubic-bezier(.2,.8,.2,1) both}
 @keyframes ghpop{0%{opacity:0;transform:scale(.5)}100%{opacity:1;transform:none}}
 @keyframes ghin{from{opacity:0;transform:translateX(12px)}}
