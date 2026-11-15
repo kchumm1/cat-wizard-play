@@ -158,7 +158,8 @@ ol.steps{padding-left:20px;font-size:14px;margin:8px 0}ol.steps li{margin:4px 0}
   };
   // 다른 기기로 옮기기: the key rides in the part after # (never sent to any server), saved on the phone, then wiped off the address
   $('keyQr').onclick = function () {
-    var url = location.origin + location.pathname + '#key=' + encodeURIComponent(token());
+    // a new ?k= every time, so a phone that opened ops.html before cannot show its old copy (which did not read #key)
+    var url = location.origin + location.pathname + '?k=' + Date.now().toString(36) + '#key=' + encodeURIComponent(token());
     var draw = function () { $('qr').textContent = ''; new QRCode($('qr'), { text: url, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.L }); $('qrBox').classList.remove('hide'); };
     if (window.QRCode) return draw();
     var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
