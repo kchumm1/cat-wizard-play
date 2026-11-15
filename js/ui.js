@@ -398,7 +398,7 @@
         if (CW.ICO.regionTop) {
           var capc = CW.ICO.regionTop(info.region), tc = document.querySelector('meta[name="theme-color"]');
           document.documentElement.style.setProperty('--capc', capc);
-          if (tc) tc.setAttribute('content', capc);
+          if (tc && !document.documentElement.classList.contains('profon')) tc.setAttribute('content', capc);
         }
       }
       var gTxt = gh(s.gold); if (gTxt !== lastGoldTxt) { lastGoldTxt = gTxt; $('goldTxt').innerHTML = gTxt; } $('gemTxt').textContent = fmt(s.gems);
@@ -1050,7 +1050,7 @@
         '<b class="pfv pfcp">' + fmt(CW.dps(s, st)) + '</b>' +
         '<button class="pfv pfatk" data-pfsrc="atk" aria-label="공격력 증가 내역">' + fmt(st.atk) + '</button>' +
         '<button class="pfv pfspd" data-pfsrc="speed" aria-label="공격 속도 증가 내역">' + x(st.speedMul) + '</button>' +
-        '<b class="pfboss">' + fmt(CW.bossDpsTypical(s, st, (CW.stageInfo(s.stage) || {}).timeLimit || 30)) + '</b></div>';
+        '<b class="pfboss"><span>보스 예상 초당 피해</span>' + fmt(CW.bossDpsTypical(s, st, (CW.stageInfo(s.stage) || {}).timeLimit || 30)) + '</b></div>';
       var titleBox = '<section class="pfbox pftbox' + (profOpen.title ? ' on' : '') + '"><button class="pfhd" data-pfsec="title" aria-expanded="' + !!profOpen.title + '"><img src="art/prof-ico-title.webp" alt="">' +
         '<b>타이틀</b><span class="pfbar"></span><span class="pfbadge">' + esc(CW.titleById(worn).name) + '</span><em>변경</em></button><div class="pfin"><div class="ttls">' + titles + '</div></div></section>';
       return top + '<div class="pfbody">' + srcBox +
@@ -1061,12 +1061,12 @@
         titleBox + '<p class="pfnote"><img src="art/prof-ico-hand.webp" alt="">능력치 항목을 누르면 증가 내역을 볼 수 있어요</p></div>';
     }
     // long numbers or names never spill out of their place: the font shrinks until it fits
+    // (the room is the box's own width, capped by its max-width; the serif digits arrive late, so it fits again then)
     function profFit() {
       if (!profEl) return;
       profEl.querySelectorAll('.pfv,.pfboss,.pfname,.pflv,.pfbadge,.pfhd small').forEach(function (el) {
-        el.style.fontSize = ''; var max = parseFloat(getComputedStyle(el).maxWidth) || 0, f = parseFloat(getComputedStyle(el).fontSize);
-        if (!max) return;
-        for (var i = 0; i < 30 && el.scrollWidth > max + 0.5; i++) { f *= 0.95; el.style.fontSize = f + 'px'; }
+        el.style.fontSize = ''; var f = parseFloat(getComputedStyle(el).fontSize);
+        for (var i = 0; i < 40 && el.scrollWidth > el.clientWidth + 0.5; i++) { f *= 0.95; el.style.fontSize = f + 'px'; }
       });
     }
     function profRender(keepScroll) {
@@ -1082,15 +1082,25 @@
         profEl.innerHTML = '<div class="pfcol"></div>'; document.body.appendChild(profEl);
         profEl.addEventListener('click', function (e) {
           var t = e.target;
-          if (t.closest('.pfx') || t === profEl) { G.sound('click'); profEl.classList.remove('on'); return; }
+          if (t.closest('.pfx') || t === profEl) { G.sound('click'); closeProf(); return; }
           var sec = t.closest('[data-pfsec]'); if (sec) { G.sound('click'); profOpen[sec.dataset.pfsec] = !profOpen[sec.dataset.pfsec]; profRender(true); return; }
           var src = t.closest('[data-pfsrc]'); if (src) { G.sound('click'); profSrc = profSrc === src.dataset.pfsrc ? null : src.dataset.pfsrc; profRender(true); return; }
           var b = t.closest('[data-title]');
           if (b && G.titleWear(b.dataset.title)) { toast('타이틀 「' + CW.titleById(b.dataset.title).name + '」을(를) 달았어요'); profRender(true); hud(); }
         });
         window.addEventListener('resize', function () { if (profEl.classList.contains('on')) profFit(); });
+        if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', function () { if (profEl.classList.contains('on')) profFit(); });
       }
       profSrc = null; profEl.classList.add('on'); profRender(false);
+      // the clock area above the home-screen app takes the page's top colour while it is open (tools/build-site.cjs)
+      document.documentElement.classList.add('profon'); profTheme(PROF_TOP);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(profFit);
+    }
+    var PROF_TOP = '#f7ebe2';
+    function profTheme(c) { var tc = document.querySelector('meta[name="theme-color"]'); if (tc && c) tc.setAttribute('content', c); }
+    function closeProf() {
+      profEl.classList.remove('on'); document.documentElement.classList.remove('profon');
+      profTheme(getComputedStyle(document.documentElement).getPropertyValue('--capc').trim());
     }
     document.querySelector('#hud .prof').addEventListener('click', function () { G.sound('click'); openStats(); });
     return { surgeGauge: surgeGauge, dunHud: dunHud, gainLog: gainLog, openTab: openTab, hud: hud, slots: slots, renderPanel: renderPanel, toast: toast, banner: banner, showOffline: showOffline, showDaily: showDaily, showTierUp: showTierUp, showGacha: showGacha, modal: modal, currentTab: function () { return tab; } };

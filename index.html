@@ -1488,12 +1488,13 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 #prof .pftop{position:relative;aspect-ratio:1024/756;background:url(art/prof-top.webp) 0 0/100% 100% no-repeat}
 #prof .pfx{position:absolute;left:90.6%;top:1.4%;width:8%;height:10.6%;border:0;background:none;padding:0;cursor:pointer}
 #prof .pfname,#prof .pflv,#prof .pfv,#prof .pfboss{position:absolute;white-space:nowrap;line-height:1;transform:translateY(-50%)}
+#prof .pfboss span{margin-right:.55em;font:700 .76em/1 var(--body);color:#2c2420;letter-spacing:-.01em}
 #prof .pfname{left:13.96%;top:16.1%;max-width:42cqw;font:900 3.5cqw/1 var(--body);color:#170c09}
 #prof .pflv{left:14.06%;top:21.25%;max-width:44cqw;font:400 2.35cqw/1 var(--body);color:#564c46}
 #prof .pfv{right:6%;max-width:20cqw;text-align:right;border:0;background:none;padding:0;color:#1b130f;font:700 4.75cqw/1 'Noto Serif KR',Georgia,serif;font-variant-numeric:lining-nums tabular-nums;letter-spacing:-.02em}
 #prof button.pfv{cursor:pointer}
 #prof .pfcp{top:37.45%}#prof .pfatk{top:52.8%}#prof .pfspd{top:68.35%}
-#prof .pfboss{left:56.25%;top:95.1%;max-width:14cqw;font:700 3.05cqw/1 'Noto Serif KR',Georgia,serif;color:#23180f;font-variant-numeric:lining-nums}
+#prof .pfboss{left:29.3%;top:95.1%;width:41.4cqw;overflow:hidden;text-align:center;font:700 3.05cqw/1 'Noto Serif KR',Georgia,serif;color:#23180f;font-variant-numeric:lining-nums}
 #prof .pfbody{position:relative;padding:1.2cqw 2.45cqw 0}
 #prof .pfsrc{margin:0 0 2cqw;padding:2cqw 3.2cqw;border-radius:1.6cqw;background:#fffaf4;border:.2cqw solid #c7b6a8;font-size:2.8cqw}
 #prof .pfsrc>b{display:block;margin-bottom:.8cqw;font-size:3cqw;color:#6c442f}
@@ -1502,19 +1503,19 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 #prof .pfhd{display:flex;align-items:center;width:100%;height:8.4cqw;padding:0 4.6cqw 0 4cqw;border:0;background:none;color:#2b201d;cursor:pointer;text-align:left;font-family:var(--body)}
 #prof .pfhd img{width:6.3cqw;height:6.3cqw;margin-right:2.6cqw;object-fit:contain}
 #prof .pfhd b{flex:none;font:900 3.75cqw/1 var(--body)}
-#prof .pfhd small{flex:1;max-width:35cqw;margin-left:auto;padding-right:3.6cqw;text-align:right;white-space:nowrap;font:400 2.7cqw/1 var(--body);color:#372f29}
+#prof .pfhd small{flex:1;min-width:0;margin-left:3cqw;padding-right:3.6cqw;text-align:right;white-space:nowrap;overflow:hidden;font:400 3.1cqw/1 var(--body);color:#372f29}
 #prof .pfchev{flex:none;width:2.1cqw;height:2.1cqw;margin-left:auto;border:solid #2b201d;border-width:0 .32cqw .32cqw 0;transform:translateY(-30%) rotate(45deg)}
 #prof .pfhd small+.pfchev{margin-left:0}
 #prof .pfbox.on .pfhd{background:#55606f;box-shadow:inset 0 -.3cqw #3f4857;color:#fff}
 #prof .pfbox.on .pfhd img{filter:none}
 #prof .pfbox.on .pfchev{border-color:#fff;transform:translateY(25%) rotate(-135deg)}
 #prof .pfbox.on .pfhd small{color:#e8e2da}
-#prof .pfin{display:none;padding:.8cqw 5cqw 1.4cqw 5.4cqw}
+#prof .pfin{display:none;padding:.3cqw 4cqw .7cqw 5.4cqw}
 #prof .pfbox.on .pfin{display:block}
 #prof .pfrow{border-bottom:.15cqw solid #d6c7ba}
 #prof .pfrow:last-child{border-bottom:0}
-#prof .pfl,#prof .pfrow li,#prof .pfcols{display:grid;grid-template-columns:1fr 17cqw 20cqw;column-gap:2cqw;align-items:center}
-#prof .pfl{min-height:6.7cqw;list-style:none;cursor:default}
+#prof .pfl,#prof .pfrow li,#prof .pfcols{display:grid;grid-template-columns:25cqw 13cqw 17cqw;column-gap:2cqw;justify-content:start;align-items:center}
+#prof .pfl{min-height:5.4cqw;list-style:none;cursor:default}
 #prof summary.pfl{cursor:pointer}
 #prof .pfl::-webkit-details-marker{display:none}
 #prof .pfl span{font:400 3.3cqw/1.1 var(--body);color:#27201f}
@@ -1522,7 +1523,7 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 #prof details[open].pfrow>summary span::after{transform:rotate(90deg)}
 #prof .pfl b{text-align:right;white-space:nowrap;font:700 3.6cqw/1 'Noto Serif KR',Georgia,serif;font-variant-numeric:lining-nums tabular-nums;color:#15090a}
 #prof .pfl b.w2{grid-column:2/4;font-size:4.1cqw}
-#prof .pfcols{min-height:4.6cqw;font-size:2.5cqw;color:#8a7768}
+#prof .pfcols{min-height:3.8cqw;font-size:2.5cqw;color:#8a7768}
 #prof .pfcols em{font-style:normal;text-align:right}
 #prof .pfrow ul,#prof .pfsrc ul{margin:0 0 1.4cqw;padding:.8cqw 2cqw;list-style:none;border-radius:1.2cqw;background:#fbf6f0}
 #prof .pfsrc ul{margin:0;padding:0;background:none}
@@ -1545,6 +1546,14 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 #prof .pfcorner{position:absolute;bottom:0;width:7.8cqw;pointer-events:none}
 #prof .pfcorner.l{left:0}#prof .pfcorner.r{right:0}
 @media (min-width:521px){#prof{background:#e9ddd0}}
+/* home-screen app whose page lies under the clock (class under, tools/build-site.cjs): the phone blurs the clock area and a
+   little below it and nothing removes that, so there the top of the page is plain picture-top colour (blurred plain looks
+   the same) and the picture starts under it; the region-coloured band behind the clock gives way to that colour */
+#prof .pfpage{background:linear-gradient(#f7ebe2,#f7ebe2) 0 0/100% calc(env(safe-area-inset-top,0px) + var(--pfcap,0px)) no-repeat}
+html.under #prof{--pfcap:44px}
+html.under #prof .pfpage{padding-top:calc(env(safe-area-inset-top,0px) + 44px)}
+html.profon #topcap{background-color:#f7ebe2}
+html.fullh #prof{position:absolute;bottom:auto;height:var(--apph)}
 /* monster codex page (2026-11-15, js/dex-ui.js): pieces of the picture the user sent (art/dex-*.webp), places in % of each piece */
 #dex{position:fixed;inset:0;z-index:19;display:none;background:#f3e6d3;color:#5b3b55;font-family:var(--body)}
 #dex.on{display:block}
