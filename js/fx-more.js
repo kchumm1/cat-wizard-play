@@ -1066,9 +1066,8 @@
           if (!c.copy) sc.flash('rgba(170,90,255,0.3)', 0.3); sc.climax(0.3, c.D(0.4)); sc.shake(0.6 * calm); sc.punch(0.14 * calm);
                     if (!c.copy) P3.blast(q, { ball: true, y: q.y, size: 0.6 * cs, col: 0xc078ff, low: 0x2a0c60, hotness: 0.05, ringCol: 0xc070ff, ring: 4.6, chips: 0, crater: false, life: 0.85, flash: false, keepAdd: true });
           E9.forEach(function (col, j) { if (c.copy && j % 2) return; cshock(q, col, (3.0 + j * 1.2) * c.s, 0.6 + j * 0.08, { delay: j * 0.04, alpha: 0.42 * calm }); });
-          for (var r = 0; r < N(15, c); r++) E({ pos: q, frame: 'streak', color: [E9[r % 5], E9[r % 5]], size: [0.8, 8], ease: 1, life: rr(0.45, 0.7), rot: r / 15 * 3.1416, alpha: 0.6, fadeOut: 0.3 });
           if (!c.copy) cwave(g, 0xa060ff, 0.4, 0x8a5cff);
-          sparks(q, E9.concat([0xffffff]), N(50, c), 12, { size: 0.3, stretch: 0.14, life: 1.3 }); sc.light(q, 0xe0b0ff, 2.4, 0.6);
+          sparks(q, E9, N(16, c), 6, { size: 0.16, life: 0.6 }); sc.light(q, 0xe0b0ff, 2.4, 0.6);
           c.hit(mob, 0.5, 2.6);
         }
         if (burst && clk >= BURST + FADE) { orbs.forEach(function (o) { o.g.kill(); if (o.beam && o.beam !== 'gone') o.beam.kill(); }); return true; }
@@ -1144,13 +1143,10 @@
         P3.blast(V(C0.x, 0, C0.z), { ball: true, y: C0.y, size: 1.1 * cs, col: 0xb050f0, low: 0x22073e, hotness: 0.05, ringCol: 0xc070ff, ring: 5.5, chips: 0, crater: false, life: 0.7, flash: false, keepAdd: true });
         sc.light(C0, 0xe8c0ff, 3, 0.6);
         E({ sys: 'col', pos: C0, frame: 'shock', color: 0xa050f0, size: [1, 15], ease: 1, life: 0.6, alpha: 0.7, big: true, fadeOut: 0.3 });
-        for (var r = 0; r < N(12, c); r++) E({ pos: C0, frame: 'streak', color: [E9[r % 5], E9[r % 5]], size: [0.6, 7], ease: 1, life: rr(0.3, 0.5), rot: r / 12 * 3.1416 + rr(-0.1, 0.1), alpha: 0.45, fadeOut: 0.3 });
-        embers(C0, E9, N(34, c), { speed: 7, up: 1.5, grav: 2 });
         cwave(G, 0xc070ff, 0.55, 0x9a5cff);
         E9.forEach(function (col, j) { cshock(V(C0.x, 0.3, C0.z), col, (4 + j * 1.6) * c.s, 0.5 + j * 0.06, { delay: j * 0.03, alpha: 0.5 }); });
         // spears of light fly out ahead of the wave, in all five colours
-        for (var s = 0; s < N(20, c); s++) { var a = s / N(20, c) * 6.283 + rr(-0.1, 0.1), k = elemAt(G.x + Math.cos(a), G.z + Math.sin(a)), sp = rr(13, 19); lightSpear(k, V(C0.x, 0.5, C0.z), V(Math.cos(a) * sp, rr(0.5, 2), Math.sin(a) * sp * 0.85), rr(0.5, 0.8) * cs, 0.5); }
-        sparks(C0, E9, N(60, c), 14, { size: 0.26, stretch: 0.12, life: 1.3 });
+        sparks(C0, E9, N(18, c), 6, { size: 0.16, life: 0.6 });
         // every monster the wall of light reaches is struck, in the colour of the element coming its way
         var n = 0;
         ringHits(c, G, WAVE, MAXR, function (m) {
@@ -1172,9 +1168,8 @@
     // ring on the ground (in colour, never white: a whole crowd bursts at once and white on white went to a white field)
     function elemBlast(k, q, s, few, c) {
       var col = E9[k], g = V(q.x, 0, q.z);
-      flare(q, col, 0.9 * s, 0.14); E({ sys: 'col', pos: q, frame: 'star', color: [col, deep(col)], size: [0.4, 1.7 * s], ease: 1, life: 0.3, spin: 7, alpha: 0.9 });
+      flare(q, col, 0.9 * s, 0.14);
       gRing(g, col, 2.0 * s, 0.4); sc.light(q, col, 1.4, 0.25);
-      var n = few ? 6 : 3; for (var i = 0; i < n; i++) { var a = i / n * 6.283 + rr(-0.2, 0.2), sp = rr(7, 10) * s; lightSpear(k, q, V(Math.cos(a) * sp, rr(1, 3), Math.sin(a) * sp * 0.8), rr(0.3, 0.45) * s, 0.4); }
       e9sparks(k, q, N(few ? 4 : 2, c), 3.5);
     }
     // Element fusion, the ultimate (2026-11-15 the user: the elements come out, gather power, and it all ends in one
@@ -1250,9 +1245,7 @@
         E({ sys: 'col', pos: C, frame: 'shock', color: 0xa050f0, size: [1, 16], ease: 1, life: 0.7, alpha: 0.75, big: true, fadeOut: 0.3 });
         cwave(G, 0x9a50ff, 0.9, 0xff6ad8); gGlow(G, 0xa050f0, 5, 0.8); scorch(G, 2.8, 2.8);
         E9.forEach(function (col, j) { cshock(C, col, (4.5 + j * 1.8) * c.s, 0.6 + j * 0.07, { delay: j * 0.04, alpha: 0.5 }); });
-        for (var r = 0; r < N(14, c); r++) E({ pos: C, frame: 'streak', color: [E9[r % 5], E9[r % 5]], size: [0.7, 9], ease: 1, life: rr(0.35, 0.6), rot: r / 14 * 3.1416 + rr(-0.1, 0.1), alpha: 0.5, fadeOut: 0.3 });
-        for (var s = 0; s < N(24, c); s++) { var a = s / N(24, c) * 6.283 + rr(-0.1, 0.1), sp = rr(14, 20); lightSpear(s % 5, C, V(Math.cos(a) * sp, Math.sin(a) * sp * 0.5, -Math.sin(a) * sp * 0.3), rr(0.6, 0.9) * cs, 0.55); }
-        sparks(C, E9, N(80, c), 15, { size: 0.3, stretch: 0.12, life: 1.5 }); embers(C, E9, N(40, c), { speed: 8, up: 1.5, grav: 2 });
+        sparks(C, E9, N(22, c), 7, { size: 0.18, life: 0.7 });
         smoke(V(G.x, 0.6, G.z), [0x3a2060, 0x140a24], N(8, c), { r: 1.4, size: 2, rise: 0.7, speed: 2, alpha: 0.45, life: 1.4 });
         sc.light(C, 0xe0b0ff, 3.2, 0.8);
         // the elements burst out of the ground all over the field as the wave passes
