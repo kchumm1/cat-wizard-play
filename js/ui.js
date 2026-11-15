@@ -139,7 +139,7 @@
       return head + '<div class="list">' + list + '</div>' + cond;
     }
     // the user's mana circle (2026-11-15) cut into three rings that turn on their own: the inner blades light up first,
-    // the star lattice at 2서클, the rune band at 3서클; the band fills with light as levels go toward the next circle,
+    // the star lattice at 2서클; the outer rune band is always fully lit (the user, 2026-11-15),
     // each level-up sends a pulse out, a new circle a big burst. Rings keep their angle across redraws (delay from the clock).
     // the panel is redrawn often; keepCircle (after each redraw) sets the ring angles from the clock and replays the pulse
     var lastCircle = null, circleFx = '';
@@ -148,7 +148,7 @@
       lastCircle = { lv: lv, tier: tier };
       var ring = function (name, lit) { return '<div class="mcl mc-' + name + (lit ? ' lit' : '') + '"><i></i></div>'; };
       return '<div class="mcircle mcx t' + Math.min(8, tier) + '" style="--p:' + Math.round(Math.max(0, Math.min(1, prog)) * 360) + 'deg">' +
-        '<div class="mc-glow"></div>' + ring('out', tier >= 2) + '<div class="mcl mc-arc"><i></i></div>' +
+        '<div class="mc-glow"></div>' + ring('out', true) +
         ring('mid', tier >= 1) + ring('in', true) + '<div class="mc-core"></div><div class="mc-burst"></div>' +
         '<b class="mc-lv">' + (tier + 1) + '</b></div>';
     }
@@ -702,7 +702,7 @@
     var PANELS = { dungeon: dungeonPanel, stage: stagePanel, up: trainPanel, skill: skillPanel, gear: gearPanel, gacha: gachaPanel, more: morePanel };
     // a redraw puts a fresh mana circle in the panel; its rings take their angle from the clock (so they never jump back to
     // the start) and a level-up pulse / new-circle burst that is still playing carries on from where it was
-    var circleFxNow = null, MC_SPIN = [['.mc-out i', 90], ['.mc-arc i', 90], ['.mc-mid i', 60], ['.mc-in i', 24]];
+    var circleFxNow = null, MC_SPIN = [['.mc-out i', 90], ['.mc-mid i', 60], ['.mc-in i', 24]];
     function keepCircle() {
       var nm = panel.querySelector('.mcx'), t = performance.now() / 1000;
       if (circleFx) { circleFxNow = { k: circleFx, at: t }; circleFx = ''; }
