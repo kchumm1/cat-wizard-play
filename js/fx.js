@@ -580,27 +580,60 @@
       smoke(V(C.x, 0.2, C.z), 0xdff4ff, N(8, c), { r: 1.2, size: 1.4, rise: 0.15, speed: 0.6, alpha: 0.32, life: 1.4 });
       sc.light(V(C.x, 1, C.z), c.col, 0.7, dur);
       sc.flash('rgba(210,240,255,0.3)', 0.15);
-      // every shard that falls is aimed at a monster and is a real hit; the first one to land on a monster freezes it in spikes
-      var iced = [];
+      // Every shard that falls is aimed at a monster and is a real hit; the first one to land on a monster freezes it in
+      // spikes. The shards are real 3D ice crystals made in Blender (tools/blender/skills6_meshes.py: a long point with
+      // small crystals at its back): one comes down slanted, point first, stands in the ground a moment and sinks as it
+      // melts; the spikes are the 3D ice layer (P3.iceSpikes); the bits that fly off are small crystals tumbling.
+      var iced = [], ICE3 = [0xffffff, 0xd8f2ff, 0xbfe8ff], QY = V(0, 1, 0);
+      function bits(at, n, spd, up) {
+        for (var k = 0; k < n; k++) (function () {
+          var h = P3.bm('iceShard', { col: pick(ICE3) }), P = at.clone().add(rdir(0.25)), vel = rdir(spd).add(V(0, up, 0)), q = new T.Quaternion().setFromEuler(new T.Euler(rr(0, 6.3), rr(0, 6.3), rr(0, 6.3))), w = rdir(1).normalize(), spin = rr(8, 16), t = 0, life = rr(0.45, 0.75), sz = rr(0.18, 0.3), R = new T.Quaternion();
+          tick(function (dt) {
+            t += dt; vel.y -= 9 * dt; P.addScaledVector(vel, dt); q.multiply(R.setFromAxisAngle(w, spin * dt));
+            h.set(P, q, sz, Math.max(0, 1 - Math.max(0, t - life * 0.6) / (life * 0.4)), 0);
+            if (t < life && P.y > -0.1) return false; h.kill(); return true;
+          });
+        })();
+      }
+      function iceFall(g, L, time, onLand) {
+        var h = P3.bm('iceShard', { col: pick(ICE3) }), side = rr(0.9, 2.2), from = V(g.x + side, 6.5, g.z - 0.4), to = V(g.x, 0.1, g.z + 0.1), D = to.clone().sub(from).normalize(), q = new T.Quaternion().setFromUnitVectors(QY, D), t = 0, landed = false, P = V(), S3 = V(L * 0.95, L, L * 0.95), HOLD = c.D(0.6);
+        tick(function (dt) {
+          t += dt;
+          if (t < time) { var f = t / time; P.lerpVectors(from, to, f * f); h.set(P.addScaledVector(D, -L), q, S3, Math.min(1, f * 6), 0); return false; }
+          if (!landed) { landed = true; if (onLand) onLand(); }
+          var k = (t - time) / HOLD, sink = Math.max(0, k - 0.55) / 0.45;
+          P.copy(to).addScaledVector(D, -L * (0.78 - 0.7 * sink));
+          h.set(P, q, S3, Math.max(0, 1 - sink * sink), 0);
+          if (k < 1) return false; h.kill(); return true;
+        });
+      }
       function spikes(mob, mi) {
         var p = sc.mobPos(mob), g = mob.group.position, big = mob.boss ? 1.45 : 1;
-        for (var s = 0; s < 5; s++) {
-          var ang = (s - 2) * 0.36 + rr(-0.1, 0.1), h = rr(0.85, 1.35) * c.s * big;
-          E({ sys: 'norm', pos: V(g.x + (s - 2) * 0.17 * big, h * 0.42, g.z + 0.3 + rr(-0.05, 0.1)), frame: 'shard', color: pick([0xffffff, 0xd8f2ff, 0xbfe8ff]), size: [0.05, h * 0.5], ar: 2.0, rot: -ang, ease: 2, life: c.D(0.6), fadeOut: 0.85, white: true });
-        }
+        // the same clear ice grows up round its feet: five icicles leaning outward, up in 0.1 s, then they sink and melt
+        var S1 = 0.62 * Math.min(1.2, c.s) * big;
+        for (var s = 0; s < 5; s++) (function (s) {
+          var a = s / 5 * 6.283 + rr(-0.3, 0.3), d = s === 0 ? 0 : 0.16 * big, L = S1 * (s === 0 ? 1.15 : rr(0.65, 0.95)), lean = s === 0 ? 0.05 : rr(0.35, 0.6);
+          var ax = V(Math.cos(a) * Math.sin(lean), Math.cos(lean), Math.sin(a) * Math.sin(lean) * 0.8), q = new T.Quaternion().setFromUnitVectors(QY, ax.normalize());
+          var h = P3.bm('iceShard', { col: pick(ICE3) }), base = V(g.x + Math.cos(a) * d, -0.08, g.z + 0.25 + Math.sin(a) * d * 0.8), t = 0, life = c.D(0.62), at = V(), S3 = V(L * 0.95, L, L * 0.95);
+          tick(function (dt) {
+            t += dt; var up = Math.min(1, t / 0.1), sink = Math.max(0, (t - life * 0.65) / (life * 0.35));
+            at.copy(base).addScaledVector(ax, -L * (1 - up) - L * 0.9 * sink);
+            h.set(at, q, S3, Math.max(0, 1 - sink * sink), 0);
+            if (t < life) return false; h.kill(); return true;
+          });
+        })(s);
         flare(p, 0xffffff, 1.2, 0.15, { white: true }); shock(p, c.col, 1.8, 0.3);
-        if (mi < 3) picAt('iceStorm', g, 1.2 * Math.min(1.3, c.s) * big, 'rise');
         after(c.D(0.48), function () {
           var q = sc.mobPos(mob);
-          for (var k = 0; k < N(10, c); k++) E({ sys: 'norm', pos: q.clone().add(rdir(0.35)), vel: rdir(3.5).add(V(0, 2.2, 0)), frame: 'shard', color: pick([0xffffff, 0xd8f2ff]), size: [rr(0.1, 0.2), 0.05], ar: 2, life: rr(0.5, 0.8), grav: 7, spin: rr(-12, 12), white: true });
+          bits(q, N(7, c), 3.5, 2.2);
           sparks(q, [0xffffff, c.col], N(6, c), 4, { size: 0.15 });
         });
       }
       volley(c, { shots: 10, t0: 0.08, span: 0.5, fire: function (mob, frac) {
         var g = mob ? gp(mob) : fieldPt(0);
-        picFall('iceStorm-shard', g, rr(1.0, 1.7) * Math.min(1.4, c.s), c.D(0.19), 0.6, function () {
+        iceFall(g, rr(0.95, 1.4) * Math.min(1.4, c.s), c.D(0.19), function () {
           gRing(g, c.col, 1.2 * c.s, 0.3); flare(g.clone().setY(0.15), 0xffffff, 0.6, 0.1, { white: true }); sparks(g.clone().setY(0.2), [0xffffff, c.col], N(4, c), 3.5, { size: 0.13, up: 1.8 }); sc.shake(0.03);
-          for (var k2 = 0; k2 < N(3, c); k2++) E({ sys: 'norm', pos: g.clone().setY(0.15), vel: rdir(2.2).add(V(0, 2.4, 0)), frame: 'shard', color: pick([0xffffff, 0xd8f2ff]), size: [rr(0.1, 0.18), 0.04], life: rr(0.35, 0.6), grav: 9, spin: rr(-9, 9) });
+          bits(g.clone().setY(0.15), N(3, c), 2.2, 2.4);
           if (!mob) return;
           if (mob.alive && iced.indexOf(mob) < 0) { iced.push(mob); spikes(mob, iced.length - 1); }
           c.hit(mob, frac, 0.9);
@@ -940,7 +973,7 @@
     // they are going, some fall from the sky and stay stuck in the ground (picFall), and the rest play at the moment
     // of contact (picAt) with a motion that fits them. A glowing copy on top makes them read as light.
     // the laser, the sun, the black hole and the fusion are built from moving parts now, so no still picture is laid over them
-    var PIC_MOVE = { chainLightning: 'strike', iceStorm: 'rise', sparkRing: 'swirl' };
+    var PIC_MOVE = { chainLightning: 'strike', sparkRing: 'swirl' };   // ice storm: 3D Blender ice (2026-11-16), no picture
     var PIC_LIFE = { slash: 0.36, burst: 0.6, blast: 0.42, strike: 0.46, rise: 0.75, swirl: 0.8 };
     var picTex = {}, pics = [], picHeads = [];
     function picLoad(id) {
@@ -949,7 +982,7 @@
       new T.TextureLoader().load((CW.ART_BASE || 'art/') + 'fx-' + id + '.webp', function (t) { if (T.sRGBEncoding) t.encoding = T.sRGBEncoding; picTex[id] = t; }, undefined, function () { });
       return null;
     }
-    ['fireball-ball', 'fireball-blast', 'starShot-star', 'starShot-burst', 'meteorRain-rock', 'meteorRain-ripple', 'iceStorm-shard', 'iceStorm', 'chainLightning'].forEach(picLoad);
+    ['fireball-ball', 'fireball-blast', 'starShot-star', 'starShot-burst', 'meteorRain-rock', 'meteorRain-ripple', 'chainLightning'].forEach(picLoad);
     function picSprite(tex, add, cx, cy) {
       var sp = new T.Sprite(new T.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false, opacity: 0, blending: add ? T.AdditiveBlending : T.NormalBlending }));
       sp.center.set(cx === undefined ? 0.5 : cx, cy === undefined ? 0.14 : cy); sp.renderOrder = add ? 41 : 40; (sc.fxGroup || sc.scene).add(sp); return sp;

@@ -260,6 +260,77 @@
       'float al=(rad*(0.35+0.85*arms)*dop+edge*0.9)*uAlpha;gl_FragColor=vec4(mix(c,vec3(1.0),edge*0.6*(1.0-uBright*0.7)),clamp(al,0.0,1.0));}'
   };
 
+  // ---------- the meshes made in Blender (tools/blender/skills6_meshes.py → js/mesh-skills6.js, 2026-11-16) ----------
+  // Each kind is drawn as many copies at once (one draw, plus one for its outline). Per copy: instanceColor (its colour)
+  // and iX = (alpha, k: how much it glows / opens, seed, outline width in world units).
+  var VS_BM = VS.replace('void main(){', 'attribute vec4 iX;varying vec4 vX;void main(){vX=iX;');
+  // the outline: the copy pushed out along its normals by iX.w (world units, so a thin blade keeps an even line)
+  var VS_BML = VARY + 'attribute vec4 iX;varying vec4 vX;uniform float uW;void main(){vUv=uv;vX=iX;vIC=vec3(1.0);vec4 lp=vec4(position,1.0);vec3 ln=normal;\n' +
+    '#ifdef USE_INSTANCING\nlp=instanceMatrix*lp;ln=mat3(instanceMatrix)*normal;\n#endif\n' +
+    'vec4 wp=modelMatrix*lp;vec3 wn=normalize(mat3(modelMatrix)*ln);wp.xyz+=wn*iX.w;vP=wp.xyz;vN=wn;vWN=wn;vV=vec3(0.0,0.0,1.0);gl_Position=projectionMatrix*viewMatrix*wp;}';
+  var LIT = 'vec3 N=normalize(vWN);float lam=max(dot(N,normalize(vec3(0.45,0.85,0.3))),0.0);' +
+    'float glint=pow(max(dot(reflect(-normalize(vV),normalize(vN)),normalize(vec3(0.25,0.55,0.8))),0.0),18.0);';
+  var FS_BM = {
+    line: 'varying vec4 vX;uniform vec3 uLine;void main(){gl_FragColor=vec4(uLine,vX.x);}',
+    // the crescent blade: moon steel, darker toward its thick back, its thin edge burning white-violet; a gleam runs
+    // along it (uv.x tip to tip, uv.y back 0 → edge 1); k makes the edge burn brighter
+    blade: 'varying vec4 vX;void main(){' + F + LIT +
+      'float edge=smoothstep(0.5,1.0,vUv.y),back=1.0-smoothstep(0.0,0.35,vUv.y);' +
+      'float run=pow(0.5+0.5*sin(vUv.x*10.0-uTime*16.0+vX.z),8.0);' +
+      'vec3 deep=vIC*0.5+vec3(0.12,0.06,0.3);' +
+      'vec3 c=mix(deep,vIC*1.08,0.45+0.55*lam);c*=1.0-0.2*back;' +
+      'c=mix(c,vec3(1.0),clamp(edge*(0.45+0.5*vX.y)+run*edge*0.5+glint*0.8+pow(1.0-f,3.0)*0.25,0.0,1.0));' +
+      'gl_FragColor=vec4(c,vX.x);}',
+    // the arrow of light: a gold faceted head, a shaft of white-gold light pulsing toward the head, vanes of orange light
+    arrow: 'varying vec4 vX;void main(){' + F + LIT + 'vec3 g=vIC,c;float a=vX.x;' +
+      'if(vUv.x>0.6){c=mix(g*0.42,g,0.3+0.7*lam)+vec3(glint);c=mix(c,vec3(1.0),pow(1.0-f,3.0)*0.4);}' +
+      'else if(vUv.x>0.4){c=mix(g,vec3(1.0,0.55,0.18),0.55)*(0.85+0.4*lam);a*=0.8;}' +
+      'else{c=mix(g,vec3(1.0),0.5+0.35*pow(0.5+0.5*sin(vUv.y*24.0-uTime*40.0),3.0));}' +
+      'gl_FragColor=vec4(c,a);}',
+    // the rift: deep space inside (dark violet, a slow nebula, stars that drift deeper the further in), a burning lip,
+    // a hot rim just inside it; k (0 → 1) is how far along it is cut open (uv.x past it is not there yet, a bright tip
+    // where it is being torn)
+    rift: 'varying vec4 vX;void main(){float cut=vX.y;if(vUv.x>cut+0.002)discard;' +
+      'float tip=smoothstep(0.06,0.0,cut-vUv.x)*step(cut,0.999);vec3 c;float a=vX.x;' +
+      'if(vUv.y<-0.01){c=mix(vIC,vec3(1.0),0.55+0.3*sin(uTime*20.0+vUv.x*30.0));}' +
+      'else{float d=vUv.y;' +
+      'vec2 g=vP.xy*vec2(9.0,9.0)/(0.35+d)+vec2(uTime*0.15,0.0);vec2 id=floor(g),fr=fract(g)-0.5;' +
+      'float h=fract(sin(dot(id,vec2(12.9898,78.233)))*43758.5453);' +
+      'float st=step(0.82,h)*smoothstep(0.22,0.0,length(fr))*(0.55+0.45*sin(uTime*7.0+h*40.0));' +
+      'float neb=fb(vec3(vP.xy*2.2,uTime*0.35+vX.z));' +
+      'c=vec3(0.02,0.0,0.06)+vec3(0.22,0.05,0.38)*neb*(0.4+0.6*d)+vec3(st)*(0.4+0.6*d);' +
+      'c=mix(c,vIC*1.3,smoothstep(0.22,0.0,d));c=mix(c,vec3(1.0,0.85,1.0),smoothstep(0.06,0.0,d)*0.7);}' +
+      'c=mix(c,vec3(1.0),tip);gl_FragColor=vec4(c,a);}',
+    // a broken-off piece of the rift's edge: dark glass, its edges lit in the spell's colour
+    glass: 'varying vec4 vX;void main(){' + F + LIT +
+      'vec3 c=mix(vec3(0.05,0.01,0.1),vIC*0.55,0.25+0.6*lam)+vIC*pow(1.0-f,2.0)*1.2+vec3(glint);gl_FragColor=vec4(c,vX.x);}',
+    // the caved-in ground: earth of the place (the copy's colour) lit from above, darker down in the bowl, the cracks
+    // glowing violet (k), fading into the flat ground at its edge
+    crater: 'varying vec4 vX;void main(){vec3 N=normalize(vWN);float lam=max(dot(N,normalize(vec3(0.4,0.85,0.35))),0.0);' +
+      'float grain=fb(vP*5.0+vec3(vX.z)),bowl=smoothstep(0.74,0.12,vUv.y),rim=smoothstep(0.55,0.7,vUv.y)*(1.0-smoothstep(0.76,0.92,vUv.y));' +
+      'vec3 c=vIC*(0.4+0.9*lam)*(0.75+0.5*grain);c=mix(c,vIC*0.16,bowl*0.85);c+=vIC*rim*0.45*lam;' +
+      'vec3 hot=vec3(0.78,0.45,1.0);c+=hot*(smoothstep(0.35,1.0,vUv.x)*1.4+bowl*0.22)*vX.y;' +
+      'float a=vX.x*(1.0-smoothstep(0.72,0.92,vUv.y));gl_FragColor=vec4(c,a);}',
+    // the gravity orb: a heavy faceted ball of dark violet crystal, a slow glow turning inside, a violet rim
+    gorb: 'varying vec4 vX;void main(){' + F + LIT +
+      'float inner=fb(vP*2.4+vec3(0.0,uTime*1.5,vX.z));' +
+      'vec3 c=mix(vec3(0.05,0.01,0.12),vIC*0.5,0.2+0.7*lam)+vIC*inner*0.35*(0.5+vX.y)+vIC*pow(1.0-f,2.5)*1.3+vec3(glint*0.7);' +
+      'gl_FragColor=vec4(c,vX.x);}',
+    // the gravity orb's ring: a band of violet light with bright beads running round it
+    gring: 'varying vec4 vX;void main(){float b=pow(0.5+0.5*sin(vUv.x*6.2832*9.0-uTime*12.0),6.0);' +
+      'vec3 c=mix(vIC,vec3(1.0),0.3+0.5*b);gl_FragColor=vec4(c,vX.x*(0.75+0.25*b));}',
+    // the falling ice: clear ice you can partly see through, pale blue where it is thick, white along its edges, its
+    // frosted point and its broken end, thin white cracks inside, a cold glint (2026-11-16, the user: the first one, a
+    // solid blue crystal with a dark outline, did not read as ice)
+    ice: 'varying vec4 vX;void main(){' + F + LIT +
+      'float rim=pow(1.0-f,1.6),facet=0.5+0.5*dot(N,normalize(vec3(-0.3,0.6,0.75)));' +
+      'float cr=smoothstep(0.035,0.0,abs(fbm(vP*vec3(4.0,1.4,4.0)+vec3(vX.z))));' +
+      'float frost=smoothstep(0.8,1.0,vUv.y)*0.45+smoothstep(0.12,0.0,vUv.y)*0.5;' +
+      'vec3 c=mix(vec3(0.34,0.64,0.92),vec3(0.86,0.96,1.0),clamp(facet*0.6+rim*0.5,0.0,1.0));' +
+      'c=mix(c,vec3(1.0),clamp(glint*1.2+cr*0.6+frost,0.0,1.0))*vIC;' +
+      'float a=vX.x*clamp(0.36+0.25*facet+rim*0.55+cr*0.4+glint+frost*0.5+uBright*0.15,0.0,1.0);gl_FragColor=vec4(c,a);}'
+  };
+
   // smooth value noise for shaping rocks once, on the CPU
   function hash(x, y, z) { var h = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453; return h - Math.floor(h); }
   function vnoise(x, y, z) {
@@ -330,7 +401,7 @@
     function mat(fs, uni, o, vs) {
       o = o || {}; var paint = bright && !o.keepAdd; uni.uTime = { value: time }; uni.uBright = { value: paint ? 1 : 0 };
       var blending = o.normal || o.solid || paint ? T.NormalBlending : T.AdditiveBlending, side = o.side || T.FrontSide, depthTest = o.depthTest !== false, depthWrite = !!(o.solid || o.depthWrite);
-      var key = (vs === VS_WAVE ? 'wave' : vs === VS_PIC ? 'pic' : vs === VS_SHARD ? 'shard' : vs ? 'tube' : 'std') + '|' + side + '|' + (o.solid ? 1 : 0) + '|' + fs, list = pool[key], m = list && list.pop();
+      var key = (vs === VS_WAVE ? 'wave' : vs === VS_PIC ? 'pic' : vs === VS_SHARD ? 'shard' : vs === VS_BM ? 'bm' : vs === VS_BML ? 'bml' : vs ? 'tube' : 'std') + '|' + side + '|' + (o.solid ? 1 : 0) + '|' + fs, list = pool[key], m = list && list.pop();
       if (m) {
         for (var k in uni) { var d = m.uniforms[k]; if (!d) continue; var v = uni[k].value; if (v && v.copy && d.value && d.value.copy) d.value.copy(v); else d.value = v; }
         m.blending = blending; m.depthTest = depthTest; m.depthWrite = depthWrite; m.transparent = !o.solid;
@@ -1254,6 +1325,80 @@
       };
     }
 
+    // ---------- the Blender meshes (CW.MESH6), drawn many copies at a time ----------
+    // bm(kind, o) → { set(pos, quaternion, scale (Vector3 or number), alpha, k), kill }. o.col its colour, o.line an
+    // outline colour (or false), o.lineW the outline width in world units. A kind's layer is made the first time it is
+    // used; a full layer drops its oldest copy.
+    var BM_KIND = {
+      crescent: { fs: 'blade', cap: 16, line: 0x241048, lineW: 0.035, order: 6.6 },
+      arrow: { fs: 'arrow', cap: 96, line: 0x5a2a04, lineW: 0.012, order: 6.6 },
+      rift: { fs: 'rift', cap: 3, line: null, order: 6.2, side: T.DoubleSide },
+      riftShard: { fs: 'glass', cap: 96, line: 0x12041f, lineW: 0.02, order: 6.6 },
+      // the crater is drawn over the ground without the depth test (its bowl is below the ground, which would hide it) and
+      // before the monsters (order 3), so they still stand in front of it
+      crater: { fs: 'crater', cap: 64, line: null, order: 1.5 },
+      gravOrb: { fs: 'gorb', cap: 64, line: 0x12041f, lineW: 0.03, order: 6.7 },
+      gravRing: { fs: 'gring', cap: 24, line: null, order: 6.65, side: T.DoubleSide },
+      iceShard: { fs: 'ice', cap: 128, line: 0x3d8cc8, lineW: 0.011, order: 6.6 }
+    };
+    var bmLayers = {}, BMV = new T.Vector3(), BMS = new T.Vector3(), BMM = new T.Matrix4(), BMQ = new T.Quaternion();
+    function b64(s, Type) { var bin = atob(s), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new Type(u.buffer); }
+    function bmGeo(kind) {
+      var d = CW.MESH6 && CW.MESH6[kind]; if (!d) return null;
+      var g = new T.BufferGeometry(), n8 = b64(d.n, Int8Array), n = new Float32Array(n8.length);
+      for (var i = 0; i < n8.length; i++) n[i] = n8[i] / 127;
+      g.setAttribute('position', new T.BufferAttribute(b64(d.p, Float32Array), 3));
+      g.setAttribute('normal', new T.BufferAttribute(n, 3));
+      g.setAttribute('uv', new T.BufferAttribute(b64(d.u, Float32Array), 2));
+      g.setIndex(new T.BufferAttribute(b64(d.i, Uint16Array), 1));
+      return g;
+    }
+    function bmLayer(kind) {
+      var L = bmLayers[kind]; if (L) return L;
+      var K = BM_KIND[kind], g = bmGeo(kind); if (!K || !g) return null;
+      var cap = K.cap, ix = new T.InstancedBufferAttribute(new Float32Array(cap * 4), 4); ix.setUsage(T.DynamicDrawUsage); g.setAttribute('iX', ix);
+      var body = new T.InstancedMesh(g, mat(FS_BM[K.fs], { uCol: { value: C(0xffffff) }, uDeep: { value: C(0x2a6cff) } }, { normal: true, depthWrite: kind !== 'rift' && kind !== 'gravRing' && kind !== 'crater', depthTest: kind !== 'crater', side: K.side }, VS_BM), cap);
+      body.instanceColor = new T.InstancedBufferAttribute(new Float32Array(cap * 3), 3);
+      var line = K.line === null ? null : new T.InstancedMesh(g, mat(FS_BM.line, { uLine: { value: C(K.line) } }, { normal: true, side: T.BackSide }, VS_BML), cap);
+      [body, line].forEach(function (m, i) { if (!m) return; m.renderOrder = K.order - (i ? 0.02 : 0); m.frustumCulled = false; m.count = 0; m.visible = false; m.name = 'bm3d ' + kind; group.add(m); });
+      L = bmLayers[kind] = { kind: kind, body: body, line: line, ix: ix, list: [], cap: cap, K: K };
+      return L;
+    }
+    function bm(kind, o) {
+      o = o || {}; var L = bmLayer(kind);
+      if (!L) return { set: function () {}, kill: function () {}, live: function () { return false; } };
+      if (L.list.length >= L.cap) L.list.shift().dead = true;
+      var h = { p: new T.Vector3(0, -40, 0), q: new T.Quaternion(), s: new T.Vector3(1, 1, 1), c: C(o.col === undefined ? 0xffffff : o.col), a: 1, k: 0, seed: Math.random() * 9, w: o.line === false ? 0 : (o.lineW === undefined ? L.K.lineW || 0 : o.lineW), dead: false };
+      L.list.push(h);
+      return {
+        set: function (pos, q, s, a, k) {
+          if (pos) h.p.copy(pos); if (q) h.q.copy(q);
+          if (s !== undefined && s !== null) { if (typeof s === 'number') h.s.setScalar(Math.max(1e-4, s)); else h.s.copy(s); }
+          if (a !== undefined) h.a = a; if (k !== undefined) h.k = k;
+        },
+        tint: function (hex) { h.c.setHex(hex); },
+        kill: function () { h.dead = true; },
+        live: function () { return !h.dead; }
+      };
+    }
+    function drawBM() {
+      for (var kind in bmLayers) {
+        var L = bmLayers[kind], list = L.list;
+        for (var i = list.length - 1; i >= 0; i--) if (list[i].dead || list[i].a <= 0.002) { if (list[i].a <= 0.002 && !list[i].dead) continue; list.splice(i, 1); }
+        var n = 0;
+        for (var j = 0; j < list.length; j++) {
+          var h = list[j]; if (h.a <= 0.002) continue;
+          BMS.copy(h.s); BMM.compose(h.p, h.q, BMS);
+          L.body.setMatrixAt(n, BMM); L.body.setColorAt(n, h.c); if (L.line) L.line.setMatrixAt(n, BMM);
+          L.ix.setXYZW(n, h.a, h.k, h.seed, h.w); n++;
+        }
+        L.body.count = n; L.body.visible = n > 0; L.body.instanceMatrix.needsUpdate = true; L.body.instanceColor.needsUpdate = true; L.ix.needsUpdate = true;
+        L.body.material.uniforms.uTime.value = time; L.body.material.uniforms.uBright.value = bright ? 1 : 0;
+        if (L.line) { L.line.count = n; L.line.visible = n > 0; L.line.instanceMatrix.needsUpdate = true; }
+      }
+    }
+    function bmCount() { var n = 0; for (var k in bmLayers) n += bmLayers[k].list.length; return n; }
+
     function update(dt) {
       time += dt;
       for (var i = parts.length - 1; i >= 0; i--) {
@@ -1262,9 +1407,9 @@
         p.t += dt; var u = p.mesh.material && p.mesh.material.uniforms; if (u && u.uTime) u.uTime.value = time;
         if ((p.upd && p.upd(dt, p.t) === true) || p.t >= p.life) { drop(p); parts.splice(i, 1); }
       }
-      drawChips(dt); drawSpikes(dt); drawCrystals(dt);
+      drawChips(dt); drawSpikes(dt); drawCrystals(dt); drawBM();
     }
-    function clear() { parts.forEach(drop); parts.length = 0; spikes.length = 0; chips.forEach(function (l) { l.length = 0; }); xs.length = 0; drawSpikes(0); drawChips(0); drawCrystals(0); if (sc.lens) sc.lens(null); }
+    function clear() { for (var bk in bmLayers) bmLayers[bk].list.forEach(function (h) { h.dead = true; }); drawBM(); parts.forEach(drop); parts.length = 0; spikes.length = 0; chips.forEach(function (l) { l.length = 0; }); xs.length = 0; drawSpikes(0); drawChips(0); drawCrystals(0); if (sc.lens) sc.lens(null); }
     // Build every program before it is needed. A compiled program also depends on the scene (whether it has fog, and of
     // which kind), so this is done again whenever that changes (fx.setRegion calls it); the same scene state is skipped.
     // Only the parts made here are dropped again, and their materials go into the pool, so the programs stay.
@@ -1278,15 +1423,17 @@
       rock({ size: 0.3 }).set(far, vel, 0.05); fireball({ size: 0.3 }).set(far, vel, 0.05); column({}).set(far, 1, 1, 0); ringWall({}).set(far, 1, 1, 0); fireWave({}).set(far.x, far.z, 1, 1, 0, 1, 2, 0); picWave({}).set(far, 1, 0, 1, 0, 1); var ws = waveShards({}); ws.put(0, far, 0, 0, 1, 1, 1, 0); ws.commit(); var sq = seqWave(); sq.put(0, 0, 0, far, 0, 0, 1, 1, 1, 0); sq.commit(); iceSpear({ size: 1 }).set(far, vel, 0.05); iceSpikes(far, { n: 2 }); mark({}).set(far, 0.5, 1); impact(far, { size: 1, chips: 3 }); blast(far, { size: 1, flash: true });
       var h = hole({ pos: far }); h.set(1, 1, 0); h.lens.dead = true; puff(far, {}); chip(far, 1, 0xff7a1a, false);
       fluffBall({}).set(far, 0.5); yarnBall({}).set(far, 0.5);
+      var bmWarm = Object.keys(BM_KIND).map(function (k) { var h = bm(k, {}); h.set(far, null, 0.5, 1, 0.5); return h; }); drawBM();
       for (var ek = 0; ek < 7; ek++) emblem(ek, { col: 0xff8a3a, deep: 0x8a2a10 }).set(far, 0.5, 0); glassOrb({ kind: 0, col: 0xff8a3a, deep: 0x8a2a10 }).set(far, 0.5, 0, 1); elemRing({ cols: [0xff0000, 0xffff00, 0xff00ff, 0x00ffff, 0x00ff00] }).set(far, 1, 0, 0, 1); var xst = xs.length; crystal({ pos: far });
       drawSpikes(0); layoutSmoke(sc.camera, true); drawChips(0); drawCrystals(0);   // the layers must be drawing copies when compiled, so their (instanced) programs are built too
       sc.renderer.compile(sc.scene, sc.camera);
       for (var i = parts.length - 1; i >= start; i--) drop(parts[i]);
       parts.length = start; spikes.length = spikeStart; chips.forEach(function (l, i) { l.length = chipStart[i]; }); xs.length = xst; drawSpikes(0); drawChips(0); drawCrystals(0);
+      bmWarm.forEach(function (h) { h.kill(); }); drawBM();
       if (sc.warmLens) sc.warmLens();
     }
-    return { beam: beam, orb: orb, moon: moon, rock: rock, fireball: fireball, column: column, ringWall: ringWall, fireWave: fireWave, picWave: picWave, waveShards: waveShards, seqWave: seqWave, iceSpear: iceSpear, iceSpikes: iceSpikes, iceSpike: iceSpike, mark: mark, impact: impact, puff: puff, blast: blast, chip: chip, hole: hole, emblem: emblem, glassOrb: glassOrb, elemRing: elemRing, crystal: crystal, fluffBall: fluffBall, yarnBall: yarnBall, update: update, clear: clear, warm: warm, setBright: function (v) { bright = !!v; }, setBatchSmoke: function (v) { batchSmoke = !!v; }, setBatchChips: function (v) { batchChips = !!v; },
-      count: function () { return parts.length + xs.length + spikes.length + chips[0].length + chips[1].length + chips[2].length; }, spikeTops: spikeTops,
+    return { beam: beam, orb: orb, moon: moon, rock: rock, fireball: fireball, column: column, ringWall: ringWall, fireWave: fireWave, picWave: picWave, waveShards: waveShards, seqWave: seqWave, iceSpear: iceSpear, iceSpikes: iceSpikes, iceSpike: iceSpike, mark: mark, impact: impact, puff: puff, blast: blast, chip: chip, hole: hole, emblem: emblem, glassOrb: glassOrb, elemRing: elemRing, crystal: crystal, fluffBall: fluffBall, yarnBall: yarnBall, bm: bm, update: update, clear: clear, warm: warm, setBright: function (v) { bright = !!v; }, setBatchSmoke: function (v) { batchSmoke = !!v; }, setBatchChips: function (v) { batchChips = !!v; },
+      count: function () { return bmCount() + parts.length + xs.length + spikes.length + chips[0].length + chips[1].length + chips[2].length; }, spikeTops: spikeTops,
       // for checks: the puffs in the last picture and the draws they took
       smoke: function () { return { puffs: smokeNow.puffs, draws: smokeNow.draws }; } };
   };

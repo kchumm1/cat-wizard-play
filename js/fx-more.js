@@ -21,6 +21,38 @@
     }
     function put(list, p) { for (var i = 0; i < list.length; i++) if (list[i]) { list[i].x = p.x; list[i].y = p.y; list[i].z = p.z; } }
     function kill(list) { list.forEach(vx.kill); }
+    // ---------- the meshes made in Blender (fx3d bm: tools/blender/skills6_meshes.py) ----------
+    var QY = new T.Vector3(0, 1, 0), QE = new T.Euler(), QT = new T.Quaternion();
+    // facing the camera, then turned by (x, y, z) radians in its own frame
+    function camQ(rx, ry, rz) { return sc.camera.quaternion.clone().multiply(QT.setFromEuler(QE.set(rx || 0, ry || 0, rz || 0))); }
+    // the mesh's +y pointing along dir
+    function alongQ(dir) { return new T.Quaternion().setFromUnitVectors(QY, dir.clone().normalize()); }
+    // the mesh's +x along ax and its +z toward the camera (as near as it can while square to ax)
+    function seamQ(ax) {
+      var x = ax.clone().normalize(), cz = V(0, 0, 1).applyQuaternion(sc.camera.quaternion), z = cz.sub(x.clone().multiplyScalar(cz.dot(x))).normalize(), y = z.clone().cross(x);
+      return new T.Quaternion().setFromRotationMatrix(new T.Matrix4().makeBasis(x, y, z));
+    }
+    // the ground caving in under a weight: a crater (a bowl in a broken rim, cracks glowing violet) sinks in at once,
+    // its cracks glow and cool, and it fades back into the ground
+    function cave(g, R, life, col) {
+      var h = P3.bm('crater', { col: col }), t = 0, q = new T.Quaternion().setFromAxisAngle(QY, rr(0, 6.283)), S = V(), at = V(g.x, 0.01, g.z);
+      tick(function (dt) {
+        t += dt; var k = Math.min(1, t / 0.08), a = t < life * 0.7 ? 1 : Math.max(0, 1 - (t - life * 0.7) / (life * 0.3));
+        S.set(R, R * (0.2 + 0.8 * (1 - (1 - k) * (1 - k))), R);
+        h.set(at, q, S, a, Math.max(0, 1 - t / (life * 0.55)));
+        if (t < life) return false; h.kill(); return true;
+      });
+    }
+    // a solid piece that is thrown, tumbles, falls and fades (kind: a bm mesh)
+    function tumble(kind, col, at, vel, size, life) {
+      var h = P3.bm(kind, { col: col }), P = at.clone(), q = new T.Quaternion().setFromEuler(QE.set(rr(0, 6.3), rr(0, 6.3), rr(0, 6.3))), w = rdir(1).normalize(), spin = rr(6, 14), t = 0, R = new T.Quaternion();
+      tick(function (dt) {
+        t += dt; vel.y -= 9 * dt; vel.multiplyScalar(Math.max(0, 1 - 1.1 * dt)); P.addScaledVector(vel, dt); q.multiply(R.setFromAxisAngle(w, spin * dt));
+        var a = Math.max(0, 1 - Math.max(0, t - life * 0.6) / (life * 0.4));
+        h.set(P, q, size, a, 1);
+        if (t < life && P.y > -0.2) return false; h.kill(); return true;
+      });
+    }
     // a bar of light standing straight up on the screen from a ground point (len is its height)
     function shaft(g, len, w, col, life, o) { var q = { pos: above(g, len / 2), frame: 'streak', color: col, size: [len, len], ar: w, rot: 1.5708, life: life }; for (var k in o) q[k] = o[k]; return E(q); }
     // ice standing up out of the ground at a spot
@@ -449,31 +481,36 @@
 
     // =================================================================== 6차: 달
     // Crescent blades: three great crescents are cut loose across the whole field, one after another; each cuts every monster it passes.
+    // Each blade is a real 3D crescent made in Blender (tools/blender/skills6_meshes.py): a thick rounded back, a thin
+    // edge burning white-violet, a gleam running along it. It is turned a little so its thickness shows, sways as it
+    // flies, and two fading afterimages of it follow.
     S.crescents = function (c) {
       sc.heroPose('swipe', c.D(0.1), c.col); sc.dim(0.35, c.D(0.85));
-      var dir = sc.heroState().faceT > 0 ? 1 : -1, SZ = 3.4, TALL = 1.9;
+      var dir = sc.heroState().faceT > 0 ? 1 : -1, SZ = 3.4, H = 1.4 * Math.min(1.25, c.s);
       for (var b = 0; b < 3; b++) (function (b) {
         after(c.D(0.1 + b * 0.13), function () {
-          var x = -4.6 * dir - dir * SZ * 0.4, hit = [], tilt = (b - 1) * 0.16, rot = (dir > 0 ? 0 : Math.PI) + tilt, P = V(x, 1.0, -0.4);
-          var parts = [E({ pos: P, frame: 'crescent', color: c.col, size: SZ * 1.12, ar: TALL, life: 30, upd: STAY, fadeOut: 1, rot: rot, alpha: 0.4 }), E({ sys: 'col', pos: P, frame: 'crescent', color: c.deep, size: SZ, ar: TALL, life: 30, upd: STAY, fadeOut: 1, rot: rot, alpha: 0.55 }), E({ pos: P, frame: 'crescent', color: 0xffffff, size: SZ * 0.8, ar: TALL * 1.2, life: 30, upd: STAY, fadeOut: 1, rot: rot, alpha: 0.6, white: true })];
+          var x = -4.6 * dir - dir * SZ * 0.4, hit = [], tilt = (b - 1) * 0.16, P = V(x, 1.25, -0.4), t = 0;
+          var blade = P3.bm('crescent', { col: 0xe6e0ff }), ghost = [P3.bm('crescent', { col: c.col, line: false }), P3.bm('crescent', { col: c.col, line: false })];
+          var yaw = dir > 0 ? 0.42 : Math.PI - 0.42, scl = V(H, H, H * 1.7), G = V();
           sc.shake(0.08); if (!b) sc.flash('rgba(230,225,255,0.35)', 0.18);
           tick(function (dt) {
-            x += dir * 21 * c.sp * dt; P.x = x; put(parts, P);
+            t += dt; x += dir * 21 * c.sp * dt; P.x = x;
+            var grow = Math.min(1, t / 0.06), q = camQ(0.32, yaw, (tilt + Math.sin(t * 26 + b) * 0.06) * dir);
+            blade.set(P, q, scl.clone().multiplyScalar(0.35 + 0.65 * grow), 1, 0.7 + 0.3 * Math.sin(t * 40));
+            for (var g = 0; g < 2; g++) { G.copy(P); G.x -= dir * (0.55 + 0.6 * g) * grow; ghost[g].set(G, q, scl.clone().multiplyScalar(0.98 - 0.06 * g), (g ? 0.2 : 0.38) * grow, 1); }
             var front = x + dir * SZ * 0.4;
             for (var i = 0; i < N(3, c); i++) E({ pos: V(front - dir * rr(0, 0.8), rr(0.2, 1.8), rr(-4.4, 3.6)), vel: V(-dir * rr(1, 3), rr(-0.5, 0.8), 0), frame: pick(['crescent', 'flare', 'dot']), color: [0xffffff, c.col], size: [rr(0.12, 0.28), 0.02], life: rr(0.25, 0.5), spin: rr(-6, 6) });
             c.pool().forEach(function (m) {
               if (hit.indexOf(m) >= 0 || (m.x - front) * dir > 0) return;
               hit.push(m);
-              var q = mp(m), R_ = 0.8 * c.s, a = V(q.x - 0.6 * R_ * dir, q.y + 0.6 * R_ + tilt, q.z + 0.3), e = V(q.x + 0.6 * R_ * dir, q.y - 0.5 * R_ - tilt, q.z + 0.3), bez = new T.QuadraticBezierCurve3(a, V(q.x + 0.2 * dir, q.y + 0.2, q.z + 0.45), e), pts = [];
-              for (var k = 0; k <= 12; k++) pts.push(bez.getPoint(k / 12));
-              vx.ribbon({ mode: 'static', sweep: true, pts: pts, w: 0.34 * c.s, color: c.col, core: 0, alpha: 0.35, life: c.D(0.28) });
-              vx.ribbon({ solid: true, mode: 'static', sweep: true, pts: pts, w: 0.12 * c.s, color: c.deep, core: 0.8, life: c.D(0.34) });
-              sparks(q, [c.col, 0xffffff], N(6, c), 6, { dir: V(dir, 0.2, 0), spread: 0.4, size: 0.2 * c.s, stretch: 0.12 });
-              flare(q, 0xffffff, 0.7 * c.s, 0.1, { white: true }); sc.shake(0.04);
+              // no slash marks left on each monster (the user: the "/" lines drooping behind the blade, 2026-11-16)
+              var q2 = mp(m);
+              sparks(q2, [c.col, 0xffffff], N(6, c), 6, { dir: V(dir, 0.2, 0), spread: 0.4, size: 0.2 * c.s, stretch: 0.12 });
+              flare(q2, 0xffffff, 0.7 * c.s, 0.1, { white: true }); sc.shake(0.04);
               c.hit(m, 1 / 3, b === 2 ? 1.3 : 0.8);
             });
             if (front * dir < 5.4) return false;
-            kill(parts); return true;
+            blade.kill(); ghost.forEach(function (h) { h.kill(); }); return true;
           });
         });
       })(b);
@@ -604,25 +641,41 @@
       });
     };
     // Sunlight arrows: a small sun opens high to one side and looses arrow after arrow of light, each one into a monster.
+    // The sun is the solar burst's real 3D sun; every arrow is a 3D arrow made in Blender (a faceted gold head, a shaft
+    // of light, vanes of orange light) that flies at its monster pointing the way it goes, and stays stuck in it a moment.
     S.sunArrows = function (c) {
       sc.heroPose('raise', c.D(0.14), c.col);
-      var side = sc.heroState().faceT > 0 ? -1 : 1, sun = above(V(2.3 * side, 0, -1.2), 4.6), life = c.D(0.85);
-      E({ pos: sun, frame: 'glow', color: [0xffd84a, 0xffa040], size: [0.3, 2.4 * c.s], ease: 1, life: life, hot: 1.4, fadeOut: 0.8 });
-      E({ pos: sun, frame: 'flare', color: 0xffffff, size: [0.2, 2.0 * c.s], ease: 1, life: life, spin: 1.6, white: true, fadeOut: 0.8 });
-      E({ pos: sun, frame: 'circle', color: 0xffe14a, size: [0.4, 2.0 * c.s], ease: 2, life: life, spin: 2.4, fadeOut: 0.8 });
+      var side = sc.heroState().faceT > 0 ? -1 : 1, sun = above(V(2.3 * side, 0, -1.2), 4.6), life = c.D(0.85), st = 0, R = 0.5 * Math.min(1.4, c.s);
+      var sunBall = P3.moon({ lit: 0xfff0a0, dark: 0xff7a1a, rim: 0xffd84a, deep: 0xff8a20, solid: true, line: 0x7a3006, glowA: 0.5, spin: 1.5 });
+      converge(sun, [0xffffff, 0xffd84a, 0xff9a40], N(14, c), 1.6, c.D(0.14));
+      tick(function (dt) {
+        st += dt; var g = Math.min(1, st / c.D(0.14)), out = Math.max(0, (st - life * 0.82) / (life * 0.18));
+        sunBall.set(sun, Math.max(0.001, R * (1 - (1 - g) * (1 - g)) * (1 - Math.min(1, out))), dt);
+        if (Math.random() < dt * 30 * c.n) E({ pos: sun.clone().add(rdir(R * 1.1)), vel: rdir(1.5), frame: pick(['flare', 'dot']), color: [0xffffff, 0xffd84a], size: [rr(0.1, 0.2), 0.02], life: 0.35 });
+        if (out < 1) return false; sunBall.kill(); return true;
+      });
       volley(c, { shots: 14, t0: 0.17, span: 0.5, fire: function (mob, frac) {
         if (!mob) return;
-        var from = sun.clone().add(rdir(0.35));
+        var from = sun.clone().add(rdir(0.35)), L = 1.1 * Math.min(1.3, c.s), arrow = P3.bm('arrow', { col: 0xffd04a }), scl = V(L * 1.6, L, L * 1.6), D = V(0, -1, 0);
         flare(from, 0xffffff, 0.5, 0.08, { white: true });
         homing({ from: from, to: function () { return mp(mob); }, time: c.D(0.15), fancy: false,
-          trail: { w: 0.1 * c.s, col: 0xffd84a, core: 1.4, pts: 16, shrink: 80 },
-          heads: [{ frame: 'streak', color: 0xffffff, size: 1.0 * c.s, stretch: 0.02, white: true }, { frame: 'glow', color: 0xffd84a, size: 0.7 * c.s, alpha: 0.5 }],
+          trail: { w: 0.07 * c.s, col: 0xffd84a, core: 1.4, pts: 12, shrink: 90, halo: false },
+          heads: [],
+          emit: function (p, v) { if (v.lengthSq() > 1e-6) D.copy(v).normalize(); arrow.set(p.clone().addScaledVector(D, -L * 0.92), alongQ(D), scl, 1, 0); },
           onHit: function (p) {
             var g = V(p.x, 0, p.z);
-            flare(p, 0xffffff, 1.0 * c.s, 0.12, { white: true }); shaft(g, 2.6, 0.16, [0xffffff, 0xffd84a], 0.22, { fadeOut: 0.4 });
+            flare(p, 0xffffff, 0.9 * c.s, 0.1, { white: true });
             sparks(p, [0xffffff, 0xffe14a, 0xff9a40], N(7, c), 5.5, { size: 0.18, up: 1.5 }); gRing(g, 0xffd84a, 1.5 * c.s, 0.3); fire(p, N(2, c), { size: 0.7, speed: 1.4, up: 1.6 });
             sc.light(p, 0xffe080, 1.2, 0.25); sc.shake(0.04);
             c.hit(mob, frac, 0.8);
+            // stuck in the monster (it moves with it), its tip a quarter in; then it burns away
+            var last = mp(mob), off = p.clone().addScaledVector(D, -L * 0.72).sub(last), q = alongQ(D), at = 0, HOLD = c.D(0.3), FADE = c.D(0.16);
+            tick(function (dt) {
+              at += dt; if (mob.alive) last = mp(mob);
+              var a = at < HOLD ? 1 : Math.max(0, 1 - (at - HOLD) / FADE);
+              arrow.set(last.clone().add(off), q, scl, a, 0);
+              if (a > 0) return false; arrow.kill(); return true;
+            });
           } });
       } });
     };
@@ -661,18 +714,19 @@
 
     // =================================================================== 8차: 공허
     // Void rift: a tear is cut across the whole field. Dark arms whip out of it at every monster — then it snaps shut and bursts along its length.
+    // The tear is a real 3D pocket made in Blender: a jagged burning lip round a deep space with drifting stars. It is
+    // cut open from one end, swells open, and slams shut; then pieces of its edge break off and fly.
     S.rift = function (c) {
       sc.heroPose('swipe', c.D(0.14), c.col); sc.dim(0.55, c.D(1.05));
       var M = V(c.center.x * 0.4, 1.3, c.center.z * 0.4 - 0.3), slope = Math.random() < 0.5 ? 1 : -1, A = V(M.x - 4.4, M.y + 1.0 * slope, M.z - 1.2 * slope), B = V(M.x + 4.4, M.y - 1.0 * slope, M.z + 1.2 * slope);
       var path = vx.boltPath(A, B, 14, 0.035), t = 0, T_CUT = c.D(0.16), T_OPEN = c.D(0.5), T_SHUT = c.D(0.07), open = 0, cut = 0, whipped = false;
-      function wf(mul) { return function (u) { return u <= cut ? open * mul * (0.5 + Math.sin(u * 40 + t * 30) * 0.12 + Math.sin(u * 3.14) * 0.6) : 0; }; }
-      var ribs = [vx.ribbon({ mode: 'static', hold: true, taper: 'bolt', pts: path, w: 0.6 * c.s, color: c.col, core: 0, alpha: 0.5, life: 30, widthFn: wf(1) }),
-        vx.ribbon({ mode: 'static', hold: true, taper: 'bolt', pts: path, w: 0.3 * c.s, color: 0xffb8f4, core: 1.4, alpha: 0.9, life: 30, widthFn: wf(1) }),
-        vx.ribbon({ solid: true, mode: 'static', hold: true, taper: 'bolt', pts: path, w: 0.2 * c.s, color: 0x07020e, core: 0, alpha: 1, life: 30, widthFn: wf(1) })];
+      var tear = P3.bm('rift', { col: 0xff6ad8 }), Q = seamQ(B.clone().sub(A)), half = A.distanceTo(B) / 2, Hh = 1.0 * Math.min(1.3, c.s), SC3 = V();
       function at(u) { var f = u * (path.length - 1), i = Math.min(path.length - 2, Math.floor(f)); return path[i].clone().lerp(path[i + 1], f - i); }
       tick(function (dt) {
         t += dt; cut = Math.min(1, t / T_CUT);
         open = t < T_OPEN ? Math.min(1, t / (T_CUT * 0.6)) : Math.max(0, 1 - (t - T_OPEN) / T_SHUT);
+        var swell = open * (1 + 0.06 * Math.sin(t * 30));
+        tear.set(M, Q, SC3.set(half, Math.max(0.001, Hh * swell), 1.2 * Math.max(0.05, open)), 1, cut);
         if (cut < 1) { var tipP = at(cut); flare(tipP, 0xffffff, 0.9 * c.s, 0.08, { white: true }); sparks(tipP, [0xffffff, c.col, 0xff6ad8], N(3, c), 6, { size: 0.18 }); sc.shake(dt * 1.5); }
         else if (t < T_OPEN && Math.random() < dt * 50 * c.n) { var e = at(rr(0, 1)); E({ pos: e.clone().add(rdir(1.2)), vel: V(), frame: pick(['dot', 'streak']), color: [0xffffff, c.col], size: [rr(0.1, 0.18), 0.02], life: 0.3, upd: (function (e) { return function (p, d, k) { p.x += (e.x - p.x) * 0.2; p.y += (e.y - p.y) * 0.2; p.z += (e.z - p.z) * 0.2; return true; }; })(e) }); }
         if (!whipped && t >= T_CUT + c.D(0.05)) {
@@ -690,12 +744,15 @@
           });
         }
         if (t < T_OPEN + T_SHUT) return false;
-        ribs.forEach(function (r) { if (r) r.kill(); });
-        // it snaps shut: the whole seam goes off at once
+        tear.kill();
+        // it snaps shut: the whole seam goes off at once, and broken pieces of its edge fly
         sc.flash('rgba(220,170,255,0.85)', 0.6); sc.hitStop(0.08); sc.shake(0.5); sc.punch(0.1);
         for (var s = 0; s <= 6; s++) { var p = at(s / 6); flare(p, 0xffffff, 1.6 * c.s, 0.18, { white: true }); shock(p, s % 2 ? 0xff6ad8 : c.col, 3.4 * c.s, 0.4, { delay: s * 0.012 }); sparks(p, [0xffffff, c.col, 0xff6ad8], N(8, c), 9, { size: 0.24, stretch: 0.14, life: 1.1 }); }
-        var pa = A.clone().project(sc.camera), pb = B.clone().project(sc.camera);
-        E({ pos: M, frame: 'streak', color: [0xffffff, c.col], size: [7, 7], ar: 0.3, rot: Math.atan2(pb.y - pa.y, (pb.x - pa.x) * (sc.camera.aspect || 1)), life: 0.25, fadeOut: 0.3 });
+        var ax = B.clone().sub(A).normalize(), up = V(0, 1, 0).applyQuaternion(Q);
+        for (var k = 0; k < N(16, c); k++) {
+          var sgn = Math.random() < 0.5 ? 1 : -1;
+          tumble('riftShard', pick([c.col, 0xff6ad8, 0xb07aff]), at(rr(0.05, 0.95)), up.clone().multiplyScalar(sgn * rr(3, 7)).addScaledVector(ax, rr(-2, 2)).add(V(0, rr(1, 3), rr(-1, 2))), rr(0.14, 0.3) * Math.min(1.4, c.s), rr(0.55, 0.85));
+        }
         fieldWave(V(M.x, 0, M.z), c.col, 0.8, 0xff6ad8); gRing(V(M.x, 0, M.z), c.col, 11, 0.7);
         c.pool().forEach(function (m) { var q = mp(m); impact(q, pick([c.col, 0xff6ad8]), 1.2 * c.s); gRing(gp(m), c.col, 2.0 * c.s, 0.4); c.hit(m, 0.5, 1.9); });
         return true;
@@ -703,16 +760,25 @@
     };
     // Gravity crush: gravity lets go — every monster on the field floats up off the ground, helpless — and then comes
     // back tenfold: they are all slammed down together.
+    // The weight is a real 3D orb made in Blender (heavy faceted violet crystal, two rings turning round it) that swells
+    // high over the field while they float; then it falls on the middle of the field, a small one falls on each monster,
+    // and the ground caves in under every one of them (Blender craters, cracks glowing violet).
     S.crush = function (c) {
       sc.heroPose('raise', c.D(0.16), c.col); sc.dim(0.5, c.D(1.2));
-      var held = [], t = 0, T_UP = c.D(0.36), T_HANG = c.D(0.2), G = V(c.center.x * 0.5, 0.04, c.center.z * 0.5 - 0.2);
-      E({ sys: 'gadd', pos: G, frame: 'circle', color: c.col, size: [1, 9 * c.s], ease: 1, life: T_UP + T_HANG, spin: 1.6, fadeOut: 0.85, alpha: 0.8 });
-      E({ sys: 'gadd', pos: G, frame: 'glow', color: [c.col, 0x6a2ad0], size: [2, 6], life: T_UP + T_HANG, alpha: 0.4, fadeIn: 0.2, fadeOut: 0.8 });
+      var held = [], t = 0, T_UP = c.D(0.36), T_HANG = c.D(0.2), G = V(c.center.x * 0.5, 0.04, c.center.z * 0.5 - 0.2), cs = Math.min(1.4, c.s);
+      var sky = above(G, 3.6), orb = P3.bm('gravOrb', { col: c.col }), rings = [P3.bm('gravRing', { col: 0xc89aff }), P3.bm('gravRing', { col: c.col })], glowB = P3.orb({ col: c.col, deep: 0x3a0a6a, alpha: 0.35, order: 6 }), OR = 0.001;
+      var orbQ = new T.Quaternion(), rq = new T.Quaternion(), SKY = V();
+      function drawOrb(P, r, dt, k) {
+        orbQ.multiply(QT.setFromAxisAngle(QY, dt * 1.6)); orb.set(P, orbQ, Math.max(0.001, r), 1, k);
+        for (var i = 0; i < 2; i++) { rq.setFromEuler(QE.set(i ? 0.9 : -0.5, t * (i ? -2.2 : 1.7), i ? 0.4 : -0.3)); rings[i].set(P, rq, Math.max(0.001, r), Math.min(1, r * 3), 0); }
+        glowB.set(P, r * 2.2);
+      }
       // dust and pebbles drift up off the whole ground with them
       fieldRain(c, 60, T_UP, { y: function () { return rr(0.05, 0.3); }, vel: function () { return UPC.clone().multiplyScalar(rr(1.2, 3.2)); }, frames: ['dot', 'shard', 'flare'], cols: [K.dustCol(), c.col], size: function () { return [rr(0.08, 0.18), 0.05]; }, life: 0.9, sway: true });
       tick(function (dt) {
         t += dt;
         var ku = Math.min(1, t / T_UP), h = 1 - (1 - ku) * (1 - ku);
+        OR = 0.95 * cs * h; drawOrb(SKY.set(sky.x, sky.y + Math.sin(t * 5) * 0.08, sky.z), OR, dt, h);
         liveMobs().forEach(function (m) {
           if (held.indexOf(m) < 0) { held.push(m); ring(mp(m), c.col, 1.2 * c.s, 0.25); }
           m.pull = m.x; m.pullZ = m.z; m.lift = true;
@@ -722,15 +788,26 @@
         if (t < T_UP + T_HANG) return false;
         held.forEach(function (m) { m.pull = undefined; m.pullZ = undefined; m.lift = undefined; if (m.alive) { if (m.frozen > 0) m.y = 0; else m.vy = -30; } });
         sc.flash('rgba(200,150,255,0.5)', 0.25);
-        // a weight of darkness comes down on each of them
-        liveMobs().forEach(function (m) { shaft(gp(m), 6, 0.4 * (m.boss ? 1.7 : 1), [0x1a0630, c.col], 0.22, { sys: 'col', alpha: 0.85, fadeOut: 0.3 }); shaft(gp(m), 6, 0.1, [0xffffff, c.col], 0.16, {}); });
+        // the orb comes down on the middle of the field, and a small orb of it on each monster
+        var ft = 0, FALL = c.D(0.07), P = SKY.clone(), from = SKY.clone(), land = V(G.x, 0.3, G.z);
+        var minis = liveMobs().map(function (m) { return { m: m, h: P3.bm('gravOrb', { col: c.col }), from: above(gp(m), 3.2), r: 0.3 * cs * (m.boss ? 1.6 : 1) }; });
+        tick(function (dt2) {
+          ft += dt2; var k = Math.min(1, ft / FALL), kk = k * k;
+          P.lerpVectors(from, land, kk); drawOrb(P, OR * (1 - 0.3 * k), dt2, 1);
+          minis.forEach(function (o) { o.h.set(o.from.clone().lerp(o.m.alive ? mp(o.m) : gp(o.m), kk), orbQ, o.r, 1, 1); });
+          if (k < 1) return false;
+          orb.kill(); rings.forEach(function (r) { r.kill(); }); glowB.kill(); minis.forEach(function (o) { o.h.kill(); });
+          return true;
+        });
         after(c.D(0.07), function () {
           sc.flash('rgba(220,170,255,0.9)', 0.6); sc.hitStop(0.09); sc.slowmo(0.2, 0.4); sc.shake(0.65); sc.punch(0.13);
+          var dirt = new T.Color(K.dustCol()).lerp(new T.Color(0x3b2a20), 0.55).getHex();
+          cave(G, 1.3 * cs, 1.5, dirt);
           fieldWave(G, c.col, 0.8, 0xff6ad8); gRing(G, c.col, 11, 0.7); shock(V(G.x, 0.6, G.z), c.col, 8.5, 0.55);
           for (var b = 0; b < N(24, c); b++) { var p = fieldPt(0.1); E({ sys: 'norm', pos: p, vel: V(rr(-1.5, 1.5), rr(3, 7), rr(-1, 1)), frame: 'shard', color: K.dustCol(), size: rr(0.12, 0.24), life: rr(0.5, 0.9), grav: 13, spin: rr(-9, 9), white: true }); }
           liveMobs().forEach(function (m) {
             var g = gp(m), q = mp(m);
-            gRing(g, c.col, 2.6 * c.s * (m.boss ? 1.5 : 1), 0.45); gRing(g, 0xffffff, 1.6 * c.s, 0.3); scorch(g, 1.2 * (m.boss ? 1.6 : 1), 2.4); dust(g, N(5, c), 1.3);
+            cave(g, 0.45 * cs * (m.boss ? 1.6 : 1), 1.2, dirt); gRing(g, c.col, 2.6 * c.s * (m.boss ? 1.5 : 1), 0.45); dust(g, N(5, c), 1.3);
             flare(q, 0xffffff, 1.3 * c.s, 0.14, { white: true }); sparks(q, [0xffffff, c.col, 0xff6ad8], N(8, c), 7, { size: 0.2, up: 1.5 });
             c.hit(m, 1, 2.2);
           });
