@@ -1479,6 +1479,18 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 .gart.gnew.gx .gimg{filter:drop-shadow(0 0 3px var(--gxc)) drop-shadow(0 0 7px var(--gxc))!important}
 .bcell:has(.gx6){background:radial-gradient(circle at 50% 40%,#0f5a4c,#06201c)}.bcell:has(.gx7){background:radial-gradient(circle at 50% 40%,#6a4c08,#221804)}
 .bcell:has(.gx8){background:radial-gradient(circle at 50% 40%,#3a1a78,#120828)}.bcell:has(.gx9){background:radial-gradient(circle at 50% 40%,#6a0c18,#200408)}
+/* 우편함 (2026-11-15): the letters window */
+.mailwin{text-align:left;max-height:62vh;overflow:auto;margin:-4px -4px 6px;padding:0 4px}
+.mailwin h2{margin:0 0 8px;text-align:center}
+.mailwin .mlist{display:flex;flex-direction:column;gap:8px}
+.mailwin .mcard{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:#FBF3E4;box-shadow:inset 0 0 0 1.5px #E7D3B0}
+.mailwin .mcard .mico{flex:none;width:40px;height:40px}
+.mailwin .mcard .mtxt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.mailwin .mcard b{font-size:14px;color:#443C35}.mailwin .mcard small{font-size:12px;color:#7a6550;line-height:1.4}
+.mailwin .mcard .mrew{font-size:12.5px;font-weight:800;color:#b5523a}
+.mailwin .mcard .buy{flex:none}
+.mailwin .mempty{padding:18px 0;text-align:center;color:#8a7a66;font-size:13px}
+.mailwin .mpid{margin:10px 0 0;text-align:center;font-size:11.5px;color:#8a7a66}.mailwin .mpid b{letter-spacing:.06em;color:#443C35;user-select:all;-webkit-user-select:all}
 /* skill tab: region weakness box and element chips (2026-11-15) */
 .elchip{display:inline-flex;align-items:center;height:18px;padding:0 7px;margin-right:5px;border-radius:9px;font:700 11px/1 var(--body);color:#3b2a20;background:color-mix(in srgb,var(--ec) 38%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ec) 70%,#6b4b3a)}
 .weakon{display:inline-flex;align-items:center;height:18px;padding:0 7px;margin-right:6px;border-radius:9px;font:800 11px/1 var(--body);font-style:normal;color:#fff;background:#d4543a}
@@ -1665,7 +1677,7 @@ html.fullh #prof{position:absolute;bottom:auto;height:var(--apph)}
       <div id="bossbox"><div class="boss-top"><span id="bossName">보스</span><span id="bossTime">30.0초</span></div><div class="bossrow"><div class="bar"><i id="bossHp"></i></div><b id="bossPct">100%</b></div></div>
       <button id="retry">보스 도전</button>
     </div>
-    <div id="quick" aria-label="바로가기"><button data-quick="map"><i></i><span>지도</span></button><button data-quick="alch"><i></i><span>물약</span></button><button data-quick="rune"><i></i><span>룬</span></button><button data-quick="sigil"><i></i><span>신성력</span></button><button data-quick="dex"><i></i><span>도감</span></button></div>
+    <div id="quick" aria-label="바로가기"><button data-quick="map"><i></i><span>지도</span></button><button data-quick="rune"><i></i><span>룬</span></button><button data-quick="sigil"><i></i><span>신성력</span></button><button data-quick="dex"><i></i><span>도감</span></button><button data-quick="mail"><i></i><span>우편함</span></button></div>
     <div id="banner"></div>
     <div id="dunHud"></div>
     <div id="gainlog" aria-live="off"></div>
@@ -1763,6 +1775,7 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script src="js/art-items.js"></script>
 <script src="js/design-cream.js"></script>
 <script src="js/dex-ui.js"></script>
+<script src="js/mail.js"></script>
 <script src="js/grow-text.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>

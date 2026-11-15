@@ -382,6 +382,8 @@
     dayKey: function () { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); },
     dailyView: function () { return CW.dailyView(state, G.dayKey()); },
     hideDaily: function (on) { CW.hideDaily(state, G.dayKey(), on); save(); },
+    // 우편함: claim one letter (js/mail.js); gold in 조 as shown goes through the gold scale, then the cap
+    claimMail: function (l) { var ok = CW.mailClaim(state, l, CW.goldScale(state)); if (ok) { CW.setGoldScale(CW.capGold(state)); snd.play('win'); save(); } return ok; },
     claimDaily: function () { var n = CW.claimDaily(state, G.dayKey()); if (n) { snd.play('win'); save(); } return n; },
     runeUp: function (id) { var ok = CW.runeUp(state, id); if (ok) { refreshStats(); snd.play('click'); } return ok; },
     runeSwap: function (oldId, newId) { var ok = CW.runeSwap(state, oldId, newId); if (ok) { refreshStats(); snd.play('click'); save(); } return ok; },
