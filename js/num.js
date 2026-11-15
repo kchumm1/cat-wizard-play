@@ -38,5 +38,16 @@
     if (/^(super|ultra|hyper|mega|ultimate|alpha)Dmg$/.test(stat)) return "+" + (Math.round(v * 100) / 100) + "배";
     return "+" + (Math.round(v * 1000) / 10) + "%";
   }
-  return { fmt: fmt, fmtGold: fmtGold, bonusAmount: bonusAmount };
+  // Monster and boss health (2026-11-15, the user: "11.9재" is hard to read): Korean units like fmt, rounded to a whole
+  // number in the unit — 11.9재 -> 12재, 1545재 stays; 9999.6재 rounds up to 1극.
+  function fmtHp(n) {
+    if (typeof n !== 'number' || !isFinite(n) || n <= 0) return '0';
+    if (n < 10000) return group(Math.round(n));
+    var k = Math.floor(Math.log10(n) / 4), v = n / Math.pow(10, 4 * k);
+    if (v < 1) { k -= 1; v = n / Math.pow(10, 4 * k); }
+    var r = Math.round(v);
+    if (r >= 10000) { k += 1; r = Math.round(n / Math.pow(10, 4 * k)); }
+    return r + unit(k);
+  }
+  return { fmt: fmt, fmtGold: fmtGold, fmtHp: fmtHp, bonusAmount: bonusAmount };
 });

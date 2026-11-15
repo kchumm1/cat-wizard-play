@@ -85,7 +85,10 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 #gainlog .gem{width:14px;height:14px}
 .xpdot{display:inline-block;width:14px;height:14px;background:url(art/ic-xp.webp) 50% 50%/contain no-repeat}
 .gdot{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:middle}
-.hpdot{display:inline-block;width:11px;height:11px;flex:none;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffd0d0,#ff5a6a 55%,#b0203a)}
+.hpdot{display:inline-block;width:17px;height:15px;flex:none;background:url(art/ui-hpmark.webp) 50% 50%/contain no-repeat}
+.hpheart{display:inline-block;width:16px;height:14px;flex:none;background:url(art/ui-hpheart.webp) 50% 50%/contain no-repeat}
+/* the user's HP pill (art-src/ui/hp-heart-design.png): cream inside, gold rim, heart, heavy plum "HP n" */
+.hpbox{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 9px 0 5px;box-sizing:border-box;border:1.5px solid #ce9242;border-radius:999px;background:#fdedd2;color:#4b122f;font:900 12px/1 var(--body);font-variant-numeric:tabular-nums;white-space:nowrap;flex:none}
 /* Skill bar */
 #skillbar{position:absolute;left:0;right:0;bottom:calc(62px + env(safe-area-inset-bottom,0px));z-index:3;display:flex;align-items:center;gap:10px;padding:18px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px));background:linear-gradient(180deg,rgba(26,18,48,0),rgba(26,18,48,.82) 45%);pointer-events:none}
 #skillbar .slots{pointer-events:auto}

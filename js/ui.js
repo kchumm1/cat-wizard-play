@@ -645,7 +645,7 @@
         (open ? '<button class="btn pri dgo" data-sgo="' + frontier + '" data-sd="' + d + '">' + (d === (s.diff || 0) ? '도전 중인 판으로' : DATA.difficulties[d].name + ' 도전 중인 판으로') + ' (' + CW.stageLabel(frontier) + ')</button>' : '') +
         worldMap(d, open, frontier, here) +
         '<div class="rsel">' + DATA.regions.map(function (r, i) { return '<button class="rchip' + (i === R ? ' on' : '') + (i * 31 > frontier ? ' lock' : '') + '" data-rsel="' + i + '">' + (i + 1) + '</button>'; }).join('') + '</div>' +
-        '<div class="note" style="margin:6px 0 8px">' + reg.name + ' · 판을 누르면 그곳으로 가요</div><div class="note slegend"><i class="coin"></i> 골드 <b class="xpdot"></b> 경험치 <b class="hpdot"></b> 체력 · 몬스터 한 마리 (보스 판은 보스를 이겼을 때)</div>';
+        '<div class="note" style="margin:6px 0 8px">' + reg.name + ' · 판을 누르면 그곳으로 가요</div><div class="note slegend"><i class="coin"></i> 골드 <b class="xpdot"></b> 경험치 <b class="hpdot"></b><span class="hpbox"><b class="hpheart"></b>HP</span> · 몬스터 한 마리 (보스 판은 보스를 이겼을 때)</div>';
       var rows = '';
       for (var n = 0; n < 31; n++) {
         var i = R * 31 + n, info = CW.stageInfo(i), lock = !open || i > frontier, tmp = { stage: i, diff: d, up: s.up };
@@ -656,7 +656,7 @@
           '<span class="sname"><small>' + DATA.difficulties[d].name + (rw.gems ? ' · <i class="gem"></i>' + fmt(rw.gems) : '') + '</small>' + CW.stageLabel(i) + (CW.isTierTrial(s, i, d) ? ' 전직 시험' : info.isRegionBoss ? ' 지역 보스' : info.isBoss ? ' 보스' : '') + '</span>' +
           '<span class="smon">' + (img ? '<img src="' + img + '" alt="" style="' + (res.tint ? 'filter:hue-rotate(' + (R * 36) + 'deg)' : '') + '">' : '') + '</span>' +
           '<span class="srews"><span class="srew"><i class="coin"></i>' + gh(rw.gold) + '</span><span class="srew"><b class="xpdot"></b>' + fmt(rw.xp) + '</span>' +
-          '<span class="srew muted hp"><b class="hpdot"></b>체력 ' + fmt(rw.hp) + '</span></span>' +
+          '<span class="srew muted hp"><b class="hpdot"></b><span class="hpbox"><b class="hpheart"></b>HP ' + CW.fmtHp(rw.hp) + '</span></span></span>' +
           '<span class="sgo">' + (lock ? '🔒' : i === here ? '여기' : '이동') + '</span></button>';
       }
       return head + '<div class="slist">' + rows + '</div>';
