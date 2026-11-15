@@ -438,7 +438,8 @@
       var now = Date.now(), bt = DATA.potions.map(function (p) { var l = CW.buffLeft(s, p.id, now); return l ? '<span>' + mi('potion', p) + mmss(l) + '</span>' : ''; }).join('');
       if (bt !== lastBuffs) { lastBuffs = bt; $('buffs').innerHTML = bt; }
       var tier = DATA.tiers[s.tier - 1];
-      var next = s.tier < DATA.tiers.length ? CW.tierNeed(s.tier + 1) + ' ' + (s.tier + 1) + '차' : (s.best >= 309 ? '마왕 토벌 완료!' : '최종 목표 10-31 늑대 왕');
+      var lastT = CW.FRIEND ? CW.FRIEND_MAX_TIER : DATA.tiers.length; // 체험판 ends at the 9th job
+      var next = s.tier < lastT ? CW.tierNeed(s.tier + 1) + ' ' + (s.tier + 1) + '차' : (s.best >= 309 ? '마왕 토벌 완료!' : '최종 목표 10-31 늑대 왕');
       var wornT = CW.titleWorn ? CW.titleWorn(s) : 'tNovice';
       var tTxt = wornT !== 'tNovice' ? CW.titleById(wornT).name : s.tier + '차 ' + tier.name; if ($('tierTag').textContent !== tTxt) $('tierTag').textContent = tTxt; $('tierTag').classList.toggle('ttl', wornT !== 'tNovice'); if ($('questTxt').textContent !== next) $('questTxt').textContent = next;
     }
@@ -537,6 +538,7 @@
       // one block per job tier: its name, then the skills that tier brings
       var list = DATA.tiers.map(function (t, i) {
         var n = i + 1, open = n <= s.tier;
+        if (CW.FRIEND && n > CW.FRIEND_MAX_TIER) return ''; // 체험판: the 10th job's skills are not shown
         return '<div class="sktier' + (open ? '' : ' lock') + '"><b>' + n + '차</b><span>' + t.name + '</span>' + (open ? '' : '<small>' + (n - 1) + '-31 보스를 이기면 열려요</small>') + '</div>' + DATA.skills.filter(function (sk) { return sk.tier === n; }).map(row).join('');
       }).join('');
       return top + '<h3>스킬 목록 · 강화</h3><div class="note" style="margin:-4px 0 8px">전직할 때마다 그 차수의 스킬 네 가지가 열려요. 강화할 때마다 그 스킬 피해가 ' + Math.round(DATA.balance.skillLvBonus * 100) + '%씩 늘어요 (최대 +' + DATA.balance.skillMaxLv + ').</div><div class="list">' + list + '</div>';
@@ -575,8 +577,9 @@
           (nSkills ? ' · 스킬 ' + nSkills + '개' + (sk ? ' (' + sk.name + ' 등)' : '') : '') + '</div></div></div>';
       };
       var tiers = '<h3>전직</h3><div class="list">' + DATA.tiers.map(function (t, i) {
-        var n = i + 1, shut = CW.FRIEND && n > CW.FRIEND_MAX_TIER; return tierRow(n, t.name, shut ? null : t.skill && CW.skillById(t.skill), shut ? 0 : DATA.skills.filter(function (x) { return x.tier === n; }).length, shut);
-      }).join('') + (DATA.tierSoon || []).map(function (t) { return tierRow(t.n, t.name, null, 0, true); }).join('') + '</div>';
+        var n = i + 1; if (CW.FRIEND && n > CW.FRIEND_MAX_TIER) return ''; // 체험판: the jobs past the 9th are not shown at all
+        return tierRow(n, t.name, t.skill && CW.skillById(t.skill), DATA.skills.filter(function (x) { return x.tier === n; }).length, false);
+      }).join('') + (CW.FRIEND ? [] : DATA.tierSoon || []).map(function (t) { return tierRow(t.n, t.name, null, 0, true); }).join('') + '</div>';
       var won = function (v) { return v.toLocaleString('ko-KR') + '원'; };
       var gems = '<div class="subh">다이아</div><div class="shop">' + DATA.shop.map(function (p, i) {
         var first = !s.firstBuy[i];
@@ -635,8 +638,11 @@
         '<div class="row"><div class="info"><div class="name">처음부터 다시 하기</div><div class="desc">모든 진행이 지워져요</div></div><button class="btn" data-set="reset">다시 하기</button></div>' +
         '</div></details>');
       // each button shows only its own part (2026-11-15: they used to scroll down one long page of all three)
-      var jump = '<div class="jump three" role="tablist">' + ['전직', '패키지', '설정'].map(function (t, i) { return '<button role="tab" aria-selected="' + (i === moreSub) + '" data-jump="' + i + '">' + t + '</button>'; }).join('') + '</div>';
-      return jump + [tiers, packs, settings][moreSub];
+      // 체험판 (js/friend.js): no 패키지 part at all
+      var parts = [['전직', tiers], ['패키지', packs], ['설정', settings]].filter(function (p) { return !(CW.FRIEND && p[0] === '패키지'); });
+      if (moreSub >= parts.length) moreSub = 0;
+      var jump = '<div class="jump three" role="tablist">' + parts.map(function (p, i) { return '<button role="tab" aria-selected="' + (i === moreSub) + '" data-jump="' + i + '">' + p[0] + '</button>'; }).join('') + '</div>';
+      return jump + parts[moreSub][1];
     }
     function bottomInside() { try { return localStorage.getItem('cw-bottom') === 'inside'; } catch (e) { return false; } }
     // the last error the game kept going through (main.js noteError), only when there was one: to find what broke
