@@ -1083,27 +1083,65 @@
     // 손가락으로 스크롤하는 동안(그리고 멈춘 직후 0.5초)은 저절로 다시 그리지 않음 — 다시 그리면 폰에서 스크롤이 끊기고 제자리로 돌아감 (사용자 2026-11-16).
     // 직접 누른 것(force)은 그대로 바로 그림
     var panelTouch = false, panelScrollAt = 0, panelTouchEnd = -1e9;
+    // ---- 바뀐 것만 고치기 (꾸욱 강화용) ----
+    var softRender = false;
+    function morphNode(a, b) {   // a = 화면에 있는 것, b = 새로 만든 것
+      if (a.nodeType !== b.nodeType || a.nodeName !== b.nodeName || (a.nodeType === 1 && a.classList.contains('opfx'))) { a.parentNode.replaceChild(b, a); return; }   // 반응 중인 것은 새로 (움직임 다시 시작)
+      if (a.nodeType !== 1) { if (a.nodeValue !== b.nodeValue) a.nodeValue = b.nodeValue; return; }
+      var i, at;
+      for (i = a.attributes.length - 1; i >= 0; i--) { at = a.attributes[i].name; if (!b.hasAttribute(at)) a.removeAttribute(at); }
+      for (i = 0; i < b.attributes.length; i++) { at = b.attributes[i]; if (a.getAttribute(at.name) !== at.value) a.setAttribute(at.name, at.value); }
+      morphKids(a, b);
+    }
+    function morphKids(a, b) {
+      var ak = [].slice.call(a.childNodes), bk = [].slice.call(b.childNodes);
+      if (ak.length !== bk.length) { while (a.firstChild) a.removeChild(a.firstChild); bk.forEach(function (n) { a.appendChild(n); }); return; }
+      for (var i = 0; i < ak.length; i++) morphNode(ak[i], bk[i]);
+    }
+    // 새 그림을 틀에 담고, 아래 고정 자리(탭·특성 상세)로 옮겨 둔 것은 거기서 맞춘 뒤 틀에서 뺌. 모양이 다르면 null (= 통째로 다시)
+    function softPrep(html) {
+      var t = document.createElement('div'); t.innerHTML = html;
+      var pairs = [[':scope > .subtabs', ':scope > .subtabs'], ['.ophold, .tinfo.tnw', ':scope > .ophold, :scope > .tinfo.tnw']], ok = true, moves = [];
+      pairs.forEach(function (p) {
+        var n = t.querySelector(p[0]), live = opTabs && !opTabs.hidden ? opTabs.querySelector(p[1]) : null;
+        if (!n && !live) return;
+        if (!n || !live || n.nodeName !== live.nodeName) { ok = false; return; }
+        moves.push([live, n]);
+      });
+      if (!ok || t.childNodes.length - moves.filter(function (m) { return m[1].parentNode === t; }).length !== panel.childNodes.length) return null;
+      moves.forEach(function (m) { m[1].remove(); morphNode(m[0], m[1]); });
+      return t;
+    }
     function renderPanel(force) {
       if (tab === 'battle') return;
       if (!force && (panelTouch || performance.now() - panelScrollAt < 500)) return;
       dockHtml = '';
       var html = PANELS[tab](), dh = dockHtml, key = html + '|dock|' + dh;
       if (!force && key === lastPanel) return;
-      var y = panel.scrollTop; panel.innerHTML = html; panel.scrollTop = y; lastPanel = key;
+      // 꾸욱 강화 중(softRender)에는 통째로 다시 만들지 않고 바뀐 글자·속성만 고침: 아이폰은 손가락이 닿은 채로 화면이 통째로 바뀌면
+      // 스크롤 자리를 놓쳐 위로 올라가 버림 (사용자 2026-11-16 승급). 누르고 있는 버튼도 그대로 남는다.
+      var soft = softRender && panel.firstChild && softPrep(html);
+      var y = panel.scrollTop; if (soft) morphKids(panel, soft); else panel.innerHTML = html; if (panel.scrollTop !== y) panel.scrollTop = y; lastPanel = key;
       var phv = (-(Date.now() % 60000) / 1000).toFixed(2) + 's';   // 계속 도는 움직임(마나서클·연금술)은 시계에 맞춰 이어서
       panel.querySelectorAll('.mcv, .alchhead.anw, .pgrid.anw').forEach(function (e) { e.style.setProperty('--ph', phv); });
       if (ghdPlay) { ghdPlay = false; var ghd = panel.querySelector('.ghd'); if (ghd) { ghd.style.setProperty('--from', ghdFrom + '%'); ghd.classList.add('play'); } }
       keepCircle(); if (tab === 'stage') fitStageRows(); if (tab === 'up') { fitGrowNames(); fitAlch(); } if (tab === 'gear') fitGear();
       if (CW.opalUI) { CW.opalUI.bumpValues(panel); CW.opalUI.applyFx(panel); }   // 오팔 메뉴: 바뀐 숫자·성공 반응만 짧게
-      var stb = $('sheet').classList.contains('opal') && panel.querySelector(':scope > .subtabs');
-      var ohd = stb && panel.querySelector('.ophold, .tinfo.tnw');   // 성장 시안: 「길게 누르면 연속 강화」는 아래 탭 바로 위 고정 자리
-      if (typeof opTabs !== 'undefined' && opTabs) { opTabs.innerHTML = ''; opTabs.hidden = !stb; if (ohd) opTabs.appendChild(ohd); if (stb) opTabs.appendChild(stb); }
+      var stb, ohd;
+      if (soft) { stb = opTabs.querySelector(':scope > .subtabs'); ohd = opTabs.querySelector(':scope > .ophold, :scope > .tinfo.tnw'); }   // 이미 아래 고정 자리에 있음 (softPrep가 맞춤)
+      else {
+        stb = $('sheet').classList.contains('opal') && panel.querySelector(':scope > .subtabs');
+        ohd = stb && panel.querySelector('.ophold, .tinfo.tnw');   // 성장 시안: 「길게 누르면 연속 강화」는 아래 탭 바로 위 고정 자리
+        if (typeof opTabs !== 'undefined' && opTabs) { opTabs.innerHTML = ''; opTabs.hidden = !stb; if (ohd) opTabs.appendChild(ohd); if (stb) opTabs.appendChild(stb); }
+      }
       // 특성 상세 칸 효과 줄: 길면 글씨를 10.5px 까지 줄이고, 그래도 넘치면 두 줄 (조건 줄은 숨김)
       var tef = ohd && ohd.querySelector('.tieff');
       [tef, ohd && ohd.querySelector('.tinote')].forEach(function (el) { if (!el) return; el.style.fontSize = ''; var full = el.scrollWidth, room = el.clientWidth; if (full > room + 0.5) el.style.fontSize = Math.max(9, parseFloat(getComputedStyle(el).fontSize) * (room - 1) / full).toFixed(2) + 'px'; });   // 한 줄 그대로, 글자만 줄임
       if (stb) { var stSel = stb.querySelector('[aria-selected="true"]'); if (stSel) $('sheetTitle').textContent = stSel.textContent; }   // 승인 시안: 제목 = 지금 화면 이름 (장비 / 코스튬 …)
       // the selected 신성력/룬 sits at the bottom of the sheet, always in sight (2026-11-15); it slides up when it opens
-      var was = !dock.hidden; dock.innerHTML = dh; dock.hidden = !dh;
+      var was = !dock.hidden;
+      if (soft && dh && was && dock.firstChild) { var dt = document.createElement('div'); dt.innerHTML = dh; morphKids(dock, dt); } else dock.innerHTML = dh;
+      dock.hidden = !dh;
       if (dh && !was) { dock.classList.remove('pop'); void dock.offsetWidth; dock.classList.add('pop'); var sl = panel.querySelector('.sel'); if (sl) sl.scrollIntoView({ block: 'nearest' }); }
     }
 
@@ -1136,7 +1174,7 @@
       else if (d.dlv) { ok = G.divineUp(d.dlv); if (ok) toast('삼신기 레벨이 올랐어요.'); else if (!quiet) toast(!CW.divineOpen(G.state) ? DATA.divineConf.unlockTier + '차 전직 후 해금' : '골드가 부족해요.'); }
       else if (d.sup) { ok = G.skillUp(d.sup); if (ok) toast(CW.skillById(d.sup).name + ' +' + CW.skillLevel(G.state, d.sup) + ' · 스킬 강화 완료'); else if (!quiet) toast(CW.skillLevel(G.state, d.sup) >= DATA.balance.skillMaxLv ? '최대 강화에 도달했어요.' : '골드가 부족해요.'); }
       if (ok && CW.opalUI) CW.opalUI.fx(d.tup ? 'tal:' + d.tup : d.cup ? 'cos:' + d.cup : d.dlv ? 'dv:' + d.dlv : 'sk:' + d.sup);   // 성공했을 때만 반응
-      renderPanel(true); hud(); if (d.sup) slots();
+      softRender = true; try { renderPanel(true); } finally { softRender = false; } hud(); if (d.sup) slots();
       return ok;
     }
     var HOLD_STEP = '[data-tup],[data-cup],[data-dlv],[data-sup]';
@@ -1145,7 +1183,7 @@
       if (hs) { var dd = { tup: hs.dataset.tup, cup: hs.dataset.cup, dlv: hs.dataset.dlv, sup: hs.dataset.sup }; stopHold(); if (!stepAct(dd, false)) return; holdT = setTimeout(function () { holdI = setInterval(function () { if (!stepAct(dd, true)) stopHold(); }, 90); }, 380); return; }
       var b = e.target.closest('[data-up],[data-mark],[data-mkhold],[data-circle],[data-blv],[data-rune],[data-sglv]'); if (!b) return;
       var key = b.dataset.up, mk = b.dataset.mark || b.dataset.mkhold, ci = b.dataset.circle, bl = b.dataset.blv, ru = b.dataset.rune, sl = b.dataset.sglv;
-      var once = function () { var ok = bl ? G.levelUp(bl) : ru ? G.runeUp(ru) : sl ? G.sigilLvUp() : mk ? G.markUp(mk) : ci ? G.circleUp() : (upMul > 1 ? G.upgradeN(key, upMul) : G.upgrade(key)); if (ok) { if (key) upSel = key; fxRune = ru || null; if (CW.opalUI) CW.opalUI.fx(key ? 'up:' + key : mk ? 'mk:' + mk : bl ? 'bl:' + bl : ru ? 'ru:' + ru : sl ? 'sglv' : 'circle'); renderPanel(true); fxRune = null; hud(); } else stopHold(); };
+      var once = function () { var ok = bl ? G.levelUp(bl) : ru ? G.runeUp(ru) : sl ? G.sigilLvUp() : mk ? G.markUp(mk) : ci ? G.circleUp() : (upMul > 1 ? G.upgradeN(key, upMul) : G.upgrade(key)); if (ok) { if (key) upSel = key; fxRune = ru || null; if (CW.opalUI) CW.opalUI.fx(key ? 'up:' + key : mk ? 'mk:' + mk : bl ? 'bl:' + bl : ru ? 'ru:' + ru : sl ? 'sglv' : 'circle'); softRender = true; try { renderPanel(true); } finally { softRender = false; } fxRune = null; hud(); } else stopHold(); };
       stopHold();
       // 징표 그림(돔·목록 그림)을 꾸욱 (사용자 2026-11-16, 아이폰): 스크롤하려고 닿은 것과 헷갈리지 않게 0.38초 가만히 누르고 있어야 시작, 그다음 연속 강화
       if (b.dataset.mkhold) { holdT = setTimeout(function () { once(); if (holdT) holdI = setInterval(once, 90); }, 380); return; }

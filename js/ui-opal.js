@@ -999,6 +999,9 @@
     '@keyframes opBtnGlow3{0%,100%{filter:brightness(1)}50%{filter:brightness(1.08) drop-shadow(0 0 4px rgba(90,220,210,.45))}}',
     '#sheet.opal#sheet.opal .pcard.anw .pcheck{left:auto;right:5px;top:6px;transform:none;width:20px;height:20px;background:url(art/al-check.webp) 50% 50%/contain no-repeat}',
     '#sheet.opal#sheet.opal .pcard.anw.on{filter:drop-shadow(0 0 3px rgba(80,210,200,.55))}',
+    // 카드 상자는 물약을 실제로 만들어 효과가 켜진 카드에만 (사용자 2026-11-16 아이폰: 상자 그림이 손 닿은 카드에만 그려져 「분노의 물약」만 상자로 잡혀 보였음)
+    '#sheet.opal#sheet.opal .pcard.anw:not(.on){border-image-source:none!important}',
+    '#sheet.opal#sheet.opal .pcard.anw .pcheck{display:none!important}',   // 켜진 카드 귀퉁이 체크 표시는 뺌 (사용자 2026-11-16)
     '#sheet.opal #panel{overflow-x:hidden!important;overscroll-behavior-x:none}',   // 그림이 조금 넘쳐도 화면이 옆으로 밀리지 않게 (사용자 2026-11-16)
     // ---- 승급 = 사용자 승급 부품 + 시안 실측 (2026-11-16, 시안 패널 948px = 화면 391px) ----
     '#sheet.opal#sheet.opal .rkwrap{margin:-11px 0 0!important;padding:0!important;display:block}',
