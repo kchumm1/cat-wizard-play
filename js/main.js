@@ -406,12 +406,13 @@
     buyCostume: function (id) { var ok = CW.buyCostume(state, id); if (ok) { refreshStats(); snd.play('win'); save(); } return ok; },
     upCostume: function (id) { var ok = CW.upCostume(state, id); if (ok) { refreshStats(); snd.play('click'); save(); } return ok; },
     wearCostume: function (id) { var ok = CW.wearCostume(state, id); if (ok) { applyLook(); save(); } return ok; },
-    costumeThumb: function (id) {
-      thumbs = thumbs || {}; var key = 'c:' + id; if (thumbs[key] !== undefined) return thumbs[key];
+    costumeThumb: function (id, size) {   // size: 오팔 코스튬 전시용 큰 그림 (2026-11-16), 없으면 목록용 150px
+      size = size || 150;
+      thumbs = thumbs || {}; var key = 'c:' + id + (size !== 150 ? ':' + size : ''); if (thumbs[key] !== undefined) return thumbs[key];
       var c = CW.costumeById(id); if (!c) return '';
       var a = art[c.art]; if (!a) { needArt(c.art); return ''; }
       var none = { hat: -1, staff: -1, robe: -1, belt: -1, necklace: -1, ear1: -1, ear2: -1, ring1: -1, ring2: -1, outfit: a.id === 'hero' ? c.outfit : null, fx: c.fx };
-      var big = CW.costumePreview(CW.paintHero(a, none), c.fx), cv = document.createElement('canvas'), s = 150 / Math.max(big.width, big.height);
+      var big = CW.costumePreview(CW.paintHero(a, none), c.fx), cv = document.createElement('canvas'), s = Math.min(1, size / Math.max(big.width, big.height));
       cv.width = Math.round(big.width * s); cv.height = Math.round(big.height * s); cv.getContext('2d').drawImage(big, 0, 0, cv.width, cv.height);
       return (thumbs[key] = cv.toDataURL('image/png'));
     },

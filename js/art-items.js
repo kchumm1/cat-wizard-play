@@ -40,6 +40,26 @@
     return STEP_PICS.indexOf(real) >= 0 ? src('gi-' + kind + '-' + real + '-' + clamp(sub, 1, 4)) : NEW_PICS.indexOf(real) >= 0 ? src('gi-' + kind + '-' + real) : gearPic(kind, real);
   };
 
+  // ---------- 성장 아이콘 (사용자 부품, 2026-11-16, tools/import-growth-parts.py 가 아래 목록을 고침) ----------
+  var GROW_ART = ['alphaCrit', 'alphaDmg', 'arcane', 'atk', 'catEye', 'crit', 'critDmg', 'doomClaw', 'elemRule', 'eternalCrit', 'eternalDmg', 'genesisCrit', 'genesisDmg', 'gold', 'haste', 'hyperCrit', 'hyperDmg', 'judge', 'manaBurst', 'mastery', 'megaCrit', 'megaDmg', 'omegaCrit', 'omegaDmg', 'origin', 'resonance', 'rift', 'speed', 'superCrit', 'superDmg', 'ultimateCrit', 'ultimateDmg', 'ultraCrit', 'ultraDmg'];
+  I.growArt = function (k) { return GROW_ART.indexOf(k) >= 0 ? 'art/gro-' + k + '.webp' : null; };
+
+  // ---------- 특성 아이콘 (사용자 부품, 2026-11-16, tools/import-talent-parts.py 가 아래 목록을 고침) ----------
+  var TAL_ART = ['tBoss', 'tChain', 'tChain3', 'tCrit', 'tGold', 'tManaBurst', 'tOrigin', 'tRift', 'tSkill', 'tXp', 'tcAlphaD', 'tcAlphaR', 'tcCritD', 'tcCritR', 'tcEterD', 'tcEterR', 'tcGenD', 'tcGenR', 'tcHyperD', 'tcHyperR', 'tcMegaD', 'tcMegaR', 'tcOmegaD', 'tcOmegaR', 'tcSuperD', 'tcSuperR', 'tcUltiD', 'tcUltiR', 'tcUltraD', 'tcUltraR'];
+  I.talentArt = function (id) { return TAL_ART.indexOf(id) >= 0 ? 'art/tal-' + id + '.webp' : null; };
+
+  // ---------- 코스튬 새 원화 19종 (사용자, 2026-11-16, tools/import-costumes.py) ----------
+  // 메뉴 전시·목록에만 쓰는 그림 (전투 캐릭터 모습은 그대로). 캔버스 1254 기준 발(알파 맨 아래) 위치 — 전시 때 발을 받침대에 맞춤
+  var COS_FEET = { aurora: 1197, basic: 1200, blossom: 1187, celestial: 1204, chaos: 1190, cheese: 1203, doom: 1189, doomClock: 1200, doomDragon: 1210,
+    doomFrost: 1200, doomHoly: 1189, doomNight: 1201, doomPlume: 1190, doomPrism: 1204, doomRose: 1203, ember: 1216, forest: 1219, midnight: 1189, royal: 1215 };
+  // small: 목록 카드용 (투명 여백을 잘라 낸 240px). 그림이 없는 새 코스튬은 null → 예전 방식 썸네일
+  I.cosArt = function (id, small) {
+    if (!COS_FEET[id]) return null;
+    return 'art/cos-' + id + (small ? '-s' : '') + '.webp';
+  };
+  // 전시 그림을 발 기준으로 맞출 때 올릴 비율 (캔버스 높이 대비, doomPrism 1204 = 0)
+  I.cosFeetShift = function (id) { return COS_FEET[id] ? (COS_FEET[id] - 1204) / 1254 : 0; };
+
   // ---------- sigils (신성력) ----------
   var BOLT = { superRate: 1, ultraRate: 1, hyperRate: 1, megaRate: 1, critDmg: 1, superDmg: 1, weakDmg: 1, surgeDmg: 1 };
   // every crit option (2026-11-16) uses the bolt picture
