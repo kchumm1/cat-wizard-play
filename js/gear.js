@@ -96,6 +96,16 @@
     }
     return true;
   }
+  // 운영자 선물: the chosen potential lines at the best quality (q = 1), replacing what the item had
+  function potBest(state, k, stats) {
+    var P = DATA.potConf; if (!owned(state, k) || !stats || !stats.length) return false;
+    var g = parseKey(k).grade;
+    state.bag[k].pot = stats.slice(0, P.lines).map(function (stat) {
+      var sp = P.stats.filter(function (x) { return x.stat === stat; })[0] || P.stats[0];
+      return { stat: sp.stat, val: sp.max * (1 + g * P.gradeMul), q: 1 };
+    });
+    return true;
+  }
   // every owned item counts: its level plus points for its tier
   function gearTotalLevel(state) {
     var b = state.bag || {}, t = 0;
@@ -136,7 +146,7 @@
     return state;
   }
   function gearCodexSync() {}
-  return { tierCount: tierCount, keyOf: keyOf, parseKey: parseKey, validKey: validKey, roman: roman, gearName: gearName, addItem: addItem, owned: owned, bagCount: bagCount, bagLevel: bagLevel,
+  return { potBest: potBest, tierCount: tierCount, keyOf: keyOf, parseKey: parseKey, validKey: validKey, roman: roman, gearName: gearName, addItem: addItem, owned: owned, bagCount: bagCount, bagLevel: bagLevel,
     tierMul: tierMul, mainValue: mainValue, ownedValue: ownedValue, maxLevel: maxLevel, levelCost: levelCost, levelUp: levelUp, merge: merge, mergeAll: mergeAll,
     transcendCost: transcendCost, transcend: transcend, gearStars: gearStars, equip: equip, unequip: unequip, bestKey: bestKey, equipBest: equipBest, rollPotential: rollPotential, potCost: potCost, potLock: potLock, gearTotalLevel: gearTotalLevel, gearStats: gearStats, migrateBag: migrateBag, gearCodexSync: gearCodexSync };
 });

@@ -174,13 +174,13 @@
       var run = G.dunState();
       return (run ? '<div class="notice">' + run.name + ' 진행 중</div>' : '') + guideRow('dungeon', '던전별 하루 입장권 ' + DATA.dungeonConf.tickets + '장 · 클리어하면 소탕 가능') + '<div class="dlist">' +
         DATA.dungeons.map(function (d) {
-          var left = CW.ticketsLeft(s, d.id, now), best = s.dungeon && s.dungeon.best && s.dungeon.best[d.id];
+          var bonus = (s.dungeon && s.dungeon.bonus && s.dungeon.bonus[d.id]) || 0, left = CW.ticketsLeft(s, d.id, now) - bonus, best = s.dungeon && s.dungeon.best && s.dungeon.best[d.id];
           var bestTxt = best ? (d.id === 'mana' ? '최고 피해 ' + fmt(best.dmg) : '최고 ' + best.kills + '마리') : '기록 없음';
           var rw = best ? CW.dungeonReward(s, d.id, best) : null;
           var rwTxt = rw ? (rw.gold ? '골드 +' + gh(rw.gold) : rw.gems ? '다이아 +' + fmt(rw.gems) : rw.runeStone ? '룬석 +' + fmt(rw.runeStone) + (rw.runes ? ' · 룬 ' + rw.runes + '개' : '') : '마력석 +' + fmt(rw.mana)) : '';
           if (!CW.kindOpen(s, d.id)) return '<div class="dung dg-' + d.id + ' lockd"><div class="dicon">' + mi('dungeon', d) + '</div><div class="info"><div class="dname">' + d.name + '</div><div class="note">' + d.desc + '</div><div class="note">' + d.unlockTier + '차 전직 후 해금</div></div></div>';
-          return '<div class="dung dg-' + d.id + '"><div class="dicon">' + mi('dungeon', d) + '</div><div class="info"><div class="dname">' + d.name + '</div><div class="note">' + d.desc + '</div><div class="note">입장권 <b style="color:#fff">' + left + '/' + DATA.dungeonConf.tickets + '</b> · ' + bestTxt + (rwTxt ? ' (' + rwTxt + ')' : '') + '</div></div>' +
-            '<div class="dbtns"><button class="buy' + (left && !run ? '' : ' off') + '" data-dgo="' + d.id + '">입장</button><button class="btn' + (left && best && !run ? '' : ' off') + '" data-dsw="' + d.id + '">소탕</button></div></div>';
+          return '<div class="dung dg-' + d.id + '"><div class="dicon">' + mi('dungeon', d) + '</div><div class="info"><div class="dname">' + d.name + '</div><div class="note">' + d.desc + '</div><div class="note">입장권 <b style="color:#fff">' + left + '/' + DATA.dungeonConf.tickets + '</b>' + (bonus ? ' <b style="color:#ffd76a">+' + bonus + '</b>' : '') + ' · ' + bestTxt + (rwTxt ? ' (' + rwTxt + ')' : '') + '</div></div>' +
+            '<div class="dbtns"><button class="buy' + ((left + bonus) && !run ? '' : ' off') + '" data-dgo="' + d.id + '">입장</button><button class="btn' + ((left + bonus) && best && !run ? '' : ' off') + '" data-dsw="' + d.id + '">소탕</button></div></div>';
         }).join('') + '</div>';
     }
     // mana surge gauge over the skill row (no pop-up words: the user wants none)

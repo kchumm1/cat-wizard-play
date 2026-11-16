@@ -1,10 +1,11 @@
 // 우편함 선물: 골드·다이아 말고 다른 재화와 아이템 (2026-11-16, the user: 운영자 선물로 모든 재화 + 모든 아이템).
 // A letter may carry `give`, beside goldJo and gems:
-//   { mana, runeStone, sigilStone, shards,                 재화: 마력석 · 룬석 · 신성석 · 신기 조각 (counts)
+//   { mana, runeStone, sigilStone, shards, awakenShard,    재화: 마력석 · 룬석 · 신성석 · 신기 조각 · 각성 파편 (counts)
 //     potions: { rage, luck, wisdom },                     물약: minutes added to each potion's timer
-//     gear:     [{ kind, grade, sub, n }],                 장비 (grade 0..9 = 일반..멸망, sub 0..3 = I..IV)
+//     tickets: { gold, mana, gem, rune },                  던전 입장권: extra tickets kept apart from the daily three
+//     gear:     [{ kind, grade, sub, n, pot }],            장비 (grade 0..9 = 일반..멸망, sub 0..3 = I..IV; pot = 3 잠재 stats, 최상급)
 //     runes:    [{ kind, grade, n }],                      룬 (grade 0..10 = 일반..멸망, level 0)
-//     sigils:   [{ grade, stat, best, n }],                신성력 (stat '' = random; best = 최상급 quality)
+//     sigils:   [{ grade, stat, best, n }],                신성력, always 최상급 (the form always picks a stat; '' / '@aw' = random only in old letters)
 //     relics:   [{ id, n }],                               유물 (each copy +1 level; past the top it turns into diamonds like a summon)
 //     costumes: [{ id }] }                                 코스튬 (not owned → owned at Lv.1, owned → one level up)
 // Used by the game (js/mail.js claims a letter) and by ops.html (the form and the preview). Rune and sigil bags have a
@@ -15,7 +16,8 @@
   function mod(file) { return isNode ? require(file) : root.CW; }
   var CUR = [
     { key: 'mana', name: '마력석', icon: '🔷' }, { key: 'runeStone', name: '룬석', icon: '🔮' },
-    { key: 'sigilStone', name: '신성석', icon: '💠' }, { key: 'shards', name: '신기 조각', icon: '✦' }
+    { key: 'sigilStone', name: '신성석', icon: '💠' }, { key: 'shards', name: '신기 조각', icon: '✦' },
+    { key: 'awakenShard', name: '각성 파편', icon: '🔆' }
   ];
   var MAX = 1e15;   // per kind per letter, so a typo cannot break a save
   function num(v) { v = Math.floor(+v || 0); return v > 0 ? Math.min(v, MAX) : 0; }
@@ -28,7 +30,11 @@
     if (n) a.push(String(n));
     return a.join(' ');
   }
+  var AW = '@aw';   // 무작위 각성 신성력 (오메가·이터널·제네시스 옵션 중 하나)
+  function awakenStats() { return DATA.sigilStats.filter(function (s) { return s.awaken; }); }
   function sigilStatName(stat) {
+    if (stat === AW) return '무작위 각성';
+    if (stat === 'critRate') return '치명타 확률';
     var names = { superRate: '슈퍼 크리 확률', ultraRate: '울트라 크리 확률', hyperRate: '하이퍼 크리 확률', megaRate: '메가 크리 확률', critDmg: '치명타 피해',
       superDmg: '슈퍼 크리 피해', skillDmg: '스킬 피해', bossDmg: '보스 피해', weakDmg: '약점 피해', surgeDmg: '폭주 피해', atkPct: '공격력',
       hyperDmg: '하이퍼 크리 피해', megaDmg: '메가 크리 피해', alphaDmg: '알파 크리 피해' };
@@ -42,13 +48,20 @@
     CUR.forEach(function (c) { var n = num(g[c.key]); if (n) o[c.key] = n; });
     var p = {}; (DATA.potions || []).forEach(function (pt) { var n = num(g.potions && g.potions[pt.id]); if (n) p[pt.id] = Math.min(n, 525600); });
     if (Object.keys(p).length) o.potions = p;
+    var tk = {}; (DATA.dungeons || []).forEach(function (d) { var n = num(g.tickets && g.tickets[d.id]); if (n) tk[d.id] = Math.min(n, 999); });
+    if (Object.keys(tk).length) o.tickets = tk;
     function rows(arr, ok) { return (Array.isArray(arr) ? arr : []).filter(function (x) { return x && typeof x === 'object' && ok(x); }); }
     var gr = DATA.grades.length, hi = DATA.hiGrades.length;
     var gear = rows(g.gear, function (x) { return DATA.kinds.indexOf(x.kind) >= 0 && x.grade >= 0 && x.grade < gr && x.sub >= 0 && x.sub < 4 && num(x.n); })
-      .map(function (x) { return { kind: x.kind, grade: Math.floor(x.grade), sub: Math.floor(x.sub), n: Math.min(num(x.n), 9999) }; });
+      .map(function (x) {
+        var o2 = { kind: x.kind, grade: Math.floor(x.grade), sub: Math.floor(x.sub), n: Math.min(num(x.n), 9999) };
+        var pot = (Array.isArray(x.pot) ? x.pot : []).filter(function (s) { return DATA.potConf.stats.some(function (p) { return p.stat === s; }); });
+        if (pot.length === DATA.potConf.lines) o2.pot = pot;
+        return o2;
+      });
     var runes = rows(g.runes, function (x) { return !!byId(DATA.runes, x.kind) && x.grade >= 0 && x.grade < hi && num(x.n); })
       .map(function (x) { return { kind: x.kind, grade: Math.floor(x.grade), n: Math.min(num(x.n), 100) }; });
-    var sigils = rows(g.sigils, function (x) { return x.grade >= 0 && x.grade < DATA.sigilConf.gradeMul.length && num(x.n) && (!x.stat || DATA.sigilStats.some(function (s) { return s.stat === x.stat; })); })
+    var sigils = rows(g.sigils, function (x) { return x.grade >= 0 && x.grade < DATA.sigilConf.gradeMul.length && num(x.n) && (!x.stat || x.stat === AW || DATA.sigilStats.some(function (s) { return s.stat === x.stat; })); })
       .map(function (x) { return { grade: Math.floor(x.grade), stat: x.stat || '', best: !!x.best, n: Math.min(num(x.n), 150) }; });
     var relics = rows(g.relics, function (x) { return !!byId(DATA.relics, x.id) && num(x.n); }).map(function (x) { return { id: x.id, n: Math.min(num(x.n), 1000) }; });
     var costumes = rows(g.costumes, function (x) { return !!byId(DATA.costumes, x.id); }).map(function (x) { return { id: x.id }; });
@@ -64,9 +77,10 @@
     var g = giftOf(l), out = [];
     CUR.forEach(function (c) { if (g[c.key]) out.push({ icon: c.icon, text: c.name + ' ' + ko(g[c.key]), name: c.name }); });
     (DATA.potions || []).forEach(function (pt) { var m = g.potions && g.potions[pt.id]; if (m) out.push({ icon: pt.icon, text: pt.name + ' ' + ko(m) + '분', name: pt.name }); });
-    (g.gear || []).forEach(function (x) { out.push({ icon: '🎒', text: DATA.grades[x.grade].name + ' ' + ROMAN(x.sub) + ' ' + DATA.kindName[x.kind] + (x.n > 1 ? ' ×' + x.n : ''), name: DATA.kindName[x.kind] }); });
+    (DATA.dungeons || []).forEach(function (d) { var n = g.tickets && g.tickets[d.id]; if (n) out.push({ icon: '🎟️', text: d.name + ' 입장권 ' + n + '장', name: d.name + ' 입장권' }); });
+    (g.gear || []).forEach(function (x) { out.push({ icon: '🎒', text: DATA.grades[x.grade].name + ' ' + ROMAN(x.sub) + ' ' + DATA.kindName[x.kind] + (x.n > 1 ? ' ×' + x.n : '') + (x.pot ? ' (최상급 잠재: ' + x.pot.map(sigilStatName).join(' · ') + ')' : ''), name: DATA.kindName[x.kind] }); });
     (g.runes || []).forEach(function (x) { var r = byId(DATA.runes, x.kind); out.push({ icon: r.icon, text: DATA.hiGrades[x.grade].name + ' ' + r.name + (x.n > 1 ? ' ×' + x.n : ''), name: r.name }); });
-    (g.sigils || []).forEach(function (x) { out.push({ icon: '💠', text: DATA.hiGrades[x.grade].name + ' 신성력' + (x.stat ? '(' + sigilStatName(x.stat) + ')' : '') + (x.best ? ' 최상급' : '') + (x.n > 1 ? ' ×' + x.n : ''), name: '신성력' }); });
+    (g.sigils || []).forEach(function (x) { out.push({ icon: '💠', text: DATA.hiGrades[x.grade].name + ' 신성력' + (x.stat ? '(' + sigilStatName(x.stat) + ')' : '') + ' 최상급' + (x.n > 1 ? ' ×' + x.n : ''), name: '신성력' }); });
     (g.relics || []).forEach(function (x) { var r = byId(DATA.relics, x.id); out.push({ icon: r.icon, text: '유물 ' + r.name + (x.n > 1 ? ' ×' + x.n : ''), name: r.name }); });
     (g.costumes || []).forEach(function (x) { var c = byId(DATA.costumes, x.id); out.push({ icon: '👘', text: '코스튬 ' + c.name, name: c.name }); });
     return out;
@@ -89,18 +103,26 @@
     if (g.mana) state.mana = (state.mana || 0) + g.mana;
     if (g.runeStone) state.runeStone = (state.runeStone || 0) + g.runeStone;
     if (g.sigilStone) { if (!state.sigil) mod('./sigil.js').sigilById(state, ''); state.sigil.stone = (state.sigil.stone || 0) + g.sigilStone; }
+    if (g.awakenShard) state.awakenShard = (state.awakenShard || 0) + g.awakenShard;
     if (g.shards) { if (!state.divine) state.divine = { staff: { lv: 0, star: 0 }, robe: { lv: 0, star: 0 }, charm: { lv: 0, star: 0 }, shards: 0 }; state.divine.shards = (state.divine.shards || 0) + g.shards; }
     if (g.potions) {
       if (!state.alch) state.alch = { brews: 0, until: {} }; if (!state.alch.until) state.alch.until = {};
       Object.keys(g.potions).forEach(function (id) { state.alch.until[id] = Math.max(now, state.alch.until[id] || 0) + g.potions[id] * 60000; });
     }
+    if (g.tickets) {
+      if (!state.dungeon) state.dungeon = { day: '', used: {}, best: {} }; if (!state.dungeon.bonus) state.dungeon.bonus = {};
+      Object.keys(g.tickets).forEach(function (id) { state.dungeon.bonus[id] = (state.dungeon.bonus[id] || 0) + g.tickets[id]; });
+    }
     var GE = g.gear && mod('./gear.js');
-    (g.gear || []).forEach(function (x) { GE.addItem(state, x.kind, x.grade * 4 + x.sub, x.n); });
+    (g.gear || []).forEach(function (x) { var k = GE.addItem(state, x.kind, x.grade * 4 + x.sub, x.n); if (x.pot) GE.potBest(state, k, x.pot); });
     var RU = g.runes && mod('./runes.js');
     (g.runes || []).forEach(function (x) { for (var i = 0; i < x.n; i++) RU.runeAdd(state, x.kind, x.grade); });
     var SG = g.sigils && mod('./sigil.js');
     (g.sigils || []).forEach(function (x) {
-      for (var i = 0; i < x.n; i++) { var it = SG.addSigil(state, x.grade, rng); if (!it) break; if (x.stat) it.stat = x.stat; if (x.best) it.q = 1; }
+      for (var i = 0; i < x.n; i++) { var it = SG.addSigil(state, x.grade, rng); if (!it) break;
+        if (x.stat === AW) { var aw = awakenStats(); it.stat = aw[Math.min(aw.length - 1, Math.floor(rng() * aw.length))].stat; }
+        else if (x.stat) it.stat = x.stat;
+        it.q = 1; }
     });
     if (g.relics) {
       var C = DATA.relicSummon; state.relics = state.relics || {};
@@ -121,11 +143,13 @@
     return {
       currencies: CUR.slice(),
       potions: (DATA.potions || []).map(function (p) { return { id: p.id, name: p.name, icon: p.icon }; }),
-      gearKinds: DATA.kinds.map(function (k) { return { id: k, name: DATA.kindName[k] }; }),
+      tickets: (DATA.dungeons || []).map(function (d) { return { id: d.id, name: d.name, icon: d.icon }; }),
+      gearKinds:DATA.kinds.map(function (k) { return { id: k, name: DATA.kindName[k] }; }),
       gearGrades: DATA.grades.map(function (g) { return g.name; }),
       hiGrades: DATA.hiGrades.map(function (g) { return g.name; }),
-      runes: DATA.runes.map(function (r) { return { id: r.id, name: r.name, icon: r.icon }; }),
-      sigilStats: DATA.sigilStats.map(function (s) { return { id: s.stat, name: sigilStatName(s.stat) }; }),
+      runes: DATA.runes.map(function (r) { return { id: r.id, name: r.name + (r.awaken ? ' (각성)' : ''), icon: r.icon }; }),
+      potStats: DATA.potConf.stats.map(function (s) { return { id: s.stat, name: sigilStatName(s.stat) }; }),
+      sigilStats: (DATA.sigilStats.map(function (s) { return { id: s.stat, name: sigilStatName(s.stat) + (s.awaken ? ' (각성)' : '') }; })),
       relics: DATA.relics.map(function (r) { return { id: r.id, name: r.name, icon: r.icon, divine: !!r.divine }; }),
       costumes: DATA.costumes.map(function (c) { return { id: c.id, name: c.name, grade: DATA.hiGrades[c.grade] ? DATA.hiGrades[c.grade].name : '' }; })
     };

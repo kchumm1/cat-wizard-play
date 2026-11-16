@@ -110,6 +110,8 @@ label.small{margin:8px 0 2px;font-size:13px}
     <div class="grid" id="curBox"></div>
     <label>물약 (분, 지금 남은 시간에 더해져요)</label>
     <div class="grid" id="potBox"></div>
+    <label>던전 입장권 (장, 매일 3장과 따로 쌓여요)</label>
+    <div class="grid" id="tkBox"></div>
     <label>아이템</label>
     <div class="itemAdd">
       <select id="itType" aria-label="아이템 종류"><option value="gear">장비</option><option value="runes">룬</option><option value="sigils">신성력</option><option value="relics">유물</option><option value="costumes">코스튬</option></select>
@@ -233,13 +235,14 @@ label.small{margin:8px 0 2px;font-size:13px}
   }
   CAT.currencies.forEach(function (c) { numBox($('curBox'), 'cur-' + c.key, c.icon + ' ' + c.name); });
   CAT.potions.forEach(function (p) { numBox($('potBox'), 'pot-' + p.id, p.icon + ' ' + p.name); });
+  CAT.tickets.forEach(function (d) { numBox($('tkBox'), 'tk-' + d.id, d.icon + ' ' + d.name); });
   function sel(id, label, options) {
     var d = document.createElement('div'), lb = document.createElement('label'), s = document.createElement('select');
     lb.className = 'small'; lb.htmlFor = id; lb.textContent = label; s.id = id; options.forEach(function (o) { s.appendChild(opt(o[0], o[1])); });
     d.appendChild(lb); d.appendChild(s); $('itOpts').appendChild(d); return s;
   }
-  var HINT = { gear: '장비 가방에 바로 들어가요.', runes: '룬 가방(100칸)에 Lv.0으로 들어가요. 자리가 모자라면 정리한 뒤에 받을 수 있어요.',
-    sigils: '신성력 가방(150칸)에 들어가요. 능력을 정하지 않으면 무작위예요.', relics: '하나에 레벨 +1(소환과 같아요). 최대 레벨을 넘는 만큼은 다이아로 돌려줘요.',
+  var HINT = { gear: '장비 가방에 바로 들어가요. 잠재 3줄을 고르면 최상급(레전더리)으로 들어가고, 그 장비에 있던 잠재는 바뀌어요.', runes: '룬 가방(100칸)에 Lv.0으로 들어가요. 자리가 모자라면 정리한 뒤에 받을 수 있어요.',
+    sigils: '신성력 가방(150칸)에 들어가요. 고른 능력, 품질은 언제나 최상급이에요. (각성)은 각성 칸에 껴요.', relics: '하나에 레벨 +1(소환과 같아요). 최대 레벨을 넘는 만큼은 다이아로 돌려줘요.',
     costumes: '없는 코스튬은 Lv.1로 생기고, 이미 있으면 레벨 +1이에요.' };
   function itForm() {
     var t = $('itType').value; $('itOpts').textContent = '';
@@ -247,13 +250,14 @@ label.small{margin:8px 0 2px;font-size:13px}
       sel('itKind', '부위', CAT.gearKinds.map(function (k) { return [k.id, k.name]; }));
       sel('itGrade', '등급', CAT.gearGrades.map(function (g, i) { return [i, g]; }));
       sel('itSub', '단계', [[0, 'I'], [1, 'II'], [2, 'III'], [3, 'IV']]);
+      var potOpts = [['', '잠재 안 줌']].concat(CAT.potStats.map(function (s) { return [s.id, s.name]; }));
+      [1, 2, 3].forEach(function (i) { sel('itPot' + i, '잠재 ' + i + '줄 (최상급)', potOpts); });
     } else if (t === 'runes') {
       sel('itKind', '룬', CAT.runes.map(function (r) { return [r.id, r.icon + ' ' + r.name]; }));
       sel('itGrade', '등급', CAT.hiGrades.map(function (g, i) { return [i, g]; }));
     } else if (t === 'sigils') {
       sel('itGrade', '등급', CAT.hiGrades.map(function (g, i) { return [i, g]; }));
-      sel('itStat', '능력', [['', '무작위']].concat(CAT.sigilStats.map(function (s) { return [s.id, s.name]; })));
-      sel('itBest', '품질', [['', '무작위'], ['1', '최상급']]);
+      sel('itStat', '능력', CAT.sigilStats.map(function (s) { return [s.id, s.name]; }));
     } else if (t === 'relics') {
       sel('itKind', '유물', CAT.relics.map(function (r) { return [r.id, r.icon + ' ' + r.name + (r.divine ? ' (신성)' : '')]; }));
     } else {
@@ -266,9 +270,11 @@ label.small{margin:8px 0 2px;font-size:13px}
   $('itAdd').onclick = function () {
     var t = $('itType').value, n = Math.floor(+$('itN').value || 0), v = function (id) { return $(id).value; };
     if (t !== 'costumes' && !(n >= 1)) { $('itHint').textContent = '개수는 1 이상으로 적어 주세요.'; return; }
-    var it = t === 'gear' ? { t: t, kind: v('itKind'), grade: +v('itGrade'), sub: +v('itSub'), n: n }
+    var pot = t === 'gear' ? [v('itPot1'), v('itPot2'), v('itPot3')].filter(Boolean) : [];
+    if (pot.length && pot.length < 3) { $('itHint').textContent = '잠재는 3줄 모두 고르거나, 모두 \'잠재 안 줌\'으로 두세요.'; return; }
+    var it = t === 'gear' ? Object.assign({ t: t, kind: v('itKind'), grade: +v('itGrade'), sub: +v('itSub'), n: n }, pot.length ? { pot: pot } : {})
       : t === 'runes' ? { t: t, kind: v('itKind'), grade: +v('itGrade'), n: n }
-      : t === 'sigils' ? { t: t, grade: +v('itGrade'), stat: v('itStat'), best: v('itBest') === '1', n: n }
+      : t === 'sigils' ? { t: t, grade: +v('itGrade'), stat: v('itStat'), best: true, n: n }
       : t === 'relics' ? { t: t, id: v('itKind'), n: n } : { t: t, id: v('itKind') };
     items.push(it); drawItems(); preview();
   };
@@ -277,6 +283,8 @@ label.small{margin:8px 0 2px;font-size:13px}
     CAT.currencies.forEach(function (c) { var n = +$('cur-' + c.key).value || 0; if (n > 0) g[c.key] = n; });
     CAT.potions.forEach(function (pt) { var n = +$('pot-' + pt.id).value || 0; if (n > 0) p[pt.id] = n; });
     if (Object.keys(p).length) g.potions = p;
+    var tk = {}; CAT.tickets.forEach(function (d) { var n = +$('tk-' + d.id).value || 0; if (n > 0) tk[d.id] = n; });
+    if (Object.keys(tk).length) g.tickets = tk;
     items.forEach(function (it) { var o = Object.assign({}, it); delete o.t; (g[it.t] = g[it.t] || []).push(o); });
     return g;
   }
@@ -321,7 +329,7 @@ label.small{margin:8px 0 2px;font-size:13px}
     if (!confirm('보낼까요?\n받는 사람: ' + who + '\n선물: ' + CW.mailRewardText(l) + '\n받을 수 있는 날: ' + (l.from || l.date) + ' ~ ' + (l.until || '계속'))) return;
     $('send').disabled = true; say('sendMsg', '보내는 중…');
     save(function (doc) { return CW.mailAdd(doc, l); }, '운영자 편지: ' + l.sub)
-      .then(function (doc) { say('sendMsg', '보냈어요! 1~2분 뒤 게임을 다시 켜면 우편함에 와 있어요.', 'ok'); $('gold').value = ''; $('gems').value = ''; $('pids').value = ''; document.querySelectorAll('#curBox input,#potBox input').forEach(function (x) { x.value = ''; }); items = []; drawItems(); subTouched = false; $('sub').value = ''; preview(); draw(doc); })
+      .then(function (doc) { say('sendMsg', '보냈어요! 1~2분 뒤 게임을 다시 켜면 우편함에 와 있어요.', 'ok'); $('gold').value = ''; $('gems').value = ''; $('pids').value = ''; document.querySelectorAll('#curBox input,#potBox input,#tkBox input').forEach(function (x) { x.value = ''; }); items = []; drawItems(); subTouched = false; $('sub').value = ''; preview(); draw(doc); })
       .catch(function (e) { say('sendMsg', '못 보냈어요: ' + e.message, 'bad'); })
       .then(function () { $('send').disabled = false; });
   };

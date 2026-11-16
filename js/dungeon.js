@@ -7,15 +7,20 @@
   function dayKey(now) { var d = new Date(now); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
   function dstate(state, now) {
     if (!state.dungeon) state.dungeon = { day: '', used: {}, best: {} };
+    if (!state.dungeon.bonus) state.dungeon.bonus = {};
     var k = dayKey(now); if (state.dungeon.day !== k) { state.dungeon.day = k; state.dungeon.used = {}; }
     return state.dungeon;
   }
   function dungeonOpen(state) { return (state.tier || 1) >= C.unlockTier; }
   function kindOpen(state, kind) { var d = DATA.dungeons.filter(function (x) { return x.id === kind; })[0]; return !!d && (state.tier || 1) >= (d.unlockTier || C.unlockTier); }
-  function ticketsLeft(state, kind, now) { return Math.max(0, C.tickets - (dstate(state, now).used[kind] || 0)); }
+  // bonus: extra tickets from the mailbox (운영자 선물), kept apart from the daily three and used after them
+  function bonusOf(state, kind) { return (state.dungeon && state.dungeon.bonus && state.dungeon.bonus[kind]) || 0; }
+  function ticketsLeft(state, kind, now) { return Math.max(0, C.tickets - (dstate(state, now).used[kind] || 0)) + bonusOf(state, kind); }
   function useTicket(state, kind, now) {
     if (!dungeonOpen(state) || !kindOpen(state, kind) || ticketsLeft(state, kind, now) <= 0) return false;
-    var d = dstate(state, now); d.used[kind] = (d.used[kind] || 0) + 1; return true;
+    var d = dstate(state, now);
+    if ((d.used[kind] || 0) < C.tickets) d.used[kind] = (d.used[kind] || 0) + 1; else d.bonus[kind] = bonusOf(state, kind) - 1;
+    return true;
   }
   function at(state) { return { stage: Math.max(0, state.best), diff: state.diff || 0, best: state.best, up: state.up }; }
   function golemHp(state, lv) { return dep('economy').stageMonsterHp(at(state)) * C.golemHpMul * Math.pow(C.golemGrowth, lv); }
