@@ -44,6 +44,9 @@
     S + '.run-lv{left:50%;top:45.5px;width:48px;height:17px;transform:translateX(-50%);box-sizing:border-box;border:0 solid transparent;border-image:url(art/ru-lvpill.webp) 36 fill / 8.5px stretch;font:800 12px/17px var(--body);color:#30364d;text-align:center;white-space:nowrap;letter-spacing:-.2px}',
     S + '.run-anc{left:50%;top:58px;width:64px;height:16px;transform:translateX(-50%);background:url(art/ru-anchor.webp) 50% 50%/100% 100% no-repeat;font:800 10px/15.5px var(--body);font-style:normal;color:#fff;text-align:center;white-space:nowrap;text-shadow:0 1px 1px rgba(10,70,70,.5)}',
     S + '.run.sel .run-dome{box-shadow:0 0 0 2.5px #5ad3c9,0 0 12px 3px rgba(90,211,201,.55)}',
+    // 무대 장착 룬도 목록 칸과 같은 연보라 보석 원판 (사용자 2026-11-17 「여기는 안 바뀐 거야?」): 유리 돔·앞 반사·등급 빛 대신 art/ru-orb
+    S + '.ruv .run-dome{background:url(art/ru-orb.webp) 50% 50%/100% 100% no-repeat!important;box-shadow:0 2px 7px rgba(90,60,170,.3),0 0 12px rgba(230,210,255,.55)}' + S + '.ruv .run-glint,' + S + '.ruv .run-gc{display:none}' + S + '.ruv .run-art{left:21%;top:19%;width:58%;height:58%}',
+    S + '.ruv .run.sel .run-dome{box-shadow:0 0 0 2.5px #5ad3c9,0 0 12px 3px rgba(90,211,201,.55)}',
     S + '.run:active .run-dome{transform:scale(.95)}',
     S + '.run.empty .run-dome{opacity:.55;background:url(art/ru-dome.webp) 0 0/100% 100% no-repeat}' + S + '.run.empty .run-lv{color:#8f96aa;font-size:11px}',
     S + '.run.up .run-dome,' + S + '.run.opfx .run-dome{animation:rsPop .45s ease-out var(--opd,0s) both}',
