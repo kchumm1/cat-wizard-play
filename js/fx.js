@@ -58,7 +58,7 @@
     // the play field as the camera sees it: spells may now spread over all of it
     var FC = V(0, 0, -0.4);
     // skills drawn without any rune ring (the 'circle' picture): the user found the magic circles in element storm tacky
-    var NO_CIRCLE = { starShot: 1, magicClaw: 1, furBomb: 1, sparkRing: 1, pawStamp: 1, yarnBall: 1, starDust: 1, elementNova: 1, elementStorm: 1, prismBeam: 1, elementWheel: 1, phoenixDive: 1, featherRain: 1, rebirthFlame: 1, phoenixWings: 1 };
+    var NO_CIRCLE = { sunSpear: 1, starShot: 1, magicClaw: 1, furBomb: 1, sparkRing: 1, pawStamp: 1, yarnBall: 1, starDust: 1, elementNova: 1, elementStorm: 1, prismBeam: 1, elementWheel: 1, phoenixDive: 1, featherRain: 1, rebirthFlame: 1, phoenixWings: 1 };
     function fieldPt(y) { var z = rr(-4.3, 3.4); return V(rr(-1, 1) * (1.9 + (3.8 - z) * 0.15), y || 0, z); }
     // n spots scattered over the whole field, one after another
     function fieldPops(c, n, t0, gap, fn) { for (var i = 0; i < n; i++) (function (i) { after(c.D(t0 + i * gap + rr(0, gap)), function () { fn(fieldPt(0), i); }); })(i); }
@@ -337,6 +337,135 @@
         p.x = nx; p.y = ny; p.z = nz; return true;
       };
     }
+    // ---------- the 4th-tier ice in real 3D (2026-11-16, the user: the ice was too big and blunt — "I thought of sharp,
+    // pointed ice"): slender crystals made in Blender (js/mesh-ice.js, tools/blender/ice_meshes.py), drawn with the clear
+    // ice shader. Small: a crystal is about a monster's height at most, nothing covers the crowd ----------
+    var ICEC = [0xffffff, 0xd8f2ff, 0xbfe8ff], IQY = V(0, 1, 0);
+    // a crystal (kind iceNeedle / iceCluster) shooting up out of the ground at g, pointing along ax, L long: up in o.rise
+    // s, stands o.hold s, then sinks and melts (o.melt s), or with o.crack breaks into chips there instead. o.w: thicker
+    function iceRise(kind, g, ax, L, o) {
+      o = o || {};
+      var h = P3.bm(kind, { col: o.col || pick(ICEC) }), dir = ax.clone().normalize(), q = new T.Quaternion().setFromUnitVectors(IQY, dir), t = 0;
+      var rise = o.rise || 0.07, hold = o.hold || 0.4, melt = o.melt || 0.25, at = V(), W = L * (o.w || 1), S3 = V(W, L, W), base = g.clone();
+      tick(function (dt) {
+        t += dt; var up = Math.min(1, t / rise), e = 1 - (1 - up) * (1 - up), sink = Math.max(0, (t - rise - hold) / melt);
+        if (o.crack && sink > 0) { iceChips(base.clone().addScaledVector(dir, L * 0.5), o.chips || 4, 2.4, 2.0, L * 0.15); h.kill(); return true; }
+        at.copy(base).addScaledVector(dir, -L * (1 - e) - L * 0.8 * sink);
+        h.set(at, q, S3, Math.max(0, 1 - sink * sink), 0);
+        if (sink < 1) return false; h.kill(); return true;
+      });
+      return h;
+    }
+    // chips of broken ice thrown out from p, tumbling and falling: n of them, speed, up, size
+    function iceChips(p, n, spd, up, size) {
+      for (var k = 0; k < n; k++) (function () {
+        var h = P3.bm('iceChip', { col: pick(ICEC) }), P = p.clone().add(rdir(0.12)), vel = rdir(spd).add(V(0, up, 0)), q = new T.Quaternion().setFromEuler(new T.Euler(rr(0, 6.3), rr(0, 6.3), rr(0, 6.3)));
+        var w = rdir(1).normalize(), spin = rr(8, 16), t = 0, life = rr(0.4, 0.65), sz = (size || 0.14) * rr(0.7, 1.3), R = new T.Quaternion();
+        tick(function (dt) {
+          t += dt; vel.y -= 9 * dt; P.addScaledVector(vel, dt); q.multiply(R.setFromAxisAngle(w, spin * dt));
+          h.set(P, q, sz, Math.max(0, 1 - Math.max(0, t - life * 0.6) / (life * 0.4)), 0);
+          if (t < life && P.y > -0.05) return false; h.kill(); return true;
+        });
+      })();
+    }
+    // the cold where ice strikes: a small pale-blue flash (no white), a little frost on the ground, a breath of cold mist
+    function iceHitFx(c, p, B) {
+      B = B || 1; var g = V(p.x, 0, p.z);
+      flare(p, 0xbfe8ff, 0.7 * B, 0.1);
+      E({ sys: 'gadd', pos: V(g.x, 0.04, g.z), frame: 'frost', color: c.col, size: [0.2, 1.2 * B], ease: 1, life: 0.7, fadeOut: 0.5, alpha: 0.55 });
+      smoke(V(g.x, 0.25, g.z), 0xe8f8ff, N(2, c), { size: 0.45 * B, alpha: 0.28, rise: 0.25, life: 0.9 });
+      sparks(p, [0xffffff, c.col], N(4, c), 3, { size: 0.1, up: 1.4 });
+      sc.light(p, c.col, 1.2, 0.3);
+    }
+    // a sharp spike of ice (iceSpike2, radius 1/11 of its height) standing up out of the ground at p — in place of the old
+    // blunt spikes (P3.iceSpike, radius 1/5): o.h tall, leaning o.lean (radians, sideways on the screen; the top toward -x
+    // when it is above 0), o.out toward the camera, up and gone in o.life s
+    function sharpSpike(p, o) {
+      o = o || {}; var life = o.life || 0.6, lean = o.lean || 0;
+      return iceRise('iceSpike2', V(p.x, -0.04, p.z), V(-Math.sin(lean), Math.cos(lean), o.out || 0), o.h || 0.6, { rise: 0.08, hold: life * 0.57, melt: life * 0.35, w: o.w || 1.45 });
+    }
+    // sharp icicles bursting up all round a monster's feet, leaning outward, then sinking (the ice storm's, 얼음 폭풍), a
+    // flash, and chips flying a moment later. B: bigger
+    function iceCrown(c, m, B, n) {
+      n = n || 7; var g = gp(m), big = (m.boss ? 1.45 : 1) * (B || 1), S1 = 0.7 * Math.min(1.2, c.s) * big, life = c.D(0.62);
+      for (var s = 0; s < n; s++) {
+        var a = s / n * 6.283 + rr(-0.3, 0.3), d = s === 0 ? 0 : 0.18 * big, L = S1 * (s === 0 ? 1.15 : rr(0.65, 0.95)), lean = s === 0 ? 0.05 : rr(0.35, 0.6);
+        iceRise('iceShard2', V(g.x + Math.cos(a) * d, -0.08, g.z + 0.25 + Math.sin(a) * d * 0.8), V(Math.cos(a) * Math.sin(lean), Math.cos(lean), Math.sin(a) * Math.sin(lean) * 0.8), L, { rise: 0.1, hold: life * 0.55, melt: life * 0.35, w: 1.35 });
+      }
+      var q0 = sc.mobPos(m); flare(q0, 0xffffff, 1.0, 0.13, { white: true }); shock(q0, c.col, 1.6 * big, 0.3);
+      after(c.D(0.48), function () { var q = sc.mobPos(m); iceChips(q, N(8, c), 3.6, 2.3, 0.19); sparks(q, [0xffffff, c.col], N(6, c), 4, { size: 0.15 }); });
+    }
+    // ---------- the constellation's star, in colour (2026-11-16, the user: the star itself is fine, it had no colour; the
+    // star skills are made with it): a white heart in a star of its colour in a soft glow of it ----------
+    var STARC = [0xffd84a, 0x6fe0ff, 0xff8ad8, 0xb88aff, 0x7affc8];
+    // the parts of one, as homing() heads (s: its size)
+    function starHeads(col, s, ga) {
+      return [{ frame: 'glow', color: col, size: s * 1.8, alpha: ga === undefined ? 0.5 : ga }, { frame: 'star', color: col, size: s, spin: 12 }, { frame: 'star', color: 0xffffff, size: s * 0.55, spin: 12, white: true }];
+    }
+    // one standing at p (upd: how it moves; life), as a list of particles (kill them with vx.kill)
+    function starAt(p, col, s, life, upd, ga) {
+      return starHeads(col, s, ga).map(function (h) { return E(clone({ pos: p, life: life || 30, upd: upd || STAY, fadeOut: 1 }, h)); });
+    }
+    // where one lands: a flash and a ring of its colour, little stars of it thrown out, sparks
+    function starBurst(c, p, col, B) {
+      B = B || 1;
+      flare(p, col, 0.9 * B, 0.12); gRing(V(p.x, 0, p.z), col, 1.3 * B * Math.min(1.3, c.s), 0.3);
+      for (var k = 0; k < N(6, c); k++) E({ pos: p.clone(), vel: rdir(rr(2, 3.5)).add(V(0, 1, 0)), frame: 'star', color: pick([col, col, 0xffffff]), size: [rr(0.14, 0.24) * B, 0], life: rr(0.35, 0.55), drag: 2.2, grav: 2, spin: rr(-8, 8) });
+      sparks(p, [0xffffff, col], N(5, c), 4, { size: 0.12, up: 1.2 });
+      sc.light(p, col, 1.2, 0.25);
+    }
+    // a ball of toon fire flying along v (2026-11-16, real 3D): the Blender teardrop (js/mesh-fire.js 'fireball') with its
+    // round head at p and its tail of flame tongues streaming back, spinning round its flight, a hotter core inside it.
+    // L: its length; set(p, v, dt, k): k scales it (a ball swelling before it is thrown). The drawn 3D fireball only if
+    // those shapes are missing
+    function toonBall(L, o) {
+      o = o || {};
+      var b = P3.toonFire && P3.toonFire('fireball', { kind: o.kind, tw: 2.6, rise: 2.6, band: 0.35, lift: 0.04, foot: true, glow: o.glow === undefined ? 0.9 : o.glow });
+      if (!b || !b.ready()) { var fb = P3.fireball({ size: 0.16 * L, col: o.col }); return { set: function (p, v, dt) { fb.set(p, v, dt); }, kill: function () { fb.kill(); } }; }
+      var cr = P3.toonFire('fireballCore', { kind: o.kind, core: true, tw: 2.0, rise: 3.2, band: 0.35, foot: true }), spin = Math.random() * 6.283, ax = V(0, 1, 0), f1 = V(), f2 = V();
+      // o.thick: one more layer of fire round it (its own flame pattern, turning the other way) so it reads solid
+      var b2 = o.thick ? P3.toonFire('fireball', { kind: o.kind, tw: -2.2, rise: 2.2, band: 0.3, lift: 0.0, foot: true, noGlow: true }) : null;
+      return {
+        set: function (p, v, dt, k) {
+          var Lk = L * (k === undefined ? 1 : Math.max(0.01, k));
+          spin += (dt || 0) * 13; var sp = v.length(); if (sp > 1e-4) ax.copy(v).multiplyScalar(-1 / sp);
+          f1.copy(p).addScaledVector(ax, -0.3 * Lk); f2.copy(p).addScaledVector(ax, -0.3 * 0.72 * Lk);
+          b.set(f1, Lk, spin, 0, 0, 0, undefined, ax); cr.set(f2, Lk * 0.72, spin * 1.2, 0, 0, 0, undefined, ax);
+          if (b2) b2.set(f1, Lk * 0.96, -spin * 0.8 + 1.7, 0, 0, 0, Lk / 1.6 * 0.9, ax);
+        },
+        kill: function () { b.kill(); cr.kill(); if (b2) b2.kill(); }
+      };
+    }
+    // where a ball of fire lands (real 3D): a lumpy dome of toon fire (the Blender 'boom') bursts up out of the ground round
+    // g and breaks apart, a hotter core inside it, and the same dome as smoke rises off it as it goes. R: its radius.
+    // o.tall: its height over R; o.climb: how high its smoke climbs (over its height); o.grow: how long it takes to burst
+    // to full size; o.spread: how much wider it is flung as it breaks up; o.lite: one layer, no glow shell, no tongue in the
+    // middle (for the many small ones round a big one: the layers and glows overlapping on the screen cost a phone,
+    // 2026-11-16 iPhone: 폭염탄 54 frames a second → see dev/phone-perf-redo.html). false if the shapes are missing
+    function toonBoom(g, R, o) {
+      o = o || {};
+      var f = P3.toonFire && P3.toonFire('boom', { kind: o.kind, tw: 1.4, rise: 2.4, band: 0.45, lift: o.lite ? 0.0 : 0.05, glow: 0.9, noGlow: o.lite }); if (!f || !f.ready()) return false;
+      // one more layer of fire just inside the first, its own flame pattern, turning the other way: it fills the gaps
+      var f2 = o.layers === 1 || o.lite ? null : P3.toonFire('boom', { kind: o.kind, tw: -1.2, rise: 2.0, band: 0.4, lift: 0.0, noGlow: true });
+      // and a tongue of fire standing up in its middle (the fireball's teardrop, its round head at the ground, its tail of
+      // flame tongues rising): seen from above the crown was an empty ring
+      var fl = o.layers === 1 || o.lite ? null : P3.toonFire('fireball', { kind: o.kind, tw: 2.4, rise: 3.0, band: 0.35, lift: 0.0, foot: true, noGlow: true }), flp = V(g.x, 0, g.z);
+      var fc = P3.toonFire('boomCore', { kind: o.kind, core: true, tw: 1.0, rise: 3.0, band: 0.45 }), sm = P3.toonFire('boom', { smoke: true, tw: 0.9, rise: 0.6, band: 0.4 });
+      var t = 0, spin = rr(0, 6.283), H = R * (o.tall || 1.0), base = V(g.x, 0, g.z), up = V(), GROW = o.grow || 0.1, HOLD = GROW + 0.05, END = o.end || 0.8, SPREAD = o.spread === undefined ? 0.08 : o.spread;
+      tick(function (dt) {
+        t += dt; spin += dt * 2.2;
+        var e = 1 - Math.pow(1 - Math.min(1, t / GROW), 3), dis = Math.min(1, Math.max(0, (t - HOLD) / 0.32)), sw = R * (0.45 + 0.55 * e) * (1 + SPREAD * Math.min(1, Math.max(0, t - GROW) / 0.35));
+        f.set(base, H * (0.3 + 0.7 * e) * (1 + 0.2 * dis), spin, 0, 0, dis, sw);
+        if (f2) f2.set(base, H * 0.9 * (0.3 + 0.7 * e) * (1 + 0.2 * dis), -spin * 0.8 + 2.1, 0, 0, Math.min(1, dis * 1.1), sw * 0.86);
+        if (fl) { flp.y = -0.15 * H; fl.set(flp, H * 1.25 * (0.3 + 0.7 * e) * (1 + 0.15 * dis), spin * 1.5, 0, 0, Math.min(1, dis * 1.2), sw * 1.2); }
+        fc.set(base, H * 0.78 * e, spin * 1.3, 0, 0, Math.min(1, dis * 1.4), sw);
+        var st = (t - HOLD * 0.7) / (END - HOLD * 0.7);
+        if (st > 0) { up.set(base.x, H * (o.climb || 0.5) * st, base.z); sm.set(up, H * (0.8 + 0.4 * st), spin * 0.5, 0, 0, Math.min(1, 0.25 + st * 0.8), sw * (0.85 + 0.35 * st)); }
+        else sm.set(base, H, 0, 1, 0, 1);
+        if (t < END) return false; f.kill(); fc.kill(); sm.kill(); if (f2) f2.kill(); if (fl) fl.kill(); return true;
+      });
+      return true;
+    }
     function explosion(c, p, S_, col) {
       sc.hitStop(0.06);
       flare(p, 0xffffff, 1.5 * S_, 0.16, { white: true });
@@ -511,28 +640,35 @@
         return true;
       });
     };
+    // Fireball (real 3D, 2026-11-16): flames whirl into the paw, and a ball of toon fire (a round head, its tail torn into
+    // flame tongues, spinning round its flight) is thrown at each target in an arc; where it lands a dome of fire bursts
+    // up out of the ground and breaks apart into smoke. No big white flash, no flat glow over the burst
     S.fireball = function (c) {
       var list = c.targets.slice(); if (!list.length) return;
+      c.plain = true;
       sc.heroPose('thrust', c.D(0.18), 0xff8a3a);
       var tip = c.from;
-      seal(tip.clone().add(V(0.3, 0.05, 0.1)), 0xff8a3a, 0.95 * c.s, c.D(0.32));
-      for (var i = 0; i < N(14, c); i++) { var a = rr(0, 6.28), r = rr(0.4, 0.75); E({ pos: tip, frame: 'flame', color: [0xffe080, 0xff6a2b], size: [0.24, 0.08], life: c.D(rr(0.12, 0.18)), delay: rr(0, c.D(0.04)), upd: spiralTo(tip, a, r), fadeIn: 0.3 }); }
-      glow(tip, 0xff8a3a, [0.2, 0.9 * c.s], c.D(0.2), { fadeIn: 0.7, hot: 1.3 });
+      for (var i = 0; i < N(10, c); i++) { var a = rr(0, 6.28), r = rr(0.35, 0.6); E({ pos: tip, frame: 'flame', color: [0xffe080, 0xff6a2b], size: [0.2, 0.06], life: c.D(rr(0.12, 0.18)), delay: rr(0, c.D(0.04)), upd: spiralTo(tip, a, r), fadeIn: 0.3 }); }
+      glow(tip, 0xff8a3a, [0.2, 0.55 * c.s], c.D(0.2), { fadeIn: 0.7, hot: 1.2 });
       list.forEach(function (mob, j) {
         after(c.D(0.18 + j * 0.09), function () {
-          var from = sc.heroPaw(), S_ = c.s * (1 + 0.08 * (c.tier - 2));
-          flare(from, 0xffffff, 1.1 * c.s, 0.14, { white: true }); smoke(from, 0x5a4a44, N(3, c), { size: 0.5, rise: 0.4 });
-          // a real ball of fire (js/fx3d.js) instead of a painted one: no flat cards over it, its own tail and smoke
-          var ball = P3.fireball({ size: 0.17 * S_ });
+          var from = sc.heroPaw(), S_ = Math.min(1.5, c.s * (1 + 0.08 * (c.tier - 2))), ball = toonBall(0.8 * S_);
+          smoke(from, 0x5a4a44, N(2, c), { size: 0.4, rise: 0.4 });
           homing({ from: from, to: function () { return sc.mobPos(mob); }, time: c.D(0.36), arc: V(0, 1.9 - j * 0.6, 0.15), ease: function (k) { return k * k * 0.6 + k * 0.4; }, fancy: false, heads: [],
             emit: function (p, v, dt) {
-              if (ball) ball.set(p, v, dt);
+              ball.set(p, v, dt);
               var back = v.clone().multiplyScalar(-0.12);
-              if (Math.random() < dt * 34 * c.n) trailFire(p, v, 0.17 * S_, { size: 0.36 * S_, speed: 0.6, up: 0.4, life: 0.7, v: back });
-              if (Math.random() < dt * 25 * c.n) E({ sys: 'norm', pos: p.clone(), vel: back.clone().add(V(0, 0.5, 0)), frame: 'smoke', color: 0x4a3c38, size: [0.2 * S_, 0.7 * S_], ease: 1, life: 0.6, alpha: 0.35, drag: 2, fadeIn: 0.2 });
-              if (Math.random() < dt * 30 * c.n) E({ pos: p.clone(), vel: rdir(1.5).add(back), frame: 'dot', color: [0xffe080, 0xff5a1a], size: [0.07, 0], life: 0.4, grav: 2, stretch: 0.1 });
+              if (Math.random() < dt * 22 * c.n) E({ pos: p.clone().addScaledVector(v, -0.05), vel: rdir(1.2).add(back), frame: 'dot', color: [0xffe080, 0xff5a1a], size: [0.06, 0], life: 0.35, grav: 2, stretch: 0.1 });
+              if (Math.random() < dt * 12 * c.n) E({ sys: 'norm', pos: p.clone().addScaledVector(v, -0.09), vel: back.clone().add(V(0, 0.5, 0)), frame: 'smoke', color: 0x4a3c38, size: [0.15 * S_, 0.5 * S_], ease: 1, life: 0.5, alpha: 0.28, drag: 2, fadeIn: 0.2 });
             },
-            onHit: function (p) { ball.kill(); P3.blast(V(p.x, 0, p.z), { size: 0.5 * S_, col: 0xff8a2b, flash: true, chips: 4, ring: 2.4, life: 0.7 }); explosion(c, p, S_, 0xff7a2b); c.hit(mob, 1, 1.6); } });
+            onHit: function (p) {
+              ball.kill(); var g = V(p.x, 0, p.z);
+              if (!toonBoom(g, 0.52 * S_)) P3.blast(g, { size: 0.4 * S_, col: 0xff8a2b, chips: 3, ring: 2.0, life: 0.6 });
+              sparks(p, [0xffe080, 0xff8a2b], N(8, c), 5, { size: 0.15, stretch: 0.14 });
+              embers(p, [0xffe080, 0xff6a2b], N(6, c), { speed: 2.4, up: 2.2 });
+              scorch(g, 1.0 * S_, 2.2); sc.light(p, 0xff8a3a, 1.6, 0.35); sc.shake(0.12);
+              c.hit(mob, 1, 1.6);
+            } });
         });
       });
     };
@@ -597,6 +733,7 @@
       smoke(V(C.x, 0.2, C.z), 0xdff4ff, N(8, c), { r: 1.2, size: 1.4, rise: 0.15, speed: 0.6, alpha: 0.32, life: 1.4 });
       sc.light(V(C.x, 1, C.z), c.col, 0.7, dur);
       sc.flash('rgba(210,240,255,0.3)', 0.15);
+      // (2026-11-16: the same storm, its ice the sharper shard, iceShard2 in js/mesh-ice.js)
       // Every shard that falls is aimed at a monster and is a real hit; the first one to land on a monster freezes it in
       // spikes. The shards are real 3D ice crystals made in Blender (tools/blender/skills6_meshes.py: a long point with
       // small crystals at its back): one comes down slanted, point first, stands in the ground a moment and sinks as it
@@ -604,7 +741,7 @@
       var iced = [], ICE3 = [0xffffff, 0xd8f2ff, 0xbfe8ff], QY = V(0, 1, 0);
       function bits(at, n, spd, up) {
         for (var k = 0; k < n; k++) (function () {
-          var h = P3.bm('iceShard', { col: pick(ICE3) }), P = at.clone().add(rdir(0.25)), vel = rdir(spd).add(V(0, up, 0)), q = new T.Quaternion().setFromEuler(new T.Euler(rr(0, 6.3), rr(0, 6.3), rr(0, 6.3))), w = rdir(1).normalize(), spin = rr(8, 16), t = 0, life = rr(0.45, 0.75), sz = rr(0.18, 0.3), R = new T.Quaternion();
+          var h = P3.bm('iceShard2', { col: pick(ICE3) }), P = at.clone().add(rdir(0.25)), vel = rdir(spd).add(V(0, up, 0)), q = new T.Quaternion().setFromEuler(new T.Euler(rr(0, 6.3), rr(0, 6.3), rr(0, 6.3))), w = rdir(1).normalize(), spin = rr(8, 16), t = 0, life = rr(0.45, 0.75), sz = rr(0.18, 0.3), R = new T.Quaternion();
           tick(function (dt) {
             t += dt; vel.y -= 9 * dt; P.addScaledVector(vel, dt); q.multiply(R.setFromAxisAngle(w, spin * dt));
             h.set(P, q, sz, Math.max(0, 1 - Math.max(0, t - life * 0.6) / (life * 0.4)), 0);
@@ -615,7 +752,7 @@
       // it follows its monster as it falls (to land at its feet where it stands then, 2026-11-16: it fell where the monster
       // had been) and, if that one falls first, the one nearest it, which is the one that takes the hit
       function iceFall(mob, g, L, time, onLand) {
-        var h = P3.bm('iceShard', { col: pick(ICE3) }), side = rr(0.6, 1.3) * (g.x > FC.x ? -1 : 1), from = V(g.x + side, 3.6, g.z - 0.4), to = V(g.x, 0.1, g.z + 0.1), D = V(), q = new T.Quaternion(), t = 0, landed = false, P = V(), S3 = V(L * 0.95, L, L * 0.95), HOLD = c.D(0.6);
+        var h = P3.bm('iceShard2', { col: pick(ICE3) }), side = rr(0.6, 1.3) * (g.x > FC.x ? -1 : 1), from = V(g.x + side, 3.6, g.z - 0.4), to = V(g.x, 0.1, g.z + 0.1), D = V(), q = new T.Quaternion(), t = 0, landed = false, P = V(), S3 = V(L * 1.3, L, L * 1.3), HOLD = c.D(0.6);
         function aim() {
           if (mob && !mob.alive) { var nb = near(liveMobs(), mob.x, mob.z, 2.6); if (nb) mob = nb; }
           if (mob && mob.alive) { var gg = gp(mob); to.set(gg.x, 0.1, gg.z + 0.1); }
@@ -635,11 +772,11 @@
       function spikes(mob, mi) {
         var p = sc.mobPos(mob), g = mob.group.position, big = mob.boss ? 1.45 : 1;
         // the same clear ice grows up round its feet: five icicles leaning outward, up in 0.1 s, then they sink and melt
-        var S1 = 0.62 * Math.min(1.2, c.s) * big;
-        for (var s = 0; s < 5; s++) (function (s) {
-          var a = s / 5 * 6.283 + rr(-0.3, 0.3), d = s === 0 ? 0 : 0.16 * big, L = S1 * (s === 0 ? 1.15 : rr(0.65, 0.95)), lean = s === 0 ? 0.05 : rr(0.35, 0.6);
+        var S1 = 0.56 * Math.min(1.2, c.s) * big;
+        for (var s = 0; s < 7; s++) (function (s) {
+          var a = s / 7 * 6.283 + rr(-0.3, 0.3), d = s === 0 ? 0 : 0.18 * big, L = S1 * (s === 0 ? 1.15 : rr(0.65, 0.95)), lean = s === 0 ? 0.05 : rr(0.35, 0.6);
           var ax = V(Math.cos(a) * Math.sin(lean), Math.cos(lean), Math.sin(a) * Math.sin(lean) * 0.8), q = new T.Quaternion().setFromUnitVectors(QY, ax.normalize());
-          var h = P3.bm('iceShard', { col: pick(ICE3) }), base = V(g.x + Math.cos(a) * d, -0.08, g.z + 0.25 + Math.sin(a) * d * 0.8), t = 0, life = c.D(0.62), at = V(), S3 = V(L * 0.95, L, L * 0.95);
+          var h = P3.bm('iceShard2', { col: pick(ICE3) }), base = V(g.x + Math.cos(a) * d, -0.08, g.z + 0.25 + Math.sin(a) * d * 0.8), t = 0, life = c.D(0.62), at = V(), S3 = V(L * 1.3, L, L * 1.3);
           tick(function (dt) {
             t += dt; var up = Math.min(1, t / 0.1), sink = Math.max(0, (t - life * 0.65) / (life * 0.35));
             at.copy(base).addScaledVector(ax, -L * (1 - up) - L * 0.9 * sink);
@@ -654,9 +791,9 @@
           sparks(q, [0xffffff, c.col], N(6, c), 4, { size: 0.15 });
         });
       }
-      volley(c, { shots: 10, t0: 0.08, span: 0.5, fire: function (mob, frac) {
+      volley(c, { shots: 14, t0: 0.08, span: 0.5, fire: function (mob, frac) {
         var g = mob ? gp(mob) : fieldPt(0);
-        iceFall(mob, g, rr(0.95, 1.4) * Math.min(1.4, c.s), Math.max(0.17, c.D(0.24)), function (m2, g2) {
+        iceFall(mob, g, rr(0.85, 1.25) * Math.min(1.4, c.s), Math.max(0.17, c.D(0.24)), function (m2, g2) {
           mob = m2; g = g2;
           gRing(g, c.col, 1.2 * c.s, 0.3); flare(g.clone().setY(0.15), 0xffffff, 0.6, 0.1, { white: true }); sparks(g.clone().setY(0.2), [0xffffff, c.col], N(4, c), 3.5, { size: 0.13, up: 1.8 }); sc.shake(0.03);
           bits(g.clone().setY(0.15), N(3, c), 2.2, 2.4);
@@ -1121,7 +1258,7 @@
     // the rest of the skills live in js/fx-more.js and are built from the same parts
     var KIT = { T: T, sc: sc, vx: vx, V: V, rr: rr, rdir: rdir, pick: pick, STAY: STAY, sway: sway, deep: deep, E: E, N: N, after: after, tick: tick, FC: FC, UPC: UPC, above: above,
       fieldPt: fieldPt, fieldPops: fieldPops, fieldWave: fieldWave, fieldRain: fieldRain, flare: flare, glow: glow, sparks: sparks, embers: embers, smoke: smoke, fire: fire, trailFire: trailFire, shock: shock, ring: ring, gRing: gRing, gGlow: gGlow,
-      scorch: scorch, dust: dust, circle: circle, seal: seal, converge: converge, impact: impact, muzzle: muzzle, heavy: heavy, homing: homing, explosion: explosion, spiralTo: spiralTo, spiralIn: spiralIn,
+      scorch: scorch, dust: dust, circle: circle, seal: seal, converge: converge, impact: impact, muzzle: muzzle, heavy: heavy, homing: homing, explosion: explosion, toonBall: toonBall, toonBoom: toonBoom, STARC: STARC, starHeads: starHeads, starAt: starAt, starBurst: starBurst, iceRise: iceRise, iceChips: iceChips, iceHitFx: iceHitFx, sharpSpike: sharpSpike, iceCrown: iceCrown, spiralTo: spiralTo, spiralIn: spiralIn,
       P3: P3, liveMobs: liveMobs, gp: gp, near: near, share: share, volley: volley, ringHits: ringHits, passHits: passHits, skyBolt: skyBolt, zapHit: zapHit, beamOf: beamOf, picHead: picHead, picAt: picAt, picFall: picFall,
       dustCol: function () { return dustCol; } };
     if (CW.fxMore) CW.fxMore(KIT, S);

@@ -355,24 +355,38 @@
 
     // ============ 별가루 소나기: a handful of star dust is thrown up and comes down as little gem stars ============
     S.sprinkle = function (c) {
+      // (2026-11-16, the user: "a shower of star dust — it should pour down like a downpour; little stars trickling down
+      // looked weak"; made with the constellation's star): a glittering cloud gathers over the field and star dust pours
+      // out of it like heavy rain — fine glowing streaks coming down hard, splashing into sparkles on the ground — and
+      // among them big stars in colour come down hard on the monsters, each a real hit
       c.plain = true;
       sc.heroPose('spin', c.D(0.08), c.col);
-      var tip = c.from;
-      pop(tip, c.col, 0.6 * c.s, 0.14);
-      for (var i = 0; i < N(10, c); i++) P3.crystal({ pos: tip.clone().add(rdir(0.08)), vel: UPC.clone().multiplyScalar(rr(5, 8)).add(V(rr(-2.2, 2.2), 0, rr(-0.5, 0.5))), grav: 4, drag: 1.4, len: 0.1, col: 0xe8dcff, line: 0x2a1a5a, life: c.D(rr(0.3, 0.45)) });
-      volley(c, { shots: 10, t0: 0.17, span: 0.36, fire: function (mob, frac) {
+      var dur = c.D(0.62), C = c.center.clone();
+      pop(c.from, c.col, 0.6 * c.s, 0.14);
+      // the cloud
+      for (var k = 0; k < N(9, c); k++) E({ sys: 'norm', pos: above(V(C.x + rr(-2.6, 2.6), 0, C.z + rr(-1.8, 1.2)), rr(3.8, 4.5)), vel: V(rr(-0.2, 0.2), 0, 0), frame: 'smoke', color: [0xc8b8ff, 0x7a6ac0], size: [0.9, rr(1.8, 2.6)], ease: 1, life: dur + 0.5, alpha: 0.75, fadeIn: 0.2, fadeOut: 0.5 });
+      // the downpour: fine streaks of star dust coming down hard and slanting a little
+      K.fieldRain(c, 260, dur, { y: function () { return rr(3.4, 4.6); }, vel: function () { return V(-1.6, rr(-17, -13), 0.4); }, frames: ['streak'], cols: [0xffffff, 0xe8dcff, 0xfff0b0, 0xc8b8ff], size: function () { return [rr(0.32, 0.5), 0.06]; }, life: 0.34, stretch: 0.17 });
+      // and heavier drops of coloured light among them
+      K.fieldRain(c, 60, dur, { y: function () { return rr(3.4, 4.6); }, vel: function () { return V(-1.4, rr(-15, -12), 0.4); }, frames: ['streak'], cols: K.STARC, size: function () { return [rr(0.5, 0.75), 0.08]; }, life: 0.36, stretch: 0.2 });
+      // splashing into sparkles where it hits the ground
+      var st = 0, acc = 0;
+      tick(function (dt) {
+        st += dt; acc += dt * 110 * c.n;
+        while (acc >= 1) {
+          acc -= 1; var g = K.fieldPt(0); if (Math.random() < 0.5) { g.x = C.x + rr(-2.4, 2.4); g.z = C.z + rr(-1.6, 1.2); }
+          E({ sys: 'gadd', pos: V(g.x, 0.04, g.z), frame: 'ring', color: pick([0xe8dcff, 0xfff0b0, 0xffffff]), size: [0.05, 0.45], life: 0.26, rot: 0, alpha: 0.95 });
+          if (Math.random() < 0.4) E({ pos: V(g.x, 0.08, g.z), vel: V(rr(-0.6, 0.6), rr(1.2, 2.4), 0), frame: 'dot', color: 0xffffff, size: [0.06, 0], life: 0.25, grav: 6 });
+        }
+        return st >= dur + 0.15;
+      });
+      // the big stars, each on a monster
+      volley(c, { shots: 16, t0: 0.16, span: 0.48, fire: function (mob, frac, i) {
         if (!mob) return;
-        var from = above(gp(mob), rr(4.6, 5.6)).add(V(rr(-0.9, 0.9), 0, 0)), star = P3.emblem(2, { col: 0xe8dcff, deep: 0x7a5ad8, line: 0x22104a, glowA: 0.2, spin: 10 }), roll = rr(0, 6);
-        homing({ from: from, to: function () { return mp(mob); }, time: c.D(0.2), fancy: false, ease: function (x) { return x * x * 0.6 + x * 0.4; },
-          trail: { w: 0.1 * c.s, col: c.col, core: 0.9, pts: 12, halo: false },
-          emit: function (p, v, dt) { roll += dt * 12; star.set(p, 0.21 * c.s, dt, roll); },
-          onHit: function (p) {
-            star.kill();
-            pop(p, c.col, 0.5 * c.s, 0.12);
-            shards(p, 0xe8dcff, 0x22104a, N(4, c), 3.2, 0.14);
-            gRing(V(p.x, 0, p.z), c.col, 1.0 * c.s, 0.28);
-            c.hit(mob, frac, 0.5);
-          } });
+        var col = K.STARC[i % K.STARC.length], from = above(gp(mob), rr(4.4, 5.2)).add(V(rr(0.4, 1.0), 0, 0));
+        homing({ from: from, to: function () { return mp(mob); }, time: c.D(0.17), fancy: false, ease: function (x) { return x * x * 0.7 + x * 0.3; },
+          trail: { w: 0.11 * Math.min(1.3, c.s), col: col, core: 1.0, pts: 12, halo: false }, heads: K.starHeads(col, 0.55 * Math.min(1.3, c.s)),
+          onHit: function (p) { K.starBurst(c, p, col, 0.7); c.hit(mob, frac, 0.5); } });
       } });
     };
   };

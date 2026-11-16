@@ -62,9 +62,11 @@
     function iceSpike(g, h, life, lean) { return E({ sys: 'norm', pos: V(g.x, h * 0.42, g.z + 0.25), frame: 'shard', color: pick(ICE), size: [0.05, h * 0.5], ar: 2.0, rot: lean || 0, ease: 2, life: life, fadeOut: 0.85, white: true }); }
     function iceBurst(c, m, big, noCards) {
       var g = gp(m), q = mp(m), B = (m.boss ? 1.45 : 1) * (big || 1);
-      for (var s = 0; s < 5 && !noCards; s++) iceSpike(V(g.x + (s - 2) * 0.17 * B, 0, g.z + rr(-0.05, 0.1)), rr(0.85, 1.35) * c.s * B, c.D(0.6), -((s - 2) * 0.36 + rr(-0.1, 0.1)));
+      // five sharp spikes of ice (3D, 2026-11-16; they were flat pictures), fanning out
+      for (var s = 0; s < 9 && !noCards; s++) K.sharpSpike(V(g.x + (s - 4) * 0.13 * B, 0, g.z + 0.25 + rr(-0.05, 0.1)), { h: rr(0.85, 1.35) * c.s * B * (s === 4 ? 1.12 : 0.95), life: c.D(0.6), lean: (s - 4) * 0.22 + rr(-0.08, 0.08) });
       flare(q, 0xffffff, 1.2, 0.15, { white: true }); shock(q, c.col, 1.8 * B, 0.3);
-      for (var k = 0; k < N(8, c); k++) E({ sys: 'norm', pos: q.clone().add(rdir(0.3)), vel: rdir(3.2).add(V(0, 2.2, 0)), frame: 'shard', color: pick(ICE), size: [rr(0.1, 0.2), 0.05], ar: 2, life: rr(0.5, 0.8), grav: 7, spin: rr(-12, 12), white: true });
+      if (!noCards) K.iceChips(q, N(6, c), 3.2, 2.2, 0.13);
+      else for (var k = 0; k < N(8, c); k++) E({ sys: 'norm', pos: q.clone().add(rdir(0.3)), vel: rdir(3.2).add(V(0, 2.2, 0)), frame: 'shard', color: pick(ICE), size: [rr(0.1, 0.2), 0.05], ar: 2, life: rr(0.5, 0.8), grav: 7, spin: rr(-12, 12), white: true });
       E({ sys: 'gadd', pos: V(g.x, 0.04, g.z), frame: 'frost', color: c.col, size: [0.3, 2.4 * B], ease: 1, life: 0.8, fadeOut: 0.5, alpha: 0.8 });
     }
     // a monster caught by a wall of fire that sweeps the whole crowd at once: fire, a ring and embers, no white flash (white
@@ -172,22 +174,27 @@
           // the eruption: the ground bursts open and a column of fire SHOOTS UP out of it — a fast core of white-hot flame
           // inside a wider sheath that flares out at the top, the flames racing upward, balls of fire hurled up through it,
           // rock thrown out at its foot; it stands a moment roaring and burns down
-          var col3 = P3.column({ col: 0xff3a0c, hot: 0xffa028, flare: true, speed: 3.6 });
+          // the column: a real 3D shape made in Blender (narrow out of the crack, flaring at the top), painted as toon fire
+          // racing upward (P3.toonFire), with a hotter core inside; the drawn column only until those shapes have loaded
+          var tp = P3.toonFire ? P3.toonFire('pillar', { tw: 1.2, rise: 1.8, lift: 0.04, band: 0.6, top: 0.12 }) : null, tp2 = tp && P3.toonFire('pillar', { tw: -1.0, rise: 2.1, lift: 0.0, band: 0.5, top: 0.16, noGlow: true }), tpc = tp && P3.toonFire('pillarCore', { core: true, tw: 1.0, rise: 2.2, lift: -0.04, band: 0.6, top: 0.12 }), pspin = Math.random() * 6.283;
+          var col3 = tp && tp.ready() ? null : P3.column({ col: 0xff3a0c, hot: 0xffa028, flare: true, speed: 3.6 });
           var R = 0.62 * Math.min(1.4, c.s), H2 = Math.min(7.5, 5.0 * c.s), ct = 0, CT = c.D(0.62), base = g.clone();
           P3.blast(V(g.x, 0, g.z), { size: 0.38 * Math.min(1.4, c.s), col: 0xff5a14, low: 0x5a0a08, hotness: 0.2, flash: false, chips: 4, ring: 2.4, life: 0.5, crater: true });
           tick(function (dt) {
             ct += dt; if (mob.alive) { var gg = gp(mob); base.x = gg.x; base.z = gg.z; }
             var up = Math.min(1, ct / c.D(0.07)), burn = Math.max(0, (ct - CT * 0.5) / (CT * 0.5)), roar = 1 + Math.sin(ct * 38) * 0.05;
-            col3.set(base, H2 * (1 - (1 - up) * (1 - up)) * roar, R * (1.25 - 0.25 * up), Math.min(1, burn));
-            if (ct < CT) return false; col3.kill(); return true;
+            var hNow = H2 * (1 - (1 - up) * (1 - up)) * roar;
+            if (col3) col3.set(base, hNow, R * (1.25 - 0.25 * up), Math.min(1, burn));
+            else {
+              // lower than the drawn column (its flaring top stays on screen); as it dies the fire comes away from the ground
+              // and drifts up as it breaks apart, like a fountain cut off at its source
+              pspin += dt * 3; var b3 = Math.min(1, burn), hT = hNow * 0.56, wNow = 0.5 * (H2 / 5) * (R / 0.62) * (1.25 - 0.25 * up), lift3 = V(base.x, b3 * b3 * hT * 0.35, base.z);
+              tp.set(lift3, hT, pspin, 0, b3 * 1.05, b3 * 0.55, wNow); tpc.set(lift3, hT, pspin * 1.3, 0, Math.min(1, b3 * 1.25), b3 * 0.7, wNow);
+              tp2.set(lift3, hT * 0.95, -pspin * 0.8 + 1.9, 0, Math.min(1, b3 * 1.12), b3 * 0.6, wNow * 0.85);
+            }
+            if (ct < CT) return false; if (col3) col3.kill(); if (tp) { tp.kill(); tpc.kill(); tp2.kill(); } return true;
           });
-          // balls of fire hurled straight up the column, one after another, their tails streaming down behind them
-          for (var fb = 0; fb < 2; fb++) (function (fb) {
-            after(c.D(fb * 0.06), function () {
-              var ball = P3.fireball({ size: (0.32 - fb * 0.05) * Math.min(1.4, c.s), col: 0xff7a1a, hot: 0xfff2b0 }), bp = V(g.x + rr(-0.15, 0.15), 0.3, g.z), bv = V(rr(-0.4, 0.4), rr(18, 24), 0), bt = 0;
-              tick(function (dt) { bt += dt; bp.addScaledVector(bv, dt); ball.set(bp, bv, dt); if (bp.y < H2 + 1 && bt < 0.6) return false; ball.kill(); return true; });
-            });
-          })(fb);
+          // (no balls of fire thrown up the column: the user found them odd, 2026-11-16)
           for (var f = 0; f < N(16, c); f++) E({ pos: V(g.x + rr(-0.35, 0.35), rr(0.2, 1.2), g.z + rr(-0.1, 0.1)), vel: V(rr(-1.2, 1.2), rr(12, 22), 0), frame: pick(['dot', 'dot', 'streak']), color: [0xffe080, 0xff6a2b], size: [rr(0.06, 0.13), 0.02], life: rr(0.35, 0.6), grav: 8, stretch: 0.06 });
           sc.shake(0.18); sc.punch(0.05);
           flare(q, 0xffffff, 1.4 * c.s, 0.15, { white: true }); gRing(g, 0xff7a2b, 2.6 * c.s, 0.45); scorch(g, 1.3 * c.s, 2.4);
@@ -198,52 +205,226 @@
         });
       });
     };
-    // Flame wave: a wall of fire sweeps the whole field from one edge of the screen to the other; it burns whatever it rolls over.
-    S.flameWave = function (c) {
-      sc.heroPose('swipe', c.D(0.12), 0xff8a3a);
-      var dir = sc.heroState().faceT > 0 ? 1 : -1;
-      after(c.D(0.12), function () {
-        var x = -4.4 * dir, hit = [];
-        sc.flash('rgba(255,150,70,0.3)', 0.2); sc.shake(0.15);
-        tick(function (dt) {
-          x += dir * 15 * c.sp * dt;
-          for (var i = 0; i < N(5, c); i++) {
-            var z = rr(-4.6, 3.8);
-            fire(V(x + rr(-0.3, 0.3), 0.3, z), 1, { size: rr(0.7, 1.1) * c.s, speed: 0.6, up: 3.4, life: 0.8, v: V(dir * 3.5, 0, 0) });
-            if (i % 2) E({ sys: 'gadd', pos: V(x, 0.035, z), frame: 'glow', color: [0xffa040, 0xc8301a], size: [1.2, 2.0], life: 0.6, rot: 0, alpha: 0.6, fadeIn: 0.1 });
-          }
-          if (Math.random() < dt * 40 * c.n) E({ pos: V(x, 0.3, rr(-4.6, 3.8)), vel: V(dir * rr(3, 6), rr(2, 5), 0), frame: 'dot', color: [0xffe080, 0xff5a1a], size: [rr(0.06, 0.11), 0], life: rr(0.4, 0.8), grav: 4, stretch: 0.08 });
-          if (Math.random() < dt * 14) scorch(V(x - dir * 0.4, 0, rr(-4.4, 3.6)), 0.9, 1.6);
-          sc.shake(dt * 0.4);
-          c.pool().forEach(function (m) { if (hit.indexOf(m) < 0 && (m.x - x) * dir <= 0) { hit.push(m); fireBurst(c, m, 1); c.hit(m, 1, 1.2); } });
-          return x * dir > 4.6;
+    // Flame wave (the user's drawings, 2026-11-15: art/fx-firewave-seq.webp, eight scenes): a small flame catches on the
+    // ground in front of the crowd and grows — scene by scene, every piece of it flickering and swaying on its own, the
+    // upper part leaning out toward us in 3D — into a towering curling wave, its biggest; then it breaks and its pieces
+    // are flung out and scatter into the last wisps of flame. As it breaks the fire sweeps out over the crowd and burns
+    // every monster it reaches.
+    // (Replaced by the fire tornado below on 2026-11-15, at the user's choice; kept, not used.)
+    S.flameSea = function (c) {
+      c.plain = true;   // its own burst under every monster it reaches; the shared white contact flash read as a white disk
+      sc.heroPose('raise', c.D(0.14), 0xff8a3a);
+      var HC = sc.heroCenter(), hit = [], t = 0, cs = Math.min(1.3, c.s), XC = HC.x * 0.4 + (c.center ? c.center.x * 0.3 : 0), flip = Math.random() < 0.5 ? 1 : -1;
+      // it catches just behind the crowd and rolls through it toward us as it grows, so the fire really passes over them
+      var ml = liveMobs(), back = ml.length ? Math.min.apply(null, ml.map(function (m) { return m.z; })) - 0.6 : HC.z - 4;
+      var ZA = Math.max(-5.4, Math.min(HC.z - 2.5, back)), ZB = HC.z + 1.2, HMAX = 4.4 * cs;
+      var T_GROW = c.D(0.8), T_HOLD = c.D(0.1), T_BREAK = c.D(0.6), T_FADE = c.D(0.22), END = T_GROW + T_HOLD + T_BREAK + T_FADE;
+      var sq = P3.seqWave(), F = V(XC, 0.02, ZA), P = V(), TH = -0.6, CT = Math.cos(TH), ST = Math.sin(TH), r = -1, broke = false, flung = false;
+      var bits = []; for (var k = 0; k < sq.N; k++) { var uvk = sq.uv(k); bits.push({ u: uvk.u, v: uvk.v, ph: Math.random() * 6.283, s: Math.random(), dx: rr(-1, 1), dz: rr(0.6, 1.6), dy: rr(-0.2, 0.8) }); }
+      function sm(x) { return x * x * (3 - 2 * x); }
+      // a monster caught by the wave: fire bursts up out of the ground under it (a short 3D column), a ring, embers
+      function burn(m) {
+        var g2 = gp(m), q2 = mp(m), jt = 0, JT = c.D(0.36), base = V(g2.x, 0, g2.z), hb = (m.boss ? 3.2 : 2.0) * cs;
+        // every other monster (and a boss) gets its own column of fire: a column under every one of a big crowd was too heavy
+        if (m.boss || hit.length % 2 === 1) { var jet = P3.column({ col: 0xff4a10, hot: 0xffa028, flare: true, speed: 3.6 }); tick(function (dt2) { jt += dt2; var up = Math.min(1, jt / c.D(0.05)); jet.set(base, hb * up, (m.boss ? 0.6 : 0.36) * cs, Math.max(0, (jt - JT * 0.35) / (JT * 0.65))); if (jt < JT) return false; jet.kill(); return true; }); } else fire(q2, 1, { size: 0.6 * c.s, speed: 1.5, up: 2.4 });
+        gRing(g2, 0xff8a30, 1.3 * c.s, 0.35); embers(q2, [0xffe080, 0xff6a2b], N(5, c), { speed: 2.6, up: 3 }); if (Math.random() < 0.4) scorch(g2, 0.9, 1.8); sc.shake(0.04);
+        c.hit(m, 1, 1.5);
+      }
+      tick(function (dt) {
+        t += dt;
+        // which scene: 0 → 4 while it grows, a beat at its biggest, 4 → 7 as it breaks and scatters
+        var f = t < T_GROW ? 4 * Math.pow(t / T_GROW, 1.15) : t < T_GROW + T_HOLD ? 4 : Math.min(7, 4 + 3 * (t - T_GROW - T_HOLD) / T_BREAK);
+        var fade = t < END - T_FADE ? 1 : Math.max(0, (END - t) / T_FADE);
+        var fi = Math.min(6, Math.floor(f)), fr = sm(f - fi);
+        var grow = Math.min(1, f / 4), H = HMAX * (0.8 + 0.2 * grow), W = H * sq.ASPECT, pw = W / sq.GC * 1.36, ph = H / sq.GR * 1.36;
+        F.z = ZA + (ZB - ZA) * sm(Math.min(1, t / (T_GROW + T_HOLD + T_BREAK)));
+        var curl = sm(grow), scat = Math.max(0, Math.min(1, (f - 4.3) / 2.7));
+        // two layers deep (a darker back one a beat behind in its sway, and the front), so the wave has a body (three cost too much fill)
+        for (var lay = 0; lay < 2; lay++) for (var slot = 0; slot < 2; slot++) {
+          // the back layer draws only the scene that is mostly shown (half the fill while one scene turns into the next)
+          var back0 = lay === 0 && (slot ? fr < 0.5 : fr >= 0.5);
+          var scene = fi + slot, a = back0 ? 0 : (lay === 0 ? 0.9 : (slot ? fr : 1 - fr)) * fade, tl = t - (1 - lay) * 0.07, dep = (lay - 0.5) * H * 0.26, shade = [0.55, 1.05][lay], lsc = 1 + (1 - lay) * 0.05;
+          bits.forEach(function (b, k) {
+            var lx = (b.u - 0.5) * W * flip * lsc + Math.sin(tl * 5 + b.v * 3 + b.ph) * 0.05 * H * b.v, ly = b.v * H * lsc, lz = Math.max(0, b.v - 0.35) * H * 0.55 * curl + dep * (0.4 + b.v);
+            // breaking: the pieces are flung forward and out, and burn
+            lx += b.dx * scat * 1.6; lz += b.dz * scat * 2.2; ly += b.dy * scat * 0.9;
+            P.set(F.x + lx, F.y + ly * CT - lz * ST, F.z + ly * ST + lz * CT);
+            var fl = 1 + 0.07 * Math.sin(t * 12 + b.ph * 3);
+            sq.put(slot, Math.min(7, scene), k, P, TH + Math.max(0, b.v - 0.35) * 0.9 * curl + Math.sin(tl * 4 + b.ph) * 0.05, Math.sin(tl * 6 + b.ph) * 0.08 * b.v, back0 ? 0.0001 : pw * fl * flip * lsc, back0 ? 0.0001 : ph * fl * lsc, a, Math.max(0, (f - 5.6) / 1.4) * (0.4 + 0.6 * b.s), lay, shade);
+          });
+        }
+        sq.commit();
+        if (f < 4 && Math.random() < dt * 12) { var xg = XC + rr(-W * 0.4, W * 0.4); E({ sys: 'gadd', pos: V(xg, 0.035, F.z + 0.3), frame: 'glow', color: [0xffa040, 0xc8301a], size: [1.2, 2.2 * grow + 0.6], life: 0.5, rot: 0, alpha: 0.5, fadeIn: 0.2 }); }
+        if (f < 5 && Math.random() < dt * 26 * c.n * grow) E({ pos: V(XC + rr(-W * 0.4, W * 0.4), H * rr(0.4, 0.9) * grow, F.z + 0.5), vel: V(rr(-1, 1), rr(2, 5), rr(0.5, 3)), frame: pick(['dot', 'flame']), color: [0xffe080, 0xff5a1a], size: [rr(0.08, 0.16), 0.02], life: rr(0.35, 0.6), grav: 5, stretch: 0.07 });
+        if (!broke && f >= 4.1) { broke = true; sc.shake(0.55); sc.punch(0.1); sc.climax(0.6, 0.35); sc.light(V(XC, 1.5, F.z), 0xff8a3a, 2.4, 0.6); }
+        // real 3D fire: as it breaks, balls of fire are flung off its crest toward us, tails streaming behind them
+        if (broke && !flung) { flung = true; for (var fbI = 0; fbI < 3; fbI++) (function (fbI) { var ball = P3.fireball({ size: rr(0.24, 0.34) * cs, col: 0xff7a1a, hot: 0xfff2b0 }), bp = V(XC + (fbI - 1) * W * 0.25, H * rr(0.6, 0.8), Math.min(F.z - 1.0, HC.z - 3.0)), bv = V((fbI - 1) * rr(1.5, 3) + rr(-0.5, 0.5), rr(2, 4), rr(0.6, 2.0)), bt = 0; tick(function (dt3) { bt += dt3; bv.y -= 12 * dt3; bp.addScaledVector(bv, dt3); ball.set(bp, bv, dt3); if (bp.y > 0.15 && bt < 1.2) return false; ball.kill(); fire(V(bp.x, 0.3, bp.z), N(3, c), { size: 0.7 * c.s, speed: 1.6, up: 2 }); scorch(V(bp.x, 0, bp.z), 0.9, 1.8); return true; }); })(fbI); }
+        // and while it grows, tongues of 3D flame leap up along its foot
+        if (f < 4 && f > 0.6 && Math.random() < dt * 3) { var jx = XC + rr(-W * 0.4, W * 0.4), jb = V(jx, 0, F.z + rr(-0.3, 0.4)), jc = P3.column({ col: 0xff4a10, hot: 0xffa028, flare: true, speed: 3.2 }), jtt = 0, JTT = c.D(0.4), jh = rr(1.2, 2.2) * cs * (0.5 + 0.5 * grow); tick(function (dt4) { jtt += dt4; var up = Math.min(1, jtt / c.D(0.06)); jc.set(jb, jh * up, 0.32 * cs, Math.max(0, (jtt - JTT * 0.4) / (JTT * 0.6))); if (jtt < JTT) return false; jc.kill(); return true; }); }
+        // the wave's front: its foot, the crest leaning out ahead of it, and once it breaks the pieces flung further on. A
+        // monster is burnt when the front passes over it (within the wave's width; once it breaks, across the whole field)
+        var frontZ = F.z + 0.4 + H * 0.35 * curl + scat * 2.4, half = W * 0.55 + (broke ? 6 : 0);
+        if (f >= 2.2) c.pool().forEach(function (m) {
+          if (hit.indexOf(m) >= 0 || m.z > frontZ || Math.abs(m.x - XC) > half) return;
+          hit.push(m); burn(m);
         });
+      });
+    };
+    // Fire tornado (the user's choice, 2026-11-15, in place of the wave): a whirl of fire spins up out of the ground in
+    // front of the wizard into a towering 3D tornado (dark smoke wound round a wall of flame, faster fire inside, a white-hot
+    // core), then winds through the crowd from monster to monster; each one it touches is caught up in its fire — flames
+    // whirling up round it and a burst of fire under it. Embers fly off it, rocks and dust are thrown out at its foot, it
+    // scorches a trail; at the end it bursts, flinging balls of fire out, and burns away.
+    S.flameWave = function (c) {
+      c.plain = true;
+      sc.heroPose('raise', c.D(0.16), 0xff8a3a);
+      var HC = sc.heroCenter(), cs = Math.min(1.3, c.s), hit = [], t = 0;
+      var T_GROW = c.D(0.42), T_RUN = c.D(1.1), T_FADE = c.D(0.8), END = T_GROW + T_RUN + T_FADE;
+      // its way: from just in front of the wizard to the nearest monster, then on to the nearest one left, and so on
+      var start = V(HC.x * 0.6, 0, HC.z - 1.6), way = [start.clone()], left = liveMobs().slice(), at = start.clone();
+      while (left.length) {
+        var bi = 0, bd = 1e9;
+        left.forEach(function (m, i) { var g = gp(m), d = Math.hypot(g.x - at.x, g.z - at.z); if (d < bd) { bd = d; bi = i; } });
+        var gm = gp(left[bi]); at = V(Math.max(-2.4, Math.min(2.4, gm.x)), 0, gm.z); way.push(at.clone()); left.splice(bi, 1);
+      }
+      if (way.length < 2) way.push(V(start.x, 0, start.z - 4));
+      // (it keeps inside the screen, and ends near the middle so its burning out into smoke is seen)
+      way.push(V(way[way.length - 1].x * 0.35, 0, Math.min(HC.z - 2.2, way[way.length - 1].z)));
+      var segL = [], total = 0; for (var w = 1; w < way.length; w++) { var L = way[w].distanceTo(way[w - 1]); segL.push(L); total += L; }
+      function along(d) { for (var i = 0; i < segL.length; i++) { if (d <= segL[i] || i === segL.length - 1) return way[i].clone().lerp(way[i + 1], Math.min(1, d / Math.max(1e-4, segL[i]))); d -= segL[i]; } return way[way.length - 1].clone(); }
+      function ease3(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
+      // the tornado: real 3D shapes made in Blender (an outer swirl and a hot core inside it, and the same swirl as smoke for
+      // the end), painted as toon fire by the game (P3.toonFire); the drawn tornado only until those shapes have loaded
+      var tf = P3.toonFire ? P3.toonFire('tornado', { tw: 5.5, top: 0.1 }) : null, tcore = tf && P3.toonFire('tornadoCore', { core: true, tw: 4.5, top: 0.1 }), tsm = tf && P3.toonFire('tornado', { smoke: true, tw: 3.5, top: 0.1 }), toonOn = function () { return tf && tf.ready(); };
+      var tw = toonOn() ? null : P3.twister({}), spin = Math.random() * 6.283, P = start.clone(), trailT = 0, emT = 0, chipT = 0, tgT = 0, lightT = 0, flung = false;
+      // a monster caught up in it: little flames whirl up round it and sparks fly. Only a boss, and the last monster it
+      // reaches, get the big effect (a column of fire, a ring on the ground): one under every monster cluttered the whirl
+      var nAll = Math.max(1, c.pool().length);
+      function caught(m) {
+        var g2 = gp(m), q2 = mp(m), jt = 0, JT = c.D(0.34), base = V(g2.x, 0, g2.z), hb = (m.boss ? 3.0 : 1.9) * cs, big = m.boss || hit.length >= nAll;
+        for (var e = 0; e < N(big ? 6 : 3, c); e++) { var a = rr(0, 6.283), r0 = rr(0.25, 0.5); E({ pos: V(q2.x + Math.cos(a) * r0, q2.y + rr(-0.4, 0.3), q2.z + Math.sin(a) * r0 * 0.6), vel: V(-Math.sin(a) * 3.0, rr(2.5, 4.2), Math.cos(a) * 1.8), frame: pick(['flame', 'dot', 'flame']), color: [0xffb040, 0xff3a0c], size: [rr(0.1, 0.18) * c.s, 0.04], life: rr(0.35, 0.55), drag: 1.2, stretch: 0.05 }); }
+        embers(q2, [0xffc060, 0xff3a0c], N(big ? 5 : 3, c), { speed: 2.4, up: 3.0 });
+        if (big) {
+          var jet = P3.column({ col: 0xff2a0a, hot: 0xff6a14, flare: true, speed: 3.6 }); tick(function (dt2) { jt += dt2; var up = Math.min(1, jt / c.D(0.05)); jet.set(base, hb * up, (m.boss ? 0.55 : 0.36) * cs, Math.max(0, (jt - JT * 0.35) / (JT * 0.65))); if (jt < JT) return false; jet.kill(); return true; });
+          gRing(g2, 0xff6a20, 1.4 * c.s, 0.35); sc.shake(0.08);
+        }
+        c.hit(m, 1, 1.5);
+      }
+      tick(function (dt) {
+        t += dt;
+        // (the user's drawing of its life: a small flame grows into the tornado, at its biggest it throws out embers, then
+        // the smoke takes it over from the top down — the fire goes out, the last of it at its foot — and the smoke thins away)
+        var grow = ease3(t / T_GROW), run = ease3((t - T_GROW) / T_RUN), fz = Math.max(0, (t - T_GROW - T_RUN) / T_FADE);
+        // in order: the fire goes out from the top while grey smoke takes it over and turns (slower than the fire did), the
+        // embers at its foot glow on, then the smoke unwinds and drifts up and away
+        var k = Math.min(1, fz / 0.4), smk = Math.min(1, fz / 0.3), thin = Math.max(0, (fz - 0.5) / 0.5);
+        // where it is: it follows its way smoothly (a little behind the line, so it swings round the corners)
+        var Q = along(run * total), wob = V(Math.sin(t * 5.3) * 0.25, 0, Math.cos(t * 4.1) * 0.15);
+        P.lerp(Q.add(wob), Math.min(1, dt * 9));
+        var roar = 1 + Math.sin(t * 17) * 0.04, H = (0.35 + 3.0 * grow + 0.4 * k) * cs * roar, r0 = (0.035 + 0.07 * grow) * cs, r1 = (0.2 + 0.8 * grow) * cs * (1 + 0.1 * k);
+        // the tornado itself: the Blender shapes painted as toon fire (the drawn one only if those shapes are missing)
+        spin += dt * 8.8;
+        if (toonOn()) {
+          if (tw) { tw.kill(); tw = null; }
+          var foot3 = V(P.x, 0, P.z), H3 = H * 0.95;
+          tf.set(foot3, H3, spin, k, 0, 0); tcore.set(foot3, H3, spin * 1.15, Math.min(1, k * 1.2), 0, 0);
+          // the smoke: the same swirl, shown from the top down as the fire goes out there, turning slower, then breaking up
+          if (smk > 0.001 && thin < 1) tsm.set(V(P.x, 0, P.z), H3 * 0.85, spin * 0.6, 0, Math.max(0.001, 1.15 - smk * 1.3), thin); else tsm.set(foot3, H3, 0, 1, 0, 1);
+        } else { if (!tw) tw = P3.twister({}); tw.set(P, H, r0, r1, 0.45 + 0.25 * Math.sin(t * 3.1), k, smk, thin); }
+        // embers flung off it, spinning out the way it turns
+        if (k < 1) {
+          emT -= dt; while (emT <= 0) {
+            emT += 0.024 / Math.max(0.25, c.n); var y = rr(0.1, 0.95), a = rr(0, 6.283), rad = (r0 + (r1 - r0) * Math.pow(y, 1.6)) * 0.95;
+            E({ pos: V(P.x + Math.cos(a) * rad, y * H, P.z + Math.sin(a) * rad * 0.8), vel: V(-Math.sin(a) * rr(3, 6), rr(1, 3.5), Math.cos(a) * rr(2, 4)), frame: pick(['dot', 'dot', 'flame']), color: [0xffb040, 0xff2a0a], size: [rr(0.06, 0.14), 0.02], life: rr(0.35, 0.7), drag: 1.0, grav: 1.5, stretch: 0.05 });
+          }
+          // tongues of flame licking up its outside, swept round the way it turns
+          tgT -= dt; while (tgT <= 0) {
+            tgT += (toonOn() ? 0.07 : 0.022) / Math.max(0.25, c.n); var ty = rr(0.08, 0.85), ta = rr(0, 6.283), trad = (r0 + (r1 - r0) * Math.pow(ty, 1.45)) * 1.02;
+            E({ pos: V(P.x + Math.cos(ta) * trad, ty * H, P.z + Math.sin(ta) * trad * 0.8), vel: V(-Math.sin(ta) * 2.2, rr(3, 5.5), Math.cos(ta) * 1.4), frame: 'flame', color: [0xffc040, 0xff2a0a], size: [rr(0.3, 0.55) * cs, 0.05], life: rr(0.22, 0.38), drag: 1.5 });
+          }
+          // rocks and dust thrown out at its foot
+          chipT -= dt; if (chipT <= 0 && grow > 0.5) { chipT = 0.1; P3.chip(V(P.x, 0, P.z), 0.6 * cs, 0xff7a1a, false); }
+          // a scorched, glowing trail behind it
+          trailT -= dt; if (trailT <= 0) { trailT = 0.07; var g3 = V(P.x, 0, P.z); E({ sys: 'gadd', pos: V(g3.x, 0.035, g3.z), frame: 'glow', color: [0xffa040, 0xc8301a], size: [1.0 * cs, 1.8 * cs * (0.5 + 0.5 * grow)], life: 0.5, rot: 0, alpha: 0.45, fadeIn: 0.2 }); if (grow > 0.8 && Math.random() < 0.5) scorch(g3, 0.9 * cs, 1.6); }
+          lightT -= dt; if (lightT <= 0) { lightT = 0.25; sc.light(V(P.x, H * 0.4, P.z), 0xff3a12, 0.7, 0.35); }
+        }
+        // whatever it touches is caught up in it
+        if (grow > 0.6 && k < 0.6) {
+          var HR = 1.25 * cs + r1 * 0.3;
+          c.pool().forEach(function (m) {
+            if (hit.indexOf(m) >= 0) return; var g = gp(m), d = Math.hypot(g.x - P.x, (g.z - P.z) * 1.2);
+            if (d > HR * (m.boss ? 1.5 : 1)) return; hit.push(m); caught(m);
+          });
+        }
+        // as it goes out two small balls of fire drop off it (a big burst of them read as an explosion, not a fire going out)
+        if (k > 0 && !flung) {
+          flung = true; sc.shake(0.12);
+          for (var fb = 0; fb < 2; fb++) (function (fb) {
+            var ball = P3.fireball({ size: rr(0.13, 0.17) * cs, col: 0xff5a14, hot: 0xffc060 }), a = fb * 3.1416 + rr(-0.5, 0.5), bp = V(P.x + Math.cos(a) * r1 * 0.5, H * rr(0.4, 0.55), P.z + Math.sin(a) * r1 * 0.4);
+            var bv = V(Math.cos(a) * rr(1.5, 2.5), rr(1, 2), Math.sin(a) * rr(0.8, 1.5)), bt = 0;
+            tick(function (dt3) { bt += dt3; bv.y -= 12 * dt3; bp.addScaledVector(bv, dt3); ball.set(bp, bv, dt3); if (bp.y > 0.15 && bt < 1.0) return false; ball.kill(); embers(V(bp.x, 0.2, bp.z), [0xffc060, 0xff3a0c], N(3, c), { speed: 1.4, up: 1.6 }); scorch(V(bp.x, 0, bp.z), 0.6, 1.6); return true; });
+          })(fb);
+        }
+        // embers left glowing at its foot while the smoke turns over it
+        if (fz > 0.3 && thin < 0.7 && Math.random() < dt * 14) E({ pos: V(P.x + rr(-0.25, 0.25), 0.1, P.z + rr(-0.15, 0.15)), vel: V(rr(-0.4, 0.4), rr(0.6, 1.6), 0), frame: 'dot', color: [0xffb040, 0xff3a0c], size: [rr(0.05, 0.1), 0.02], life: rr(0.5, 0.9), drag: 0.8 });
+        if (t < END) return false;
+        // anyone it never reached (who moved off its way) is still caught in the last of it
+        c.pool().forEach(function (m) { if (hit.indexOf(m) < 0) { hit.push(m); caught(m); } });
+        if (tw) tw.kill(); if (tf) { tf.kill(); tcore.kill(); tsm.kill(); } return true;
       });
     };
     // Inferno shell: one huge fireball is lobbed high, comes down on a monster and takes the ground around it with it.
     S.inferno = function (c) {
       var mob = c.pool()[0]; if (!mob) return;
+      // real 3D (2026-11-16): a big ball of toon fire lobbed high comes down on the monster. Where it lands (the user: "it
+      // has to feel like it blows up"): the world catches its breath and shakes hard, a wide crown of toon fire is flung
+      // out at once with a taller one bursting up inside it, the ground all round bursts a beat later, a ring of heat races
+      // out over the ground, rock and burning bits are thrown out in arcs, and the smoke climbs into a column
+      c.plain = true;
       sc.heroPose('toss', c.D(0.22), 0xff6a2b);
-      var tip = c.from;
-      glow(tip, 0xff6a2b, [0.3, 1.5 * c.s], c.D(0.24), { fadeIn: 0.6, hot: 1.4 });
-      for (var i = 0; i < N(18, c); i++) { var a = rr(0, 6.28), r = rr(0.5, 1.0); E({ pos: tip, frame: 'flame', color: [0xffe080, 0xff6a2b], size: [0.3, 0.1], life: c.D(rr(0.14, 0.22)), delay: rr(0, c.D(0.05)), upd: K.spiralTo(tip, a, r), fadeIn: 0.3 }); }
-      after(c.D(0.22), function () {
-        var from = sc.heroPaw(), S_ = 1.55 * c.s, ball = P3.fireball({ size: 0.24 * S_, col: 0xff6a1a }), land = mp(mob);
-        flare(from, 0xffffff, 1.4 * c.s, 0.16, { white: true }); smoke(from, 0x5a4a44, N(4, c), { size: 0.7, rise: 0.4 });
+      // the big ball swells over the paw, its flames streaming up, fire whirling into it
+      var S_ = Math.min(1.6, 1.3 * c.s), LB = Math.min(2.3, 1.5 * S_), ball = K.toonBall(LB, { glow: 1.1, thick: true }), hold = 0, HOLD = c.D(0.26), thrown = false, hp = V(), UPV = V(0, -1, 0);
+      function ballAt() { return hp.copy(sc.heroPaw()).add(V(0, 0.75 + 0.35 * Math.min(1, hold / HOLD), 0)); }
+      var tip = ballAt().clone();
+      glow(tip, 0xff6a2b, [0.3, 1.0 * c.s], HOLD, { fadeIn: 0.6, hot: 1.2 });
+      for (var i = 0; i < N(16, c); i++) { var a = rr(0, 6.28), r = rr(0.6, 1.1); E({ pos: tip, frame: 'flame', color: [0xffe080, 0xff6a2b], size: [0.26, 0.08], life: c.D(rr(0.16, 0.24)), delay: rr(0, c.D(0.06)), upd: K.spiralTo(tip, a, r), fadeIn: 0.3 }); }
+      tick(function (dt) {
+        if (thrown) return true; hold += dt; var k = Math.min(1, hold / HOLD);
+        ball.set(ballAt(), UPV, dt, 0.2 + 0.8 * (1 - (1 - k) * (1 - k)) * (1 + 0.05 * Math.sin(hold * 40)));
+        return false;
+      });
+      after(HOLD, function () {
+        thrown = true; var from = ballAt().clone(), land = mp(mob);
+        smoke(from, 0x5a4a44, N(3, c), { size: 0.7, rise: 0.4 }); sc.shake(0.08);
         homing({ from: from, to: function () { land = mp(mob); return land; }, time: c.D(0.42), arc: V(0, 3.6, -0.5), ease: function (x) { return x * x * 0.7 + x * 0.3; },
           fancy: false, heads: [],
           emit: function (p, v, dt) {
-            if (ball) ball.set(p, v, dt);
+            ball.set(p, v, dt);
             var back = v.clone().multiplyScalar(-0.12);
-            if (Math.random() < dt * 34 * c.n) trailFire(p, v, 0.24 * S_, { size: 0.5 * S_, speed: 0.8, up: 0.4, life: 0.8, v: back });
-            if (Math.random() < dt * 30 * c.n) E({ sys: 'norm', pos: p.clone(), vel: back.clone().add(V(0, 0.5, 0)), frame: 'smoke', color: 0x4a3c38, size: [0.3 * S_, 0.9 * S_], ease: 1, life: 0.7, alpha: 0.4, drag: 2, fadeIn: 0.2 });
+            if (Math.random() < dt * 26 * c.n) E({ pos: p.clone().addScaledVector(v, -0.06), vel: rdir(1.4).add(back), frame: 'dot', color: [0xffe080, 0xff5a1a], size: [0.08, 0], life: 0.4, grav: 2, stretch: 0.1 });
+            if (Math.random() < dt * 16 * c.n) E({ sys: 'norm', pos: p.clone().addScaledVector(v, -0.1), vel: back.clone().add(V(0, 0.5, 0)), frame: 'smoke', color: 0x4a3c38, size: [0.2 * S_, 0.7 * S_], ease: 1, life: 0.6, alpha: 0.32, drag: 2, fadeIn: 0.2 });
           },
           onHit: function (p) {
             var g = V(p.x, 0, p.z);
-            ball.kill(); P3.blast(g, { size: 0.65 * S_, col: 0xff7a1a, flash: true, chips: 6, ring: 2.6, life: 0.8 });
-            explosion(c, p, S_, 0xff5a1a); fieldWave(g, 0xff7a2b, 0.7, 0xffe14a); sc.shake(0.3);
-            // the blast throws up a ring of fire around where it landed
-            for (var f = 0; f < 7; f++) { var a = f / 7 * 6.283, q = V(g.x + Math.cos(a) * 1.5, 0.3, g.z + Math.sin(a) * 1.2); fire(q, N(4, c), { size: 1.0 * c.s, speed: 1.2, up: 3, life: 0.8 }); scorch(V(q.x, 0, q.z), 0.8, 2); }
+            ball.kill();
+            // the instant it lands
+            sc.climax(0.45, 0.3); sc.flash('rgba(255,140,50,0.42)', 0.24); sc.shake(0.55); sc.punch(0.13); sc.light(p, 0xff8a3a, 2.6, 0.5);
+            // the burst: flung out wide at once, a taller one bursting up inside it
+            if (!K.toonBoom(g, 0.95 * S_, { tall: 1.25, climb: 1.4, grow: 0.06, spread: 0.55, end: 1.05 })) P3.blast(g, { size: 0.6 * S_, col: 0xff7a1a, chips: 6, ring: 2.6, life: 0.8 });
+            after(c.D(0.06), function () { K.toonBoom(g, 0.55 * S_, { tall: 2.1, climb: 1.6, grow: 0.07, spread: 0.2, end: 0.8, layers: 1 }); });
+            // the ground all round bursts a beat later, flung outward
+            for (var f = 0; f < 6; f++) (function (f) {
+              var a = f / 6 * 6.283 + rr(-0.25, 0.25), q = V(g.x + Math.cos(a) * 1.3 * S_, 0, g.z + Math.sin(a) * 1.0 * S_);
+              after(c.D(0.05 + f * 0.018), function () { K.toonBoom(q, 0.32 * S_, { tall: 1.35, grow: 0.05, spread: 0.45, end: 0.55, lite: true }); scorch(q, 0.7, 2); });
+            })(f);
+            // a ring of heat racing out over the ground; the crater, and rock thrown up
+            gRing(g, 0xff7a2b, 4.4 * S_, 0.45); gRing(g, 0xffc040, 2.4 * S_, 0.3); gGlow(g, 0xff6a1a, 2.2 * S_, 0.45);
+            P3.blast(g, { size: 0.3 * S_, col: 0xff7a1a, flash: false, chips: 8, ring: 0, life: 0.45, crater: true });
+            // burning bits thrown out in arcs, falling over a wide area; sparks and embers
+            for (var b = 0; b < N(14, c); b++) E({ sys: b % 2 ? 'col' : 'add', pos: p.clone().add(rdir(0.2)), vel: V(rr(-5.5, 5.5), rr(3, 6.5), rr(-3.5, 3.5)), frame: 'flame', color: [0xffe080, 0xff7a1a, 0xc8301a], size: [rr(0.28, 0.45) * S_, 0.08], life: rr(0.7, 1.1), grav: 9, drag: 0.6, spin: rr(-5, 5), fadeOut: 0.3 });
+            sparks(p, [0xffe080, 0xff8a2b], N(16, c), 7.5, { size: 0.2, stretch: 0.16 });
+            embers(p, [0xffe080, 0xff6a2b], N(12, c), { speed: 3.4, up: 3.2 });
+            scorch(g, 1.8 * S_, 2.6);
             c.hit(mob, 1, 2); c.splash(mob, 2.0, 1.2);
           } });
       });
@@ -322,32 +503,56 @@
     // Ice lance: a spear of ice freezes together over the wizard's head and is hurled through one monster.
     S.lance = function (c) {
       var mob = c.pool()[0]; if (!mob) return;
-      sc.heroPose('thrust', c.D(0.24), c.col);
-      var up = sc.heroCenter().add(V(0, 1.35, -0.2));
-      converge(up, [0xffffff, c.col], N(18, c), 1.3, c.D(0.22), { frame: 'shard' });
-      var spear = P3.iceSpear({ size: 1.25 * c.s }), formT = 0, aim = V();
-      tick(function (dt) { formT += dt; aim.copy(mp(mob)).sub(up); spear.set(up, aim, dt, Math.min(1, formT / c.D(0.2))); return formT >= c.D(0.24); });
-      E({ pos: up, frame: 'frost', color: c.col, size: [0.3, 1.8 * c.s], ease: 2, life: c.D(0.3), spin: 2, fadeOut: 0.7, alpha: 0.7 });
-      after(c.D(0.24), function () {
-        var land = mp(mob);
-        flare(up, 0xffffff, 1.2 * c.s, 0.14, { white: true }); ring(up, c.col, 1.3 * c.s, 0.22);
-        homing({ from: up, to: function () { land = mp(mob); return land; }, time: c.D(0.17), fancy: false, ease: function (x) { return x * x; }, heads: [],
-          emit: function (p, v, dt) { spear.set(p, v, dt); if (Math.random() < dt * 70 * c.n) E({ pos: p.clone().add(rdir(0.1)), vel: rdir(0.7), frame: pick(['snow', 'dot']), color: 0xffffff, size: rr(0.07, 0.14), life: rr(0.3, 0.5), white: true, spin: 3 }); },
+      // real 3D (2026-11-16, 2nd: "a little more like a spear, sharper, long, thrown"): a long spear of clear ice — a slender
+      // shaft and a diamond spearhead (js/mesh-ice.js iceLance) — crystallizes over the wizard from its back to its point,
+      // is drawn back, and is hurled: it flies fast and a little arced, turning round its length, a thin white streak
+      // behind it, and runs the monster through, its point driven into the ground beyond; sharp icicles burst up round the
+      // monster's feet and the spear cracks into chips
+      c.plain = true;
+      sc.heroPose('thrust', c.D(0.3), c.col);
+      var up = sc.heroCenter().add(V(0, 1.4, -0.2)), L = 2.05 * Math.min(1.25, c.s), W = 3.96 * Math.min(1.25, c.s), h = P3.bm('iceLance', { col: 0xeaf8ff });
+      var q = new T.Quaternion(), R = new T.Quaternion(), dir = V(1, 0, 0), S3 = V(), foot = V(), QY = V(0, 1, 0), roll = 0;
+      converge(up, [0xffffff, c.col], N(10, c), 1.0, c.D(0.22), { frame: 'snow' });
+      // the spear with its back end at f, pointing along dir (turned roll round its length), k of its length grown
+      function placeLance(f, k) { q.setFromUnitVectors(QY, dir).multiply(R.setFromAxisAngle(QY, roll)); S3.set(W, L * Math.max(0.02, k), W); h.set(f, q, S3, 1, 0); }
+      var formT = 0, FORM = c.D(0.2), DRAW = c.D(0.1);
+      tick(function (dt) {
+        formT += dt; dir.copy(mp(mob)).sub(up).normalize();
+        var k = Math.min(1, formT / FORM), back = Math.max(0, Math.min(1, (formT - FORM) / DRAW));
+        // drawn back before the throw: pulled back along itself, its point lifted a little
+        dir.y += 0.25 * back; dir.normalize();
+        placeLance(foot.copy(up).addScaledVector(dir, -L * (0.5 + 0.25 * back)), 0.1 + 0.9 * (1 - (1 - k) * (1 - k)));
+        if (Math.random() < dt * 30) E({ pos: up.clone().add(rdir(0.5)), vel: rdir(0.5), frame: 'snow', color: 0xffffff, size: rr(0.06, 0.11), life: 0.35, white: true, spin: 3 });
+        return formT >= FORM + DRAW;
+      });
+      after(FORM + DRAW, function () {
+        var from = up.clone().addScaledVector(dir, L * 0.25);
+        sc.shake(0.06);
+        homing({ from: from, to: function () { return mp(mob); }, time: c.D(0.16), arc: V(0, 0.5, 0), fancy: false, ease: function (x) { return x * (0.4 + 0.6 * x); }, heads: [],
+          trail: { w: 0.09 * Math.min(1.3, c.s), col: 0xd8f2ff, core: 1.0, pts: 10, halo: false },
+          emit: function (p, v, dt) {
+            roll += dt * 18; if (v.lengthSq() > 1e-6) dir.copy(v).normalize();
+            placeLance(foot.copy(p).addScaledVector(dir, -L), 1);
+            if (Math.random() < dt * 40 * c.n) E({ pos: p.clone().addScaledVector(dir, -L * rr(0.2, 0.9)).add(rdir(0.06)), vel: rdir(0.5), frame: pick(['snow', 'dot']), color: 0xffffff, size: rr(0.05, 0.1), life: rr(0.25, 0.4), white: true, spin: 3 });
+          },
           onHit: function (p) {
-            var g = V(p.x, 0, p.z);
-            spear.kill(); P3.iceSpikes(g, { size: 1.15 * Math.min(1.3, c.s), n: 7, col: c.col });
-            // it goes in, and a crown of ice bursts out the far side
-            for (var s = 0; s < 9; s++) { var a = s / 9 * 6.283; E({ sys: 'norm', pos: p.clone().add(V(Math.cos(a) * 0.3, Math.sin(a) * 0.3, 0.2)), vel: V(Math.cos(a) * 1.2, Math.sin(a) * 1.2, 0), frame: 'shard', color: pick(ICE), size: [0.1, rr(0.7, 1.1) * c.s], ar: 2.4, rot: a - 1.5708, ease: 1, life: c.D(0.5), drag: 4, fadeOut: 0.7, white: true }); }
-            if (mob.alive) iceBurst(c, mob, 1.3, true);
-            E({ sys: 'gadd', pos: V(g.x, 0.04, g.z), frame: 'frost', color: 0xdff4ff, size: [0.5, 4.6 * c.s], ease: 1, life: 0.9, fadeOut: 0.5, alpha: 0.8 });
-            smoke(V(g.x, 0.3, g.z), 0xe8f8ff, N(5, c), { size: 1.0, alpha: 0.4, rise: 0.3 });
-            sc.flash('rgba(210,240,255,0.45)', 0.2); sc.light(p, c.col, 1.8, 0.4); heavy(1.4);
+            // it runs the monster through: on past it and stays there, its point in the ground, then cracks
+            var t = 0, HOLD = c.D(0.34), d0 = dir.clone(); if (d0.y > -0.3) { d0.y = -0.3; d0.normalize(); }
+            tick(function (dt2) {
+              t += dt2; var at = mp(mob), push = Math.min(1, t / 0.05); dir.copy(d0);
+              placeLance(foot.copy(at).addScaledVector(d0, -L * (0.75 - 0.2 * push)), 1);
+              if (t < HOLD) return false;
+              h.kill(); K.iceChips(at.clone(), N(9, c), 3.2, 2.1, 0.22); return true;
+            });
+            K.iceCrown(c, mob, 1.2, 8); K.iceHitFx(c, p, 1.2);
+            sc.flash('rgba(200,235,255,0.25)', 0.12); sc.shake(0.2); sc.punch(0.06);
             c.hit(mob, 1, 2);
           } });
       });
     };
     // Frost ring: frost bursts out from the wizard's feet and runs over the whole ground; each monster freezes as the ring reaches it.
     S.frostRing = function (c) {
+      // (2026-11-16: the same ring, its ice sharp — K.sharpSpike and iceBurst's 3D spikes — in place of the blunt spikes)
       sc.heroPose('spin', c.D(0.12), c.col);
       var H = sc.heroCenter(), G = V(H.x, 0.04, H.z);
       converge(V(H.x, 0.3, H.z), [0xffffff, c.col], N(16, c), 1.4, c.D(0.14), { frame: 'snow' });
@@ -362,7 +567,7 @@
         tick(function (dt) {
           r += 13 * c.sp * dt;
           wall.set(G, r, hw * (1 - 0.35 * Math.min(1, r / 10.5)), Math.max(0, (r - 7.5) / 3));
-          for (var i = 0; i < N(3, c); i++) { var a = rr(0, 6.283), p = V(G.x + Math.cos(a) * r * 0.97, 0, G.z + Math.sin(a) * r * 0.97); if (Math.abs(p.x) < 4.2 && p.z > -4.8 && p.z < 4) { P3.iceSpike(p, { h: rr(0.35, 0.7) * c.s, lean: rr(-0.3, 0.3), life: c.D(0.5) + 0.1, col: c.col }); if (i % 2) E({ sys: 'norm', pos: V(p.x, 0.15, p.z), vel: V(Math.cos(a) * 3, 0.3, Math.sin(a) * 3), frame: 'smoke', color: 0xe8f8ff, size: [0.3, 0.9], ease: 1, life: 0.6, alpha: 0.3, drag: 2 }); } }
+          for (var i = 0; i < N(7, c); i++) { var a = rr(0, 6.283), p = V(G.x + Math.cos(a) * r * 0.97, 0, G.z + Math.sin(a) * r * 0.97); if (Math.abs(p.x) < 4.2 && p.z > -4.8 && p.z < 4) { K.sharpSpike(p, { h: rr(0.42, 0.82) * c.s, lean: rr(-0.3, 0.3), life: c.D(0.5) + 0.1, col: c.col }); if (i % 2) E({ sys: 'norm', pos: V(p.x, 0.15, p.z), vel: V(Math.cos(a) * 3, 0.3, Math.sin(a) * 3), frame: 'smoke', color: 0xe8f8ff, size: [0.3, 0.9], ease: 1, life: 0.6, alpha: 0.3, drag: 2 }); } }
           if (r > 10.5) { wall.kill(); return true; }
           return false;
         });
@@ -373,23 +578,33 @@
     // all the way, and a great spike comes up under each of them.
     S.spikes = function (c) {
       var list = c.pool(); if (!list.length) return;
+      // real 3D (2026-11-16, 2nd: the first was crude, "no feel"): the staff is struck down and a ridge of sharp ice runs
+      // along the ground to each monster — spikes shooting up one after another either side of the crack, leaning out
+      // from it, taller as they go (like the frost ring's front) — and under the monster sharp icicles burst up all round
+      // its feet, leaning outward (like the ice storm's), then sink, and chips fly
+      c.plain = true;
       sc.heroPose('swipe', c.D(0.12), c.col);
       after(c.D(0.12), function () {
-        var H = sc.heroCenter(), G0 = V(H.x, 0, H.z);
-        gRing(G0, c.col, 1.8, 0.3); dust(G0, N(5, c), 1.1); sc.shake(0.12);
+        var H = sc.heroCenter(), G0 = V(H.x, 0, H.z), S = Math.min(1.2, c.s);
+        gRing(G0, c.col, 1.3, 0.3); dust(G0, N(4, c), 0.9); sc.shake(0.12);
+        E({ sys: 'gadd', pos: V(G0.x, 0.04, G0.z), frame: 'frost', color: c.col, size: [0.2, 1.4], ease: 1, life: 0.7, fadeOut: 0.5, alpha: 0.6 });
         list.forEach(function (mob, i) {
           var t = 0, T_RUN = c.D(0.24 + i * 0.05), done = 0, to = gp(mob);
           tick(function (dt) {
-            t += dt; var k = Math.min(1, t / T_RUN); if (mob.alive) to = gp(mob);
-            while (done + 0.13 <= k) {
-              done += 0.13;
-              var p = G0.clone().lerp(to, done).add(V(rr(-0.12, 0.12), 0, rr(-0.12, 0.12)));
-              P3.iceSpike(p, { h: (0.4 + 0.5 * done) * c.s, lean: rr(-0.25, 0.25), life: c.D(0.5) + 0.1, col: c.col }); gRing(p, c.col, 0.7 * c.s, 0.25);
-              E({ sys: 'gadd', pos: V(p.x, 0.04, p.z), frame: 'frost', color: c.col, size: [0.2, 1.0], life: 0.7, alpha: 0.7, fadeOut: 0.5 });
+            t += dt; var k = Math.min(1, t / T_RUN); to = gp(mob);
+            while (done + 0.08 <= k) {
+              done += 0.08;
+              var d = to.clone().sub(G0).setY(0); if (d.lengthSq() < 1e-6) d.set(1, 0, 0); d.normalize();
+              var nx = -d.z, nz = d.x, p = G0.clone().lerp(to, done), hh = (0.62 + 0.68 * done) * S;
+              for (var sd = -1; sd <= 1; sd++) {
+                var off = sd * rr(0.1, 0.18);
+                K.iceRise('iceSpike2', V(p.x + nx * off, -0.04, p.z + nz * off), V(nx * sd * 0.5 + d.x * 0.25, 1, nz * sd * 0.5 + d.z * 0.25), hh * rr(0.8, 1.1) * (sd ? 1 : 1.15), { hold: c.D(0.32), melt: 0.22, w: 1.6 });
+              }
+              E({ sys: 'gadd', pos: V(p.x, 0.04, p.z), frame: 'frost', color: c.col, size: [0.15, 0.7], life: 0.6, alpha: 0.55, fadeOut: 0.5 });
             }
             if (k < 1) return false;
-            if (mob.alive) { iceBurst(c, mob, 1.25, true); P3.iceSpikes(gp(mob), { size: 1.1 * Math.min(1.3, c.s), n: 6, col: c.col }); }
-            sc.shake(0.12); sc.light(mp(mob), c.col, 1.4, 0.3); if (!i) sc.flash('rgba(210,240,255,0.3)', 0.15);
+            K.iceCrown(c, mob, 1.4, 10);
+            sc.shake(0.14); sc.light(mp(mob), c.col, 1.4, 0.3); if (!i) sc.flash('rgba(210,240,255,0.25)', 0.12);
             c.hit(mob, 1, 1.8);
             return true;
           });
@@ -435,49 +650,64 @@
     };
     // Star barrage: the wizard pours a stream of stars out of its paw, a dozen in half a second, shared between three monsters.
     S.barrage = function (c) {
-      sc.heroPose('thrust', c.D(0.1), c.col);
-      seal(c.from.clone().add(V(0.1, 0, 0.05)), c.col, 0.9 * c.s, c.D(0.7));
-      volley(c, { shots: 12, t0: 0.1, span: 0.5, fire: function (mob, frac, i) {
+      // (2026-11-16, the user: "too fast, and you can't tell what it is"; made with the constellation's star, in colour):
+      // the stars come out one after another in an arc over the wizard, twinkling, each its own colour; then they are shot
+      // one at a time, each flying at its monster slowly enough to see, spinning, a trail of its colour behind it; where
+      // one lands a ring and a burst of little stars of its colour. No big rings
+      c.plain = true;
+      sc.heroPose('raise', c.D(0.2), c.col);
+      var H = sc.heroCenter(), M = Math.max(1, c.pool().length), n = Math.max(1, Math.ceil(12 / M)) * M, shown = [], T0 = 0.34, SPAN = 0.7;
+      for (var i = 0; i < n; i++) (function (i) {
+        var a = Math.PI * (0.1 + 0.8 * i / Math.max(1, n - 1)), col = K.STARC[i % K.STARC.length];
+        // two rows of a wide fan over its head (packed in one row their glows ran together into a white band)
+        var rw = i % 2 ? 1.55 : 2.15, p = V(H.x + Math.cos(a) * rw, H.y + 0.45 + Math.sin(a) * rw * 0.72, H.z - 0.25);
+        after(c.D(i * (0.26 / n)), function () {
+          shown[i] = { p: p, col: col, e: K.starAt(p, col, 0.56 * Math.min(1.3, c.s), 30, undefined, 0.22) };
+          flare(p, col, 0.5, 0.08); sparks(p, [0xffffff, col], 2, 1.5, { size: 0.08 });
+        });
+      })(i);
+      volley(c, { shots: n, t0: T0, span: SPAN, fire: function (mob, frac, i) {
+        var s = shown[i]; if (s) kill(s.e);
         if (!mob) return;
-        var tip = sc.heroPaw(), star = picHead('starShot-star', 0.95 * c.s, -0.72, 0.77, 0.273);
-        flare(tip, 0xffffff, 0.6 * c.s, 0.08, { white: true }); if (i % 3 === 0) ring(tip, c.col, 0.7 * c.s, 0.15);
-        homing({ from: tip, to: function () { return mp(mob); }, time: c.D(0.13), arc: V(0, rr(-0.3, 0.5), rr(-0.3, 0.3)), fancy: false,
-          trail: { w: 0.12 * c.s, col: c.col, core: 0.9, pts: 10, halo: false },
-          heads: [{ frame: 'star', color: 0xffffff, size: 0.42 * c.s, spin: 14, white: true }, { frame: 'glow', color: c.col, size: 0.9 * c.s, alpha: 0.3 }],
-          emit: function (p, v, dt) { if (star) star.set(p, v, dt); },
-          onHit: function (p) {
-            if (star) star.kill();
-            impact(p, c.col, 0.55 * c.s); sc.shake(0.03);
-            c.hit(mob, frac, 0.5);
-          } });
+        var from = s ? s.p.clone() : sc.heroPaw(), col = s ? s.col : K.STARC[i % K.STARC.length];
+        flare(from, col, 0.6, 0.08);
+        homing({ from: from, to: function () { return mp(mob); }, time: c.D(0.26), arc: V(0, rr(0.2, 0.6), rr(-0.2, 0.2)), fancy: false, ease: function (x) { return x * (0.5 + 0.5 * x); },
+          trail: { w: 0.12 * Math.min(1.3, c.s), col: col, core: 1.0, pts: 14, halo: false }, heads: K.starHeads(col, 0.62 * Math.min(1.3, c.s)),
+          onHit: function (p) { K.starBurst(c, p, col, 0.9); sc.shake(0.03); c.hit(mob, frac, 0.5); } });
       } });
+      // any still waiting when the skill ends (fewer monsters than shots) go
+      after(c.D(T0 + SPAN + 0.1), function () { shown.forEach(function (s) { if (s) kill(s.e); }); });
     };
     // Constellation: a star lights up over every monster and lines join them into a picture — then every star drops at the same moment.
     S.constel = function (c) {
+      // (2026-11-16, the user: "it has no colour" — the stars are fine): each star its own colour (gold, sky blue, pink,
+      // violet, mint) with a white heart, the lines glowing in their colours, each coming down in its colour with a trail of
+      // it, and where it lands a ring and a burst of little stars of it — no white rings
+      c.plain = true;
       sc.heroPose('raise', c.D(0.16), c.col); sc.dim(0.5, c.D(1.0));
       var list = c.pool(), marks = [], lines = [], T_DROP = c.D(0.46);
       function over(m) { return above(gp(m), 2.7 + (m.boss ? 0.8 : 0)); }
       list.forEach(function (m, i) {
         after(c.D(0.04 + i * (0.3 / list.length)), function () {
           if (!m.alive) return;
-          var p = over(m), st = E({ pos: p, frame: 'star', color: 0xffffff, size: 0.6 * c.s, life: 30, upd: function (q) { var o = over(m); q.x = o.x; q.y = o.y; q.z = o.z; return true; }, fadeOut: 1, white: true, spin: 3 });
-          marks.push({ m: m, p: st }); ring(p, c.col, 1.0 * c.s, 0.25); glow(p, c.col, [0.3, 1.2 * c.s], 0.3, { ease: 1, alpha: 0.6 });
+          var p = over(m), col = K.STARC[i % K.STARC.length], st = K.starAt(p, col, 0.75 * c.s, 30, function (q) { var o = over(m); q.x = o.x; q.y = o.y; q.z = o.z; return true; });
+          marks.push({ m: m, p: st, col: col }); ring(p, col, 1.0 * c.s, 0.25); glow(p, col, [0.3, 1.2 * c.s], 0.3, { ease: 1, alpha: 0.6 });
           if (marks.length > 1) {
             var prev = marks[marks.length - 2].m, pts = [V(), V(), V()];
-            var rb = vx.ribbon({ mode: 'static', hold: true, taper: 'bolt', pts: pts, w: 0.035, color: c.col, core: 1.2, alpha: 0.9, life: 30, upd: function (r) { var a = over(prev), b = over(m); r.pts[0].copy(a); r.pts[1].lerpVectors(a, b, 0.5); r.pts[2].copy(b); } });
+            var rb = vx.ribbon({ mode: 'static', hold: true, taper: 'bolt', pts: pts, w: 0.05, color: col, core: 1.2, alpha: 0.9, life: 30, upd: function (r) { var a = over(prev), b = over(m); r.pts[0].copy(a); r.pts[1].lerpVectors(a, b, 0.5); r.pts[2].copy(b); } });
             if (rb) lines.push(rb);
           }
         });
       });
       after(T_DROP, function () {
-        kill(marks.map(function (x) { return x.p; })); lines.forEach(function (r) { r.kill(); });
-        sc.flash('rgba(200,220,255,0.6)', 0.3); sc.shake(0.3); sc.hitStop(0.05);
-        c.pool().forEach(function (m) {
-          var from = over(m);
-          shaft(gp(m), 3.4, 0.12, [0xffffff, c.col], 0.22, { fadeOut: 0.4 });
-          homing({ from: from, to: function () { return mp(m); }, time: c.D(0.08), fancy: false, trail: { w: 0.16 * c.s, col: c.col, core: 1.2, pts: 12, halo: false },
-            heads: [{ frame: 'star', color: 0xffffff, size: 0.7 * c.s, spin: 16, white: true }, { frame: 'glow', color: c.col, size: 1.2 * c.s, alpha: 0.4 }],
-            onHit: function (p) { impact(p, c.col, 0.95 * c.s); gRing(V(p.x, 0, p.z), c.col, 2.0 * c.s, 0.4); c.hit(m, 1, 1.4); } });
+        marks.forEach(function (x) { kill(x.p); }); lines.forEach(function (r) { r.kill(); });
+        sc.flash('rgba(210,190,255,0.45)', 0.25); sc.shake(0.3); sc.hitStop(0.05);
+        c.pool().forEach(function (m, i) {
+          var from = over(m), mk = marks.filter(function (x) { return x.m === m; })[0], col = mk ? mk.col : K.STARC[i % K.STARC.length];
+          shaft(gp(m), 3.4, 0.12, [0xffffff, col], 0.22, { fadeOut: 0.4 });
+          homing({ from: from, to: function () { return mp(m); }, time: c.D(0.1), fancy: false, trail: { w: 0.18 * c.s, col: col, core: 1.2, pts: 12, halo: false },
+            heads: K.starHeads(col, 0.8 * c.s),
+            onHit: function (p) { K.starBurst(c, p, col, 1.1); c.hit(m, 1, 1.4); } });
         });
       });
     };
@@ -601,42 +831,78 @@
     // Sun spear: a spear of sunlight is drawn out of the air and thrown straight through one monster; then it bursts.
     S.sunspear = function (c) {
       var mob = c.pool()[0]; if (!mob) return;
-      sc.heroPose('thrust', c.D(0.26), c.col); sc.dim(0.4, c.D(0.95));
-      // the spear is a gold crystal (the ice lance's 3D spear, gold with a dark amber outline and no frost mist)
-      var up = sc.heroCenter().add(V(0, 2.4, -0.3)), aim = mp(mob), t = 0, T_FORM = c.D(0.26), T_FLY = Math.max(0.13, c.D(0.14)), L = 1.9 * Math.min(1.2, c.s), P = up.clone(), dir = V(), stage = 0, end = V(), hit = false;
-      var spear = P3.iceSpear({ size: L, col: 0xfff2b0, deep: 0xffb030, line: 0xb8650c, mist: false }), vel = V();
-      converge(up, [0xffffff, 0xffd84a, 0xff9a40], N(22, c), 1.5, T_FORM); seal(up, 0xffd84a, 1.1 * c.s, T_FORM);
+      // real 3D (2026-11-16, the user: "it is the sun — flashing like the sun; thrown like the ice lance, as if throwing
+      // the sun, like hurling a bolt of lightning; where the ice lance freezes, this one goes off — bang — like the solar
+      // burst"): light streams together over the wizard and a spear of sunlight grows there — a gold-white body
+      // flickering like the sun (js/fx3d.js FS_BM.sunspear on the ice lance's shape), its point a ball of the sun's fire
+      // whose flames stream back along it; it is drawn back and hurled fast and nearly straight, crackling with golden
+      // bolts, a golden streak behind it; it runs into the monster, the sun at its point swells, and bang: a flash, the
+      // world catching its breath, rays of light, a ring of heat, a crown of golden fire, burning bits thrown wide.
+      // No magic circle, no screen-wide rings
+      c.plain = true;
+      sc.heroPose('thrust', c.D(0.3), c.col); sc.dim(0.4, c.D(1.0));
+      var cs = Math.min(1.25, c.s), up = sc.heroCenter().add(V(0, 1.45, -0.2)), L = 1.95 * cs, W = 2.6 * cs, h = P3.bm('sunLance', { col: 0xffffff });
+      var head = K.toonBall(0.85 * cs, { kind: 'sun', glow: 1.2, thick: true }), halo = P3.orb({ col: 0xffd84a, deep: 0xff8a20, alpha: 0.45, order: 6 });
+      var q = new T.Quaternion(), R = new T.Quaternion(), dir = V(1, 0, 0), S3 = V(), foot = V(), tipP = V(), QY = V(0, 1, 0), roll = 0, tt = 0, GOLD = [0xffffff, 0xffe14a, 0xff9a2b];
+      // the spear with its back end at f, pointing along dir, k of its length grown; the sun at its point (sk its size)
+      function placeSpear(f, k, sk, dt) {
+        q.setFromUnitVectors(QY, dir).multiply(R.setFromAxisAngle(QY, roll)); S3.set(W, L * Math.max(0.02, k), W); h.set(f, q, S3, 1, 0);
+        tipP.copy(f).addScaledVector(dir, L * k);
+        var fl = 1 + 0.12 * Math.sin(tt * 47) * Math.sin(tt * 29);
+        // the sun skewered on it just behind the head (its middle at 0.56 of the spear): the sharp point stands out in front
+        var sunAt = tipP.clone().addScaledVector(dir, -0.44 * L * Math.min(1, k));
+        head.set(sunAt, dir.clone().multiplyScalar(10), dt, sk * fl);
+        halo.set(sunAt, (0.55 + 0.14 * Math.sin(tt * 38)) * cs * sk);
+      }
+      // little golden bolts crackling round it
+      function crackle(n) {
+        for (var i = 0; i < n; i++) { var a = tipP.clone().addScaledVector(dir, -L * rr(0, 0.8)).add(rdir(0.12)); vx.lightning(a, a.clone().add(rdir(rr(0.35, 0.7))), { w: 0.035 * cs, color: 0xffd84a, life: 0.07, branches: 0, segs: 5, amp: 0.3 }); }
+      }
+      var formT = 0, FORM = c.D(0.22), DRAW = c.D(0.1);
       tick(function (dt) {
-        t += dt;
-        if (stage === 0) {
-          aim = mp(mob);
-          dir.copy(aim).sub(up).normalize(); var kf = Math.min(1, t / T_FORM);
-          spear.set(up, dir, dt, kf);
-          if (kf >= 1) { stage = 1; t = 0; end.copy(aim).addScaledVector(dir, 2.6); flare(up, 0xffffff, 0.7 * Math.min(1.5, c.s), 0.1, { white: true }); ring(up, 0xffd84a, 1.0 * Math.min(1.5, c.s), 0.2); sc.punch(0.05); }
-          return false;
-        }
-        if (stage === 1) {
-          var k = Math.min(1, t / T_FLY), dist = aim.distanceTo(up), pass = dist / (dist + 2.6);
-          P.lerpVectors(up, end, k); vel.copy(dir).multiplyScalar(up.distanceTo(end) / Math.max(1e-3, T_FLY)); spear.set(P, vel, dt);
-          // sparks of sunlight stream off its back end
-          if (Math.random() < dt * 140 * c.n) E({ pos: P.clone().addScaledVector(dir, -L * 0.7).add(rdir(0.15)), vel: dir.clone().multiplyScalar(-3).add(rdir(1)), frame: pick(['streak', 'flare', 'dot']), color: [0xffffff, 0xffe14a, 0xff8a2b], size: [rr(0.14, 0.3), 0.03], life: rr(0.2, 0.4), stretch: 0.08 });
-          if (k >= pass && !hit) {
-            hit = true;
+        formT += dt; tt += dt; dir.copy(mp(mob)).sub(up).normalize();
+        var k = Math.min(1, formT / FORM), back = Math.max(0, Math.min(1, (formT - FORM) / DRAW)), e = 1 - (1 - k) * (1 - k);
+        // drawn back before the throw: pulled back along itself, its point lifted a little
+        dir.y += 0.25 * back; dir.normalize();
+        placeSpear(foot.copy(up).addScaledVector(dir, -L * (0.5 + 0.25 * back)), 0.1 + 0.9 * e, 0.3 + 0.7 * e, dt);
+        // sunlight streams in from every side while it forms; it flashes and crackles
+        if (k < 1 && Math.random() < dt * 80 * c.n) { var d = rdir(rr(1.6, 2.8)); d.z *= 0.3; E({ pos: tipP.clone().add(d), vel: d.clone().multiplyScalar(-1 / 0.2), frame: pick(['streak', 'dot']), color: GOLD, size: [rr(0.12, 0.24), 0.03], life: 0.2, stretch: 0.07, fadeIn: 0.3 }); }
+        if (Math.random() < dt * 14) { flare(tipP.clone().add(rdir(0.15)), 0xfff2b0, rr(0.5, 0.9) * cs, 0.07); crackle(1); }
+        return formT >= FORM + DRAW;
+      });
+      after(FORM + DRAW, function () {
+        var from = tipP.clone();
+        flare(from, 0xffffff, 1.0 * cs, 0.1, { white: true }); sc.shake(0.08); sc.punch(0.04); crackle(3);
+        homing({ from: from, to: function () { return mp(mob); }, time: Math.max(0.1, c.D(0.13)), arc: V(0, 0.3, 0), fancy: false, ease: function (x) { return x * (0.5 + 0.5 * x); }, heads: [],
+          trail: { w: 0.12 * cs, col: 0xffd060, core: 1.0, pts: 12, halo: true },
+          emit: function (p, v, dt) {
+            tt += dt; roll += dt * 14; if (v.lengthSq() > 1e-6) dir.copy(v).normalize();
+            placeSpear(foot.copy(p).addScaledVector(dir, -L), 1, 1, dt);
+            if (Math.random() < dt * 40) crackle(1);
+            if (Math.random() < dt * 90 * c.n) E({ pos: p.clone().addScaledVector(dir, -L * rr(0.1, 0.9)).add(rdir(0.08)), vel: dir.clone().multiplyScalar(-3).add(rdir(1)), frame: pick(['streak', 'flare', 'dot']), color: GOLD, size: [rr(0.12, 0.26), 0.03], life: rr(0.18, 0.35), stretch: 0.08 });
+          },
+          onHit: function (p) {
+            // it runs in (the game's impact, as before): a flash, a catch, a ring of light, sparks thrown on the way it went;
+            // the first of the damage now, and the sun on it swells for a beat
             sc.flash('rgba(255,235,160,0.5)', 0.4); sc.hitStop(0.07); sc.shake(0.4);
-            flare(aim, 0xffe08a, 1.5 * c.s, 0.16); shock(aim, 0xffd84a, 3.6 * c.s, 0.35);
-            sparks(aim, [0xffffff, 0xffe14a, 0xff8a2b], N(26, c), 11, { dir: dir, spread: 0.5, size: 0.26, stretch: 0.16, life: 1.1 });
+            flare(p, 0xffe08a, 1.5 * c.s, 0.16); shock(p, 0xffd84a, 3.6 * c.s, 0.35);
+            sparks(p, [0xffffff, 0xffe14a, 0xff8a2b], N(26, c), 11, { dir: dir, spread: 0.5, size: 0.26, stretch: 0.16, life: 1.1 });
             c.hit(mob, 0.6, 2.2);
-          }
-          if (k < 1) return false;
-          stage = 2; t = 0; return false;
-        }
-        // past the monster it fades out where it stopped
-        var fade = Math.max(0, 1 - t / c.D(0.12));
-        if (fade > 0) { spear.set(P, vel, dt, fade); return false; }
-        spear.kill();
-        // the light it left in the monster goes off as a pillar: a 3D beam shooting up out of the ground, open and closed
-        // again in 0.36 s, over a golden blast
-        var q = mp(mob), g = V(q.x, 0, q.z), top = g.clone(), pT = 0, PL = 0.36;
+            var t = 0, BEAT = c.D(0.14), d0 = dir.clone(); if (d0.y > -0.3) { d0.y = -0.3; d0.normalize(); }
+            tick(function (dt2) {
+              t += dt2; tt += dt2; var at = mp(mob), kb = Math.min(1, t / BEAT); dir.copy(d0);
+              placeSpear(foot.copy(at).addScaledVector(d0, -L * 0.72), 1, 1 + 0.9 * kb * kb, dt2);
+              if (Math.random() < dt2 * 60) crackle(1);
+              if (t < BEAT) return false;
+              sunBang(at); return true;
+            });
+          } });
+      });
+      // then it goes off (the game's impact, as before): a pillar of light shooting up out of the ground, open and closed
+      // again in 0.36 s, over a golden blast, a ring of light, fire and embers
+      function sunBang(at) {
+        h.kill(); head.kill(); halo.kill();
+        var q = at, g = V(q.x, 0, q.z), top = g.clone(), pT = 0, PL = 0.36;
         var pillar = P3.beam({ col: 0xffd060, deep: 0xff7a1a, r: 0.24 * Math.min(1.5, c.s) });
         tick(function (dt2) {
           pT += dt2; var kp = Math.min(1, pT / PL);
@@ -649,8 +915,7 @@
         fire(q, N(12, c), { size: 1.1 * c.s, speed: 3, up: 3 }); embers(q, [0xffe080, 0xff6a2b], N(14, c), { speed: 3.5, up: 3 });
         sc.flash('rgba(255,225,150,0.5)', 0.4); sc.shake(0.4); sc.light(q, 0xffe080, 2.4, 0.5);
         c.hit(mob, 0.4, 2);
-        return true;
-      });
+      }
     };
     // Sunlight arrows: a small sun opens high to one side and looses arrow after arrow of light, each one into a monster.
     // The sun is the solar burst's real 3D sun; every arrow is a 3D arrow made in Blender (a faceted gold head, a shaft

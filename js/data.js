@@ -67,7 +67,7 @@
 
       { id: 'fireball', name: '화염구', tier: 2, el: 'fire', dur: 0.75, mult: 1.7, targets: 2, shape: 'fireball', status: null, color: 0xff6a2b, how: '불덩이가 날아가 터져요' },
       { id: 'flamePillar', name: '불기둥', tier: 2, el: 'fire', dur: 0.8, mult: 1.5, targets: 3, shape: 'pillars', status: null, color: 0xff7a2b, how: '발밑에서 불기둥이 솟아요' },
-      { id: 'flameWave', name: '화염 파도', tier: 2, el: 'fire', dur: 0.85, mult: 1.0, targets: 99, shape: 'flameWave', status: null, color: 0xff8a3a, how: '불의 벽이 화면을 쓸고 지나가요' },
+      { id: 'flameWave', name: '불의 회오리', tier: 2, el: 'fire', dur: 0.85, mult: 1.0, targets: 99, shape: 'flameWave', status: null, color: 0xff8a3a, how: '불 회오리가 몬스터 사이를 휩쓸고 다녀요' },
       { id: 'inferno', name: '폭염탄', tier: 2, el: 'fire', dur: 0.9, mult: 2.5, targets: 1, splash: 0.3, shape: 'inferno', status: null, color: 0xff4a1a, how: '커다란 불덩이 한 방' },
 
       { id: 'chainLightning', name: '연쇄 번개', tier: 3, el: 'bolt', dur: 0.7, mult: 2.1, targets: 4, shape: 'chain', status: 'shock', color: 0x9fd8ff, how: '번개가 옮겨 다니고 하늘에서 또 내리쳐요' },

@@ -14,6 +14,10 @@
     '  mix(mix(dot(h3(i+vec3(0.0,0.0,1.0)),f-vec3(0.0,0.0,1.0)),dot(h3(i+vec3(1.0,0.0,1.0)),f-vec3(1.0,0.0,1.0)),u.x),mix(dot(h3(i+vec3(0.0,1.0,1.0)),f-vec3(0.0,1.0,1.0)),dot(h3(i+vec3(1.0,1.0,1.0)),f-vec3(1.0,1.0,1.0)),u.x),u.y),u.z);}',
     'float fbm(vec3 p){float a=0.5,s=0.0;for(int i=0;i<4;i++){s+=a*n3(p);p=p*2.03+vec3(1.7,9.2,3.1);a*=0.5;}return s;}',
     'float fb(vec3 p){return clamp(fbm(p)*1.6+0.5,0.0,1.0);}',
+    // two octaves only: for edges where the fine detail is not seen (the toon fire's torn rim and burn-out line, 2026-11-16:
+    // five layers of toon fire over one another at 12 noise lookups a pixel slowed an iPhone during 폭염탄's burst)
+    'float fbm2(vec3 p){return 0.5*n3(p)+0.25*n3(p*2.03+vec3(1.7,9.2,3.1));}',
+    'float fb2(vec3 p){return clamp(fbm2(p)*1.6+0.5,0.0,1.0);}',
     // fire colours: t 0 = dark red, 0.5 = the spell colour, 1 = white hot
     'vec3 ramp3(float t,vec3 lo,vec3 mid){t=clamp(t,0.0,1.0);return t<0.5?mix(lo,mid,t*2.0):mix(mid,vec3(1.0,0.97,0.86),(t-0.5)*2.0);}',
     'vec3 ramp(float t,vec3 mid){return ramp3(t,vec3(0.42,0.05,0.07),mid);}'
@@ -61,10 +65,30 @@
     'vP=p;vec4 mv=modelViewMatrix*vec4(p,1.0);vN=normalize(normalMatrix*vec3(0.0,0.0,1.0));vV=normalize(-mv.xyz);vWN=vec3(0.0,0.0,1.0);gl_Position=projectionMatrix*mv;}';
   // the fire wave cut into pieces (one copy per piece, all drawn at once): iRect is the piece's part of the picture
   // (u0, v0, u1, v1, a little larger than its cell so neighbours overlap), iAD its alpha and how far it has burnt away
-  var VS_SHARD = VARY + 'attribute vec4 iRect;attribute vec2 iAD;varying vec4 vRect;varying vec2 vAD;\n' +
+  var VS_SHARD = VARY + 'attribute vec4 iRect;attribute vec3 iAD;varying vec4 vRect;varying vec3 vAD;\n' +
     'void main(){vUv=uv;vRect=iRect;vAD=iAD;vec3 p=position;vP=p;vIC=vec3(1.0);\n' +
     '#ifdef USE_INSTANCING\nvec4 mv=modelViewMatrix*instanceMatrix*vec4(p,1.0);\n#else\nvec4 mv=modelViewMatrix*vec4(p,1.0);\n#endif\n' +
     'vN=vec3(0.0,0.0,1.0);vV=normalize(-mv.xyz);vWN=vec3(0.0,0.0,1.0);gl_Position=projectionMatrix*mv;}';
+  // a fire tornado (2026-11-15): an open tube standing on the ground (uv.y 0 at its foot → 1 at its top), narrow at
+  // the ground (uR0) and opening into a funnel at the top (uR1); its middle line sways and swings round more the higher
+  // it is (uBend), its surface swells in rings that run up it, so the whole thing writhes like a real whirlwind
+  // (2026-11-15, the user's drawing of its parts: the skeleton is a funnel that comes to a needle point at the ground and
+  // opens up wide, its top rim wavy. The body and the ribbons wound round it share this shape, so the ribbons lie on it.)
+  var FUNNEL = 'uniform float uH,uR0,uR1,uBend,uPh;\n' +
+    'float twR(float y,float a){return mix(uR0,uR1,pow(y,1.45))*(1.0+0.08*sin(y*9.0-uTime*8.0+uPh))*(1.0+0.16*sin(a*5.0+uPh+uTime*1.5)*smoothstep(0.72,1.0,y));}\n' +
+    'vec2 twC(float y){return vec2(sin(y*2.3-uTime*2.7+uPh),0.6*cos(y*1.8-uTime*2.2+uPh))*uBend*y*y;}\n';
+  var VS_TWIST = VARY + FUNNEL +
+    'void main(){vUv=uv;float y=uv.y,a=uv.x*6.2832;float r=twR(y,a);vec2 c=twC(y);' +
+    'vec3 p=vec3(sin(a)*r+c.x,y*uH,cos(a)*r+c.y);vec3 nrm=vec3(sin(a),0.0,cos(a));' +
+    'vP=p;vec4 mv=modelViewMatrix*vec4(p,1.0);vN=normalize(normalMatrix*nrm);vV=normalize(-mv.xyz);vWN=normalize(mat3(modelMatrix)*nrm);gl_Position=projectionMatrix*mv;}';
+  // a ribbon of fire wound up the funnel (uv.x along it 0 → 1, uv.y across it): its middle climbs from height uY0 to uY1
+  // (fractions of uH) going uTurns times round, starting at angle uOff and turning with the whirl (uSpin); it is a band
+  // uW high lying just outside the body (uOut), so it shows as a spiral stripe standing off the funnel
+  var VS_RIBBON = VARY + FUNNEL + 'uniform float uY0,uY1,uTurns,uOff,uSpin,uW,uOut;\n' +
+    'void main(){vUv=uv;float t=uv.x,ym=mix(uY0,uY1,t),y=clamp(ym+(uv.y-0.5)*uW*(0.5+0.5*ym),0.0,1.0);' +
+    'float a=t*uTurns*6.2832+uOff-uTime*uSpin;float r=twR(y,a)*uOut+0.04*uH*(uv.y-0.5);vec2 c=twC(y);' +
+    'vec3 p=vec3(sin(a)*r+c.x,y*uH,cos(a)*r+c.y);vec3 nrm=vec3(sin(a),0.0,cos(a));' +
+    'vP=p;vec4 mv=modelViewMatrix*vec4(p,1.0);vN=normalize(normalMatrix*nrm);vV=normalize(-mv.xyz);vWN=normalize(mat3(modelMatrix)*nrm);gl_Position=projectionMatrix*mv;}';
   // f: 1 where the surface faces the camera (the middle of a tube or ball), 0 at its outline
   var F = 'float f=abs(dot(normalize(vN),normalize(vV)));';
   var FS = {
@@ -180,6 +204,33 @@
       // flames break up into tongues further back: the cut-off rises along the tail
       'float al=smoothstep(0.42+0.35*y,0.66+0.25*y,fl+(1.0-y)*0.18)*fade*(0.35+0.65*f)*0.9*uAlpha;' +
       'gl_FragColor=vec4(ramp(pow(fade,1.6)*0.55+fl*0.4-uBright*0.18,uCol),clamp(al,0.0,1.0));}',
+    // toon fire on a real 3D shape made in Blender (art/fx-mesh, tools/blender/export_fire_meshes.py): the same recipe the
+    // Blender render used — flame streaks (noise turning against the shape), spiral bands from the uv, the top rim torn into
+    // tongues, flat colour steps, and below the first step nothing at all (discarded, so it draws as a solid thing). uK 0 → 1
+    // burns it away from the top down; uFrom > 0 keeps only what is above that height (the smoke taking over from the top)
+    // uTw: the flame streaks wound round as they rise (radians over the shape's height: a tornado's streaks spiral up it
+    // rather than standing straight like a torch's). uOut 1: a dark toon outline (uRim) along the cut edges and the
+    // shape's silhouette, for bright ground where the fire's own colours wash out. uRise: the flame streaks race up it
+    // (shape heights per second: a pillar's fire shoots upward)
+    toon: 'uniform vec3 uC0,uC1,uC2,uC3,uC4,uRim;uniform vec4 uStep;uniform float uCut,uLift,uSpin,uK,uFrom,uDis,uSeed,uTw,uOut,uRise,uFoot,uBand,uTop;void main(){' +
+      'float u=vUv.x,v=vUv.y,an=uSpin+v*uTw,cs=cos(an),sn=sin(an);vec3 q=vec3(cs*vP.x-sn*vP.z,vP.y-uTime*uRise,sn*vP.x+cs*vP.z);' +
+      'float nz=fb(vec3(q.x*1.6,q.y*0.6,q.z*1.6)*2.4+uSeed);' +
+      'float pp=mod(v*3.0+u,1.0/3.0),band=(1.0/6.0-abs(pp-1.0/6.0))*2.1*uBand;' +
+      'vec2 ring=normalize(vP.xz+vec2(1e-4))*2.4;float tn=fb2(vec3(ring,v)+uSeed*0.37);' +
+      'float tm=clamp((v-uTop-0.75*tn+0.3-0.98)/(0.8-0.98),0.0,1.0),bm=max(uFoot,clamp(v/0.08,0.0,1.0));' +
+      'float f=(nz+band-uLift)*tm*bm;' +
+      'float n2=fbm2(vec3(q*2.0)+uSeed)*0.25;' +
+      'if(uK>0.0&&v+n2>1.12-uK*1.3)discard;if(uFrom>0.0&&v+n2<uFrom)discard;' +
+      'f-=uDis*(0.45+n2*1.2);if(f<uCut)discard;' +
+      'vec3 c=f<uStep.x?uC0:f<uStep.y?uC1:f<uStep.z?uC2:f<uStep.w?uC3:uC4;' +
+      'float sil=1.0-abs(dot(normalize(vN),normalize(vV)));' +
+      'if(uOut>0.0&&(f<uCut+0.035||sil>0.88))c=uRim;' +
+      'gl_FragColor=vec4(c,1.0);}',
+    // the hot glow round a toon fire in the dark: a slightly larger copy of the shape, added as light, strongest where its
+    // surface turns away from us (its outline) and fading up it; it goes out from the top with the fire (uK)
+    toonGlow: 'uniform vec3 uCol;uniform float uK,uA;void main(){float v=vUv.y;if(uK>0.0&&v>1.12-uK*1.3)discard;' +
+      'float sil=clamp(1.0-abs(dot(normalize(vN),normalize(vV))),0.0,1.0);float a=pow(sil,1.6)*uA*smoothstep(0.0,0.12,v)*(1.0-smoothstep(0.75,1.0,v));' +
+      'gl_FragColor=vec4(uCol,a);}',
     // the painted fire wave (VS_PIC): the picture's own colours, its flames rippling and flickering with heat; uDis 0 → 1
     // burns it away from the top down in ragged patches with glowing edges, leaving the flames at its foot last
     pic: 'uniform sampler2D uMap;uniform float uAlpha,uDis,uGlow;void main(){' +
@@ -191,12 +242,13 @@
       'gl_FragColor=vec4(c,tx.a*keep*uAlpha);}',
     // one piece of the painted wave: its part of the picture, soft at the edges so the pieces blend into one wave while
     // they are together; it flickers, and burns away in ragged holes with glowing edges as vAD.y goes 0 → 1
-    shard: 'uniform sampler2D uMap;varying vec4 vRect;varying vec2 vAD;void main(){' +
+    shard: 'uniform sampler2D uMap;varying vec4 vRect;varying vec3 vAD;void main(){' +
       'vec2 uv=mix(vRect.xy,vRect.zw,vUv);vec4 tx=texture2D(uMap,uv);' +
       'float e=min(min(vUv.x,1.0-vUv.x),min(vUv.y,1.0-vUv.y)),soft=smoothstep(0.0,0.24,e);' +
       'float n=fbm(vec3(uv*7.0,uTime*1.6+vRect.x*9.0))*0.5+0.5;' +
       'float keep=smoothstep(vAD.y,vAD.y+0.1,n),edge=smoothstep(0.1,0.0,abs(n-vAD.y))*step(0.001,vAD.y);' +
-      'vec3 c=tx.rgb*(1.1+0.12*sin(uTime*14.0+vRect.x*20.0+vRect.y*13.0))+vec3(1.0,0.55,0.15)*edge*0.7;' +
+      // vAD.z: how lit this layer is (the back layers of a stacked wave are darker, so it has depth)
+      'vec3 c=tx.rgb*(1.1+0.12*sin(uTime*14.0+vRect.x*20.0+vRect.y*13.0))*vAD.z+vec3(1.0,0.55,0.15)*edge*0.7;' +
       'gl_FragColor=vec4(c,tx.a*soft*keep*vAD.x);}',
     // the fire wave's face (VS_WAVE: uv.x across its length uLen, uv.y 0 at its foot → 1 at the lip): not a sheet of
     // colour but a blaze — tall tongues of flame streaming up the whole face, white-yellow where they are hottest, deep
@@ -232,6 +284,60 @@
       'al=max(al,cr*0.85*uAlpha*(1.0-uK));' +
       'gl_FragColor=vec4(ramp3(0.16+fl*0.44+(1.0-y)*0.16*(1.0-uCrest)+uHeat*0.16+cr*0.45-uCrest*0.12*(1.0-smoothstep(0.0,uTop,y))-uK*0.25+uBright*0.12,uLo,uCol),clamp(al,0.0,1.0));}',
     // a fireball dome rising off the ground that burns away in holes as uK goes 0 → 1
+    // the fire of a tornado (VS_TWIST): flames wound round it in spirals (s turns with height by uTw and races round
+    // by uSpin), torn into tongues towards its top; uK 0 → 1 burns it away; uLo → uCol → white as in flame
+    twist: 'uniform vec3 uCol,uLo;uniform float uSeed,uAlpha,uK,uHeat,uSpin,uTw;void main(){' + F +
+      'float y=vUv.y,a=vUv.x*6.2832,s=a+y*uTw-uTime*uSpin;vec2 o=vec2(cos(s),sin(s));' +
+      'float n=fb(vec3(o*1.4,y*3.0-uTime*3.6+uSeed)),n2=fb(vec3(o*3.1,y*7.5-uTime*6.5+uSeed*1.7));' +
+      'float streak=smoothstep(0.2,0.9,0.5+0.5*sin(s*3.0+y*5.0+uSeed));float fl=n*0.45+n2*0.22+streak*0.38;' +
+      'float cut=0.4+0.22*smoothstep(0.7,1.0,y)+uK*0.62;' +
+      'float al=smoothstep(cut,cut+0.17,fl)*(0.3+0.7*f)*smoothstep(0.0,0.07,y)*(1.0-0.55*smoothstep(0.88,1.0,y))*(1.0+uBright*0.35)*uAlpha;' +
+      'gl_FragColor=vec4(ramp3(0.04+fl*0.42+uHeat*0.16+(1.0-y)*0.08-uK*0.25+uBright*0.1,uLo,uCol),clamp(al,0.0,1.0));}',
+    // the smoke and dust wound round the outside of a tornado: dark spiral bands (drawn over the picture, not added as
+    // light), so the fire inside stands out and the whirl reads as a solid turning body
+    // (2026-11-15, "회오리 뼈대가 없다": now the body itself — a solid funnel of fire, not a few loose ribbons. It is
+    // shaded round like a solid thing (dark red at its outline, glowing orange-yellow where it faces us), grooved by
+    // dark spiral seams that wind up it as it turns, so the twist reads as one turning body; only its top frays away)
+    // (2026-11-15, the user's drawing: the inside of the funnel is bright fire — yellow-white where it faces us, orange to
+    // red at its outline, flickering up it in streaks. uK 0 → 1: it goes out from the top down, where the smoke takes over)
+    // ("불 느낌이 없다": not a smooth shaded surface but fire — streaks of flame racing up it, white-yellow where they
+    // are hottest, deep red in between, and its outline and top torn into licking tongues; it flickers all the time)
+    // (2026-11-15 notes: the bright streaks of flame are pulled up it from the foot to the top as it turns; colour by
+    // depth — bright yellow at its middle, orange around that, red only at its edges; its tips torn to different lengths
+    // that flicker at different speeds)
+    tbody: 'uniform vec3 uDark,uLight;uniform float uSeed,uAlpha,uK,uSpin,uTw;void main(){' + F +
+      'float y=vUv.y,a=vUv.x*6.2832,s=a+y*uTw-uTime*uSpin;vec2 o=vec2(cos(s),sin(s));' +
+      'float n=fb(vec3(o*1.8,y*5.0-uTime*6.5+uSeed)),n2=fb(vec3(o*4.2,y*12.0-uTime*12.0+uSeed*1.3)),fl=n*0.6+n2*0.4;' +
+      'float sn=fb(vec3(o*2.6,y*2.2-uTime*9.0+uSeed*2.0)),st=smoothstep(0.52,0.82,sn);' +
+      'float dep=pow(f,1.2);vec3 red=mix(uDark,uLight,clamp(fl*1.2,0.0,1.0));' +
+      'vec3 c=mix(red,vec3(1.0,0.42,0.06),smoothstep(0.12,0.5,dep+fl*0.25));c=mix(c,vec3(1.0,0.84,0.32),smoothstep(0.55,0.95,dep*0.65+st*0.55)*(1.0-uBright*0.45));' +
+      'float tn=fb(vec3(o*3.0,uTime*2.3+uSeed))*0.6+fb(vec3(o*7.0,uTime*4.9+uSeed*1.7))*0.4,tip=0.6+0.4*tn;' +
+      'float cut=0.12+0.4*smoothstep(0.4,1.0,y);float body=smoothstep(cut,cut+0.12,fl+0.1+st*0.15)*smoothstep(0.04,0.3,f+fl*0.35)*(1.0-smoothstep(tip-0.1,tip,y));' +
+      'float gone=smoothstep(1.0-uK*1.15,1.15-uK*1.15,y+(fl-0.5)*0.3);' +
+      'float al=smoothstep(0.0,0.05,y)*body*(1.0-gone)*uAlpha;' +
+      'gl_FragColor=vec4(c,clamp(al,0.0,1.0));}',
+    // a ribbon of fire wound round the funnel (VS_RIBBON: vUv.x along it, vUv.y across it): a solid band, orange on its
+    // outer face, gold on its inner face, brightest along its middle; its upper edge torn into tongues of flame that lick
+    // upward and race along it, its ends tapering into flame. uK 0 → 1: it goes out from the top down like the body
+    ribbon: 'uniform vec3 uCol,uIn;uniform float uSeed,uAlpha,uK;void main(){' + F +
+      'float t=vUv.x,v=vUv.y;float n=fb(vec3(t*16.0-uTime*6.0,v*2.0,uSeed)),n2=fb(vec3(t*34.0-uTime*10.0,v*4.0,uSeed*2.0)),fl=n*0.62+n2*0.38;' +
+      // both edges torn into ragged flame, and small gaps that open and close in its middle (so it is fire, not a solid strip)
+      'float n3=fb(vec3(t*9.0-uTime*3.0,v*3.0,uSeed*3.0+uTime*1.4));' +
+      'float keep=smoothstep(0.0,0.08,(0.6+0.55*fl)-v)*smoothstep(0.0,0.08,v-(0.04+0.32*n2))*smoothstep(0.3,0.42,n3+0.15*abs(v-0.45));' +
+      'float ends=smoothstep(0.0,0.07,t)*(1.0-smoothstep(0.8,1.0,t+(fl-0.5)*0.25));' +
+      'float gone=smoothstep(1.0-uK*1.15,1.15-uK*1.15,t+(fl-0.5)*0.3);' +
+      'float band=1.0-clamp(abs(v-0.4)*2.4,0.0,1.0);' +
+      'vec3 dc=uCol*vec3(0.62,0.32,0.25);vec3 c=gl_FrontFacing?mix(dc,mix(uCol,vec3(1.0,0.45,0.1),band*0.5),0.45+0.55*f):mix(uIn*0.7,vec3(1.0,0.55,0.15),band*0.35);' +
+      'c=mix(c,vec3(1.0,0.55,0.15),smoothstep(0.6,0.95,fl)*0.3*(1.0-uBright));float rim=1.0-smoothstep(0.0,0.35,min(keep,smoothstep(0.0,0.2,v)));c*=1.0-0.55*rim;' +
+      'gl_FragColor=vec4(c,clamp(keep*ends*(1.0-gone)*uAlpha,0.0,1.0));}',
+    // grey smoke wound round the funnel (VS_TWIST), for the end: uTop 0 → 1 how far down from the top it has taken over,
+    // uK 0 → 1 it thins and frays away into wisps
+    tgrey: 'uniform vec3 uDark,uLight;uniform float uSeed,uAlpha,uK,uSpin,uTw,uTop;void main(){' + F +
+      'float y=vUv.y,a=vUv.x*6.2832,s=a+y*uTw-uTime*uSpin;vec2 o=vec2(cos(s),sin(s));' +
+      'float n=fb(vec3(o*1.2,y*2.2-uTime*1.6+uSeed)),n2=fb(vec3(o*2.6,y*5.0-uTime*2.6+uSeed)),band=0.5+0.5*sin(s*2.0+y*3.0+n*2.0);' +
+      'float wisp=n*0.6+n2*0.25+band*0.3;float cover=smoothstep(1.0-uTop-0.12,1.0-uTop+0.12,y);' +
+      'float al=smoothstep(0.3+uK*0.5,0.6+uK*0.45,wisp)*cover*smoothstep(0.0,0.08,y)*(1.0-smoothstep(0.86,1.0,y+n*0.1))*(0.4+0.6*f)*uAlpha;' +
+      'gl_FragColor=vec4(mix(uDark,uLight,clamp(n2*0.7+uK*0.4+0.15*(1.0-f),0.0,1.0)),clamp(al,0.0,1.0));}',
     dome: 'uniform vec3 uCol,uLow;uniform float uK,uSeed,uAlpha,uHot;void main(){' + F +
       'float n=fb(vP*3.4+vec3(uSeed,-uTime*3.0,0.0)),n2=fb(vP*7.0+vec3(-uTime*4.0,uSeed,0.0)),fl=n*0.7+n2*0.3;' +
       // full of holes from the start, and the holes eat it up as it rises
@@ -282,6 +388,14 @@
       'c=mix(c,vec3(1.0),clamp(edge*(0.45+0.5*vX.y)+run*edge*0.5+glint*0.8+pow(1.0-f,3.0)*0.25,0.0,1.0));' +
       'gl_FragColor=vec4(c,vX.x);}',
     // the arrow of light: a gold faceted head, a shaft of white-gold light pulsing toward the head, vanes of orange light
+    // the sun spear (태양의 창, 2026-11-16): sunlight made solid — a gold-white body flickering like the sun, bright bands
+    // racing up it to its point, an orange glow at its edges, a hard glint
+    sunspear: 'varying vec4 vX;void main(){' + F + LIT +
+      'float fl=0.82+0.18*sin(uTime*47.0+vUv.y*7.0)*sin(uTime*29.0+vX.z);' +
+      'float band=pow(0.5+0.5*sin(vUv.y*26.0-uTime*36.0),5.0);' +
+      'vec3 gold=vec3(1.0,0.74,0.2),hot=vec3(1.0,0.97,0.85);' +
+      'vec3 c=mix(gold,hot,clamp(0.3+0.45*lam+0.5*band,0.0,1.0))*fl+vec3(1.0,0.45,0.08)*pow(1.0-f,2.2)*0.7+vec3(glint);' +
+      'gl_FragColor=vec4(c*vIC,vX.x);}',
     arrow: 'varying vec4 vX;void main(){' + F + LIT + 'vec3 g=vIC,c;float a=vX.x;' +
       'if(vUv.x>0.6){c=mix(g*0.42,g,0.3+0.7*lam)+vec3(glint);c=mix(c,vec3(1.0),pow(1.0-f,3.0)*0.4);}' +
       'else if(vUv.x>0.4){c=mix(g,vec3(1.0,0.55,0.18),0.55)*(0.85+0.4*lam);a*=0.8;}' +
@@ -401,7 +515,7 @@
     function mat(fs, uni, o, vs) {
       o = o || {}; var paint = bright && !o.keepAdd; uni.uTime = { value: time }; uni.uBright = { value: paint ? 1 : 0 };
       var blending = o.normal || o.solid || paint ? T.NormalBlending : T.AdditiveBlending, side = o.side || T.FrontSide, depthTest = o.depthTest !== false, depthWrite = !!(o.solid || o.depthWrite);
-      var key = (vs === VS_WAVE ? 'wave' : vs === VS_PIC ? 'pic' : vs === VS_SHARD ? 'shard' : vs === VS_BM ? 'bm' : vs === VS_BML ? 'bml' : vs ? 'tube' : 'std') + '|' + side + '|' + (o.solid ? 1 : 0) + '|' + fs, list = pool[key], m = list && list.pop();
+      var key = (vs === VS_WAVE ? 'wave' : vs === VS_PIC ? 'pic' : vs === VS_SHARD ? 'shard' : vs === VS_BM ? 'bm' : vs === VS_BML ? 'bml' : vs === VS_TWIST ? 'twist' : vs === VS_RIBBON ? 'ribbon' : vs ? 'tube' : 'std') + '|' + side + '|' + (o.solid ? 1 : 0) + '|' + fs, list = pool[key], m = list && list.pop();
       if (m) {
         for (var k in uni) { var d = m.uniforms[k]; if (!d) continue; var v = uni[k].value; if (v && v.copy && d.value && d.value.copy) d.value.copy(v); else d.value = v; }
         m.blending = blending; m.depthTest = depthTest; m.depthWrite = depthWrite; m.transparent = !o.solid;
@@ -773,6 +887,55 @@
         kill: function () { drop(outer); drop(inner); foot.kill(); }
       };
     }
+    // ---------- a fire tornado, built the way the user drew it (2026-11-15, docs/superpowers/specs/2026-11-15-fire-tornado.md):
+    // the skeleton is a funnel from a needle point at the ground to a wide wavy rim (VS_TWIST); inside it a solid body of
+    // bright fire (only its near side drawn, so it reads as one solid thing); two broad ribbons of fire wound up round it
+    // (orange outside, gold inside, their upper edges licking up in flame), a glow of flame tongues round it, and at the
+    // end grey smoke that takes it over from the top down and thins away.
+    // set(pos on the ground, height, radius at the foot, radius at the top, sway, k, smoke, thin):
+    // k 0 → 1 the fire goes out from the top down; smoke 0 → 1 how far down the smoke has taken over; thin 0 → 1 the
+    // smoke frays away ----------
+    var RIB_GEO = new T.PlaneGeometry(1, 1, 180, 4);
+    var TWL = [
+      { fs: 'tbody', r: 0.94, h: 0.97, spin: 2.6, tw: 4.5, a: 1.0, order: 5.8, normal: true },
+      { fs: 'twist', col: 0xff3a0c, r: 1.05, h: 1.0, spin: 3.6, tw: 5.5, a: 0.85, heat: 0.25, order: 6.05 }
+    ];
+    var RIBS = [{ off: 0, turns: 2.6, w: 0.12, out: 1.06, spin: 2.6 }, { off: 3.1416, turns: 2.6, w: 0.09, out: 1.09, spin: 2.6 }];
+    function funnelUni(ph) { return { uH: { value: 1 }, uR0: { value: 0.3 }, uR1: { value: 1 }, uBend: { value: 0 }, uPh: { value: ph } }; }
+    function twister(o) {
+      o = o || {}; var ph = Math.random() * 6;
+      var layers = TWL.map(function (L) {
+        var uni = funnelUni(ph); uni.uSeed = { value: Math.random() * 9 }; uni.uAlpha = { value: L.a }; uni.uK = { value: 0 }; uni.uSpin = { value: L.spin }; uni.uTw = { value: L.tw };
+        if (L.fs === 'tbody') { uni.uDark = { value: C(0x9a0a06) }; uni.uLight = { value: C(0xff3410) }; }
+        else { uni.uCol = { value: C(L.col) }; uni.uLo = { value: C(FIRE_LO) }; uni.uHeat = { value: L.heat }; }
+        var p = add(new T.Mesh(GEO.tube, mat(FS[L.fs], uni, { side: L.normal ? T.DoubleSide : T.FrontSide, normal: !!L.normal }, VS_TWIST)), { order: L.order });
+        p.L = L; return p;
+      });
+      var ribs = RIBS.map(function (R) {
+        var uni = funnelUni(ph); uni.uY0 = { value: 0.02 }; uni.uY1 = { value: 0.97 }; uni.uTurns = { value: R.turns }; uni.uOff = { value: R.off }; uni.uSpin = { value: R.spin }; uni.uW = { value: R.w }; uni.uOut = { value: R.out };
+        uni.uCol = { value: C(0xe0180a) }; uni.uIn = { value: C(0xff4a12) }; uni.uSeed = { value: Math.random() * 9 }; uni.uAlpha = { value: 1 }; uni.uK = { value: 0 };
+        var p = add(new T.Mesh(RIB_GEO, mat(FS.ribbon, uni, { side: T.DoubleSide, normal: true }, VS_RIBBON)), { order: 6 });
+        p.R = R; return p;
+      });
+      var guni = funnelUni(ph); guni.uSeed = { value: Math.random() * 9 }; guni.uAlpha = { value: 0.85 }; guni.uK = { value: 0 }; guni.uSpin = { value: 1.0 }; guni.uTw = { value: 3.5 }; guni.uTop = { value: 0 };
+      guni.uDark = { value: C(0x2e2826) }; guni.uLight = { value: C(0x8e8682) };
+      var grey = add(new T.Mesh(GEO.tube, mat(FS.tgrey, guni, { side: T.DoubleSide, normal: true }, VS_TWIST)), { order: 6.1 });
+      layers[0].mesh.name = 'core3d twister';
+      var foot = orb({ col: 0xff7a2b, deep: FIRE_LO, alpha: 0.35, order: 6 });
+      function shape(p, h, r0, r1, bend) { var u = U(p); p.mesh.position.copy(footAt); u.uH.value = Math.max(0.001, h); u.uR0.value = Math.max(0.001, r0); u.uR1.value = Math.max(0.001, r1); u.uBend.value = bend || 0; }
+      return {
+        set: function (pos, h, r0, r1, bend, k, smoke, thin) {
+          k = k || 0; smoke = smoke || 0; thin = thin || 0; footAt.copy(pos);
+          layers.forEach(function (p) { var L = p.L; shape(p, h * L.h, r0 * L.r, r1 * L.r, bend); U(p).uK.value = Math.min(1, k * (L.fs === 'tbody' ? 1 : 1.25)); p.mesh.visible = k < 1; });
+          ribs.forEach(function (p) { shape(p, h, r0, r1, bend); U(p).uK.value = Math.min(1, k * 1.1); p.mesh.visible = k < 1; });
+          // the smoke is a little wider than the fire, and grows thinner and taller as it frays
+          shape(grey, h * (1 + 0.35 * thin), r0 * 1.1, r1 * (1.05 + 0.3 * thin), bend * (1 + 2.2 * thin)); grey.mesh.position.y += h * 0.3 * thin; U(grey).uTw.value = 3.5 * (1 - 0.75 * thin);
+          U(grey).uTop.value = smoke; U(grey).uK.value = thin; grey.mesh.visible = smoke > 0.001 && thin < 1;
+          foot.set(footAt.set(pos.x, pos.y + Math.max(0.05, r0) * 0.5, pos.z), r0 * 2.0 + 0.32, 0.35 * (1 - 0.6 * Math.min(1, k)) * (1 - thin));
+        },
+        kill: function () { layers.forEach(drop); ribs.forEach(drop); drop(grey); foot.kill(); }
+      };
+    }
     // ---------- a low wall standing in a ring round a point, pushed outward over the ground: fire, frost (a cold mist
     // wall) or sunlight. set(centre on the ground, radius, height, k 0 → 1 burning away) ----------
     var WALL = { fire: [0xff7a2b, FIRE_LO], frost: [0xbfeaff, 0x1a3c8c], sun: [0xffc84a, 0x7a2a08] };
@@ -824,6 +987,69 @@
     }
     loadWaveTex();
     var PIC_GEO = new T.PlaneGeometry(1, 1, 24, 32);
+    // ---------- real 3D toon fire on shapes made in Blender (js/mesh-fire.js, CW.MESHFIRE). toonFire(shape, { core, smoke })
+    // set(pos of its foot, height, spin (radians, turns it and its pattern), k fire out from the top 0 → 1, from (keep only
+    // what is above this height 0 → 1, for smoke taking over from the top), dis 0 → 1 breaking up into nothing) ----------
+    var meshGeo = {};
+    function meshGeometry(name) {
+      if (meshGeo[name]) return meshGeo[name]; var m = CW.MESHFIRE && CW.MESHFIRE[name]; if (!m) return null;
+      var g = new T.BufferGeometry();
+      g.setAttribute('position', new T.BufferAttribute(b64(m.p, Float32Array), 3)); g.setAttribute('uv', new T.BufferAttribute(b64(m.u, Float32Array), 2)); g.setIndex(new T.BufferAttribute(b64(m.i, Uint16Array), 1)); g.computeVertexNormals();
+      g.userData.h = m.h; meshGeo[name] = g; return g;
+    }
+    var TY = new T.Vector3(0, 1, 0), TQ = new T.Quaternion(), TS = new T.Quaternion();
+    function turn(mesh, spin, axis) {
+      if (!axis) { mesh.rotation.set(0, spin || 0, 0); return; }
+      TQ.setFromUnitVectors(TY, axis); TS.setFromAxisAngle(TY, spin || 0); mesh.quaternion.copy(TQ).multiply(TS);
+    }
+    function hexv(h) { return new T.Vector3((h >> 16 & 255) / 255, (h >> 8 & 255) / 255, (h & 255) / 255); }
+    // the colour steps the Blender render used (from cut up: rim colour, then hotter), per kind
+    var TOON = {
+      fire: { cut: 0.38, lift: 0.12, steps: [0.46, 0.6, 0.74, 0.88], cols: [0xd42a0c, 0xff6b00, 0xff9a1a, 0xffd21f, 0xfff7c8] },
+      fireCore: { cut: 0.38, lift: 0.0, steps: [0.52, 0.7, 0.88, 9], cols: [0xff7a10, 0xffad1a, 0xffd83a, 0xfff4a0, 0xfff4a0] },
+      smoke: { cut: 0.42, lift: 0.18, steps: [0.55, 0.72, 9, 9], cols: [0x4a4558, 0x7a7590, 0xaaa5bd, 0xaaa5bd, 0xaaa5bd] },
+      smokeCore: { cut: 0.42, lift: 0.0, steps: [0.6, 0.8, 9, 9], cols: [0x6e6880, 0x9a95ad, 0xc4c0d2, 0xc4c0d2, 0xc4c0d2] },
+      // the sun's fire (태양의 창): gold to white
+      sun: { cut: 0.38, lift: 0.1, steps: [0.46, 0.6, 0.74, 0.88], cols: [0xe8780c, 0xffa61a, 0xffd23a, 0xfff08a, 0xffffff] },
+      sunCore: { cut: 0.38, lift: 0.0, steps: [0.52, 0.7, 0.88, 9], cols: [0xffc23a, 0xffe070, 0xfff6c0, 0xffffff, 0xffffff] }
+    };
+    function toonFire(shape, o) {
+      o = o || {};
+      // o.tw: how far the flame streaks wind round as they rise (0 = straight up, a torch); o.rise: how fast they race up;
+      // o.lift: more gaps between the flames (default per kind)
+      var P = TOON[(o.smoke ? 'smoke' : (o.kind || 'fire')) + (o.core ? 'Core' : '')], p = null, glow = null, seed = Math.random() * 7;
+      // the glow shell: only round the outer fire (not the core inside it, not smoke)
+      var wantGlow = !o.smoke && !o.core && !o.noGlow, glowA = o.glow === undefined ? 1.3 : o.glow;
+      function make() {
+        var g = meshGeometry(shape); if (!g) return null;
+        var uni = { uC0: { value: hexv(P.cols[0]) }, uC1: { value: hexv(P.cols[1]) }, uC2: { value: hexv(P.cols[2]) }, uC3: { value: hexv(P.cols[3]) }, uC4: { value: hexv(P.cols[4]) },
+          uRim: { value: hexv(o.smoke ? 0x24202e : o.kind === 'sun' ? 0x8a4a06 : 0x6e1004) }, uOut: { value: 0 }, uTw: { value: o.tw || 0 }, uRise: { value: o.rise || 0 },
+          uStep: { value: new T.Vector4(P.steps[0], P.steps[1], P.steps[2], P.steps[3]) }, uCut: { value: P.cut }, uLift: { value: o.lift === undefined ? P.lift : o.lift }, uSpin: { value: 0 }, uK: { value: 0 }, uFrom: { value: 0 }, uDis: { value: 0 }, uSeed: { value: seed }, uFoot: { value: o.foot ? 1 : 0 }, uBand: { value: o.band === undefined ? 1 : o.band }, uTop: { value: o.top || 0 } };
+        var q = add(new T.Mesh(g, mat(FS.toon, uni, { solid: true, side: T.DoubleSide })), { order: 6 }); q.mesh.name = 'core3d toon ' + shape;
+        if (wantGlow) { glow = add(new T.Mesh(g, mat(FS.toonGlow, { uCol: { value: hexv(o.kind === 'sun' ? 0xffb030 : 0xff5a12) }, uK: { value: 0 }, uA: { value: glowA } }, { side: T.DoubleSide, keepAdd: true })), { order: 6.1 }); glow.mesh.name = 'core3d toonglow ' + shape; }
+        return q;
+      }
+      return {
+        // w: its width as a scale of the shape (default: in step with its height, the shape as made)
+        // axis (optional, a unit vector): the way the shape's foot-to-top points (a fireball's tail streams back along its
+        // flight), turned by spin round it; without it the shape stands up
+        set: function (pos, h, spin, k, from, dis, w, axis) {
+          if (!p) { p = make(); if (!p) return; }
+          var u = U(p), s = Math.max(0.001, h) / (p.mesh.geometry.userData.h || 1), sw = w || s, shown = (k || 0) < 1 && (dis || 0) < 1;
+          p.mesh.position.copy(pos); p.mesh.scale.set(sw, s, sw); turn(p.mesh, spin, axis);
+          u.uSpin.value = -(spin || 0) * 2; u.uK.value = k || 0; u.uFrom.value = from || 0; u.uDis.value = dis || 0;
+          // bright ground: the dark outline instead of the glow (light added on snow is lost and only washes it out)
+          u.uOut.value = bright ? 1 : 0;
+          p.mesh.visible = shown;
+          if (glow) {
+            glow.mesh.position.copy(pos); glow.mesh.scale.set(sw * 1.16, s * 1.02, sw * 1.16); turn(glow.mesh, spin, axis);
+            U(glow).uK.value = k || 0; U(glow).uA.value = glowA * (1 - (dis || 0)); glow.mesh.visible = shown && !bright;
+          }
+        },
+        ready: function () { return !!(CW.MESHFIRE && CW.MESHFIRE[shape]); },
+        kill: function () { if (p) drop(p); if (glow) drop(glow); p = glow = null; }
+      };
+    }
     function picWave(o) {
       o = o || {}; loadWaveTex();
       var p = add(new T.Mesh(PIC_GEO, mat(FS.pic, { uMap: { value: waveTex }, uAlpha: { value: 1 }, uDis: { value: 0 }, uGlow: { value: 1 }, uW: { value: 1 }, uH: { value: 1 }, uBend: { value: 0 }, uSquash: { value: 1 }, uFlip: { value: 1 } }, { normal: true, side: T.DoubleSide }, VS_PIC)), { order: 6 });
@@ -844,9 +1070,9 @@
     var SHARD_C = 9, SHARD_R = 7, SHARD_CELLS = [[0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],[8,0],[0,1],[1,1],[2,1],[3,1],[4,1],[5,1],[6,1],[7,1],[8,1],[0,2],[1,2],[2,2],[3,2],[4,2],[5,2],[6,2],[7,2],[8,2],
       [1,3],[2,3],[3,3],[4,3],[5,3],[6,3],[7,3],[8,3],[1,4],[2,4],[3,4],[4,4],[5,4],[6,4],[7,4],[8,4],[1,5],[2,5],[3,5],[4,5],[5,5],[6,5],[7,5],[2,6],[3,6],[4,6],[5,6],[6,6]];
     var SHARD_GEO = (function () {
-      var g = new T.InstancedBufferGeometry().copy(new T.PlaneGeometry(1, 1)), n = SHARD_CELLS.length, rect = new Float32Array(n * 4), ad = new Float32Array(n * 2);
+      var g = new T.InstancedBufferGeometry().copy(new T.PlaneGeometry(1, 1)), n = SHARD_CELLS.length, rect = new Float32Array(n * 4), ad = new Float32Array(n * 3).fill(1);
       SHARD_CELLS.forEach(function (cr, i) { var o = 0.25; rect.set([(cr[0] - o) / SHARD_C, (cr[1] - o) / SHARD_R, (cr[0] + 1 + o) / SHARD_C, (cr[1] + 1 + o) / SHARD_R], i * 4); });
-      g.setAttribute('iRect', new T.InstancedBufferAttribute(rect, 4)); g.setAttribute('iAD', new T.InstancedBufferAttribute(ad, 2).setUsage(T.DynamicDrawUsage));
+      g.setAttribute('iRect', new T.InstancedBufferAttribute(rect, 4)); g.setAttribute('iAD', new T.InstancedBufferAttribute(ad, 3).setUsage(T.DynamicDrawUsage));
       return g;
     })();
     function waveShards(o) {
@@ -859,7 +1085,7 @@
         cells: SHARD_CELLS.map(function (cr) { return { u: (cr[0] + 0.5) / SHARD_C, v: (cr[1] + 0.5) / SHARD_R }; }), C: SHARD_C, R: SHARD_R,
         put: function (i, pos, rx, rz, sx, sy, alpha, dis) {
           e.set(rx, 0, rz); q.setFromEuler(e); sc3.set(Math.abs(sx) < 0.001 ? 0.001 : sx, Math.max(0.001, sy), 1);   // a negative sx mirrors the piece
-          m.setMatrixAt(i, M.compose(pos, q, sc3)); ad.setXY(i, alpha, dis || 0);
+          m.setMatrixAt(i, M.compose(pos, q, sc3)); ad.setXYZ(i, alpha, dis || 0, 1);
         },
         commit: function () { var u = U(p); if (!u.uMap.value && waveTex) u.uMap.value = waveTex; m.visible = !!u.uMap.value; m.instanceMatrix.needsUpdate = true; ad.needsUpdate = true; },
         kill: function () { drop(p); }
@@ -877,27 +1103,28 @@
     loadSeqTex();
     function seqWave() {
       loadSeqTex();
-      var g = new T.InstancedBufferGeometry().copy(new T.PlaneGeometry(1, 1)), rect = new Float32Array(SEQ_N * 2 * 4), ad = new Float32Array(SEQ_N * 2 * 2), sceneOf = new Int8Array(SEQ_N * 2).fill(-1);
-      g.setAttribute('iRect', new T.InstancedBufferAttribute(rect, 4).setUsage(T.DynamicDrawUsage)); g.setAttribute('iAD', new T.InstancedBufferAttribute(ad, 2).setUsage(T.DynamicDrawUsage));
-      var m = new T.InstancedMesh(g, mat(FS.shard, { uMap: { value: seqTex } }, { normal: true, side: T.DoubleSide }, VS_SHARD), SEQ_N * 2);
+      // two layers (back, front) of the two scenes, so the wave has thickness
+      var L = 2, g = new T.InstancedBufferGeometry().copy(new T.PlaneGeometry(1, 1)), rect = new Float32Array(SEQ_N * 2 * L * 4), ad = new Float32Array(SEQ_N * 2 * L * 3).fill(1), sceneOf = new Int8Array(SEQ_N * 2 * L).fill(-1);
+      g.setAttribute('iRect', new T.InstancedBufferAttribute(rect, 4).setUsage(T.DynamicDrawUsage)); g.setAttribute('iAD', new T.InstancedBufferAttribute(ad, 3).setUsage(T.DynamicDrawUsage));
+      var m = new T.InstancedMesh(g, mat(FS.shard, { uMap: { value: seqTex } }, { normal: true, side: T.DoubleSide }, VS_SHARD), SEQ_N * 2 * L);
       m.instanceMatrix.setUsage(T.DynamicDrawUsage); m.name = 'core3d seqwave';
       var p = add(m, { order: 6 }), q = new T.Quaternion(), e = new T.Euler(0, 0, 0, 'XYZ'), sc3 = new T.Vector3(), M = new T.Matrix4();
       p.seqSheet = true;
       // the picture rect of one piece of one scene (a quarter piece wider on every side so neighbours overlap; kept
       // inside its own scene of the sheet)
       function pieceRect(scene, k) {
-        var c = scene % 4, r = (scene / 4) | 0, u0 = c / 4, v0 = 1 - (r + 1) / 2, du = 0.25 / SEQ_GC, dv = 0.5 / SEQ_GR, pc = k % SEQ_GC, pr = (k / SEQ_GC) | 0, o = 0.25;
+        var c = scene % 4, r = (scene / 4) | 0, u0 = c / 4, v0 = 1 - (r + 1) / 2, du = 0.25 / SEQ_GC, dv = 0.5 / SEQ_GR, pc = k % SEQ_GC, pr = (k / SEQ_GC) | 0, o = 0.18;
         return [Math.max(u0, u0 + (pc - o) * du), Math.max(v0, v0 + (pr - o) * dv), Math.min(u0 + 0.25, u0 + (pc + 1 + o) * du), Math.min(v0 + 0.5, v0 + (pr + 1 + o) * dv)];
       }
       return {
-        GC: SEQ_GC, GR: SEQ_GR, N: SEQ_N, ASPECT: 384 / 304,
+        GC: SEQ_GC, GR: SEQ_GR, N: SEQ_N, L: L, ASPECT: 384 / 304,
         // the piece k sits at (u, v) of its scene: u 0..1 left to right, v 0..1 bottom to top
         uv: function (k) { return { u: ((k % SEQ_GC) + 0.5) / SEQ_GC, v: (((k / SEQ_GC) | 0) + 0.5) / SEQ_GR }; },
-        put: function (slot, scene, k, pos, rx, rz, sx, sy, alpha, dis) {
-          var i = slot * SEQ_N + k;
+        put: function (slot, scene, k, pos, rx, rz, sx, sy, alpha, dis, layer, shade) {
+          var i = ((layer || 0) * 2 + slot) * SEQ_N + k;
           if (sceneOf[i] !== scene) { sceneOf[i] = scene; rect.set(pieceRect(scene, k), i * 4); }
           e.set(rx, 0, rz); q.setFromEuler(e); sc3.set(Math.abs(sx) < 0.001 ? 0.001 : sx, Math.max(0.001, sy), 1);
-          m.setMatrixAt(i, M.compose(pos, q, sc3)); ad[i * 2] = alpha; ad[i * 2 + 1] = dis || 0;
+          m.setMatrixAt(i, M.compose(pos, q, sc3)); ad[i * 3] = alpha; ad[i * 3 + 1] = dis || 0; ad[i * 3 + 2] = shade === undefined ? 1 : shade;
         },
         commit: function () { var u = U(p); if (!u.uMap.value && seqTex) u.uMap.value = seqTex; m.visible = !!u.uMap.value; m.instanceMatrix.needsUpdate = true; g.attributes.iAD.needsUpdate = true; g.attributes.iRect.needsUpdate = true; },
         kill: function () { drop(p); g.dispose(); }
@@ -1339,12 +1566,21 @@
       crater: { fs: 'crater', cap: 64, line: null, order: 1.5 },
       gravOrb: { fs: 'gorb', cap: 64, line: 0x12041f, lineW: 0.03, order: 6.7 },
       gravRing: { fs: 'gring', cap: 24, line: null, order: 6.65, side: T.DoubleSide },
-      iceShard: { fs: 'ice', cap: 128, line: 0x3d8cc8, lineW: 0.011, order: 6.6 }
+      iceShard: { fs: 'ice', cap: 128, line: 0x3d8cc8, lineW: 0.011, order: 6.6 },
+      // the 4th-tier ice (js/mesh-ice.js, tools/blender/ice_meshes.py, 2026-11-16): slender sharp crystals
+      iceNeedle: { fs: 'ice', cap: 200, line: 0x3d8cc8, lineW: 0.012, order: 6.6 },
+      iceCluster: { fs: 'ice', cap: 64, line: 0x3d8cc8, lineW: 0.012, order: 6.6 },
+      iceLance: { fs: 'ice', cap: 8, line: 0x3d8cc8, lineW: 0.014, order: 6.62 },
+      iceChip: { fs: 'ice', cap: 200, line: 0x3d8cc8, lineW: 0.009, order: 6.6 },
+      iceSpike2: { fs: 'ice', cap: 720, line: 0x3d8cc8, lineW: 0.012, order: 6.6 },
+      iceShard2: { fs: 'ice', cap: 220, line: 0x3d8cc8, lineW: 0.011, order: 6.6 },
+      // 태양의 창: its own sharp spear (js/mesh-ice.js sunSpear), as sunlight
+      sunLance: { fs: 'sunspear', mesh: 'sunSpear', cap: 4, line: 0x9a4a06, lineW: 0.012, order: 6.64 }
     };
     var bmLayers = {}, BMV = new T.Vector3(), BMS = new T.Vector3(), BMM = new T.Matrix4(), BMQ = new T.Quaternion();
     function b64(s, Type) { var bin = atob(s), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new Type(u.buffer); }
     function bmGeo(kind) {
-      var d = CW.MESH6 && CW.MESH6[kind]; if (!d) return null;
+      var mk = (BM_KIND[kind] && BM_KIND[kind].mesh) || kind, d = (CW.MESH6 && CW.MESH6[mk]) || (CW.MESHICE && CW.MESHICE[mk]); if (!d) return null;
       var g = new T.BufferGeometry(), n8 = b64(d.n, Int8Array), n = new Float32Array(n8.length);
       for (var i = 0; i < n8.length; i++) n[i] = n8[i] / 127;
       g.setAttribute('position', new T.BufferAttribute(b64(d.p, Float32Array), 3));
@@ -1420,7 +1656,7 @@
       warmed[sig] = true;
       var far = new T.Vector3(0, -40, 0), vel = new T.Vector3(1, -3, 0), start = parts.length, spikeStart = spikes.length, chipStart = chips.map(function (l) { return l.length; });
       beam({ col: 0xffffff, deep: 0x8866ff, r: 0.1 }).set(far, far.clone().add(vel), 1); orb({ col: 0xffffff }).set(far, 1, 1); moon({}).set(far, 1, 0);
-      rock({ size: 0.3 }).set(far, vel, 0.05); fireball({ size: 0.3 }).set(far, vel, 0.05); column({}).set(far, 1, 1, 0); ringWall({}).set(far, 1, 1, 0); fireWave({}).set(far.x, far.z, 1, 1, 0, 1, 2, 0); picWave({}).set(far, 1, 0, 1, 0, 1); var ws = waveShards({}); ws.put(0, far, 0, 0, 1, 1, 1, 0); ws.commit(); var sq = seqWave(); sq.put(0, 0, 0, far, 0, 0, 1, 1, 1, 0); sq.commit(); iceSpear({ size: 1 }).set(far, vel, 0.05); iceSpikes(far, { n: 2 }); mark({}).set(far, 0.5, 1); impact(far, { size: 1, chips: 3 }); blast(far, { size: 1, flash: true });
+      rock({ size: 0.3 }).set(far, vel, 0.05); fireball({ size: 0.3 }).set(far, vel, 0.05); column({}).set(far, 1, 1, 0); twister({}).set(far, 2, 0.3, 1, 0.3, 0, 0.5, 0); ringWall({}).set(far, 1, 1, 0); fireWave({}).set(far.x, far.z, 1, 1, 0, 1, 2, 0); picWave({}).set(far, 1, 0, 1, 0, 1); var ws = waveShards({}); ws.put(0, far, 0, 0, 1, 1, 1, 0); ws.commit(); var sq = seqWave(); sq.put(0, 0, 0, far, 0, 0, 1, 1, 1, 0); sq.commit(); iceSpear({ size: 1 }).set(far, vel, 0.05); iceSpikes(far, { n: 2 }); mark({}).set(far, 0.5, 1); impact(far, { size: 1, chips: 3 }); blast(far, { size: 1, flash: true });
       var h = hole({ pos: far }); h.set(1, 1, 0); h.lens.dead = true; puff(far, {}); chip(far, 1, 0xff7a1a, false);
       fluffBall({}).set(far, 0.5); yarnBall({}).set(far, 0.5);
       var bmWarm = Object.keys(BM_KIND).map(function (k) { var h = bm(k, {}); h.set(far, null, 0.5, 1, 0.5); return h; }); drawBM();
@@ -1432,7 +1668,7 @@
       bmWarm.forEach(function (h) { h.kill(); }); drawBM();
       if (sc.warmLens) sc.warmLens();
     }
-    return { beam: beam, orb: orb, moon: moon, rock: rock, fireball: fireball, column: column, ringWall: ringWall, fireWave: fireWave, picWave: picWave, waveShards: waveShards, seqWave: seqWave, iceSpear: iceSpear, iceSpikes: iceSpikes, iceSpike: iceSpike, mark: mark, impact: impact, puff: puff, blast: blast, chip: chip, hole: hole, emblem: emblem, glassOrb: glassOrb, elemRing: elemRing, crystal: crystal, fluffBall: fluffBall, yarnBall: yarnBall, bm: bm, update: update,
+    return { beam: beam, orb: orb, moon: moon, rock: rock, fireball: fireball, column: column, twister: twister, toonFire: toonFire, ringWall: ringWall, fireWave: fireWave, picWave: picWave, waveShards: waveShards, seqWave: seqWave, iceSpear: iceSpear, iceSpikes: iceSpikes, iceSpike: iceSpike, mark: mark, impact: impact, puff: puff, blast: blast, chip: chip, hole: hole, emblem: emblem, glassOrb: glassOrb, elemRing: elemRing, crystal: crystal, fluffBall: fluffBall, yarnBall: yarnBall, bm: bm, update: update,
       // for checks: the live copies of a Blender mesh kind ({ p, q, s, a })
       bmList: function (kind) { var L = bmLayers[kind]; return L ? L.list.filter(function (h) { return !h.dead && h.a > 0.002; }) : []; }, clear: clear, warm: warm, setBright: function (v) { bright = !!v; }, setBatchSmoke: function (v) { batchSmoke = !!v; }, setBatchChips: function (v) { batchChips = !!v; },
       count: function () { return bmCount() + parts.length + xs.length + spikes.length + chips[0].length + chips[1].length + chips[2].length; }, spikeTops: spikeTops,
