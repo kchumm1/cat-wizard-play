@@ -1002,7 +1002,8 @@
     // 카드 상자는 물약을 실제로 만들어 효과가 켜진 카드에만 (사용자 2026-11-16 아이폰: 상자 그림이 손 닿은 카드에만 그려져 「분노의 물약」만 상자로 잡혀 보였음)
     '#sheet.opal#sheet.opal .pcard.anw:not(.on){border-image-source:none!important}',
     '#sheet.opal#sheet.opal .pcard.anw .pcheck{display:none!important}',   // 켜진 카드 귀퉁이 체크 표시는 뺌 (사용자 2026-11-16)
-    '#sheet.opal #panel{overflow-x:hidden!important;overscroll-behavior-x:none}',   // 그림이 조금 넘쳐도 화면이 옆으로 밀리지 않게 (사용자 2026-11-16)
+    '#sheet.opal #panel{overflow-x:hidden!important;overscroll-behavior-x:none}',
+    '#sheet.opal #panel.opz>*{zoom:var(--opz,1)}',   // 좁은 폰: 스킬·마나서클 화면을 패널 폭에 맞게 통째로 줄임 (ui.js fitNarrow)   // 그림이 조금 넘쳐도 화면이 옆으로 밀리지 않게 (사용자 2026-11-16)
     // ---- 승급 = 사용자 승급 부품 + 시안 실측 (2026-11-16, 시안 패널 948px = 화면 391px) ----
     '#sheet.opal#sheet.opal .rkwrap{margin:-11px 0 0!important;padding:0!important;display:block}',
     '#sheet.opal#sheet.opal .rkv{position:relative;height:216.5px;margin:0 0 12px!important;padding:0!important;background:none!important;border:0!important;box-shadow:none!important}',
@@ -1088,11 +1089,12 @@
     '#sheet.opal#sheet.opal .mcwrap{margin:-11px 0 0!important;padding:0!important;display:block}',
     '#sheet.opal#sheet.opal .mcv{position:relative;height:245px;margin:0!important;padding:0!important;background:none!important;border:0!important;box-shadow:none!important}',
     '#sheet.opal#sheet.opal .mcv>*{position:absolute;pointer-events:none}',
-    // 성운: 시안처럼 달걀형 창 (tools/import-mana-parts.py make_egg — 위는 둥근 초타원, 옆은 불룩, 아래는 받침대 쪽으로 말리며 흐려짐) + 안쪽 흰 빛 테두리
-    '#sheet.opal#sheet.opal .mcv-neb{z-index:0;left:-12px;top:4px;width:380px;height:260px;-webkit-mask:url(art/mn-egg2.webp) 0 0/100% 100% no-repeat;mask:url(art/mn-egg2.webp) 0 0/100% 100% no-repeat}',   // 사용자 2026-11-16: 시안처럼 아래 가장자리는 보라 안개로 녹아듦 (tools/make-neb-window.py)
+    // 성운 전시 창 (사용자 2026-11-16 「마나서클 성운 시안 다시」): 스킬 화면과 같은 부품 — 창 마스크(mc-win)로 자른 부품 성운(mc-neb) + 유리 테두리(mc-winrim).
+    // 시안(05-mana) 성운 경계 38점에 맞춘 자리: 시안 화면 x-0.5 y41.5, 390.6×279 (.mcv 기준 -16.5, 1.5). 만드는 곳 tools/import-skill-parts.py make_window
+    '#sheet.opal#sheet.opal .mcv-neb{z-index:0;left:-16.5px;top:1.5px;width:390.6px;height:279px;-webkit-mask:url(art/mc-win.webp) 0 0/100% 100% no-repeat;mask:url(art/mc-win.webp) 0 0/100% 100% no-repeat}',
     // 창 모양은 그대로, 안의 성운만 천천히 숨쉬듯 (마스크까지 커지면 테두리와 어긋남)
-    '#sheet.opal#sheet.opal .mcv-neb::before{content:"";position:absolute;inset:0;background:url(art/mn-neb-fill.webp) 50% 60%/132% auto no-repeat;animation:opAlNeb 30s ease-in-out infinite alternate}',
-    '#sheet.opal#sheet.opal .mcv-rim{z-index:0;left:-12px;top:4px;width:380px;height:260px;background:url(art/mn-eggrim.webp) 0 0/100% 100% no-repeat}',
+    '#sheet.opal#sheet.opal .mcv-neb::before{content:"";position:absolute;inset:0;background:url(art/mc-neb.webp) 0 0/100% 100% no-repeat;animation:opAlNeb 30s ease-in-out infinite alternate}',
+    '#sheet.opal#sheet.opal .mcv-rim{z-index:0;left:-16.5px;top:1.5px;width:390.6px;height:279px;background:url(art/mc-winrim.webp) 0 0/100% 100% no-repeat}',
     '#sheet.opal#sheet.opal .mcv-cst{z-index:0;left:0;top:0;width:359px;height:245px;overflow:visible}',
     '#sheet.opal#sheet.opal .mcv-cst .ln{fill:none;stroke:rgba(255,255,255,.82);stroke-width:.9;filter:drop-shadow(0 0 1.5px rgba(255,255,255,.75))}',
     '#sheet.opal#sheet.opal .mcv-cst .gl{fill:url(#mcCstGlow)}#sheet.opal#sheet.opal .mcv-cst .sp,#sheet.opal#sheet.opal .mcv-cst .co{fill:#fff}#sheet.opal#sheet.opal .mcv-cst .sp{filter:drop-shadow(0 0 1px #fff) drop-shadow(0 0 2.5px rgba(255,225,246,.95))}#sheet.opal#sheet.opal .mcv-cst .co{filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 4px rgba(255,214,240,.9))}#sheet.opal#sheet.opal .mcv-cst .dg{stroke:rgba(255,255,255,.75);stroke-width:.7;stroke-linecap:round}',
@@ -1112,11 +1114,11 @@
     '#sheet.opal#sheet.opal .mcv-cry{filter:contrast(1.14) saturate(1.4) drop-shadow(0 0 5px rgba(255,255,255,.6)) drop-shadow(0 0 16px rgba(255,170,232,.55))}',
     '#sheet.opal#sheet.opal .mcv-o{filter:saturate(1.3) contrast(1.3) brightness(1.04) drop-shadow(0 0 1.5px rgba(255,255,255,.85)) drop-shadow(0 0 5px rgba(210,190,255,.4))}',
     '@keyframes mcBall{0%{scale:.94;filter:contrast(1.25) brightness(1.02) drop-shadow(0 2px 2px rgba(40,40,90,.4))}25%{scale:1.08;filter:contrast(1.25) brightness(1.12) drop-shadow(0 2px 2px rgba(40,40,90,.4))}50%{scale:.94;filter:contrast(1.25) brightness(1) drop-shadow(0 2px 2px rgba(40,40,90,.4))}75%{scale:.84;filter:contrast(1.25) brightness(.88) drop-shadow(0 2px 2px rgba(40,40,90,.4))}100%{scale:.94;filter:contrast(1.25) brightness(1.02) drop-shadow(0 2px 2px rgba(40,40,90,.4))}}',
-    '#sheet.opal#sheet.opal .mcv-neb::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 30% 40% at 49% 46%,rgba(255,240,255,.55),rgba(225,200,255,.25) 55%,transparent 80%),radial-gradient(ellipse 62% 70% at 50% 46%,transparent 62%,rgba(190,165,238,.42) 100%)}',
+    '#sheet.opal#sheet.opal .mcv-neb::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 30% 40% at 49% 46%,rgba(255,240,255,.55),rgba(225,200,255,.25) 55%,transparent 80%)}',   // (예전 달걀 창 가장자리 보라 그늘은 뺌: 새 유리 돔은 부품 성운의 흰 안개가 가장자리)
     // 폭이 넓은 폰(412·430)에서도 성운이 패널 양옆까지 차고, 그림은 가운데로 (그림 자리는 폭 359 기준 실측이라 그 틀을 가운데에 두고 성운만 넓힘)
     '#sheet.opal#sheet.opal .mcwrap{container-type:inline-size}#sheet.opal#sheet.opal .mcv{width:359px;margin:0 auto!important}',
-    // 시안(cat-wizard-complete-art/screens/05-mana.png): 달걀 창 바깥 아래 양옆·받침대 둘레를 연보라·분홍 안개 빛이 채움 (사용자 2026-11-16: 「아래 양옆이 비어 보인다」)
-    '#sheet.opal#sheet.opal .mcv::before{content:"";position:absolute;z-index:0;pointer-events:none;left:calc((359px - 100cqw) / 2);width:100cqw;top:40px;height:240px;background:radial-gradient(ellipse 50% 16% at 50% 84%,rgba(255,255,255,.95),rgba(240,232,255,.6) 50%,transparent 100%),radial-gradient(ellipse 30% 36% at 5% 72%,rgba(178,146,232,.85),rgba(206,180,246,.55) 55%,transparent 100%),radial-gradient(ellipse 30% 36% at 95% 72%,rgba(178,146,232,.85),rgba(206,180,246,.55) 55%,transparent 100%),radial-gradient(ellipse 16% 18% at 8% 82%,rgba(244,190,232,.6),transparent 100%),radial-gradient(ellipse 16% 18% at 92% 82%,rgba(244,190,232,.6),transparent 100%),radial-gradient(ellipse 56% 62% at 50% 50%,transparent 80%,rgba(236,226,255,.7) 92%,transparent 100%)}',
+    // 받침대 둘레 흰 바닥 빛 (시안 05-mana). 아래 양옆은 새 유리 돔 성운이 패널 양옆까지 채움 (사용자 2026-11-16 「마나서클 성운 시안 다시」)
+    '#sheet.opal#sheet.opal .mcv::before{content:"";position:absolute;z-index:0;pointer-events:none;left:calc((359px - 100cqw) / 2);width:100cqw;top:40px;height:240px;background:radial-gradient(ellipse 50% 16% at 50% 84%,rgba(255,255,255,.95),rgba(240,232,255,.6) 50%,transparent 100%)}',
     '#sheet.opal#sheet.opal .alchhead.anw{container-type:inline-size}#sheet.opal#sheet.opal .alchhead.anw .acaul{left:calc((100cqw - 359px) / 2)}#sheet.opal#sheet.opal .alchhead.anw .al-lv{left:calc((100cqw - 359px) / 2 + 192px)}',
     '#sheet.opal#sheet.opal .alchhead.anw .aneb{left:calc(-13.4px - (100cqw - 359px) / 2);width:calc(100cqw + 26.8px)}',
     '#sheet.opal#sheet.opal .mcv-paw{z-index:5;left:148px;top:98.9px;width:58px!important;height:58px!important;max-width:none!important;animation:mcFloat 3s ease-in-out infinite,mcPaw 3s ease-in-out infinite;animation-delay:var(--ph,0s),var(--ph,0s)}',
@@ -1207,7 +1209,197 @@
     '#sheet.opal#sheet.opal .opbag .ef span{white-space:nowrap}',
     // 레벨업 버튼: 안 글자가 버튼 밖으로 나가지 않게
     '#sheet.opal#sheet.opal .bagbtns>.buy{overflow:hidden;min-width:0!important;padding-left:8px!important;padding-right:8px!important;gap:4px!important}#sheet.opal#sheet.opal .bagbtns>.buy span{white-space:nowrap}',
-    '@media (prefers-reduced-motion:reduce){.op-num,.op-pop,#sheet.opal .opfx,#sheet.opal .opfx *,#sheet.opal .opcaul .bub,#sheet.opal .ns-obj,#sheet.opal .ns-sh,#sheet.opal .ns-stars circle,#sheet.opal .ns-neb,#sheet.opal .ns-neb::before,#sheet.opal .ns-neb::after,#sheet.opal .cstage .ns-obj>img.cosart,#sheet.opal .ricon.gnew .gorbbg,#sheet.opal .ricon.gnew .gico,#sheet.opal .row.grow>.buy,#toast,#toast::after,#sheet.opal .mcv-neb,#sheet.opal .mcv-neb::before,#sheet.opal .mcv-o,#sheet.opal .mcv-bw,#sheet.opal .mcv-bw i,#sheet.opal .mcv-bw i b,#sheet.opal .mcv-cry,#sheet.opal .mcv-paw,#sheet.opal .mcv-cst .st g,#sheet.opal .mcup,#sheet.opal .rkv-neb,#sheet.opal .rkv-neb::before,#sheet.opal .rkv.opfx::after,#sheet.opal .rkv-ray,#sheet.opal .rkv-badge,#sheet.opal .rkv-paw,#sheet.opal .rkv-mk img,#sheet.opal .rkv-mk .rkv-dome,#sheet.opal .rkup,#sheet.opal .alchhead.anw .aneb,#sheet.opal .alchhead.anw .abub,#sheet.opal .alchhead.anw .asteam,#sheet.opal .pcard.anw .paimg,#sheet.opal .pcard.anw .buy,#sheet.opal .ttree.tnw,#sheet.opal .tnode.tnw .tico,#sheet.opal .tnode.tnw>.thalo,#sheet.opal .tinfo.tnw .tico,#sheet.opal .tinfo.tnw .tupb,#sheet.opal .cstage.cosnew .ns-obj::before,#sheet.opal .cstage.cosnew .ns-obj::after,#sheet.opal .runering *,#sheet.opal .rcore,#sheet.opal .sggrid *,#sheet.opal .sgcell,#sheet.opal .dv-fig *,#sheet.opal .rk-sock *,#sheet.opal .rk-paths *,#sheet.opal .tnode *,#sheet.opal .rlsock *{animation:none!important}}'
+    // ---- 스킬 목록 = 사용자 스킬 부품 + 시안(10-skills) 실측 (2026-11-16, 시안 패널 962px = 화면 391px, 좌표는 .skw 기준 = 화면 x-16, y-40) ----
+    '#sheet.opal#sheet.opal .skw{position:relative;height:321px;margin:3px 0 -3px!important;padding:0!important}',   // 시안보다 14px 아래: 우리 제목 글자 아래 끝이 시안보다 11px 낮아서, 창·모자가 제목에 닿지 않게 (사용자 2026-11-16)
+    '#sheet.opal#sheet.opal .skw>*{position:absolute}',
+    '#sheet.opal#sheet.opal .skv{left:0;top:0;width:359px;height:128px;pointer-events:none}#sheet.opal#sheet.opal .skv>*{position:absolute}',
+    // 성운 전시 창 = 부품 마스크(sk-win)로 자른 부품 성운(sk-neb, cover) + 부품 유리 테두리(sk-winrim), 안의 성운만 천천히 숨쉬기.
+    // 시안 성운 경계에 맞춘 자리: 시안 화면 x8 y19.5, 371.7×265.5 (.skv 기준 -8, -20.5), 아래는 받침대 둘레에서 사라짐
+    '#sheet.opal#sheet.opal .skv-neb{left:-8px;top:-20.5px;width:371.7px;height:265.5px;overflow:hidden;-webkit-mask:url(art/sk-win.webp) 0 0/100% 100% no-repeat;mask:url(art/sk-win.webp) 0 0/100% 100% no-repeat}',
+    '#sheet.opal#sheet.opal .skv-neb::before{content:"";position:absolute;inset:0;background:url(art/sk-neb.webp) 0 0/100% 100% no-repeat;animation:opAlNeb 30s ease-in-out infinite alternate}',
+    '#sheet.opal#sheet.opal .skv-cst{left:0;top:0;width:359px;height:128px;overflow:visible}',
+    '#sheet.opal#sheet.opal .skv-rim{left:-8px;top:-20.5px;width:371.7px;height:265.5px;background:url(art/sk-winrim.webp) 0 0/100% 100% no-repeat}',
+    // 받침대 (보이는 192×24, 윗면 화면 y143) + 지금 입은 코스튬 (발 화면 y155, 키 123)
+    '#sheet.opal#sheet.opal .skv-ped{left:34.75px;top:84.3px;width:290.5px;height:61px;background:url(art/mn-ped.webp) 50% 50%/100% 100% no-repeat}',
+    '#sheet.opal#sheet.opal .skv-cat{left:114px;top:-9.4px;width:130px!important;height:130px!important;max-width:none!important;object-fit:contain;transform:translateY(var(--fy,0%));animation:opBreath 4s ease-in-out infinite}',
+    '@keyframes opBreath{0%,100%{scale:1 1}50%{scale:1.012 .992}}',
+    // 슬롯 카드 4장 (화면 x21/113.7/206.3/299, y172, 77×93) + 사이 › 화살표
+    '#sheet.opal#sheet.opal .skslots{left:0;top:132px;width:359px;height:93px}',
+    '#sheet.opal#sheet.opal .skc{position:absolute;top:0;width:77px!important;height:93px!important;min-height:0!important;margin:0!important;padding:0!important;background:none!important;box-shadow:none!important;border:0 solid transparent!important;border-radius:0!important;border-image:url(art/sk-slot.webp) 60 fill / 16.8px / 3.1px 2.8px 4.4px 2.8px stretch!important;color:var(--navy)!important}',
+    '#sheet.opal#sheet.opal .skc:nth-child(1){left:5px}#sheet.opal#sheet.opal .skc:nth-child(2){left:97.7px}#sheet.opal#sheet.opal .skc:nth-child(3){left:190.3px}#sheet.opal#sheet.opal .skc:nth-child(4){left:283px}',
+    '#sheet.opal#sheet.opal .skc.on{border-image:url(art/sk-slot-sel.webp) 51 fill / 15.2px / 2.7px 2.7px 4.5px 2.7px stretch!important;filter:drop-shadow(0 0 4px rgba(80,210,200,.45))}',
+    '#sheet.opal#sheet.opal .skc>*{position:absolute}',
+    '#sheet.opal#sheet.opal .skc .n{left:8px;top:4px;font:800 15px/1 "Times New Roman",Georgia,serif;color:var(--navy)}',
+    '#sheet.opal#sheet.opal .skc .ic{left:11.5px;top:8px;width:54px;height:54px;display:grid;place-items:center;border-radius:50%;background:radial-gradient(circle,rgba(150,134,240,.95) 0,rgba(128,110,226,.75) 34%,rgba(170,156,244,.35) 58%,rgba(176,166,240,0) 72%)}',
+    '#sheet.opal#sheet.opal .skc .ic img.si{width:48px!important;height:48px!important;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(60,40,120,.3));animation:opFloat 3.2s ease-in-out infinite}',
+    '#sheet.opal#sheet.opal .skc .ic .si.old{width:38px;height:38px;display:grid;place-items:center;border-radius:9px;overflow:hidden}#sheet.opal#sheet.opal .skc .ic .si.old>*{width:38px!important;height:38px!important}',
+    '#sheet.opal#sheet.opal .skc .ic .plus{width:24px;height:24px;background:url(art/sk-plus.webp) 50% 50%/contain no-repeat;opacity:.7}',
+    '#sheet.opal#sheet.opal .skc .nm{left:3px;right:3px;top:60px;text-align:center;font:800 13px/1.15 var(--body);white-space:nowrap;overflow:hidden;color:var(--navy)}',
+    '#sheet.opal#sheet.opal .skc .lv{left:6px;right:6px;top:75px;height:15px;display:grid;place-items:center;border-radius:8px;background:rgba(232,228,246,.9);box-shadow:inset 0 1px 1px rgba(120,110,170,.15);font:700 12.5px/1 var(--body);font-style:normal;color:var(--navy)}',
+    '#sheet.opal#sheet.opal .skc.empty .nm,#sheet.opal#sheet.opal .skc.empty .lv{color:#9aa0b8}',
+    '#sheet.opal#sheet.opal .skc:active{transform:scale(.97)}',
+    '#sheet.opal#sheet.opal .skar{position:absolute;top:38px;width:11px;height:17px;margin-left:-5.5px;background:none;border:0}',
+    '#sheet.opal#sheet.opal .skar::before{content:"";position:absolute;left:0;top:3.5px;width:8px;height:8px;border-right:2.6px solid #8a8eab;border-bottom:2.6px solid #8a8eab;transform:rotate(-45deg);border-radius:1px}',
+    '#sheet.opal#sheet.opal .skar.a1{left:89.8px}#sheet.opal#sheet.opal .skar.a2{left:182.5px}#sheet.opal#sheet.opal .skar.a3{left:275.2px}',
+    // 다시 1번: 4번 아래에서 1번 아래로 돌아오는 선 (부품) + 가운데 알약
+    '#sheet.opal#sheet.opal .skret{left:39.8px;top:219.5px;width:290.4px;height:40.8px;pointer-events:none}',
+    '#sheet.opal#sheet.opal .skret>i{position:absolute;inset:0;background:url(art/sk-ret.webp) 0 0/100% 100% no-repeat}',
+    '#sheet.opal#sheet.opal .skret>span{position:absolute;left:109.2px;top:13.5px;width:63px;height:18px;display:grid;place-items:center;border:0 solid transparent;border-image:url(art/sk-cost.webp) 45 fill / 9px / 1.6px 1.6px 2.4px 1.6px stretch;font:700 11.5px/1 var(--body);color:var(--navy)}',
+    // 프리셋 · 자동 배치 · 일괄 강화 (화면 y300~326)
+    '#sheet.opal#sheet.opal .skpre{left:0;top:260px;width:359px;height:26px}#sheet.opal#sheet.opal .skpre>*{position:absolute}',
+    '#sheet.opal#sheet.opal .skpre .pp{left:1px;top:2px;width:148px;height:23px;border:0 solid transparent;border-image:url(art/sk-sec.webp) 51 fill / 11.5px / 2.2px 2.2px 3.5px 2.2px stretch}',
+    '#sheet.opal#sheet.opal .skpre .pp>span{position:absolute;left:9px;top:0;line-height:23px;font:800 13px/23px var(--body);color:var(--navy)}',
+    '#sheet.opal#sheet.opal .skpre .pb{position:absolute;top:1px;width:27px!important;height:21px!important;min-height:0!important;min-width:0!important;padding:0!important;margin:0!important;background:none!important;box-shadow:none!important;border:0 solid transparent!important;border-radius:0!important;border-image:url(art/sk-pre.webp) 42 fill / 9px / 1.6px 1.6px 2.4px 1.6px stretch!important;font:800 13px/1 "Times New Roman",Georgia,serif!important;color:var(--navy)!important}',
+    '#sheet.opal#sheet.opal .skpre .pb:nth-of-type(1){left:55px}#sheet.opal#sheet.opal .skpre .pb:nth-of-type(2){left:88px}#sheet.opal#sheet.opal .skpre .pb:nth-of-type(3){left:119px}',
+    '#sheet.opal#sheet.opal .skpre .pb.on::after{content:"";position:absolute;inset:.5px .5px 1.5px;border:1.8px solid #2a9e98;border-radius:7px;box-shadow:0 0 4px rgba(42,158,152,.35)}',
+    '#sheet.opal#sheet.opal .skpre .sep{left:160px;top:5px;width:1px;height:16px;background:#cfd2e2}',
+    '#sheet.opal#sheet.opal .skpre .auto,#sheet.opal#sheet.opal .skpre .bulk{top:1px;height:25px!important;min-height:0!important;padding:0!important;margin:0!important;display:flex!important;align-items:center;justify-content:center;gap:8px;background:none!important;box-shadow:none!important;border:0 solid transparent!important;border-radius:0!important;font:800 13.5px/1 var(--body)!important}',
+    '#sheet.opal#sheet.opal .skpre .auto{left:170px;width:99px!important;border-image:url(art/sk-btn.webp) 57 fill / 12px / 1.8px 1.8px 2.6px 1.8px stretch!important;color:#fff!important;text-shadow:0 1px 2px rgba(10,60,60,.5)}',
+    '#sheet.opal#sheet.opal .skpre .auto>i{width:9px;height:9px;-webkit-mask:url(art/sk-spark.webp) 50% 50%/contain no-repeat;mask:url(art/sk-spark.webp) 50% 50%/contain no-repeat;background:#fff}',
+    '#sheet.opal#sheet.opal .skpre .bulk{left:276px;width:84px!important;border-image:url(art/sk-sec.webp) 51 fill / 12px / 2.2px 2.2px 3.5px 2.2px stretch!important;color:var(--navy)!important}',
+    '#sheet.opal#sheet.opal .skpre .auto:active{border-image-source:url(art/sk-btn-press.webp)!important}#sheet.opal#sheet.opal .skpre .bulk:active,#sheet.opal#sheet.opal .skpre .pb:active{filter:brightness(.96)}',
+    // 보유 효과 (화면 x17~377, y339~361)
+    '#sheet.opal#sheet.opal .skown{left:1px;top:299px;width:360px;height:22px;display:flex;align-items:center;justify-content:center;gap:6px;border:0 solid transparent;border-image:url(art/sk-pill.webp) 45 fill / 11px / 1.5px 1.5px 2.5px 1.5px stretch;font:800 14px/1 var(--body);color:var(--navy)}',
+    '#sheet.opal#sheet.opal .skown>i{width:15px;height:15px;-webkit-mask:url(art/sk-spark.webp) 50% 50%/contain no-repeat;mask:url(art/sk-spark.webp) 50% 50%/contain no-repeat;background:linear-gradient(160deg,#b9aee6,#7d74b3)}',
+    '#sheet.opal#sheet.opal .skown em{font-style:normal;color:#7d82a0}#sheet.opal#sheet.opal .skown b{font:800 15px/1 var(--body)!important;color:#1a8c86!important}',
+    // 스킬 줄 (360×54): 아이콘 칸 | 이름 +강화 / 속성·대상 / 설명 | 구분선 | 보기 · 넣기 · 강화
+    '#sheet.opal#sheet.opal .skl{display:flex;flex-direction:column;gap:7px;margin:0!important;padding:0!important}',
+    '#sheet.opal#sheet.opal .skr{position:relative;width:360px;height:54px;margin:0 0 0 1px;border:0 solid transparent;border-image:url(art/sk-row.webp) 66 fill / 12.4px / 1.9px 1.9px 3px 1.9px stretch}',
+    '#sheet.opal#sheet.opal .skr>*{position:absolute}',
+    '#sheet.opal#sheet.opal .skr .tile{left:6px;top:5px;width:47px;height:44px;border-radius:10px;display:grid;place-items:center;background:radial-gradient(circle at 32% 28%,#e4e0ff 0,#a59ef0 45%,#6c68cf 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.75),inset 0 -6px 10px rgba(60,50,150,.25),0 2px 4px rgba(80,80,150,.25);overflow:hidden}',
+    '#sheet.opal#sheet.opal .skr .tile img.ti{width:42px!important;height:42px!important;object-fit:contain;filter:drop-shadow(0 2px 2px rgba(40,30,90,.35))}',
+    '#sheet.opal#sheet.opal .skr .tile.oldt{background:none;box-shadow:none}#sheet.opal#sheet.opal .skr .tile .ti.old,#sheet.opal#sheet.opal .skr .tile .ti.old>*{width:46px!important;height:46px!important;display:block}',
+    '#sheet.opal#sheet.opal .skr .tile.opfx{animation:opPop .3s ease-out var(--opd,0s) both}',
+    '#sheet.opal#sheet.opal .skr .nm{left:63px;top:3px;font:800 15px/17px var(--body);color:var(--navy);white-space:nowrap}#sheet.opal#sheet.opal .skr .nm b{font:800 15px/17px var(--body)!important;color:var(--navy)!important}',
+    '#sheet.opal#sheet.opal .skr .tile{overflow:visible!important}#sheet.opal#sheet.opal .skr .tile .wk{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);padding:1.5px 5px 2px;border-radius:6px;background:linear-gradient(180deg,#ffb48a,#f27a4d);box-shadow:0 1px 3px rgba(150,60,30,.35),inset 0 0 0 1px rgba(255,255,255,.5);font:800 9px/1 var(--body);font-style:normal;color:#fff;white-space:nowrap}',   // 지금 지역이 이 속성에 약함 (배율은 상세 「유리한 지역 보기」)
+    '#sheet.opal#sheet.opal .skr .chip{left:62px;top:21px;height:14px;display:flex;align-items:center;gap:4px;padding:0 9px 0 6px;border:0!important;box-shadow:none!important;border-radius:7px;background:rgba(228,224,246,.95)!important;font:700 10.5px/1 var(--body);color:var(--navy);white-space:nowrap}',
+    '#sheet.opal#sheet.opal .skr .chip .el{width:11px;height:11px;-webkit-mask:var(--el) 50% 50%/contain no-repeat;mask:var(--el) 50% 50%/contain no-repeat;background:#8f86c9}#sheet.opal#sheet.opal .skr .chip em{font-style:normal;color:#7d82a0}',
+    '#sheet.opal#sheet.opal .skr .how{left:63px;top:37px;width:290px;font:600 12px/14px var(--body);color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '#sheet.opal#sheet.opal .skr .dv{left:198px;top:12px;width:1px;height:24px;background:#d3d6e6}',
+    '#sheet.opal#sheet.opal .skr .bs{left:205px;top:17px;width:152px;height:20px}',
+    '#sheet.opal#sheet.opal .skr .b{position:absolute;top:0;height:20px!important;min-height:0!important;min-width:0!important;padding:0!important;margin:0!important;display:grid!important;place-items:center;background:none!important;box-shadow:none!important;border:0 solid transparent!important;border-radius:0!important;border-image:url(art/sk-sec.webp) 51 fill / 9.2px / 1.8px 1.8px 2.9px 1.8px stretch!important;font:800 13px/1 var(--body)!important;color:var(--navy)!important;white-space:nowrap}',
+    '#sheet.opal#sheet.opal .skr .b::before{content:"";position:absolute;inset:-12px -2px}',
+    '#sheet.opal#sheet.opal .skr .b.see{left:0;width:48px!important}#sheet.opal#sheet.opal .skr .b.put,#sheet.opal#sheet.opal .skr .b.out{left:51px;width:47px!important}#sheet.opal#sheet.opal .skr .b.up{left:103px;width:49px!important}',
+    '#sheet.opal#sheet.opal .skr .b.put{border-image-source:url(art/sk-btn.webp)!important;border-image-slice:57 fill!important;color:#fff!important;text-shadow:0 1px 2px rgba(10,60,60,.5)}',
+    '#sheet.opal#sheet.opal .skr .b.put.long,#sheet.opal#sheet.opal .skr .b.out{font-size:10.5px!important;letter-spacing:-.3px}',
+    '#sheet.opal#sheet.opal .skr .b.off{color:#9aa0b8!important}',
+    '#sheet.opal#sheet.opal .skr .b:active{filter:brightness(.95);transform:scale(.97)}#sheet.opal#sheet.opal .skr .b.put:active{border-image-source:url(art/sk-btn-press.webp)!important}',
+    '#sheet.opal#sheet.opal .skr .lk{left:0;top:0;width:152px;height:20px;display:flex;align-items:center;justify-content:center;gap:4px;font:700 12px/1 var(--body);color:#8a90a8}#sheet.opal#sheet.opal .skr .lk>i{width:12px;height:13px;background:url(art/sk-lock.webp) 50% 50%/contain no-repeat}',
+    '#sheet.opal#sheet.opal .skr.lock .tile,#sheet.opal#sheet.opal .skr.lock .nm,#sheet.opal#sheet.opal .skr.lock .chip,#sheet.opal#sheet.opal .skr.lock .how{opacity:.55;filter:grayscale(.4)}',
+    // 차수 이름 줄 (작게)
+    '#sheet.opal#sheet.opal .sktier2{display:flex;align-items:center;gap:6px;height:16px;margin:2px 4px 0;font:800 11.5px/1 var(--body);color:#6d7290}',
+    '#sheet.opal#sheet.opal .sktier2>i{flex:1;height:1px;background:linear-gradient(90deg,rgba(150,152,196,0),rgba(150,152,196,.5))}#sheet.opal#sheet.opal .sktier2>i:last-child{background:linear-gradient(90deg,rgba(150,152,196,.5),rgba(150,152,196,0))}',
+    '#sheet.opal#sheet.opal .sktier2 b{color:var(--navy)}#sheet.opal#sheet.opal .sktier2 small{font:700 10.5px/1 var(--body);color:#b0623f}',
+    // ---- 스킬 상세 = 시안(11-skill-detail) 실측 (2026-11-16, 시안 패널 913px = 화면 391px, 좌표는 .skd 기준 = 화면 x-16, y-40) ----
+    '#sheet.opal#sheet.opal .skd{position:relative;height:447px;margin:-11px 0 0!important;padding:0!important}',
+    '#sheet.opal#sheet.opal .skd>*{position:absolute}',
+    '#sheet.opal#sheet.opal .skd-v{left:0;top:0;width:359px;height:195px;pointer-events:none}#sheet.opal#sheet.opal .skd-v>*{position:absolute}',
+    // 성운 아치 창 (화면 x10~382, 위 끝 y46) — 목록 창과 같은 모양을 조금 크게
+    '#sheet.opal#sheet.opal .skd-neb{left:-15px;top:-6px;width:386.4px;height:276px;overflow:hidden;-webkit-mask:url(art/sk-dwin.webp) 0 0/100% 100% no-repeat;mask:url(art/sk-dwin.webp) 0 0/100% 100% no-repeat}',   // 목록과 같은 부품 창, 시안 상세 경계에 맞춤 (시안 화면 x1 y34, ×0.92)
+    '#sheet.opal#sheet.opal .skd-neb::before{content:"";position:absolute;inset:0;background:url(art/sk-dneb.webp) 0 0/100% 100% no-repeat;animation:opAlNeb 30s ease-in-out infinite alternate}',
+    '#sheet.opal#sheet.opal .skd-rim{left:-15px;top:-6px;width:386.4px;height:276px;background:url(art/sk-dwinrim.webp) 0 0/100% 100% no-repeat}',
+    '#sheet.opal#sheet.opal .skd-cst{left:0;top:0;width:359px;height:200px;overflow:visible}',
+    // 긴 전시대 (보이는 357×25, 윗면 y207) — 부품보다 납작해서 세로만 0.6배
+    '#sheet.opal#sheet.opal .skd-ped{left:-16.2px;top:138.6px;width:391.4px;height:78px;background:url(art/sk-prev-ped.webp) 50% 50%/100% 100% no-repeat}',
+    // 시전 자세 냥법사 · 연습 슬라임: 부품 그림을 시안에 직접 대서 찾은 자리 (사용자 2026-11-16 「같다고 시안이랑?」)
+    // 냥법사 그림 범위 = 화면 x21.7~181.7, y80.3~214 (그림 상자 176.7×149.4) / 슬라임 = 화면 x286~361.3, y138.3~205.6 (받침대 위에 앉음)
+    '#sheet.opal#sheet.opal .skd-caster{left:-5.2px;top:33px;width:176.7px!important;height:149.4px!important;max-width:none!important;object-fit:contain;transform-origin:30% 100%}',
+    '#sheet.opal#sheet.opal .skd-slime{left:270px;top:98.3px;width:75.3px!important;height:67.3px!important;max-width:none!important;transform-origin:50% 100%;animation:skBob 2.4s ease-in-out infinite}',
+    '@keyframes skBob{0%,100%{translate:0 0}50%{translate:0 -2px}}',
+    '#sheet.opal#sheet.opal .skd-glow{left:145.8px;top:81px;width:26px;height:26px;border-radius:50%;background:radial-gradient(circle,#fff 0,rgba(255,240,200,.9) 25%,rgba(255,200,240,.4) 55%,rgba(255,200,240,0) 72%);opacity:0}',
+    '#sheet.opal#sheet.opal .skd-hit{left:261px;top:104px;width:42px;height:42px;border-radius:50%;background:radial-gradient(circle,#fff 0,rgba(255,250,220,.85) 30%,rgba(255,220,250,0) 70%);opacity:0}',
+    '#sheet.opal#sheet.opal .skd-shots{left:0;top:0;width:359px;height:195px}',
+    // 별 (시안 멈춘 모습 = 길 끝에 서 있음): 부품 별 19px(몸통 17px), 기울기 18·15·18도, 반짝반짝 (돌리기·크기는 길을 따라가는 칸이 아니라 안쪽 그림에)
+    '#sheet.opal#sheet.opal .skd-shots .p{position:absolute;left:0;top:0;width:19px;height:19px;display:grid;place-items:center;offset-anchor:50% 50%;offset-rotate:0deg;offset-distance:100%;opacity:1;filter:drop-shadow(0 0 1.5px rgba(255,250,235,.8)) drop-shadow(0 0 5px rgba(235,215,255,.45))}',
+    '#sheet.opal#sheet.opal .skd-shots .p img,#sheet.opal#sheet.opal .skd-shots .p svg,#sheet.opal#sheet.opal .skd-shots .p .orb{width:19px!important;height:19px!important;max-width:none!important;object-fit:contain;rotate:var(--r,0deg);animation:skTw 2.6s ease-in-out var(--tw,0s) infinite}',
+    '#sheet.opal#sheet.opal .skd-shots .p1{--r:18deg;--tw:0s;offset-path:path("M 166 91 C 186.4 83.3 211.1 73.4 232.4 82.8")}#sheet.opal#sheet.opal .skd-shots .p2{--r:15deg;--tw:-.9s;offset-path:path("M 167 97.5 C 197.2 90.2 227.3 100.6 256.8 104.7")}#sheet.opal#sheet.opal .skd-shots .p3{--r:18deg;--tw:-1.7s;offset-path:path("M 167 101 C 189.1 105.4 210.2 113.6 232.2 118.6")}',
+    '@keyframes skTw{0%,100%{scale:1}50%{scale:1.09}}',
+    // 빛꼬리 · 맞는 곳 반짝임 (멈춘 모습은 다 그려져 있음)
+    '#sheet.opal#sheet.opal .skd-tr{left:0;top:0;width:359px;height:195px;overflow:visible}',
+    '#sheet.opal#sheet.opal .skd-tr path{fill:none;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:0}',
+    '#sheet.opal#sheet.opal .skd-tr .g{stroke:#b98cff;stroke-width:7.5;opacity:.55}#sheet.opal#sheet.opal .skd-tr .m{stroke-width:3.4;opacity:.75}#sheet.opal#sheet.opal .skd-tr .c{stroke-width:1.4}',
+    '#sheet.opal#sheet.opal .skd-tr .dots circle{fill:#fff;filter:drop-shadow(0 0 1.2px rgba(236,214,255,.95));animation:skDot 1.6s ease-in-out var(--d,0s) infinite}@keyframes skDot{0%,100%{opacity:.35}50%{opacity:1}}',
+    '#sheet.opal#sheet.opal .skd-wf{left:0;top:0;width:359px;height:195px;overflow:visible}',
+    '#sheet.opal#sheet.opal .skd-wf .ws .gl{fill:url(#mcCstGlow2);opacity:.75}#sheet.opal#sheet.opal .skd-wf .ws .sp{fill:#fff;opacity:.9}#sheet.opal#sheet.opal .skd-wf .ws .co{display:none}#sheet.opal#sheet.opal .skd-wf .ws .dg{stroke:#fff;stroke-width:.7;opacity:.75}',
+    '#sheet.opal#sheet.opal .skd-wf .w{transform-box:fill-box;transform-origin:50% 50%;animation:skHs 2.2s ease-in-out -.6s infinite}',
+    '#sheet.opal#sheet.opal .skd-tr .l{stroke:#f6ecff;stroke-width:1.1;opacity:.85;filter:drop-shadow(0 0 1.6px rgba(196,150,255,.95))}',
+    '#sheet.opal#sheet.opal .skd-tr .hs .gl{fill:url(#mcCstGlow2)}#sheet.opal#sheet.opal .skd-tr .hs .sp,#sheet.opal#sheet.opal .skd-tr .hs .co{fill:#fff}#sheet.opal#sheet.opal .skd-tr .hs .dg{stroke:#fff;stroke-width:.7;opacity:.8}',
+    '#sheet.opal#sheet.opal .skd-tr .h{transform-box:fill-box;transform-origin:50% 50%;animation:skHs 1.8s ease-in-out infinite}',
+    '@keyframes skHs{0%,100%{scale:1;opacity:.95}50%{scale:1.18;opacity:1}}',
+    // 재생 (.run 을 다시 붙이면 처음부터): 지팡이 빛 → 세 발 → 슬라임이 맞을 때마다 찌그러지며 번쩍
+    '#sheet.opal#sheet.opal .skd-v.run .skd-caster{animation:skCast .7s ease-out both}',
+    '@keyframes skCast{0%{rotate:0deg}30%{rotate:-3deg}60%{rotate:1.5deg}100%{rotate:0deg}}',
+    '#sheet.opal#sheet.opal .skd-v.run .skd-glow{animation:skGlow 1.1s ease-out .05s both}',
+    '@keyframes skGlow{0%{opacity:0;scale:.4}25%{opacity:1;scale:1.3}100%{opacity:0;scale:.8}}',
+    '#sheet.opal#sheet.opal .skd-v.run .p1{animation:skShot .55s cubic-bezier(.3,.1,.45,1) .2s both}#sheet.opal#sheet.opal .skd-v.run .p2{animation:skShot .55s cubic-bezier(.3,.1,.45,1) .35s both}#sheet.opal#sheet.opal .skd-v.run .p3{animation:skShot .55s cubic-bezier(.3,.1,.45,1) .5s both}',
+    '#sheet.opal#sheet.opal .skd-v.run .p1>*{animation:skGrow .55s ease-out .2s both,skTw 2.6s ease-in-out 1.2s infinite}#sheet.opal#sheet.opal .skd-v.run .p2>*{animation:skGrow .55s ease-out .35s both,skTw 2.6s ease-in-out 1.5s infinite}#sheet.opal#sheet.opal .skd-v.run .p3>*{animation:skGrow .55s ease-out .5s both,skTw 2.6s ease-in-out 1.8s infinite}',
+    '@keyframes skGrow{0%{scale:.4}100%{scale:1}}',
+    '#sheet.opal#sheet.opal .skd-v.run .skd-tr .t1 path{animation:skTrail .55s cubic-bezier(.3,.1,.45,1) .2s both}#sheet.opal#sheet.opal .skd-v.run .skd-tr .t2 path{animation:skTrail .55s cubic-bezier(.3,.1,.45,1) .35s both}#sheet.opal#sheet.opal .skd-v.run .skd-tr .t3 path{animation:skTrail .55s cubic-bezier(.3,.1,.45,1) .5s both}',
+    '#sheet.opal#sheet.opal .skd-v.run .skd-tr .b path{animation:skTrail .3s ease-in .8s both}#sheet.opal#sheet.opal .skd-v.run .skd-tr .h{animation:skHsIn .45s ease-out 1.05s both,skHs 1.8s ease-in-out 1.5s infinite}',
+    '#sheet.opal#sheet.opal .skd-v.run .skd-tr .dots{animation:skFade .45s ease-out .55s both}@keyframes skFade{from{opacity:0}to{opacity:1}}',
+    '@keyframes skTrail{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}@keyframes skHsIn{0%{opacity:0;scale:.3}60%{opacity:1;scale:1.35}100%{opacity:.95;scale:1}}',
+    '@keyframes skShot{0%{offset-distance:0%;opacity:0}15%{opacity:1}100%{offset-distance:100%;opacity:1}}',
+    '#sheet.opal#sheet.opal .skd-v.run .skd-slime{animation:skHit .2s ease-out 1.05s 3,skBob 2.4s ease-in-out 1.7s infinite}',
+    '@keyframes skHit{0%{scale:1 1;filter:brightness(1)}40%{scale:1.12 .86;filter:brightness(1.35)}100%{scale:1 1;filter:brightness(1)}}',
+    '#sheet.opal#sheet.opal .skd-v.run .skd-hit{animation:skFlash .2s ease-out 1.05s 3}',
+    '@keyframes skFlash{0%{opacity:0;scale:.5}35%{opacity:1;scale:1.1}100%{opacity:0;scale:1.3}}',
+    // 목록으로 (무대 왼쪽 위 작은 진주 버튼)
+    '#sheet.opal#sheet.opal .skd-back{left:6px;top:8px;z-index:3;width:30px!important;height:30px!important;min-width:0!important;min-height:0!important;padding:0 0 2px!important;margin:0!important;display:grid!important;place-items:center;border-radius:50%!important;background:linear-gradient(180deg,#fff,#eeeaf8)!important;box-shadow:0 2px 6px rgba(70,60,130,.25),inset 0 0 0 1px rgba(180,170,220,.6)!important;border:0!important;font:800 22px/1 var(--body)!important;color:var(--navy)!important}',
+    // 미리보기 · 다시 보기 (화면 y238~262)
+    '#sheet.opal#sheet.opal .skd-b{top:198px;height:24px!important;min-height:0!important;min-width:0!important;margin:0!important;padding:0!important;display:flex!important;align-items:center;justify-content:center;gap:8px;background:none!important;box-shadow:none!important;border:0 solid transparent!important;border-radius:0!important;border-image:url(art/sk-sec.webp) 51 fill / 12px / 2.2px 2.2px 3.5px 2.2px stretch!important;font:800 14.5px/1 var(--body)!important;color:var(--navy)!important}',
+    '#sheet.opal#sheet.opal .skd-b.play{left:1px;width:95px!important}#sheet.opal#sheet.opal .skd-b.again{left:262px;width:96px!important}',
+    '#sheet.opal#sheet.opal .skd-b>i{width:15px;height:15px;background:50% 50%/contain no-repeat}#sheet.opal#sheet.opal .skd-b.play>i{background-image:url(art/sk-i-play.webp)}#sheet.opal#sheet.opal .skd-b.again>i{background-image:url(art/sk-i-repeat.webp)}',
+    '#sheet.opal#sheet.opal .skd-b:active{filter:brightness(.95);transform:scale(.97)}',
+    // 정보 상자 (화면 y272~360): 시전자 → 대상 + 그림 | 속성·대상 칩 + 설명
+    '#sheet.opal#sheet.opal .skd-info{left:1px;top:232px;width:360px;height:88px;border:0 solid transparent;border-image:url(art/sk-detail.webp) 66 fill / 16px / 1.6px 1.6px 2.6px 1.6px stretch}',
+    '#sheet.opal#sheet.opal .skd-info>*{position:absolute}',
+    '#sheet.opal#sheet.opal .skd-info .who{left:0;width:176px;top:10px;text-align:center;font:800 15px/18px var(--body);color:var(--navy);white-space:nowrap}#sheet.opal#sheet.opal .skd-info .who em{font-style:normal;margin:0 4px;color:#4b5070}',
+    '#sheet.opal#sheet.opal .skd-info .dv{left:176px;top:16px;width:1px;height:58px;background:#d3d6e6}',
+    '#sheet.opal#sheet.opal .skd-info .dg{left:22px;top:40px;width:140px;height:36px}#sheet.opal#sheet.opal .skd-info .dg>i{position:absolute}',
+    '#sheet.opal#sheet.opal .dg-cast{left:0;top:5px;width:26px;height:26px;-webkit-mask:url(art/sk-el-all.webp) 50% 50%/contain no-repeat;mask:url(art/sk-el-all.webp) 50% 50%/contain no-repeat;background:linear-gradient(160deg,#a69cd8,#5e5891)}',
+    '#sheet.opal#sheet.opal .dg-trail{left:20px;top:-8px;width:76px;height:52px;background:url(art/sk-trail-u.webp) 0 0/100% 100% no-repeat,url(art/sk-trail-m.webp) 0 0/100% 100% no-repeat,url(art/sk-trail-l.webp) 0 0/100% 100% no-repeat}',
+    '#sheet.opal#sheet.opal .dg-s{width:11px;height:11px;margin:-5.5px 0 0 -5.5px;-webkit-mask:url(art/sk-el-star.webp) 50% 50%/contain no-repeat;mask:url(art/sk-el-star.webp) 50% 50%/contain no-repeat;background:#6f6aa8}#sheet.opal#sheet.opal .dg-s.s1{left:90px;top:0}#sheet.opal#sheet.opal .dg-s.s2{left:90px;top:18px}#sheet.opal#sheet.opal .dg-s.s3{left:90px;top:36px}',
+    '#sheet.opal#sheet.opal .dg-arrow{left:99px;top:12px;width:17px;height:12px;background:url(art/sk-arrow.webp) 50% 50%/contain no-repeat;filter:brightness(.6)}',
+    '#sheet.opal#sheet.opal .dg-dot{left:117px;top:10px;width:16px;height:16px;background:url(art/sk-dot.webp) 50% 50%/contain no-repeat}',
+    '#sheet.opal#sheet.opal .dg-multi{left:113px;top:6px;width:32px;height:23px;background:url(art/sk-tgtn.webp) 50% 50%/contain no-repeat}',
+    '#sheet.opal#sheet.opal .dg-area{left:98px;top:5px;width:48px;height:24px;background:url(art/sk-area.webp) 50% 50%/contain no-repeat;filter:brightness(.82) saturate(1.6)}',
+    '#sheet.opal#sheet.opal .skd-up .org.long{font-size:15.5px!important;gap:4px}#sheet.opal#sheet.opal .skd-up .org.long b{font-size:15.5px!important}',
+    '#sheet.opal#sheet.opal .skd-shots .p .orb{width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 40% 38%,#fff 0,var(--c) 45%,rgba(0,0,0,0) 72%);box-shadow:0 0 10px 3px var(--c);filter:saturate(1.3)}',
+    '#sheet.opal#sheet.opal .dg-st{left:131px;top:-9px;width:17px;height:17px;background:var(--st) 50% 50%/contain no-repeat}',
+    '#sheet.opal#sheet.opal .skd-info .chips{left:186px;top:17px;display:flex;gap:6px}',
+    '#sheet.opal#sheet.opal .skd-info .chips .c{display:flex;align-items:center;gap:6px;height:20px;padding:0 12px 0 9px;border:0 solid transparent;border-image:url(art/sk-pill.webp) 45 fill / 10px / 1.4px 1.4px 2.2px 1.4px stretch;font:800 13.5px/1 var(--body);color:var(--navy);white-space:nowrap}',
+    '#sheet.opal#sheet.opal .skd-info .chips .c>i{width:12px;height:12px;-webkit-mask:var(--el,url(art/sk-spark.webp)) 50% 50%/contain no-repeat;mask:var(--el,url(art/sk-spark.webp)) 50% 50%/contain no-repeat;background:#3a9fbf}',
+    '#sheet.opal#sheet.opal .skd-info .how{left:190px;top:46px;width:162px;height:34px;display:flex;align-items:center;font:700 13.5px/17px var(--body);color:var(--navy);white-space:normal;word-break:keep-all;overflow:hidden}',   // 길면 두 줄
+    // 강화 1회 효과 (제목 y385, 상자 y403~487)
+    '#sheet.opal#sheet.opal .skd-h{left:0;top:335px;width:359px;height:20px;display:flex;align-items:center;justify-content:center;gap:12px}',
+    '#sheet.opal#sheet.opal .skd-h b{font:800 17px/1 var(--body);color:var(--navy)}',
+    '#sheet.opal#sheet.opal .skd-h>i{width:66px;height:12px;background:linear-gradient(90deg,rgba(130,128,170,0),rgba(130,128,170,.7)) 0 50%/100% 1px no-repeat;position:relative}#sheet.opal#sheet.opal .skd-h>i:last-child{transform:scaleX(-1)}',
+    '#sheet.opal#sheet.opal .skd-h>i::after{content:"";position:absolute;right:-2px;top:0;width:12px;height:12px;-webkit-mask:url(art/sk-spark.webp) 50% 50%/contain no-repeat;mask:url(art/sk-spark.webp) 50% 50%/contain no-repeat;background:#8a86b0}',
+    '#sheet.opal#sheet.opal .skd-up{left:1px;top:363px;width:360px;height:85px;border:0 solid transparent;border-image:url(art/sk-detail.webp) 66 fill / 16px / 1.6px 1.6px 2.6px 1.6px stretch}',
+    '#sheet.opal#sheet.opal .skd-up>*{position:absolute;margin:0!important}',
+    '#sheet.opal#sheet.opal .skd-up .org{left:14px;top:27px;width:92px;height:34px;display:flex;align-items:center;justify-content:center;gap:6px;border:0 solid transparent;border-image:url(art/sk-sec.webp) 51 fill / 12px / 2.2px 2.2px 3.5px 2.2px stretch;font:800 18px/1 var(--body);color:var(--navy);white-space:nowrap}',
+    '#sheet.opal#sheet.opal .skd-up .org em{font-style:normal;color:#4b5070}#sheet.opal#sheet.opal .skd-up .org b{font:800 18px/1 var(--body)!important;color:#1a8c86!important}#sheet.opal#sheet.opal .skd-up .org small{font:700 11px var(--body);color:#7d82a0}',
+    '#sheet.opal#sheet.opal .skd-up .br{left:106px;top:22px;width:30px;height:38px;background:url(art/sk-up-branch.webp) 50% 50%/100% 100% no-repeat}',
+    '#sheet.opal#sheet.opal .skd-up p{left:136px;width:213px;height:27px;padding:0 0 1px 12px!important;display:flex;align-items:center;gap:8px;border:0 solid transparent;border-image:url(art/sk-up-row.webp) 42 fill / 10px / 1px 1px 2px 1px stretch;font:800 14px/1 var(--body);color:var(--navy);white-space:nowrap}',
+    '#sheet.opal#sheet.opal .skd-up p.r1{top:10px}#sheet.opal#sheet.opal .skd-up p.r2{top:47px}',
+    '#sheet.opal#sheet.opal .skd-up p>i{width:13px;height:13px;-webkit-mask:url(art/sk-spark.webp) 50% 50%/contain no-repeat;mask:url(art/sk-spark.webp) 50% 50%/contain no-repeat;background:#8a86b0}#sheet.opal#sheet.opal .skd-up p b{font:800 15px/1 var(--body)!important;color:#1a8c86!important}',
+    // 유리한 지역 보기 (화면 y500~529) · 펼친 내용
+    '#sheet.opal#sheet.opal .skd-reg{display:flex!important;align-items:center;gap:14px;width:360px!important;height:29px!important;min-height:0!important;margin:1px 0 0 1px!important;padding:0 0 0 22px!important;background:none!important;box-shadow:none!important;border:0 solid transparent!important;border-radius:0!important;border-image:url(art/sk-region.webp) 48 fill / 12px / 1.2px 1.2px 2px 1.2px stretch!important;font:800 14.5px/1 var(--body)!important;color:var(--navy)!important;text-align:left}',
+    '#sheet.opal#sheet.opal .skd-reg>i{width:15px;height:15px;background:url(art/sk-i-drop.webp) 50% 50%/contain no-repeat;transition:transform .2s}#sheet.opal#sheet.opal .skd-reg.on>i{transform:rotate(180deg)}',
+    '#sheet.opal#sheet.opal .skd-regs{margin:-6px 6px 0 7px!important;padding:8px 12px 9px!important;border-radius:0 0 12px 12px;background:rgba(255,255,255,.7);box-shadow:inset 0 0 0 1px #e1e4ee;display:flex;flex-direction:column;gap:5px}',
+    '#sheet.opal#sheet.opal .skd-regs .rl{display:flex;flex-wrap:wrap;gap:5px}#sheet.opal#sheet.opal .skd-regs small{font:700 11.5px/1.2 var(--body);color:#5f6585}',
+    // 넣기 · 강화 (화면 y554~597)
+    '#sheet.opal#sheet.opal .skd-bot{display:flex;gap:9px;margin:13px 0 0 1px!important;padding:0!important}',
+    '#sheet.opal#sheet.opal .skd-bot>button{height:43px!important;min-height:0!important;min-width:0!important;margin:0!important;padding:0!important;display:flex!important;align-items:center;justify-content:center;gap:12px;background:none!important;box-shadow:none!important;border:0 solid transparent!important;border-radius:0!important;white-space:nowrap}',
+    '#sheet.opal#sheet.opal .skd-bot .put{width:175px!important;border-image:url(art/sk-btn.webp) 57 fill / 18px / 2.8px 2.8px 4px 2.8px stretch!important;font:800 19px/1 var(--body)!important;color:#fff!important;text-shadow:0 1px 2px rgba(10,60,60,.5)!important}',
+    '#sheet.opal#sheet.opal .skd-bot .put>i{width:13px;height:13px;-webkit-mask:url(art/sk-spark.webp) 50% 50%/contain no-repeat;mask:url(art/sk-spark.webp) 50% 50%/contain no-repeat;background:#fff}',
+    '#sheet.opal#sheet.opal .skd-bot .put.out{border-image-source:url(art/sk-sec.webp)!important;border-image-slice:51 fill!important;color:var(--navy)!important;text-shadow:none!important}#sheet.opal#sheet.opal .skd-bot .put.out>i{background:#8a86b0}',
+    '#sheet.opal#sheet.opal .skd-bot .up{width:174px!important;gap:8px!important;border-image:url(art/sk-sec.webp) 51 fill / 18px / 3.3px 3.3px 5px 3.3px stretch!important;font:800 18px/1 var(--body)!important;color:var(--navy)!important}',
+    '#sheet.opal#sheet.opal .skd-bot .up .coin{width:22px!important;height:22px!important;background:url(art/sk-coin.webp) 50% 50%/contain no-repeat!important;border:0!important;box-shadow:none!important}#sheet.opal#sheet.opal .skd-bot .up .coin::before,#sheet.opal#sheet.opal .skd-bot .up .coin::after{content:none!important}#sheet.opal#sheet.opal .skd-bot .up span{font:700 14px/1 var(--body)}',
+    '#sheet.opal#sheet.opal .skd-bot .up.off{color:#9aa0b8!important}#sheet.opal#sheet.opal .skd-bot .up.off .coin{filter:grayscale(.6) opacity(.7)}',
+    '#sheet.opal#sheet.opal .skd-bot>button:active{filter:brightness(.96);transform:scale(.98)}#sheet.opal#sheet.opal .skd-bot .put:not(.out):active{border-image-source:url(art/sk-btn-press.webp)!important}',
+    '#sheet.opal#sheet.opal .skd-bot.lock{height:43px;align-items:center;justify-content:center;gap:6px;font:700 14px/1 var(--body);color:#8a90a8;border:0 solid transparent;border-image:url(art/sk-sec.webp) 51 fill / 18px / 3.3px 3.3px 5px 3.3px stretch;width:360px}#sheet.opal#sheet.opal .skd-bot.lock>i{width:14px;height:15px;background:url(art/sk-lock.webp) 50% 50%/contain no-repeat}',
+    '@media (prefers-reduced-motion:reduce){.op-num,.op-pop,#sheet.opal .opfx,#sheet.opal .opfx *,#sheet.opal .opcaul .bub,#sheet.opal .ns-obj,#sheet.opal .ns-sh,#sheet.opal .ns-stars circle,#sheet.opal .ns-neb,#sheet.opal .ns-neb::before,#sheet.opal .ns-neb::after,#sheet.opal .cstage .ns-obj>img.cosart,#sheet.opal .ricon.gnew .gorbbg,#sheet.opal .ricon.gnew .gico,#sheet.opal .row.grow>.buy,#toast,#toast::after,#sheet.opal .skd-neb::before,#sheet.opal .skd-v *,#sheet.opal .skv-neb::before,#sheet.opal .skv-cat,#sheet.opal .skc .ic img.si,#sheet.opal .mcv-neb,#sheet.opal .mcv-neb::before,#sheet.opal .mcv-o,#sheet.opal .mcv-bw,#sheet.opal .mcv-bw i,#sheet.opal .mcv-bw i b,#sheet.opal .mcv-cry,#sheet.opal .mcv-paw,#sheet.opal .mcv-cst .st g,#sheet.opal .mcup,#sheet.opal .rkv-neb,#sheet.opal .rkv-neb::before,#sheet.opal .rkv.opfx::after,#sheet.opal .rkv-ray,#sheet.opal .rkv-badge,#sheet.opal .rkv-paw,#sheet.opal .rkv-mk img,#sheet.opal .rkv-mk .rkv-dome,#sheet.opal .rkup,#sheet.opal .alchhead.anw .aneb,#sheet.opal .alchhead.anw .abub,#sheet.opal .alchhead.anw .asteam,#sheet.opal .pcard.anw .paimg,#sheet.opal .pcard.anw .buy,#sheet.opal .ttree.tnw,#sheet.opal .tnode.tnw .tico,#sheet.opal .tnode.tnw>.thalo,#sheet.opal .tinfo.tnw .tico,#sheet.opal .tinfo.tnw .tupb,#sheet.opal .cstage.cosnew .ns-obj::before,#sheet.opal .cstage.cosnew .ns-obj::after,#sheet.opal .runering *,#sheet.opal .rcore,#sheet.opal .sggrid *,#sheet.opal .sgcell,#sheet.opal .dv-fig *,#sheet.opal .rk-sock *,#sheet.opal .rk-paths *,#sheet.opal .tnode *,#sheet.opal .rlsock *{animation:none!important}}'
   ].join('\n');
   function addCss() {
     if (!doc || doc.getElementById('opal-css')) return;

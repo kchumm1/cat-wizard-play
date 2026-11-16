@@ -52,6 +52,14 @@
     var soon = (DATA.tierSoon || []).filter(function (t) { return t.n === n; })[0];
     return soon ? DATA.difficulties[soon.diff].name + ' 10-31 보스를 이기면' : '';
   }
+  // the same, short, for the job cards in 더보기 (2026-11-16, the user: 「전직 조건 · 루나틱 5-31 보스 깨기」처럼 간단히)
+  function tierGoal(n) {
+    if (n <= 1) return '처음부터';
+    if (n <= 9) return (n - 1) + '-31 보스 깨기';
+    if (n === 10) return root.CW && root.CW.FRIEND ? '체험판에서는 열리지 않아요' : DATA.difficulties[TIER10.diff].name + ' ' + (TIER10.region + 1) + '-31 보스 깨기';
+    var soon = (DATA.tierSoon || []).filter(function (t) { return t.n === n; })[0];
+    return soon ? DATA.difficulties[soon.diff].name + ' 10-31 보스 깨기' : '';
+  }
   function onBossResult(state, won) {
     state.bossTry = false;
     state.kills = 0;
@@ -99,5 +107,5 @@
     state.farming = state.stage <= state.best;
     return true;
   }
-  return { clearKey: clearKey, setDifficulty: setDifficulty, stageLabel: stageLabel, stageInfo: stageInfo, stageBoss: stageBoss, isTierTrial: isTierTrial, tierNeed: tierNeed, onKill: onKill, onBossResult: onBossResult, retryBoss: retryBoss, onHidden: onHidden, goStage: goStage, LAST_STAGE: LAST };
+  return { clearKey: clearKey, setDifficulty: setDifficulty, stageLabel: stageLabel, stageInfo: stageInfo, stageBoss: stageBoss, isTierTrial: isTierTrial, tierNeed: tierNeed, tierGoal: tierGoal, onKill: onKill, onBossResult: onBossResult, retryBoss: retryBoss, onHidden: onHidden, goStage: goStage, LAST_STAGE: LAST };
 });

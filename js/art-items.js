@@ -58,6 +58,9 @@
     return 'art/cos-' + id + (small ? '-s' : '') + '.webp';
   };
   // 전시 그림을 발 기준으로 맞출 때 올릴 비율 (캔버스 높이 대비, doomPrism 1204 = 0)
+  // 스킬 새 원화 (사용자 2026-11-16, tools/import-skill-parts.py): 21종만 새 그림, 나머지는 null → 예전 아이콘
+  var SK2 = ['ballLightning', 'chainLightning', 'cometStrike', 'fireball', 'flamePillar', 'flameWave', 'frostNova', 'furBomb', 'glacierSpikes', 'iceLance', 'iceStorm', 'inferno', 'magicClaw', 'meteorRain', 'pawStamp', 'sparkRing', 'starDust', 'starShot', 'stormCloud', 'thunderStrike', 'yarnBall'];
+  I.skillArt = function (id) { return SK2.indexOf(id) >= 0 ? (CW.ART_BASE || 'art/') + 'sk2-' + id + '.webp' : null; };
   I.cosFeetShift = function (id) { return COS_FEET[id] ? (COS_FEET[id] - 1204) / 1254 : 0; };
 
   // ---------- sigils (신성력) ----------

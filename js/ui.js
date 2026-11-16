@@ -89,7 +89,8 @@
         '<div class="codexbar"><span>장비 초월 통합 성급 (★' + ns + ')</span><b>모든 피해 +' + pct(ns * BG.starFinal) + '</b></div>';
     }
     var ghdSeen = null, ghdPlay = false, ghdFrom = 0, ghdBar = 0;   // 뽑기 레벨 칸 움직임
-    var selDiff = -1, selRegion = -1, gearSub = 'gear', upMul = 1, trainSub = 'grow', selTalent = null, selRune = null, fxRune = null, rnFilter = 'all', rnGroup = 'all', selSigil = null, sgFilter = -1, moreSub = 0;
+    var skDetail = null, skRegOpen = false;   // 스킬 상세 (보기) · 유리한 지역 펼침
+    var selDiff = -1, selRegion = -1, gearSub = 'gear', upMul = 1, trainSub = 'grow', selTalent = null, selRune = null, fxRune = null, rnFilter = 'all', rnGroup = 'all', selSigil = null, sgFilter = -1, moreSub = 0, tierAnim = false;
     function mmss(sec) { sec = Math.ceil(sec); return Math.floor(sec / 60) + ':' + ('0' + sec % 60).slice(-2); }
     function alchPanel() {
       var s = G.state, AC = DATA.alchConf, now = Date.now();
@@ -234,6 +235,12 @@
     // 오팔 마나서클 (2026-11-16): 떠 있는 핵과 기울어진 세 유리 궤도 (js/ui-opal.js의 장치 하나를 옮겨 붙임, keepCircle).
     // 서클·레벨·효과는 돌지 않는 글씨로 아래에. 장치가 없거나 동작 줄이기면 같은 실루엣의 정지 그림(.opfb).
     var circleVm = null;
+    // 빛나는 별 (마나서클·스킬 성운 별자리 공용): 분홍빛 빛번짐 + 가늘고 뾰족한 네 갈래 + 하얀 심, 큰 별은 짧은 대각선
+    var opStar = function (x, y, L, big) {
+        var w = L * 0.11, V = L * 1.18, d = 'M' + x + ' ' + (y - V) + 'Q' + (x + w) + ' ' + (y - w) + ' ' + (x + L) + ' ' + y + 'Q' + (x + w) + ' ' + (y + w) + ' ' + x + ' ' + (y + V) + 'Q' + (x - w) + ' ' + (y + w) + ' ' + (x - L) + ' ' + y + 'Q' + (x - w) + ' ' + (y - w) + ' ' + x + ' ' + (y - V) + 'Z';   // 가늘고 뾰족한 가시, 세로가 조금 더 김 (시안)
+        var k = L * 0.5, dg = big ? '<path class="dg" d="M' + (x - k) + ' ' + (y - k) + 'L' + (x + k) + ' ' + (y + k) + 'M' + (x + k) + ' ' + (y - k) + 'L' + (x - k) + ' ' + (y + k) + '"/>' : '';
+        return '<g><circle class="gl" cx="' + x + '" cy="' + y + '" r="' + (L * 1.9).toFixed(1) + '"/>' + dg + '<path class="sp" d="' + d + '"/><circle class="co" cx="' + x + '" cy="' + y + '" r="' + (L * 0.34).toFixed(1) + '"/></g>';
+      };
     function circlePanel() {
       var s = G.state, CC = DATA.circleConf, lv = s.circle || 0, tier = CW.circleTier(s), cost = CW.circleCost(lv), max = lv >= CC.maxLv;
       if (lastCircle && lv > lastCircle.lv) circleFx = tier > lastCircle.tier ? 'tierup' : 'lvup';
@@ -245,11 +252,7 @@
       if (circleFx === 'tierup' && CW.opalUI) CW.opalUI.fx('mctier');
       var inTier = lv - tier * CC.tierEvery, ok = (s.mana || 0) >= cost;   // 움직임 시각(--ph)은 renderPanel 이 그린 뒤 넣음
       // 별자리 별 (사용자: 「빛나는 게 없어」): 시안처럼 분홍빛 빛번짐 + 굵은 네 갈래 반짝이 + 하얀 심. 큰 별은 짧은 대각선 빛줄기도
-      var star = function (x, y, L, big) {
-        var w = L * 0.11, V = L * 1.18, d = 'M' + x + ' ' + (y - V) + 'Q' + (x + w) + ' ' + (y - w) + ' ' + (x + L) + ' ' + y + 'Q' + (x + w) + ' ' + (y + w) + ' ' + x + ' ' + (y + V) + 'Q' + (x - w) + ' ' + (y + w) + ' ' + (x - L) + ' ' + y + 'Q' + (x - w) + ' ' + (y - w) + ' ' + x + ' ' + (y - V) + 'Z';   // 가늘고 뾰족한 가시, 세로가 조금 더 김 (시안)
-        var k = L * 0.5, dg = big ? '<path class="dg" d="M' + (x - k) + ' ' + (y - k) + 'L' + (x + k) + ' ' + (y + k) + 'M' + (x + k) + ' ' + (y - k) + 'L' + (x - k) + ' ' + (y + k) + '"/>' : '';
-        return '<g><circle class="gl" cx="' + x + '" cy="' + y + '" r="' + (L * 1.9).toFixed(1) + '"/>' + dg + '<path class="sp" d="' + d + '"/><circle class="co" cx="' + x + '" cy="' + y + '" r="' + (L * 0.34).toFixed(1) + '"/></g>';
-      };
+      var star = opStar;
       var cst = '<svg class="mcv-cst" viewBox="0 0 359 245"><defs><radialGradient id="mcCstGlow"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".28" stop-color="#ffe4f4" stop-opacity=".6"/><stop offset=".62" stop-color="#e3d2ff" stop-opacity=".2"/><stop offset="1" stop-color="#e3d2ff" stop-opacity="0"/></radialGradient></defs>' +
         '<g class="ln"><polyline points="36,94 49,71 88,53 118,34"/><polyline points="339,139 314,162"/></g><g class="st">' +
         star(36, 94, 4.5) + star(49, 71, 3.2) + star(88, 53, 7, 1) + star(118, 34, 5.5, 1) + star(339, 139, 6, 1) + star(314, 162, 3.2) + '</g></svg>';
@@ -745,37 +748,89 @@
     }
     function skillPanel() {
       var s = G.state;
-      // 오팔 (2026-11-16): 도움말 줄 대신 쓰는 순서 1→2→3→4→다시 1을 슬롯 위에 그림으로
-      var top = '<div class="skstage"><i class="ns-neb"></i>' + (CW.opalUI ? CW.opalUI.starSvg(1) : '') + '<div class="skflow" aria-label="1번부터 4번까지 순서대로 사용, 다시 1번"><b>1</b><i>→</i><b>2</b><i>→</i><b>3</b><i>→</i><b>4</b><i class="back">↺ 다시 1</i><small>최소 1개 장착</small></div><div class="slotgrid">' +
-        s.slots.map(function (id, i) {
-          var sk = id && CW.skillById(id), on = i === selSlot;
-          return '<div class="slotcard' + (on ? ' on' : '') + '"><button class="slotpick" data-sel="' + i + '" style="' + (sk ? '--c:#' + new THREE.Color(sk.color).getHexString() : '') + '"><small>' + (i + 1) + '번</small>' + (sk ? '<span class="spi" aria-label="' + sk.name + '">' + CW.ICO.skill(sk.id) + '</span>' : '<span class="spi none">+</span>') + (sk ? '<em>+' + CW.skillLevel(s, sk.id) + '</em>' : '') + '</button>' +
-            (sk ? '<button class="slotout" data-out="' + i + '" aria-label="' + (i + 1) + '번 슬롯 비우기">빼기</button>' : '') + '</div>';
-        }).join('') + '</div></div><div class="presets"><span class="note">프리셋</span>' + [0, 1, 2].map(function (i) { return '<button class="btn' + ((s.preset || 0) === i ? ' on' : '') + '" data-preset="' + i + '" aria-pressed="' + ((s.preset || 0) === i) + '">' + (i + 1) + '</button>'; }).join('') +
-          '</div><div class="btns" style="margin:8px 0 4px"><button class="btn pri" data-act="autoskill">센 스킬로 자동 배치</button><button class="btn" data-act="skillall">일괄 강화</button></div>' +
-          // 스킬 안내 한 장 (2026-11-15, 사용자: 밋밋한 세 줄 → 안내 카드처럼 한 번에): 보유 효과 · 배치 · 해금·강화
-          // 오팔 (2026-11-16): 강화 한 번이 두 갈래로 — 이 스킬 피해 / 모든 스킬 보유 효과 (가산 효과, 최종 DPS ×1.1이 아님)
-          '<div class="skinfo opsk">' +
-          '<div class="skup2"><span class="sk-from">강화 <b>+1</b></span><div class="sk-two"><p><em>이 스킬</em>피해 <strong>+' + Math.round(DATA.balance.skillLvBonus * 100) + '%</strong></p><p><em>모든 스킬</em>보유 효과 <strong>+' + pct(DATA.balance.skillOwnedPer) + '</strong></p></div></div>' +
-          '<p class="sk-own">지금 보유 효과 · 모든 스킬 피해 <strong>+' + pct(CW.skillOwnedStats(s).skillDmg) + '</strong> · 최대 +' + DATA.balance.skillMaxLv + '</p>' +
-          '<p class="sk-place' + (selSlot >= 0 ? ' on' : '') + '">' + (selSlot >= 0 ? '<strong>' + (selSlot + 1) + '번 슬롯</strong> 선택 · 넣을 스킬을 고르세요.' : '넣기: 고른 슬롯 → 빈 슬롯 → 없으면 4번 교체') + '</p>' +
-          '</div>';
+      if (skDetail && CW.skillById(skDetail)) return skillDetail(CW.skillById(skDetail));
+      skDetail = null;
+      // 스킬 부품 (사용자 2026-11-16, tools/import-skill-parts.py) + 시안(10-skills) 실측: 성운 아치 창 + 시안 정면 고양이(preview-cat, 사용자 2026-11-16 「시안처럼 그 그림으로」) + 받침대,
+      // 슬롯 카드 4장(1 › 2 › 3 › 4, 다시 1번), 프리셋·자동 배치·일괄 강화, 보유 효과, 스킬 줄(아이콘·이름·속성·설명 | 보기·넣기·강화).
+      // 슬롯 고르기·넣기·빼기·프리셋·자동 배치·일괄 강화·길게 누르기 강화는 기존 함수 그대로. 10차(불사조)는 나무로 바뀔 예정이라 형꺼·친구꺼 둘 다 뺌
+      var skIco = function (sk, cls) { var a = CW.ICO.skillArt && CW.ICO.skillArt(sk.id); return a ? '<img class="' + cls + ' nw" src="' + a + '" alt="">' : '<span class="' + cls + ' old">' + CW.ICO.skill(sk.id) + '</span>'; };
+      var cst = '<svg class="mcv-cst skv-cst" viewBox="0 0 359 128"><defs><radialGradient id="mcCstGlow"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".28" stop-color="#ffe4f4" stop-opacity=".6"/><stop offset=".62" stop-color="#e3d2ff" stop-opacity=".2"/><stop offset="1" stop-color="#e3d2ff" stop-opacity="0"/></radialGradient></defs>' +
+        '<g class="ln"><polyline points="58.5,55.5 66.5,34 101,14"/><polyline points="295,35 265.5,57"/></g><g class="st">' + opStar(58.5, 55.5, 4.5) + opStar(66.5, 34, 3.6) + opStar(101, 14, 5.5, 1) + opStar(295, 35, 6, 1) + opStar(265.5, 57, 4.2) + '</g></svg>';
+      var stage = '<div class="skv" aria-hidden="true"><i class="skv-neb"></i><i class="skv-rim"></i>' + cst + '<i class="skv-ped"></i>' +
+        '<img class="skv-cat" src="' + (CW.ART_BASE || 'art/') + 'sk-cat.webp" alt=""></div>';
+      var slots = '<div class="skslots">' + s.slots.map(function (id, i) {
+        var sk = id && CW.skillById(id), on = i === selSlot;
+        return '<button class="skc' + (on ? ' on' : '') + (sk ? '' : ' empty') + '" data-sel="' + i + '" aria-label="' + (i + 1) + '번 슬롯' + (sk ? ' ' + sk.name : ' 비어 있음') + '"><b class="n">' + (i + 1) + '</b>' +
+          (sk ? '<span class="ic">' + skIco(sk, 'si') + '</span><span class="nm">' + sk.name + '</span><em class="lv">+' + CW.skillLevel(s, sk.id) + '</em>' : '<span class="ic"><i class="plus"></i></span><span class="nm">빈 칸</span><em class="lv">-</em>') + '</button>';
+      }).join('') + '<i class="skar a1"></i><i class="skar a2"></i><i class="skar a3"></i></div>';
+      var ret = '<div class="skret"><i></i><span>다시 1번</span></div>';
+      var pre = '<div class="skpre"><div class="pp"><span>프리셋</span>' + [0, 1, 2].map(function (i) { return '<button class="pb' + ((s.preset || 0) === i ? ' on' : '') + '" data-preset="' + i + '" aria-pressed="' + ((s.preset || 0) === i) + '">' + (i + 1) + '</button>'; }).join('') + '</div><i class="sep"></i>' +
+        '<button class="auto" data-act="autoskill"><i></i>자동 배치<i></i></button><button class="bulk" data-act="skillall">일괄 강화</button></div>';
+      var own = '<div class="skown"><i></i><span>보유 효과</span><em>·</em><span>모든 스킬 피해</span><b data-opv="skown">+' + pct(CW.skillOwnedStats(s).skillDmg) + '</b></div>';
+      var top = '<div class="skw">' + stage + slots + ret + pre + own + '</div>';
       var row = function (sk) {
         var locked = sk.tier > s.tier, at = s.slots.indexOf(sk.id), lv = CW.skillLevel(s, sk.id), max = lv >= DATA.balance.skillMaxLv, cost = CW.skillUpCost(sk, lv, s);
-        var act = locked ? '<span class="note">' + sk.tier + '차 전직</span>'
-          : (at >= 0 ? '<button class="btn" data-unslot="' + at + '">' + (at + 1) + '번 빼기</button>' : '<button class="btn pri" data-eq="' + sk.id + '">' + (selSlot >= 0 ? (selSlot + 1) + '번에 넣기' : '넣기') + '</button>');
-        var up = locked ? '' : '<button class="buy ' + (max || s.gold < cost ? 'off' : '') + '" data-sup="' + sk.id + '">' + (max ? '최대' : '강화 <i class="coin"></i>' + gh(cost)) + '</button>';
-        return '<div class="row skrow" style="' + (locked ? 'opacity:.55' : '') + '"><div class="sk" style="--c:#' + new THREE.Color(sk.color).getHexString() + ';width:52px;height:52px">' + CW.ICO.skill(sk.id) + '</div><div class="info"><div class="name">' + sk.name + '<span class="lv">' + (locked ? sk.tier + '차' : '+' + lv) + '</span></div><div class="desc skwho"><b>' + CW.skillTargetText(sk.targets) + '</b></div><div class="desc skel">' + elChip(sk.el) + strongIn(sk.el, s) + (CW.isWeak(sk, CW.regionOf(s)) ? '<em class="weakon">약점 ×' + weakX(s) + '</em>' : '') + '</div>' +
-          (sk.how ? '<div class="desc how">' + sk.how + '</div>' : '') +
-          '<div class="skbtns"><button class="btn" data-prev="' + sk.id + '">보기</button>' + act + up + '</div></div></div>';
+        var E = DATA.elements[sk.el] || { name: sk.el };
+        var chip = '<span class="chip"><i class="el" style="--el:url(' + (CW.ART_BASE || 'art/') + 'sk-el-' + sk.el + '.webp)"></i>' + E.name + '<em>·</em>' + CW.skillTargetText(sk.targets) + '</span>';
+        var btns = locked ? '<span class="lk"><i></i>' + sk.tier + '차 전직 후</span>'
+          : '<button class="b see" data-skd="' + sk.id + '">보기</button>' +
+            (at >= 0 ? '<button class="b out" data-unslot="' + at + '">' + (at + 1) + '번 빼기</button>' : '<button class="b put' + (selSlot >= 0 ? ' long' : '') + '" data-eq="' + sk.id + '">' + (selSlot >= 0 ? (selSlot + 1) + '번에 넣기' : '넣기') + '</button>') +
+            '<button class="b up' + (max || s.gold < cost ? ' off' : '') + '" data-sup="' + sk.id + '" title="' + (max ? '최대 강화' : '강화 · 골드 ' + fmtG(cost)) + '">' + (max ? '최대' : '강화') + '</button>';
+        return '<div class="skr' + (locked ? ' lock' : '') + (at >= 0 ? ' eq' : '') + '"><span class="tile' + (CW.ICO.skillArt && CW.ICO.skillArt(sk.id) ? '' : ' oldt') + '" data-opfx="sk:' + sk.id + '" data-opdur=".3">' + skIco(sk, 'ti') + (CW.isWeak(sk, CW.regionOf(s)) ? '<em class="wk" title="지금 지역에서 약점 피해 ×' + weakX(s) + '">약점</em>' : '') + '</span>' +
+          '<span class="nm">' + sk.name + ' <b data-opv="sk:' + sk.id + '">' + (locked ? '' : '+' + lv) + '</b></span>' + chip + '<span class="how">' + (sk.how || '') + '</span><i class="dv"></i><span class="bs">' + btns + '</span></div>';
       };
-      // one block per job tier: its name, then the skills that tier brings
+      // 차수마다 작은 이름 줄 + 그 차수 스킬 (10차 이상은 뺌)
       var list = DATA.tiers.map(function (t, i) {
         var n = i + 1, open = n <= s.tier;
-        if (CW.FRIEND && n > CW.FRIEND_MAX_TIER) return ''; // 체험판: the 10th job's skills are not shown
-        return '<div class="sktier' + (open ? '' : ' lock') + '"><b>' + n + '차</b><span>' + t.name + '</span>' + (open ? '' : '<small>' + (n - 1) + '-31 보스 처치 시 해금</small>') + '</div>' + DATA.skills.filter(function (sk) { return sk.tier === n; }).map(row).join('');
+        if (n >= 10) return '';
+        if (CW.FRIEND && n > CW.FRIEND_MAX_TIER) return '';
+        return '<div class="sktier2' + (open ? '' : ' lock') + '"><i></i><b>' + n + '차</b><span>' + t.name + '</span>' + (open ? '' : '<small>' + (n - 1) + '-31 보스 처치 시 해금</small>') + '<i></i></div>' + DATA.skills.filter(function (sk) { return sk.tier === n; }).map(row).join('');
       }).join('');
-      return top + '<h3>스킬 목록 · 강화</h3><div class="list">' + list + '</div>';
+      return top + '<div class="skl">' + list + '</div>';
+    }
+    // 스킬 상세 (시안 11-skill-detail 실측, 좌표는 .skd 기준 = 화면 x-16, y-40): 미리보기 무대(시전 자세 냥법사 → 세 발 → 연습 슬라임),
+    // 미리보기(전투에서 실제 스킬)·다시 보기(무대 장면 다시), 시전자 → 대상 그림 + 속성·대상·설명, 강화 1회 효과(실제 수치),
+    // 유리한 지역(펼침), 넣기/빼기 · 강화(골드, 길게 누르기). 판정·비용은 기존 함수 그대로
+    function skillDetail(sk) {
+      var s = G.state, A = CW.ART_BASE || 'art/', B = DATA.balance, E = DATA.elements[sk.el] || { name: sk.el };
+      var locked = sk.tier > s.tier, at = s.slots.indexOf(sk.id), lv = CW.skillLevel(s, sk.id), max = lv >= B.skillMaxLv, cost = CW.skillUpCost(sk, lv, s);
+      var art = CW.ICO.skillArt && CW.ICO.skillArt(sk.id), shot = sk.el === 'star' ? A + 'sk-proj-star.webp' : art;
+      var shotEl = function (i) { return '<i class="p p' + i + '">' + (shot ? '<img src="' + shot + '" alt="">' : '<b class="orb" style="--c:' + (E.color || '#c8b8ff') + '"></b>') + '</i>'; };   // 새 원화가 없으면 속성 색 빛 구슬
+      var cst = '<svg class="mcv-cst skd-cst" viewBox="0 0 359 200"><defs><radialGradient id="mcCstGlow"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".28" stop-color="#ffe4f4" stop-opacity=".6"/><stop offset=".62" stop-color="#e3d2ff" stop-opacity=".2"/><stop offset="1" stop-color="#e3d2ff" stop-opacity="0"/></radialGradient></defs>' +
+        '<g class="ln"><polyline points="229,47 269,30"/></g><g class="st">' + opStar(229, 47, 4.2) + opStar(269, 30, 5.5, 1) + '</g></svg>';
+      // 빛꼬리 (시안 실측 곡선): 지팡이 → 별까지는 굵게 빛나는 꼬리(지팡이 쪽은 투명), 별 → 슬라임 맞는 곳(282,125)은 가는 선, 맞는 곳에 반짝임
+      var trA = ['M 166 91 C 186.4 83.3 211.1 73.4 232.4 82.8', 'M 167 97.5 C 197.2 90.2 227.3 100.6 256.8 104.7', 'M 167 101 C 189.1 105.4 210.2 113.6 232.2 118.6'];
+      var trB = ['M 232.4 82.8 C 241.6 88.6 252.1 94.2 256.8 104.7', 'M 256.8 104.7 C 266.5 109.6 274.5 117.3 282 125', 'M 232.2 118.6 C 248.8 119.4 265.5 128.2 282 125'];
+      var trX = [232.4, 256.8, 232.2];
+      var trails = '<svg class="skd-tr" viewBox="0 0 359 195"><defs><filter id="skTrBlur" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="1.7"/></filter>' +
+        trX.map(function (x, i) { return '<linearGradient id="skTrG' + i + '" gradientUnits="userSpaceOnUse" x1="166" y1="0" x2="' + x + '" y2="0"><stop offset="0" stop-color="#e9d2ff" stop-opacity=".2"/><stop offset=".35" stop-color="#e4c6ff" stop-opacity=".6"/><stop offset="1" stop-color="#fff" stop-opacity="1"/></linearGradient>'; }).join('') +
+        '<radialGradient id="mcCstGlow2"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".3" stop-color="#ffe9f6" stop-opacity=".65"/><stop offset="1" stop-color="#e9d8ff" stop-opacity="0"/></radialGradient></defs>' +
+        '<g class="b">' + trB.map(function (d, i) { return '<path class="l l' + (i + 1) + '" pathLength="1" d="' + d + '"/>'; }).join('') + '</g>' +
+        trA.map(function (d, i) { return '<g class="a t' + (i + 1) + '"><path class="g" pathLength="1" filter="url(#skTrBlur)" d="' + d + '"/><path class="m" pathLength="1" stroke="url(#skTrG' + i + ')" d="' + d + '"/><path class="c" pathLength="1" stroke="url(#skTrG' + i + ')" d="' + d + '"/></g>'; }).join('') +
+        '<g class="dots">' + [[180.4, 87, .9], [191.4, 85.1, .56], [199.9, 78.3, .89], [209.5, 74.1, .86], [218.9, 82.3, .68], [186.9, 93, .59], [201.6, 93.1, .67], [214, 97.1, .73], [225.6, 104.1, .85], [238.8, 102.9, .94], [182.2, 101.6, .53], [191.6, 108.4, .47], [202.3, 105.5, .71], [210.1, 112.3, .91], [218.7, 116.5, .71]].map(function (d, i) { return '<circle cx="' + d[0] + '" cy="' + d[1] + '" r="' + d[2] + '" style="--d:' + (-(i * 0.37) % 2).toFixed(2) + 's"/>'; }).join('') + '</g>' +
+        '<g class="h">' + opStar(282, 125, 7, 1).replace('<g>', '<g class="hs">') + '</g></svg>';
+      var stage = '<div class="skd-v run" aria-hidden="true"><i class="skd-neb"></i><i class="skd-rim"></i>' + cst + '<i class="skd-ped"></i>' +
+        '<svg class="skd-wf" viewBox="0 0 359 195"><g class="w">' + opStar(158.8, 94, 15, 1).replace('<g>', '<g class="ws">') + '</g></svg>' +
+        '<img class="skd-caster" src="' + A + 'sk-caster.webp" alt=""><i class="skd-glow"></i>' +
+        '<img class="skd-slime" src="' + A + 'sk-slime.webp" alt="">' + trails + '<span class="skd-shots">' + shotEl(1) + shotEl(2) + shotEl(3) + '</span><i class="skd-hit"></i></div>' +
+        '<button class="skd-back" data-skback aria-label="스킬 목록으로">‹</button>';
+      var nT = sk.targets >= 99 ? '전체' : sk.targets + '마리';
+      var tgt = sk.targets >= 99 ? '<i class="dg-area"></i>' : sk.targets > 1 ? '<i class="dg-arrow"></i><i class="dg-multi"></i>' : '<i class="dg-arrow"></i><i class="dg-dot"></i>';
+      var stt = sk.status ? '<i class="dg-st" style="--st:url(' + A + 'sk-st-' + sk.status + '.webp)" title="' + ({ freeze: '빙결', shock: '감전', gather: '끌어당김' })[sk.status] + '"></i>' : '';
+      var info = '<div class="skd-info"><b class="who">시전자 <em>→</em> 대상 ' + nT + '</b><span class="dg"><i class="dg-cast"></i><i class="dg-trail"></i><i class="dg-s s1"></i><i class="dg-s s2"></i><i class="dg-s s3"></i>' + tgt + stt + '</span><i class="dv"></i>' +
+        '<span class="chips"><span class="c"><i class="el" style="--el:url(' + A + 'sk-el-' + sk.el + '.webp)"></i>' + E.name + '</span><span class="c"><i class="sp"></i>' + CW.skillTargetText(sk.targets) + '</span></span>' +
+        '<span class="how">' + (sk.how || '') + '</span></div>';
+      var head = '<div class="skd-h"><i></i><b>강화 1회 효과</b><i></i></div>';
+      var up = '<div class="skd-up"><span class="org' + (lv >= 9 ? ' long' : '') + '">' + (max ? '+' + lv + ' <small>최대</small>' : '+' + lv + ' <em>→</em> <b>+' + (lv + 1) + '</b>') + '</span><i class="br"></i>' +
+        '<p class="r1"><i></i>이 스킬 피해 <b>+' + Math.round(B.skillLvBonus * 100) + '%</b></p><p class="r2"><i></i>모든 스킬 피해 <b>+' + pct(B.skillOwnedPer) + '</b></p></div>';
+      var weakNow = CW.isWeak(sk, CW.regionOf(s));
+      var reg = '<button class="skd-reg' + (skRegOpen ? ' on' : '') + '" data-skreg><i></i>유리한 지역 보기</button>' +
+        (skRegOpen ? '<div class="skd-regs"><span class="rl">' + strongIn(sk.el, s) + '</span><small>' + (sk.el === 'all' ? '모든 지역에서 약점 피해 ×' + weakX(s) : weakNow ? '지금 지역에서 약점 피해 ×' + weakX(s) : '이 지역들에서 약점 피해 ×' + weakX(s)) + '</small></div>' : '');
+      var first = s.slots.indexOf(null), target = selSlot >= 0 ? selSlot : first >= 0 ? first : s.slots.length - 1;
+      var bot = locked ? '<div class="skd-bot lock"><i></i>' + sk.tier + '차 전직 후 쓸 수 있어요</div>'
+        : '<div class="skd-bot">' + (at >= 0 ? '<button class="put out" data-unslot="' + at + '"><i></i>' + (at + 1) + '번 빼기<i></i></button>' : '<button class="put" data-eq="' + sk.id + '"><i></i>' + (target + 1) + '번에 넣기<i></i></button>') +
+          '<button class="up' + (max || s.gold < cost ? ' off' : '') + '" data-sup="' + sk.id + '">' + (max ? '최대 강화' : '강화<i class="coin"></i><span>' + fmtG(cost) + '</span>') + '</button></div>';
+      return '<div class="skd">' + stage + '<button class="skd-b play" data-prev="' + sk.id + '"><i></i>미리보기</button><button class="skd-b again" data-skagain><i></i>다시 보기</button>' + info + head + up + '</div>' + reg + bot;
     }
     function gearPanel() {
       if (gearSub === 'relic') return subTabs() + relicPanel();
@@ -793,15 +848,19 @@
       // 움직임은 값이 바뀌었을 때(탭을 열 때·뽑은 뒤)만 한 번 — 그냥 다시 그릴 때는 가만히 (renderPanel 이 class 를 붙인다)
       var gk = lv + '|' + s.pulls + '|' + s.pity; if (gk !== ghdSeen) { ghdPlay = true; ghdFrom = ghdSeen === null ? 0 : ghdBar; } ghdSeen = gk; ghdBar = bar;
       // 뽑기 레벨 칸 (2026-11-15, 사용자 그림): 다음 레벨 · 전설 확정 · 현재 확률을 한 줄씩 정리
-      var head = '<div class="gacha-head ghd"><div class="lvl">' + lv + '<small>뽑기 레벨</small></div><div class="ghrows">' +
-        '<p><em>다음 레벨까지</em><b>' + (nextNeed ? (nextNeed - s.pulls) + '회' : '최고 레벨') + '</b></p><div class="ghbar"><i style="width:' + bar + '%"></i></div>' +
-        '<p><em>전설 확정까지</em><b>' + (DATA.gacha.pity - s.pity) + '회</b></p>' +
-        '<p><em>전설 확률</em><b>' + rowNow[4] + '%</b></p><p><em>신화 확률</em><b>' + rowNow[5] + '%</b></p><p><em>태초 이상</em><b>' + Math.round(newOdds * 100) / 100 + '%</b></p></div></div>';
-      var pulls = '<div class="pulls">' + [1, 10, 30, 100].map(function (n) {
-        return '<button class="pull ' + (n === 100 ? 'big' : '') + '" data-pull="' + n + '"><b>' + n + '회 뽑기</b><span><i class="gem"></i>' + fmt(CW.gachaCost(n)) + '</span><small class="note">' + (n >= 100 ? '영웅 이상 1개 보장' : n >= 10 ? '희귀 이상 1개 보장' : '장비 1개') + '</small></button>';
+      // 2026-11-16 사용자 「여기도 다르게」: 검은 칸 → 오팔(진주·청록) 칸. 왼쪽 빛나는 레벨 메달, 다음 레벨 막대, 아래 네 칸(전설 확정·전설·신화·태초 이상)
+      var head = '<div class="gacha-head ghd gh2"><div class="lvl"><span class="lvn">' + lv + '</span><small>뽑기 레벨</small></div><div class="ghrows">' +
+        '<p class="ghnext"><em>다음 레벨까지</em><b>' + (nextNeed ? (nextNeed - s.pulls) + '회' : '최고 레벨') + '</b></p><div class="ghbar"><i style="width:' + bar + '%"></i></div>' +
+        '<div class="ghchips"><span class="c-pity"><em>전설 확정</em><b>' + (DATA.gacha.pity - s.pity) + '회</b></span>' +
+        '<span class="c-leg"><em>전설</em><b>' + rowNow[4] + '%</b></span><span class="c-myth"><em>신화</em><b>' + rowNow[5] + '%</b></span><span class="c-pri"><em>태초 이상</em><b>' + Math.round(newOdds * 100) / 100 + '%</b></span></div></div></div>';
+      var pulls = '<div class="pulls">' + [1, 10, 30, 100, 500].map(function (n) {
+        return '<button class="pull ' + (n === 100 ? 'big' : n === 500 ? 'big huge' : '') + '" data-pull="' + n + '"><b>' + n + '회 뽑기</b><span><i class="gem"></i>' + fmt(CW.gachaCost(n)) + '</span><small class="note">' + (n >= 100 ? '영웅 이상 1개 보장' : n >= 10 ? '희귀 이상 1개 보장' : '장비 1개') + '</small></button>';
       }).join('') + '</div>';
       // 등장 확률 표는 뺐다 (2026-11-15, 사용자: 나중에 다시 만들 것). 현재 확률은 위 head 에 그대로 보인다.
-      return '<div class="artban ab-gacha" aria-hidden="true"></div><h3>장비 뽑기</h3>' + head + pulls + (CW.FRIEND ? '' : '<p class="note" style="margin-top:10px">다이아가 필요하다면 더보기 → 패키지를 확인하세요.<br>연습용 기능이며 실제 결제는 없어요.</p>');
+      // 위의 큰 상자 장면 그림은 뺌 (2026-11-16, the user: 여기를 없애버리고) — 상자는 뽑기를 누를 때 나온다 (showGacha)
+      var A = CW.ART_BASE || 'art/';
+      return '<div class="gchest" aria-hidden="true"><i class="gcflash"></i><img class="cclosed" src="' + A + 'ui-chest-closed.webp" alt="" draggable="false"><img class="copen" src="' + A + 'ui-chest-open.webp" alt="" draggable="false">' +
+        [1, 2, 3, 4, 5, 6, 7, 8].map(function (k) { return '<i class="gcsp s' + k + '"></i>'; }).join('') + '</div><h3>장비 뽑기</h3>' + head + pulls;   // 위 그림은 고양이 귀 상자 하나만 (2026-11-16, the user: 저 상자만 뽑기에다가 놔도)   // 아래 안내 글(다이아·패키지·연습용)은 뺌 (2026-11-16, the user: 이 글귀 없애버리고)
     }
     // 더보기: three parts only (2026-11-14): 전직 (when each job opens), 패키지 (everything for sale, practice only),
     // 설정 (how the game looks and plays; the rows for finding problems are folded away). Difficulty and going back to
@@ -809,16 +868,27 @@
     function morePanel() {
       var s = G.state;
       var nextN = s.tier + 1;
-      var tierRow = function (n, name, sk, nSkills, soon) {
-        var now = s.tier === n, done = s.tier >= n, next = n === nextN;
-        return '<div class="row tierrow' + (next ? ' next' : '') + '" style="' + (done || next ? '' : 'opacity:.6') + '"><div class="info"><div class="name">' + n + '차 ' + name +
-          (now ? '<span class="lv">현재 전직</span>' : soon ? '<span class="lv soon">준비 중</span>' : next ? '<span class="lv">다음 전직</span>' : '') + '</div><div class="desc">' + CW.tierNeed(n) +
-          (nSkills ? ' · 스킬 ' + nSkills + '개' + (sk ? ' (' + sk.name + ' 등)' : '') : '') + '</div></div></div>';
+      // 전직 (2026-11-16, the user: 보기 좋게 디자인해서 애니메이션, 글은 「전직 조건 · 루나틱 5-31 보스 깨기」처럼 간단히):
+      // a track of the jobs on top (filled up to now), then a card per job — a medallion with the job's skill picture and
+      // its number, the name, one condition line, and a mark (완료 ✓ · 지금 · 다음 · 자물쇠 · 준비 중). The cards slide in one
+      // by one when 더보기 opens; the current one shines, the next one breathes. tierGoal: js/progress.js
+      var hex = function (c) { return '#' + ('00000' + (c >>> 0).toString(16)).slice(-6); };
+      var tjCard = function (n, name, sk, soon, k) {
+        var st = soon ? 'soon' : s.tier > n ? 'done' : s.tier === n ? 'now' : n === nextN ? 'next' : 'lock';
+        var mark = { done: '<span class="tjst done"><i></i>완료</span>', now: '<span class="tjst now">지금</span>', next: '<span class="tjst next">다음</span>', lock: '<span class="tjst lock"><i></i></span>', soon: '<span class="tjst soon">준비 중</span>' }[st];
+        return '<div class="tjob st-' + st + '" style="--c:' + (sk ? hex(sk.color) : '#c8b4ff') + ';--k:' + k + '"><div class="tjmed"><span class="tjico">' + (sk ? CW.ICO.skill(sk.id) : '') + '</span><b class="tjn">' + n + '<small>차</small></b></div>' +
+          '<div class="tjinfo"><div class="tjname">' + name + '</div><div class="tjcond"><i>전직 조건</i><span>' + CW.tierGoal(n) + '</span></div></div>' + mark + '</div>';
       };
-      var tiers = '<h3>전직</h3><div class="list">' + DATA.tiers.map(function (t, i) {
-        var n = i + 1; if (CW.FRIEND && n > CW.FRIEND_MAX_TIER) return ''; // 체험판: the jobs past the 9th are not shown at all
-        return tierRow(n, t.name, t.skill && CW.skillById(t.skill), DATA.skills.filter(function (x) { return x.tier === n; }).length, false);
-      }).join('') + (CW.FRIEND ? [] : DATA.tierSoon || []).map(function (t) { return tierRow(t.n, t.name, null, 0, true); }).join('') + '</div>';
+      var jobs = DATA.tiers.map(function (t, i) {
+        var n = i + 1; if (CW.FRIEND && n > CW.FRIEND_MAX_TIER) return null; // 체험판: the jobs past the 9th are not shown at all
+        return { n: n, name: t.name, sk: CW.skillById(t.skill || (DATA.skills.filter(function (x) { return x.tier === n; })[0] || {}).id) };
+      }).filter(Boolean).concat((CW.FRIEND ? [] : DATA.tierSoon || []).map(function (t) { return { n: t.n, name: t.name, soon: true }; }));
+      var real = jobs.filter(function (j) { return !j.soon; }), fill = Math.max(0, Math.min(1, (s.tier - 1) / Math.max(1, real.length - 1)));
+      var track = '<div class="tjtrack" style="--f:' + fill + '"><i class="tjbar"><i></i></i>' + real.map(function (j) {
+        return '<b class="' + (s.tier > j.n ? 'done' : s.tier === j.n ? 'now' : '') + '" style="left:' + ((j.n - 1) / Math.max(1, real.length - 1) * 100) + '%">' + j.n + '</b>';
+      }).join('') + '</div><p class="tjnow">지금 <b>' + s.tier + '차 ' + DATA.tiers[s.tier - 1].name + '</b></p>';
+      var tiers = '<h3>전직</h3><div class="tjobs' + (tierAnim ? ' tjanim' : '') + '">' + track + jobs.map(function (j, k) { return tjCard(j.n, j.name, j.sk, j.soon, Math.min(k, 12)); }).join('') + '</div>';
+      tierAnim = false;
       var won = function (v) { return v.toLocaleString('ko-KR') + '원'; };
       var gems = '<div class="subh">다이아</div><div class="shop">' + DATA.shop.map(function (p, i) {
         var first = !s.firstBuy[i];
@@ -1049,6 +1119,14 @@
       var b = panel.querySelector('.bagbtns>.buy');
       if (b) shrink(b, [].slice.call(b.querySelectorAll('small, span')), 10);
     }
+    // 스킬 줄: 설명·이름이 칸보다 길면 글자만 줄임 (설명 10px, 이름 12px 까지)
+    function fitSkillRows() {
+      panel.querySelectorAll('.skr .how, .skr .nm').forEach(function (el) {
+        var min = el.classList.contains('how') ? 10 : 12, g = 0;
+        if (el.classList.contains('nm')) el.style.maxWidth = '134px';
+        while (el.scrollWidth > el.clientWidth + 0.5 && g++ < 16) { var f = parseFloat(getComputedStyle(el).fontSize); if (f <= min) break; el.style.setProperty('font-size', Math.max(min, f * 0.95).toFixed(2) + 'px', 'important'); var b = el.querySelector('b'); if (b) b.style.setProperty('font-size', 'inherit', 'important'); }
+      });
+    }
     function fitAlch() {   // 세 카드는 늘 같은 글씨 크기 (가장 많이 줄어야 하는 카드에 맞춤)
       ['.pcard.anw .peff', '.pcard.anw .buy'].forEach(function (sel) {
         var els = panel.querySelectorAll(sel), fs = Infinity;
@@ -1112,6 +1190,16 @@
       moves.forEach(function (m) { m[1].remove(); morphNode(m[0], m[1]); });
       return t;
     }
+    // 좁은 폰(패널 안쪽 폭이 시안 폭 359px 보다 좁음, 예: 갤럭시 360 = 328px, 아이폰 SE 375 = 343px): 시안 좌표로 짠 스킬(목록·상세)·마나서클 화면을
+    // 통째로 그 비율만큼 줄여 오른쪽이 잘리지 않게 (zoom 이라 누르는 자리·스크롤 길이도 함께 줄어듦). 화면을 돌리거나 크기가 바뀌면 다시 맞춤
+    function fitNarrow() {
+      if (!panel) return;
+      var on = !!panel.querySelector(':scope > .skw, :scope > .skd, :scope > .mcwrap');
+      var cs = getComputedStyle(panel), cw = panel.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      var k = on && cw > 200 && cw < 352 ? cw / 359 : 1;   // 390폭(안쪽 358.4)은 그대로 — 1~2px 넘침은 그림 여백이라 잘려도 됨
+      panel.classList.toggle('opz', k < 1); panel.style.setProperty('--opz', k.toFixed(4));
+    }
+    window.addEventListener('resize', function () { fitNarrow(); });
     function renderPanel(force) {
       if (tab === 'battle') return;
       if (!force && (panelTouch || performance.now() - panelScrollAt < 500)) return;
@@ -1125,7 +1213,8 @@
       var phv = (-(Date.now() % 60000) / 1000).toFixed(2) + 's';   // 계속 도는 움직임(마나서클·연금술)은 시계에 맞춰 이어서
       panel.querySelectorAll('.mcv, .alchhead.anw, .pgrid.anw').forEach(function (e) { e.style.setProperty('--ph', phv); });
       if (ghdPlay) { ghdPlay = false; var ghd = panel.querySelector('.ghd'); if (ghd) { ghd.style.setProperty('--from', ghdFrom + '%'); ghd.classList.add('play'); } }
-      keepCircle(); if (tab === 'stage') fitStageRows(); if (tab === 'up') { fitGrowNames(); fitAlch(); } if (tab === 'gear') fitGear();
+      keepCircle(); if (tab === 'stage') fitStageRows(); if (tab === 'up') { fitGrowNames(); fitAlch(); } if (tab === 'gear') fitGear(); if (tab === 'skill') fitSkillRows();
+      fitNarrow();
       if (CW.opalUI) { CW.opalUI.bumpValues(panel); CW.opalUI.applyFx(panel); }   // 오팔 메뉴: 바뀐 숫자·성공 반응만 짧게
       var stb, ohd;
       if (soft) { stb = opTabs.querySelector(':scope > .subtabs'); ohd = opTabs.querySelector(':scope > .ophold, :scope > .tinfo.tnw'); }   // 이미 아래 고정 자리에 있음 (softPrep가 맞춤)
@@ -1137,7 +1226,8 @@
       // 특성 상세 칸 효과 줄: 길면 글씨를 10.5px 까지 줄이고, 그래도 넘치면 두 줄 (조건 줄은 숨김)
       var tef = ohd && ohd.querySelector('.tieff');
       [tef, ohd && ohd.querySelector('.tinote')].forEach(function (el) { if (!el) return; el.style.fontSize = ''; var full = el.scrollWidth, room = el.clientWidth; if (full > room + 0.5) el.style.fontSize = Math.max(9, parseFloat(getComputedStyle(el).fontSize) * (room - 1) / full).toFixed(2) + 'px'; });   // 한 줄 그대로, 글자만 줄임
-      if (stb) { var stSel = stb.querySelector('[aria-selected="true"]'); if (stSel) $('sheetTitle').textContent = stSel.textContent; }   // 승인 시안: 제목 = 지금 화면 이름 (장비 / 코스튬 …)
+      if (stb) { var stSel = stb.querySelector('[aria-selected="true"]'); if (stSel) $('sheetTitle').textContent = stSel.textContent; }
+      if (tab === 'skill' && $('sheet').classList.contains('opal')) { var skd = skDetail && CW.skillById(skDetail); $('sheetTitle').textContent = skd ? skd.name : TITLES.skill; }   // 승인 시안: 제목 = 지금 화면 이름 (장비 / 코스튬 …)
       // the selected 신성력/룬 sits at the bottom of the sheet, always in sight (2026-11-15); it slides up when it opens
       var was = !dock.hidden;
       if (soft && dh && was && dock.firstChild) { var dt = document.createElement('div'); dt.innerHTML = dh; morphKids(dock, dt); } else dock.innerHTML = dh;
@@ -1205,6 +1295,10 @@
       var d = t.dataset;
       if (d.guide) { G.sound('click'); showGuide(d.guide); return; }   // 안내 카드 '자세히'
       if (t.matches(HOLD_STEP)) { if (e.detail === 0) stepAct(d, false); return; }   // a press is done on pointerdown; keys still work
+      if (d.skd) { skDetail = d.skd; skRegOpen = false; panel.scrollTop = 0; renderPanel(true); return; }
+      if (t.hasAttribute('data-skback')) { skDetail = null; panel.scrollTop = 0; renderPanel(true); return; }
+      if (t.hasAttribute('data-skagain')) { var sv = panel.querySelector('.skd-v'); if (sv) { sv.classList.remove('run'); void sv.offsetWidth; sv.classList.add('run'); } return; }
+      if (t.hasAttribute('data-skreg')) { skRegOpen = !skRegOpen; renderPanel(true); return; }
       if (d.prev) { G.previewSkill(d.prev); }
       else if (d.sel !== undefined) { selSlot = selSlot === +d.sel ? -1 : +d.sel; renderPanel(true); }
       else if (d.eq) { var at = G.placeSkill(d.eq, selSlot); if (at >= 0) toast(CW.skillById(d.eq).name + ' · ' + (at + 1) + '번 슬롯에 배치했어요.'); selSlot = -1; renderPanel(true); slots(); }
@@ -1216,7 +1310,7 @@
       else if (d.act === 'rankup') { var rr2 = CW.rankReady(G.state); if (G.rankUp() && (!CW.opalUI || CW.opalUI.fx('rankup') || 1)) toast(DATA.rankConf.names[G.state.rank] + ' 승급 완료'); else toast(rr2.why === 'marks' ? '기본 징표 6개를 최대 레벨로 강화해 주세요.' : rr2.why === 'level' ? '계정 Lv.' + rr2.need + '이 필요해요.' : rr2.why === 'mana' ? '마력석이 부족해요.' : '최고 계급에 도달했어요.'); renderPanel(true); }
       else if (d.dgo) { var r3 = G.dungeon(d.dgo); if (r3 === 'busy') toast('진행 중인 보스전이나 던전을 먼저 마쳐 주세요.'); else if (r3 === 'ticket') toast('오늘 입장권을 모두 사용했어요.'); }
       else if (d.dsw) { var r4 = G.sweep(d.dsw); if (!r4) toast('소탕할 수 없어요. 입장권과 클리어 기록을 확인해 주세요.'); else toast('소탕 완료 · ' + (r4.gold ? '골드 +' + fmtG(r4.gold) : r4.gems ? '다이아 +' + fmt(r4.gems) : r4.runeStone ? '룬석 +' + fmt(r4.runeStone) + (r4.got && r4.got.length ? ' · 룬 ' + r4.got.length + '개' : '') + (r4.overflow ? ' · 가방 초과 보상 룬석 +' + fmt(r4.overflow) : '') : '마력석 +' + fmt(r4.mana))); renderPanel(true); hud(); }
-      else if (d.jump !== undefined) { moreSub = +d.jump; panel.scrollTop = 0; renderPanel(true); }
+      else if (d.jump !== undefined) { moreSub = +d.jump; tierAnim = moreSub === 0; panel.scrollTop = 0; renderPanel(true); }
       else if (d.gsub) { gearSub = d.gsub; selSigil = selRune = null; panel.scrollTop = 0; renderPanel(true); }
       else if (d.relic) { var rr = G.summonRelics(+d.relic); if (!rr) toast('다이아가 부족해요.'); else { showRelics(rr); renderPanel(true); hud(); } }
       else if (d.cbuy) { if (G.buyCostume(d.cbuy)) toast('새 코스튬 획득 · ' + CW.costumeById(d.cbuy).name); else toast('다이아가 부족해요.'); renderPanel(true); hud(); }
@@ -1275,7 +1369,7 @@
       else if (d.bpot) { if (!G.state.bag[d.bpot]) toast('아직 획득하지 않은 장비예요.'); else if (G.rollPotential(d.bpot)) toast('잠재력을 재설정했어요.'); else toast('다이아가 부족해요.'); renderPanel(true); hud(); }
       else if (d.act === 'best') { G.equipBest(); toast('추천 장비를 장착했어요.'); renderPanel(true); }
       else if (d.act === 'merge') { var n = G.mergeAll(); toast(n ? '장비 ' + n + '개 합성 완료' : '합성할 장비가 없어요.'); renderPanel(true); }
-      else if (d.pull) { var n2 = +d.pull, items = G.pull(n2); if (!items) toast('다이아가 부족해요.'); else { showGacha(items); renderPanel(true); hud(); } }
+      else if (d.pull) { var n2 = +d.pull, items = G.pull(n2); if (!items) toast('다이아가 부족해요.'); else pullOpen(items); }
       else if (d.shop !== undefined && CW.FRIEND) { toast('체험판에서는 수령할 수 없어요.'); }
       else if (d.shop !== undefined) { var p = DATA.shop[+d.shop]; confirmBox('연습용 다이아를 받을까요?', '<b>' + p.name + '</b> · 표시 가격 ' + p.won.toLocaleString('ko-KR') + '원<br>실제 결제는 없어요. 다이아가 즉시 지급돼요.', '다이아 받기', function () { var g = G.buy(+d.shop); toast('다이아 +' + fmt(g)); renderPanel(true); hud(); }); }
       else if (d.go !== undefined) { if (G.goStage(+d.go)) { toast(CW.stageLabel(+d.go) + ' 이동 완료'); renderPanel(true); } }
@@ -1318,7 +1412,7 @@
     // the rune and sigil shortcuts use the user's pictures (art/ic-rune.webp, ic-sigil.webp, 2026-11-14)
     var QI = { map: CW.ICO.misc('quick', 'map'), alch: CW.ICO.misc('potion', 'rage'), rune: '<img class="ico" src="art/ic-rune.webp" alt="">', sigil: '<img class="ico" src="art/ic-sigil.webp" alt="">',
       // the monster codex (2026-11-15): the book off the user's codex picture, opens the full-screen page (js/dex-ui.js)
-      dex: '<img class="ico" src="art/dex-book.webp" alt="">', mail: '<img class="ico" src="art/mail-box.webp" alt="">' };   // 우편함 (2026-11-15): the user's mailbox picture, js/mail-ui.js
+      dex: '<img class="ico" src="art/dex-book.webp" alt="">', mail: '<img class="ico" src="art/mail-box.webp" alt="">', notice: CW.noticeHorn ? CW.noticeHorn() : '' };   // 우편함 (2026-11-15): the user's mailbox picture, js/mail-ui.js
     document.querySelectorAll('#quick [data-quick]').forEach(function (b) { b.querySelector('i').innerHTML = QI[b.dataset.quick] || ''; });
     $('quick').addEventListener('click', function (e) {
       var b = e.target.closest('[data-quick]'); if (!b) return; var q = b.dataset.quick; G.sound('click');
@@ -1326,19 +1420,23 @@
       else if (q === 'alch') { trainSub = 'alch'; openTab('up'); }
       else if (q === 'dex') { if (CW.dexOpen) CW.dexOpen(); }
       else if (q === 'mail') { if (CW.mailOpen) CW.mailOpen(); }
+      else if (q === 'notice') { if (CW.noticeOpen) CW.noticeOpen(); }   // 공지 (2026-11-16, js/notice-ui.js)
       else { gearSub = q; openTab('gear'); }
     });
     $('pre').addEventListener('click', function (e) { var b = e.target.closest('[data-pre]'); if (!b) return; G.switchPreset(+b.dataset.pre); G.sound('click'); toast('스킬 프리셋 ' + (+b.dataset.pre + 1) + ' 적용'); slots(); if (tab === 'skill') renderPanel(true); });
     function openTab(name) {
       if (name === 'gacha') ghdSeen = null;
+      if (name === 'more' && tab !== 'more') tierAnim = true;   // 전직 cards slide in when 더보기 opens
       tab = name; document.querySelectorAll('#tabs [data-tab]').forEach(function (x) { x.setAttribute('aria-selected', x.dataset.tab === name ? 'true' : 'false'); });
       var open = name !== 'battle';
       $('sheet').classList.toggle('on', open); $('sheet').classList.toggle('tall', name !== 'more' && name !== 'gacha'); G.setSheet(open);
       $('sheet').classList.toggle('opal', name === 'up' || name === 'gear' || name === 'skill');   // 오팔 연구소 메뉴 (js/ui-opal.js, 2026-11-16)
-      if (open) { $('sheetTitle').innerHTML = ((CW.ICO.misc && CW.ICO.misc('tab', name)) || (name === 'stage' ? CW.ICO.misc('quick', 'map') : '')) + TITLES[name]; panel.scrollTop = 0; renderPanel(true); }
+      if (open) { skDetail = null; $('sheetTitle').innerHTML = ((CW.ICO.misc && CW.ICO.misc('tab', name)) || (name === 'stage' ? CW.ICO.misc('quick', 'map') : '')) + TITLES[name]; panel.scrollTop = 0; renderPanel(true); }
     }
     $('tabs').addEventListener('click', function (e) {
       var b = e.target.closest('[data-tab]'); if (!b) return;
+      // 탭 아이콘이 눌릴 때마다 저마다 한 번 움직임 (2026-11-16, the user: 여기도 애니메이션화, 너무 그림이다)
+      b.classList.remove('tap'); void b.offsetWidth; b.classList.add('tap'); clearTimeout(b._tap); b._tap = setTimeout(function () { b.classList.remove('tap'); }, 750);
       openTab(tab === b.dataset.tab && tab !== 'battle' ? 'battle' : b.dataset.tab); G.sound('click');
     });
     $('sheetClose').addEventListener('click', function () { openTab('battle'); G.sound('click'); });
@@ -1430,11 +1528,25 @@
       $('flashbg').classList.remove('go'); void $('flashbg').offsetWidth; $('flashbg').classList.add('go');
       modal('<h2 style="color:var(--gold)">' + tier + '차 전직 완료!</h2><div class="big">' + t.name + '</div>' + (skill ? '<p>새 스킬 <b style="color:#fff">' + skill.name + '</b>을(를) 획득해 슬롯에 배치했어요.</p>' + (function () { var more = DATA.skills.filter(function (x) { return x.tier === tier && x.id !== skill.id; }); return more.length ? '<p>같은 계열 스킬 <b style="color:#fff">' + more.map(function (x) { return x.name; }).join(' · ') + '</b>도 열렸어요.<br>스킬 메뉴에서 원하는 조합을 만들어 보세요.</p>' : ''; })() : '') + '<p>효과 연출도 더 화려해져요.</p>', [{ label: '확인', pri: true }]);
     }
-    function showGacha(items) {
+    // 뽑기를 누르면 메뉴 위의 고양이 귀 상자가 그 자리에서 덜컹 → 딱 열리고 바로 장비 카드 (2026-11-16, the user: 이 그림을 크게,
+    // 100회 뽑기 누르면 저거 딱 열리면서 나오는 거지). 상자가 화면 밖(스크롤)이면 예전처럼 따로 뜨는 상자로. 메뉴는 카드가 뜬 뒤 다시 그림
+    var pulling = false;
+    function pullOpen(items) {
+      var box = panel.querySelector('.gchest'), r = box && box.getBoundingClientRect();
+      if (pulling) return;
+      if (!r || r.bottom < 60 || r.top > innerHeight - 120) { showGacha(items); renderPanel(true); hud(); return; }
+      var big = Math.max.apply(null, items.map(function (i) { return i.grade; })) >= 4, wait = big ? 900 : 520;
+      pulling = true; hud(); G.sound('pull');
+      box.classList.remove('go', 'open', 'big'); void box.offsetWidth; box.classList.add('go'); if (big) box.classList.add('big');
+      setTimeout(function () { box.classList.add('open'); }, wait);
+      setTimeout(function () { pulling = false; showGacha(items, true); renderPanel(true); hud(); }, wait + 380);
+    }
+    function showGacha(items, direct) {
       var fx = $('gachaFx'), best = Math.max.apply(null, items.map(function (i) { return i.grade; }));
+      // 상자는 고양이 귀 상자 하나만 (2026-11-16, the user: 그냥 이 상자로만 하자): 덜컹덜컹 → 열림 → 장비 카드
       fx.hidden = false; fx.innerHTML = '<div class="chest"><img class="cclosed" src="' + (CW.ART_BASE || 'art/') + 'ui-chest-closed.webp" alt="" draggable="false"><img class="copen" src="' + (CW.ART_BASE || 'art/') + 'ui-chest-open.webp" alt="" draggable="false"></div><div class="note">마법 상자를 여는 중…</div><button class="btn" id="gSkip">건너뛰기</button>';
       var chest = fx.querySelector('.chest'), openT = setTimeout(function () { chest.classList.add('open'); }, best >= 4 ? 900 : 500);
-      G.sound('pull');
+      if (!direct) G.sound('pull');
       var done = false;
       function showCards() {
         if (done) return; done = true; clearTimeout(openT);
@@ -1445,6 +1557,7 @@
         $('gClose').onclick = function () { fx.hidden = true; };
         $('gAgain').onclick = function () { var more = G.pull(items.length); if (!more) { toast('다이아가 부족해요.'); return; } showGacha(more); renderPanel(true); hud(); };
       }
+      if (direct) { showCards(); return; }
       $('gSkip').onclick = showCards; setTimeout(showCards, best >= 4 ? 1400 : 900);
     }
 

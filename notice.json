@@ -1,0 +1,13 @@
+{
+  "note": "공지 목록 (js/notice.js, js/notice-ui.js). id는 한 번만 쓰고 바꾸지 않는다. tag: 공지·업데이트·이벤트·점검 중 하나. title 제목, text 본문(줄바꿈 \\n, 빈 줄은 문단), date 올린 날(YYYY-MM-DD), pin true면 맨 위에 고정. from/until은 보이는 날(한국 시간). 운영자 화면(ops.html)에서 쓰고 지울 수 있다.",
+  "notices": [
+    {
+      "id": "notice-20261116-open",
+      "tag": "공지",
+      "title": "공지사항이 생겼어요",
+      "text": "안녕하세요, 냥법사님!\n\n이제 우편함 아래 「공지」에서\n업데이트 소식과 이벤트를 볼 수 있어요.\n\n새 공지가 오면 버튼에 빨간 점이 떠요.",
+      "date": "2026-11-16",
+      "pin": true
+    }
+  ]
+}
