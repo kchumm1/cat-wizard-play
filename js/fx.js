@@ -750,7 +750,7 @@
       // it follows its monster as it falls (to land at its feet where it stands then, 2026-11-16: it fell where the monster
       // had been) and, if that one falls first, the one nearest it, which is the one that takes the hit
       function iceFall(mob, g, L, time, onLand) {
-        var h = P3.bm('iceShard2', { col: pick(ICE3) }), side = rr(0.6, 1.3) * (g.x > FC.x ? -1 : 1), from = V(g.x + side, 3.6, g.z - 0.4), to = V(g.x, 0.1, g.z + 0.1), D = V(), q = new T.Quaternion(), t = 0, landed = false, P = V(), S3 = V(L * 1.3, L, L * 1.3), HOLD = c.D(0.6);
+        var h = P3.bm('iceShard2', { col: pick(ICE3) }), side = rr(0.6, 1.3) * ((sc.scrX ? sc.scrX(g.x - FC.x, g.z - FC.z) : g.x - FC.x) > 0 ? -1 : 1), off = sc.fromScreen ? sc.fromScreen(side, -0.4) : { x: side, z: -0.4 }, from = V(g.x + off.x, 3.6, g.z + off.z), to = V(g.x, 0.1, g.z + 0.1), D = V(), q = new T.Quaternion(), t = 0, landed = false, P = V(), S3 = V(L * 1.3, L, L * 1.3), HOLD = c.D(0.6);
         function aim() {
           if (mob && !mob.alive) { var nb = near(liveMobs(), mob.x, mob.z, 2.6); if (nb) mob = nb; }
           if (mob && mob.alive) { var gg = gp(mob); to.set(gg.x, 0.1, gg.z + 0.1); }
@@ -879,7 +879,7 @@
         var H = sc.heroState(), list = c.pool(), a0, a1, LEN = 11.5;
         // the swing goes from one side of the crowd to the other as seen from the wizard: it starts and ends at the widest empty gap
         var angs = list.map(function (m) { return Math.atan2(m.z - H.z, m.x - H.x); }).sort(function (x, y) { return x - y; });
-        if (!angs.length) { a0 = (H.faceT > 0 ? 0 : Math.PI) - 0.4; a1 = a0 + 0.8; }
+        if (!angs.length) { a0 = (H.faceT > 0 ? 0 : Math.PI) - (sc.camView ? sc.camView().yaw : 0) - 0.4; a1 = a0 + 0.8; }
         else {
           var gap = -1, at = 0;
           for (var i = 0; i < angs.length; i++) { var nx = i + 1 < angs.length ? angs[i + 1] : angs[0] + 6.2832; if (nx - angs[i] > gap) { gap = nx - angs[i]; at = i; } }
@@ -891,7 +891,7 @@
         var start = sc.heroPaw(), st = { a: start.clone(), b: start.clone(), open: 0 }, beam = P3.beam({ col: 0xcbbcff, deep: 0x6a4cff, r: 0.17 * cs });
         var T_OUT = c.D(0.1), T_SW = c.D(0.44), T_END = c.D(0.14), t = 0, prevA = a0, dir = V(Math.cos(a0), 0, Math.sin(a0)), ang2 = 0, pa = V(), pb = V(), scarT = 0;
         var tip = P3.orb({ col: 0xffffff, deep: 0x9a7cff }), paw = P3.orb({ col: 0xffffff, deep: 0x8a6cff });
-        sc.heroFaceTo(start.x + Math.cos(a0) * 3);
+        sc.heroFaceTo(start.x + Math.cos(a0) * 3, start.z + Math.sin(a0) * 3);
         // the shot leaving the paw
         flare(start, 0xffffff, 0.7 * cs, 0.16, { white: true });
         for (var r0 = 0; r0 < 1; r0++) E({ pos: start, frame: 'ring', color: c.col, size: [0.3, (1.0 + r0 * 0.7) * cs], ease: 1, life: c.D(0.2 + r0 * 0.06), delay: r0 * 0.03, alpha: 0.7 });

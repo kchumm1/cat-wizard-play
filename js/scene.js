@@ -97,6 +97,82 @@
     var cssW = 360, cssH = 640;
     if (window.ResizeObserver) new window.ResizeObserver(function () { cssW = canvas.clientWidth; cssH = canvas.clientHeight; }).observe(canvas);
     camera.position.copy(camBase); camera.lookAt(lookAt);
+    // ---------- turning the camera by hand (the user, 2026-11-17: 360도 회전 + 확대, 3초 뒤 원래 자리로, 둘 다) ----------
+    // One finger dragged across the fight turns the camera round it (a whole turn and more); two fingers pinch the
+    // lens in and out (ORB_ZMIN..ORB_ZMAX of the usual view's width). ORB_BACK seconds after the last finger lifts, both ease back
+    // to the usual view, so a fight left running (방치, auto hunting) always looks as it was made to.
+    // Pictures standing on the field (the wizard, monsters, the little ones, props) turn with the camera (yaw), and
+    // left/right facing is worked out on the screen (scrX), not along the field's x.
+    // Monsters are still kept inside the USUAL view (homeCam), so turning the camera never moves the fight about.
+    var ORB_ZMIN = 0.62, ORB_ZMAX = 1.45, ORB_BACK = 3;
+    var orb = { yaw: 0, zoom: 1, idle: 99, ptr: {}, n: 0, moved: false, x0: 0, y0: 0, yaw0: 0, d0: 0, z0: 1, back: 0 };
+    var cY = 1, sY = 0;   // cos / sin of orb.yaw, kept for this frame
+    var homeCam = new T.PerspectiveCamera(38, 1, 0.5, 140), homeInv = new T.Matrix4();
+    // where a field direction (dx, dz) goes across the screen: + is to the right
+    function scrX(dx, dz) { return dx * cY - dz * sY; }
+    // a point of a standing picture — px across it, py up it (tilted back by TILT), plus toward the camera — as an
+    // offset on the field, with the picture turned to the camera
+    function bbPt(px, py, toward) { var a = px, c = -py * SIN_T + (toward || 0); return new T.Vector3(a * cY + c * sY, py * COS_T, -a * sY + c * cY); }
+    function orbPtrs() { var a = []; for (var k in orb.ptr) a.push(orb.ptr[k]); return a; }
+    function orbDown(e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      orb.ptr[e.pointerId] = { x: e.clientX, y: e.clientY }; orb.n = orbPtrs().length; orb.idle = 0;
+      try { canvas.setPointerCapture(e.pointerId); } catch (er) { /* an old browser */ }
+      var p = orbPtrs();
+      if (orb.n === 1) { orb.moved = false; orb.x0 = e.clientX; orb.y0 = e.clientY; orb.yaw0 = orb.yaw; }
+      else if (orb.n === 2) { orb.d0 = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y) || 1; orb.z0 = orb.zoom; orb.moved = true; }
+      if (e.cancelable) e.preventDefault();
+    }
+    function orbMove(e) {
+      var q = orb.ptr[e.pointerId]; if (!q) return;
+      q.x = e.clientX; q.y = e.clientY; orb.idle = 0;
+      var p = orbPtrs();
+      if (p.length >= 2) {
+        var d = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y) || 1;
+        orb.zoom = Math.max(ORB_ZMIN, Math.min(ORB_ZMAX, orb.z0 * orb.d0 / d));
+      } else if (p.length === 1) {
+        var dx = e.clientX - orb.x0;
+        // a small wobble of the finger is a tap, not a turn
+        if (!orb.moved && Math.abs(dx) + Math.abs(e.clientY - orb.y0) < 7) return;
+        orb.moved = true;
+        orb.yaw = orb.yaw0 - dx / Math.max(200, cssW) * Math.PI * 1.6;
+      }
+      if (e.cancelable) e.preventDefault();
+    }
+    function orbUp(e) {
+      if (!orb.ptr[e.pointerId]) return;
+      delete orb.ptr[e.pointerId]; orb.n = orbPtrs().length; orb.idle = 0;
+      // one finger left after a pinch: carry on turning from where it is now
+      var p = orbPtrs(); if (p.length === 1) { orb.x0 = p[0].x; orb.y0 = p[0].y; orb.yaw0 = orb.yaw; }
+    }
+    canvas.style.touchAction = 'none';
+    canvas.addEventListener('pointerdown', orbDown);
+    canvas.addEventListener('pointermove', orbMove);
+    canvas.addEventListener('pointerup', orbUp);
+    canvas.addEventListener('pointercancel', orbUp);
+    canvas.addEventListener('lostpointercapture', orbUp);
+    canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+    // iPhone Safari: its own pinch (page zoom) must not start on the fight
+    canvas.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+    // a computer: the wheel zooms too
+    canvas.addEventListener('wheel', function (e) { orb.zoom = Math.max(ORB_ZMIN, Math.min(ORB_ZMAX, orb.zoom * Math.exp(e.deltaY * 0.0012))); orb.idle = 0; orb.back = 0; if (e.cancelable) e.preventDefault(); }, { passive: false });
+    function orbTick(rdt) {
+      if (orb.n > 0) { orb.idle = 0; orb.back = 0; } else orb.idle += rdt;
+      if (orb.n === 0 && orb.idle > ORB_BACK && (orb.yaw || orb.zoom !== 1)) {
+        if (!orb.back) {
+          // the long way round is never taken: from 350° it comes back the last 10°. A slow start and a soft landing,
+          // longer for a bigger turn (0.7 s … 1.6 s)
+          var y = orb.yaw % (Math.PI * 2); if (y > Math.PI) y -= Math.PI * 2; if (y < -Math.PI) y += Math.PI * 2;
+          orb.back = { y: y, z: orb.zoom, t: 0, d: 0.7 + Math.max(Math.abs(y) / Math.PI, Math.abs(orb.zoom - 1) * 1.5) * 0.9 };
+        }
+        var B = orb.back; B.t += rdt; var k = Math.min(1, B.t / B.d), e = k * k * (3 - 2 * k);
+        orb.yaw = B.y * (1 - e); orb.zoom = B.z + (1 - B.z) * e;
+        if (k >= 1) { orb.yaw = 0; orb.zoom = 1; orb.back = 0; }
+      }
+      cY = Math.cos(orb.yaw); sY = Math.sin(orb.yaw);
+    }
+    // Zoom is the lens (field of view), so zooming in is the same picture made bigger (the painted backdrop is scaled with it)
+    homeCam.position.copy(camBase); homeCam.lookAt(lookAt); homeCam.updateMatrixWorld(); homeInv.copy(homeCam.matrixWorld).invert(); homeCam.projectionMatrix.copy(camera.projectionMatrix);
     scene.add(new T.HemisphereLight(0xffffff, 0x666688, 0.85));
     var sun = new T.DirectionalLight(0xffffff, 0.7); sun.position.set(3, 8, 6); scene.add(sun);
 
@@ -121,6 +197,7 @@
       // keep the same width of ground on every phone; tall screens simply see more ground above and below
       baseFov = Math.max(22, Math.min(60, 2 * Math.atan(Math.tan(H_HALF) / Math.min(w / h, 0.95)) * 180 / Math.PI));
       camera.fov = baseFov; applyShift(); camera.updateProjectionMatrix();
+      homeCam.fov = baseFov; homeCam.aspect = camera.aspect; homeCam.updateProjectionMatrix();
     }
 
     function applyShift() {
@@ -195,7 +272,7 @@
     function billboard(art, height, tint) {
       var w = height * art.aspect, mat = bbMaterial(art.tex, tint);
       var m = new T.Mesh(rigGeometry(art), mat); m.scale.setScalar(height); m.renderOrder = 3; m.rotation.x = -TILT;
-      var g = new T.Group(); g.add(m);
+      var g = new T.Group(); g.add(m); g.rotation.order = 'YXZ'; g.rotation.y = orb.yaw;
       var sh = new T.Mesh(new T.CircleGeometry(w * 0.32, 20), new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false }));
       sh.rotation.x = -Math.PI / 2; sh.position.y = 0.012; sh.renderOrder = 1; g.add(sh);
       for (var i = 0; i < 8; i++) { var pv = art.rig && CW.rigPivotOf(art.rig, art.crop, CW.RIG_BONES[i], art.aspect, 1); if (pv) mat.uniforms.uBP.value[i].set(pv[0], pv[1]); }
@@ -250,7 +327,7 @@
       hero = billboard(art, HERO_H); hero.userData.seed = 0.5; hero.userData.art = art; heroGroup.add(hero); cos.aura = null; if (cos.fx) attachAura();
       ghosts.forEach(function (gh) { heroGroup.remove(gh.mesh); }); ghosts.length = 0;
       for (var i = 0; i < 3; i++) {
-        var gm = new T.Mesh(hero.userData.body.geometry, bbMaterial(art.tex)); gm.renderOrder = 2; gm.visible = false; gm.scale.setScalar(HERO_H); gm.rotation.x = -TILT;
+        var gm = new T.Mesh(hero.userData.body.geometry, bbMaterial(art.tex)); gm.renderOrder = 2; gm.visible = false; gm.scale.setScalar(HERO_H); gm.rotation.order = 'YXZ'; gm.rotation.x = -TILT;
         gm.material.depthWrite = false; heroGroup.add(gm); ghosts.push({ mesh: gm, t: 1, life: 0.35 });
       }
     }
@@ -318,6 +395,8 @@
       var V = views, hd = hero.userData, f = HB.focus, lx = 0, lz = 0, want = V.cur;
       if (f && f.alive && HB.cheer <= 0 && f.arrived) { lx = f.x - HB.x; lz = f.z - HB.z; }
       else if (HB.sp > 0.35) { lx = HB.vx; lz = HB.vz; }
+      // seen from where the camera is now: lx across the screen, lz toward the camera
+      var vlx = scrX(lx, lz), vlz = lx * sY + lz * cY; lx = vlx; lz = vlz;
       if (HB.cheer > 0) want = 0;
       else if (lx * lx + lz * lz > 0.02) {
         var a = Math.atan2(-lz, Math.abs(lx)) * 57.3;   // + is up the screen (away from the camera)
@@ -343,7 +422,7 @@
     }
     var tipV = new T.Vector3();
     function viewTip() {
-      if (!views.staff) { var vg = views.list[views.cur], vd = vg.userData, q = vd.rig.armL.tip, c = vd.crop, p = pointOn(vg, (q[0] - c.x0) / c.cw, 1 - (q[1] - c.y0) / c.ch); return new T.Vector3(heroGroup.position.x + vg.position.x + p.x, heroGroup.position.y + vg.position.y + p.y * COS_T, heroGroup.position.z - p.y * SIN_T + 0.1); }
+      if (!views.staff) { var vg = views.list[views.cur], vd = vg.userData, q = vd.rig.armL.tip, c = vd.crop, p = pointOn(vg, (q[0] - c.x0) / c.cw, 1 - (q[1] - c.y0) / c.ch), o = bbPt(p.x, p.y, 0.1); return new T.Vector3(heroGroup.position.x + vg.position.x + o.x, heroGroup.position.y + vg.position.y + o.y, heroGroup.position.z + vg.position.z + o.z); }
       var st = views.list[views.cur].userData.staff, S = views.staff;
       st.updateMatrixWorld(true); return tipV.set(S.tx - S.gx, S.ty - S.gy, 0).applyMatrix4(st.matrixWorld).clone();
     }
@@ -352,8 +431,8 @@
     // Staff star position inside the hero art (fraction of width from the left, of height from the feet).
     var TIP_U = 0.16, TIP_V = 0.61;
     function heroLocal(u, v) {
-      var p = pointOn(hero, u, v);
-      return new T.Vector3(heroGroup.position.x + hero.position.x + p.x, heroGroup.position.y + hero.position.y + p.y * COS_T, heroGroup.position.z - p.y * SIN_T + 0.1);
+      var p = pointOn(hero, u, v), o = bbPt(p.x, p.y, 0.1);
+      return new T.Vector3(heroGroup.position.x + hero.position.x + o.x, heroGroup.position.y + hero.position.y + o.y, heroGroup.position.z + hero.position.z + o.z);
     }
     // The staff's head in the picture now worn: the rig's tip (rig.js armL.tip), else the top of its staff strip. (It used
     // to be the plain wizard's star for every picture, which in a costume is beside the helmet — the staff's twinkles and
@@ -365,7 +444,7 @@
     function heroTip() { if (!hero) return new T.Vector3(-1.85, 1.1, 0.35); if (views) return viewTip(); var t = tipUV(); return heroLocal(t[0], t[1]); }
     // spells leave from just in front of the raised paw so they never cross the face
     function heroPaw() { var p = hero ? heroLocal(0.86, 0.5) : new T.Vector3(-0.75, 0.9, 0.35); p.z += 0.12; return p; }
-    function heroCenter() { var h = HERO_H * 0.5; return new T.Vector3(heroGroup.position.x + (hero ? hero.position.x : 0), h * COS_T + (hero ? hero.position.y : 0), heroGroup.position.z - h * SIN_T); }
+    function heroCenter() { var h = HERO_H * 0.5, o = bbPt(0, h, 0); return new T.Vector3(heroGroup.position.x + (hero ? hero.position.x : 0) + o.x, o.y + (hero ? hero.position.y : 0), heroGroup.position.z + (hero ? hero.position.z : 0) + o.z); }
 
     // ---------- hero cast poses ----------
     // a* = anticipation (lean/crouch), r* = release kick, hb/hs = pose kept for a moment after release,
@@ -401,7 +480,7 @@
       for (var b = 0; b < 8; b++) { u.uBP.value[b].copy(hu.uBP.value[b]); u.uBT.value[b].copy(hu.uBT.value[b]); u.uBA.value[b] = hu.uBA.value[b]; }
       if (views) { var vd = views.list[views.cur].userData; gh.mesh.geometry = vd.body.geometry; u.map.value = vd.u.map.value; u.uScale.value.copy(vd.u.uScale.value); for (var vb = 0; vb < 8; vb++) { u.uBP.value[vb].copy(vd.u.uBP.value[vb]); u.uBT.value[vb].copy(vd.u.uBT.value[vb]); u.uBA.value[vb] = vd.u.uBA.value[vb]; } if (gh.staff) gh.staff.visible = false; }
       u.uFlash.value = 0.55; u.uFlashCol.value.setHex(color); u.uOpacity.value = 0.55;
-      gh.wx = HB.x + hero.position.x; gh.wy = hero.position.y; gh.wz = HB.z - 0.05; gh.vx = still ? 0 : -0.9 * HB.faceT; gh.life = still ? 0.26 : 0.35;
+      gh.wx = HB.x + hero.position.x; gh.wy = hero.position.y; gh.wz = HB.z + hero.position.z - 0.05; gh.vx = still ? 0 : -0.9 * HB.faceT * cY; gh.vz = still ? 0 : 0.9 * HB.faceT * sY; gh.life = still ? 0.26 : 0.35;
       gh.mesh.position.set(hero.position.x, gh.wy, -0.05); gh.mesh.visible = true; gh.t = 0;
     }
     // hero state: a battle mage that hunts on the move — runs to the nearest monster, keeps casting range,
@@ -414,7 +493,7 @@
     var HERO_ZONE = { x0: -2.0, x1: 1.8, z0: -3.0, z1: 2.2 };
     // turning: one quick snap with a little squash, at most every 0.8 s, so the wizard does not keep flipping in a fight
     function heroTurn(dir) { if (dir === HB.faceT || HB.turnT > 0) return; HB.faceT = dir; HB.turnT = 0.8; if (hero) hero.userData.sq.v -= 0.8; }
-    function heroFaceTo(x) { HB.aim = 0.75; if (Math.abs(x - HB.x) > 0.3) heroTurn(x < HB.x ? -1 : 1); }
+    function heroFaceTo(x, z) { HB.aim = 0.75; var s = scrX(x - HB.x, z === undefined ? 0 : z - HB.z); if (Math.abs(s) > 0.3) heroTurn(s < 0 ? -1 : 1); }
     function heroCheer(sec) { HB.cheer = Math.max(HB.cheer, sec || 1.2); }
     function heroDodge(from) {
       if (!hero || HB.dash > 0 || HB.dashCd > 0 || HB.cheer > 0) return;
@@ -424,7 +503,7 @@
       var side = Math.random() < 0.5 ? 1 : -1, dx = ax * 0.5 - az * side * 0.87, dz = az * 0.5 + ax * side * 0.87, tx = HB.x + dx * 1.3, tz = HB.z + dz * 1.3;
       if (tx < Z.x0 || tx > Z.x1 || tz < Z.z0 || tz > Z.z1) { dx = ax * 0.5 + az * side * 0.87; dz = az * 0.5 - ax * side * 0.87; }
       HB.dash = 0.2; HB.dvx = dx * 6.4; HB.dvz = dz * 6.4; HB.dashCd = rr(1.2, 2.0); HB.ghostT = 0; HB.vy = Math.max(HB.vy, 2.4);
-      hero.userData.sq.v -= 2.4; hero.userData.bend.v += dx * 3;
+      hero.userData.sq.v -= 2.4; hero.userData.bend.v += scrX(dx, dz) * 3;
       if (hooks.land) hooks.land(new T.Vector3(HB.x, 0.03, HB.z), false);
     }
 
@@ -437,7 +516,7 @@
     // middle (0.6 above the ground): left/right VIEW_X of the picture's half width, below the top bar, above the skills.
     var VIEW_X = 0.8, VIEW_TOP = 0.62, VIEW_BOT = -0.42, MID_Y = 0.6, VM = new T.Matrix4();
     function viewBox(z) {
-      VM.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse); var e = VM.elements;
+      VM.multiplyMatrices(homeCam.projectionMatrix, homeInv); var e = VM.elements;
       // clip = VM * (x, MID_Y, z, 1); ndc.x = (e0 x + b) / (e3 x + d) solved for x at ±VIEW_X; ndc.y the same for z
       var b = e[4] * MID_Y + e[8] * z + e[12], d = e[7] * MID_Y + e[11] * z + e[15];
       var xAt = function (t) { return (t * d - b) / (e[0] - t * e[3]); };
@@ -513,7 +592,7 @@
         var hx = mob.x - HB.x, hz = mob.z - HB.z, hl = Math.sqrt(hx * hx + hz * hz) || 1, push = 1.7 * p * heavy;
         mob.pvx += hx / hl * push; mob.pvz += hz / hl * push * 0.8;
         var pl = Math.sqrt(mob.pvx * mob.pvx + mob.pvz * mob.pvz); if (pl > 3.6) { mob.pvx *= 3.6 / pl; mob.pvz *= 3.6 / pl; }
-        mob.tilt.v -= (hx > 0 ? 1 : -1) * 2.6 * p * heavy;
+        mob.tilt.v -= (scrX(hx, hz) > 0 ? 1 : -1) * 2.6 * p * heavy;
       }
       mob.hurt = Math.min(1, mob.hurt + 0.6 * p);
       if (!mob.boss || p > 1.4) mob.stun = Math.max(mob.stun, mob.boss ? 0.12 : 0.22 + 0.08 * p);
@@ -537,12 +616,12 @@
       mobGroup.remove(mob.group); disposeGroup(mob.group);
     }
     // the little ones milling round the fight (js/minions.js): cheap stiff pictures that burst in crowds where spells land
-    var minions = CW.createMinions ? CW.createMinions({ T: T, group: mobGroup, tilt: TILT, clampField: clampField, halfX: halfX, field: FIELD,
+    var minions = CW.createMinions ? CW.createMinions({ T: T, group: mobGroup, tilt: TILT, yaw: function () { return orb.yaw; }, scrX: scrX, clampField: clampField, halfX: halfX, field: FIELD,
       hero: function () { return HB; }, mobs: function () { return mobs; } }) : null;
     function disposeGroup(g) { g.traverse(function (x) { if (x.geometry && !x.geometry.userData.cached) x.geometry.dispose(); if (x.material && x.material.dispose) x.material.dispose(); }); }
     function clearMobs() { if (minions) minions.clear(); HB.focus = null; mobs.slice().forEach(function (m) { m.alive = false; mobGroup.remove(m.group); disposeGroup(m.group); }); mobs.length = 0; dying.forEach(function (m) { mobGroup.remove(m.group); disposeGroup(m.group); }); dying.length = 0; }
-    function mobPos(mob) { var g = mob.group, h = g.userData.h * 0.5; return new T.Vector3(g.position.x, h * COS_T + g.position.y, g.position.z - h * SIN_T + 0.15); }
-    function mobTop(mob) { var g = mob.group, h = g.userData.h * 0.92; return new T.Vector3(g.position.x, h * COS_T + g.position.y, g.position.z - h * SIN_T + 0.15); }
+    function mobPos(mob) { var g = mob.group, o = bbPt(0, g.userData.h * 0.5, 0.15); return new T.Vector3(g.position.x + o.x, o.y + g.position.y, g.position.z + o.z); }
+    function mobTop(mob) { var g = mob.group, o = bbPt(0, g.userData.h * 0.92, 0.15); return new T.Vector3(g.position.x + o.x, o.y + g.position.y, g.position.z + o.z); }
 
     // ---------- tier aura ----------
     var AURA = [null, 0xff6a2b, 0x9fd8ff, 0xbfefff, 0xffe14a, 0xe6e6ff, 0xffd84a, 0xb04bff, 0xffffff, 0xff8a3a];
@@ -611,7 +690,7 @@
         if (!a) return; var u = a.material.uniforms; u.uTime.value = time;
         if (!cos.sheen) u.uAmt.value = cos.fx.aura * (0.82 + Math.sin(time * 2.2) * 0.18);
       });
-      if (cos.glow) { cos.glow.material.opacity = cos.fx.glow * (0.8 + Math.sin(time * 2.2) * 0.2); if (hero) cos.glow.position.set(hero.position.x, 0.85 * CUTE + hero.position.y, hero.position.z - 0.4 * CUTE); }
+      if (cos.glow) { cos.glow.material.opacity = cos.fx.glow * (0.8 + Math.sin(time * 2.2) * 0.2); if (hero) cos.glow.position.set(hero.position.x - 0.4 * CUTE * sY, 0.85 * CUTE + hero.position.y, hero.position.z - 0.4 * CUTE * cY); }
     }
 
     // ---------- damage numbers (DOM overlay) ----------
@@ -680,6 +759,16 @@
 
 
     var tmpC = new T.Color();
+    // every standing picture turns to the camera (only round the upright: they still lean back by TILT)
+    function turnToCam() {
+      var y = orb.yaw, i;
+      if (hero) hero.rotation.y = y;
+      if (views) for (i = 0; i < views.list.length; i++) views.list[i].rotation.y = y;
+      for (i = 0; i < mobs.length; i++) mobs[i].group.rotation.y = y;
+      for (i = 0; i < dying.length; i++) dying[i].group.rotation.y = y;
+      for (i = 0; i < ghosts.length; i++) ghosts[i].mesh.rotation.y = y;
+      if (painted && painted.turn) painted.turn(y);
+    }
     function driveBillboard(g, dt, rest, face) {
       var d = g.userData;
       d.bend.target = rest.bend || 0; d.sq.target = rest.sq || 0; d.lift.target = rest.lift || 0; d.slide.target = rest.slide || 0;
@@ -721,7 +810,7 @@
         if (HB.y <= 0.01 && HB.vy === 0) HB.vy = 3.6;
       } else if (HB.spot > 0 && HB.spotM) {
         // "there it is": stand still, eyes on it
-        var sm = HB.spotM; if ((sm.arrived ? sm.x : sm.tx) !== HB.x) heroTurn((sm.arrived ? sm.x : sm.tx) < HB.x ? -1 : 1);
+        var sm = HB.spotM, ssx = scrX((sm.arrived ? sm.x : sm.tx) - HB.x, (sm.arrived ? sm.z : sm.tz) - HB.z); if (ssx) heroTurn(ssx < 0 ? -1 : 1);
       } else if (f) {
         var fx = f.arrived ? f.x : f.tx, dx = fx - HB.x, dz = (f.arrived ? f.z : f.tz) - HB.z, d = Math.sqrt(dx * dx + dz * dz) || 1, nx = dx / d, nz = dz / d;
         var r0 = f.boss ? 2.1 : 1.45, r1 = f.boss ? 2.9 : 2.25;
@@ -735,7 +824,7 @@
         var ob = chase ? 0.25 : d > r1 + 0.8 ? 0.35 : 1;
         wx += -nz * HB.orbit * 0.95 * ob; wz += nx * HB.orbit * 0.95 * ob;
         // eyes stay on the target: it turns to face it, whichever way the feet go (unless a spell aims elsewhere)
-        if (HB.aim <= 0 && Math.abs(dx) > 0.8) heroTurn(dx < 0 ? -1 : 1);
+        var fsx = scrX(dx, dz); if (HB.aim <= 0 && Math.abs(fsx) > 0.8) heroTurn(fsx < 0 ? -1 : 1);
       } else {
         // nobody to fight yet: walk a little, stop, look around one way and the other, walk on
         HB.pt -= dt; HB.lookT -= dt; var gx = HB.px - HB.x, gz = HB.pz - HB.z, gd = Math.sqrt(gx * gx + gz * gz);
@@ -774,12 +863,12 @@
       HB.walk = Math.min(1, HB.sp / 1.1);
       // look where the spell goes; between spells, look where the feet go
       // with no target the eyes follow the feet (with a target they stay on it, above)
-      if (!f && HB.aim <= 0 && Math.abs(HB.vx) > 0.6) heroTurn(HB.vx < 0 ? -1 : 1);
+      var vsx = scrX(HB.vx, HB.vz); if (!f && HB.aim <= 0 && Math.abs(vsx) > 0.6) heroTurn(vsx < 0 ? -1 : 1);
       // facing changes in one go (the picture is drawn from the front: a narrowing "turn" only looks like a card being
       // flipped, the user 2026-11-15), and rarely: see heroTurn
       HB.face = HB.faceT;
       // the body leans toward the monster it is fighting (more while it runs at it), like a fighter, not a picture
-      var lt = 0; if (f && HB.cheer <= 0) { var ldx = (f.arrived ? f.x : f.tx) - HB.x; lt = Math.max(-1, Math.min(1, ldx / 1.6)) * (0.07 + 0.05 * Math.min(1, HB.sp / 2)); }
+      var lt = 0; if (f && HB.cheer <= 0) { var ldx = scrX((f.arrived ? f.x : f.tx) - HB.x, (f.arrived ? f.z : f.tz) - HB.z); lt = Math.max(-1, Math.min(1, ldx / 1.6)) * (0.07 + 0.05 * Math.min(1, HB.sp / 2)); }
       HB.lean += (lt - HB.lean) * Math.min(1, dt * 6);
       HB.y += HB.vy * dt; HB.vy -= 17 * dt;
       if (HB.y <= 0) { if (HB.vy < -3.2) { hd.sq.v -= 2.4; if (hooks.land) hooks.land(new T.Vector3(HB.x, 0.03, HB.z), false); } HB.y = 0; HB.vy = 0; }
@@ -799,7 +888,7 @@
       var r = Math.random(), dH = Math.hypot(m.x - HB.x, m.z - HB.z), run = m.gait === 'skitter' ? 1.3 : m.gait === 'stomp' ? 0.75 : 1;
       if (dH > 4.3) { var c0 = nearHero(m, rr(2.0, 3.1)); setGoal(m, c0.x, c0.z, rr(1.7, 2.3) * run, 'wander'); }   // the wizard ran off: go after it
       else if (r < 0.28) { var w = freeSpot(false); setGoal(m, (m.x + w.x) / 2, (m.z + w.z) / 2, rr(0.9, 1.4) * run, 'wander'); }
-      else if (r < 0.55 && chargers() < 3) { m.state = 'windup'; m.st = rr(0.24, 0.34); m.face = HB.x < m.x ? 1 : -1; }
+      else if (r < 0.55 && chargers() < 3) { m.state = 'windup'; m.st = rr(0.24, 0.34); m.face = scrX(m.x - HB.x, m.z - HB.z) > 0 ? 1 : -1; }
       else if (r < 0.8) { m.state = 'orbit'; m.st = rr(1.2, 2.6); m.speed = rr(0.9, 1.4) * run; m.orbDir = Math.random() < 0.5 ? 1 : -1; m.orbR = Math.max(1.6, Math.min(3.2, dH)); }
       else if (r < 0.9) { m.state = 'hop'; m.st = 0.05; m.jumped = false; }
       else if (r < 0.96) { m.state = 'taunt'; m.st = rr(0.7, 1.2); }
@@ -836,7 +925,7 @@
           var mul = 1;
           if (gait === 'hop') {
             // hoppers only travel while they are in the air
-            if (grounded) { mul = 0; if (m.hopCd <= 0 && m.vy === 0) { m.vy = st === 'charge' ? 3.4 : rr(3.6, 4.6) * (m.boss ? 1.25 : 1); d.sq.v += 2.2; if (Math.abs(dx) > 0.2) m.face = dx < 0 ? 1 : -1; } }
+            if (grounded) { mul = 0; if (m.hopCd <= 0 && m.vy === 0) { m.vy = st === 'charge' ? 3.4 : rr(3.6, 4.6) * (m.boss ? 1.25 : 1); d.sq.v += 2.2; var hsx = scrX(dx, dz); if (Math.abs(hsx) > 0.2) m.face = hsx < 0 ? 1 : -1; } }
             else mul = 1.45;
           } else if (gait === 'stomp') mul = 0.4 + 1.15 * Math.abs(Math.sin(d.anim.ph));
           else if (gait === 'skitter') {
@@ -845,10 +934,10 @@
           }
           m.x += m.vx * mul * dt; m.z += m.vz * mul * dt; moving = mul > 0;
           if (gait === 'skitter' && moving) { var zz = Math.sin(time * 13 + m.phase) * 0.9 * dt; m.x += -dz / dist * zz; m.z += dx / dist * zz; }
-          if (gait !== 'hop' && Math.abs(m.vx) > 0.25) m.face = m.vx < 0 ? 1 : -1;
+          var msx = scrX(m.vx, m.vz); if (gait !== 'hop' && Math.abs(msx) > 0.25) m.face = msx < 0 ? 1 : -1;
           if (st === 'enter' && dist < 1.2 && m.boss) m.speed = Math.max(0.9, m.speed * 0.98);
         } else if (grounded || m.flyer || gait === 'float') {
-          var fh = HB.x < m.x ? 1 : -1;
+          var fh = scrX(m.x - HB.x, m.z - HB.z) > 0 ? 1 : -1;
           if (st === 'enter') { m.arrived = true; m.face = fh; m.state = 'idle'; m.st = rr(0.15, 0.6); if (m.boss && hooks.roar) { m.state = 'roar'; m.st = 1.3; m.roared = false; } }
           else if (st === 'charge') { m.state = 'swipe'; m.st = m.boss ? 0.55 : 0.4; m.struck = false; m.face = fh; }
           else if (st !== 'orbit') { m.state = 'idle'; m.st = rr(0.2, 0.8); m.face = fh; }
@@ -857,7 +946,7 @@
         if (m.st <= 0) nextAction(m);
       } else if (st === 'swipe') {
         m.atk = 1;
-        if (!m.struck && m.st < (m.boss ? 0.3 : 0.22)) { m.struck = true; d.bend.v -= (m.boss ? 3 : 2.5) * (HB.x < m.x ? 1 : -1); if (hooks.swipe) hooks.swipe(m); heroDodge(m); if (m.boss) shake(0.2); }
+        if (!m.struck && m.st < (m.boss ? 0.3 : 0.22)) { m.struck = true; d.bend.v -= (m.boss ? 3 : 2.5) * (scrX(m.x - HB.x, m.z - HB.z) > 0 ? 1 : -1); if (hooks.swipe) hooks.swipe(m); heroDodge(m); if (m.boss) shake(0.2); }
         if (m.st <= 0) { var bk = m.boss ? ringSpot(1.7, 2.5, true) : nearHero(m, rr(1.9, 3.0)); setGoal(m, bk.x, bk.z, m.boss ? 2.2 : rr(2.0, 2.8), 'back'); }
       } else if (st === 'hop') {
         if (!m.jumped && grounded) { m.jumped = true; m.vy = rr(4.5, 6.2); d.sq.v += 2.5; }
@@ -871,14 +960,14 @@
         if (m.st <= 0) { m.state = 'idle'; m.st = rr(0.6, 1.2); }
       } else if (st === 'windup') {
         // crouch and lean back before the rush, so the attack can be seen coming
-        m.atk = 0.4; m.face = HB.x < m.x ? 1 : -1;
+        m.atk = 0.4; m.face = scrX(m.x - HB.x, m.z - HB.z) > 0 ? 1 : -1;
         if (m.st <= 0) { var bc = nearHero(m, KEEP + (m.boss ? 0.7 : 0.1)); setGoal(m, bc.x, bc.z, m.boss ? 5.2 : rr(3.6, 4.4), 'charge'); }
       } else if (st === 'slam') {
         if (!m.jumped && m.st <= 0) { m.jumped = true; m.vy = m.flyer ? 6 : 7.5; d.sq.v += 3; }
         else if (m.jumped && grounded && m.vy === 0) { m.state = 'idle'; m.st = rr(0.6, 1.1); }
       }
       if (m.pull === undefined) { var ddx = m.x - HB.x, ddz = (m.z - HB.z) / 1.15, dd = Math.sqrt(ddx * ddx + ddz * ddz), keep = m.boss ? KEEP + 0.6 : KEEP; if (dd < keep && dd > 1e-3) { var pushK = Math.min(1, dt * 8) * (keep - dd) / dd; m.x += ddx * pushK; m.z += ddz * 1.15 * pushK; } }
-      if (m.state === 'idle' || m.state === 'taunt' || m.state === 'roar') m.face = HB.x < m.x ? 1 : -1;
+      if (m.state === 'idle' || m.state === 'taunt' || m.state === 'roar') m.face = scrX(m.x - HB.x, m.z - HB.z) > 0 ? 1 : -1;
       if (!moving) { m.vx *= Math.max(0, 1 - dt * 8); m.vz *= Math.max(0, 1 - dt * 8); }
       m.sp = Math.sqrt(m.vx * m.vx + m.vz * m.vz); m.walk = gait === 'hop' || !moving ? 0 : Math.min(1, m.sp / 1.4);
     }
@@ -897,10 +986,11 @@
     function update(dt, realDt) {
       var rdt = realDt === undefined ? dt : realDt;
       time += dt;
+      orbTick(rdt);
       // hero
       if (hero) {
         var moving = heroBrain(dt);
-        var hd = hero.userData, fs = HB.faceT, rest = { bend: Math.sin(time * 1.3) * 0.018 + HB.vx * 0.036 + HB.lean + (HB.dash > 0 ? HB.dvx * 0.03 : 0), sq: Math.sin(time * 2.4) * 0.016 - (HB.dash > 0 ? 0.12 : 0), lift: 0, slide: 0 };
+        var hd = hero.userData, fs = HB.faceT, rest = { bend: Math.sin(time * 1.3) * 0.018 + scrX(HB.vx, HB.vz) * 0.036 + HB.lean + (HB.dash > 0 ? scrX(HB.dvx, HB.dvz) * 0.03 : 0), sq: Math.sin(time * 2.4) * 0.016 - (HB.dash > 0 ? 0.12 : 0), lift: 0, slide: 0 };
         var arms = { walk: HB.walk, speed: HB.sp, stride: 0.4, air: HB.y > 0.08, armR: 0, armL: 0, head: 0, wag: 0, cheer: HB.cheer > 0 ? 1 : 0 };
         if (pose) {
           var P = pose.P; pose.t += dt;
@@ -909,7 +999,7 @@
             if (!pose.rel) {
               pose.rel = true; hd.bend.v += P.rb * fs; hd.sq.v += P.rs; hd.lift.v += P.rl; hd.slide.v += P.rx * fs;
               // the shot pushes the wizard back a step (a slash steps in instead); the big ones come with a hop
-              if (P.kick) HB.kx -= fs * P.kick;
+              if (P.kick) { HB.kx -= fs * P.kick * cY; HB.kz += fs * P.kick * sY; }
               if (P.hop && HB.y <= 0.01) HB.vy = P.hop;
               hd.anim.aR.v += (P.rR - P.aR) * 9; hd.anim.aL.v += (P.rL - P.aL) * 7;
               heroGlow = Math.max(heroGlow, 0.8);
@@ -925,7 +1015,7 @@
         rest.bend += Math.sin(hd.anim.ph) * 0.035 * hd.anim.walk;
         driveBillboard(hero, dt, rest, HB.face);
         var bounce = HB.y <= 0.01 ? Math.abs(Math.sin(hd.anim.ph)) * (0.025 + 0.035 * Math.min(1, HB.sp / 2.2)) * hd.anim.walk : 0;
-        hero.position.y = Math.max(0, hd.lift.x) * 0.12 + HB.y + bounce; hero.position.x = hd.slide.x * 0.12;
+        hero.position.y = Math.max(0, hd.lift.x) * 0.12 + HB.y + bounce; hero.position.x = hd.slide.x * 0.12 * cY; hero.position.z = -hd.slide.x * 0.12 * sY;
         hd.shadow.position.y = 0.012 - hero.position.y;
         hd.shadow.scale.setScalar(1 - Math.min(0.5, hero.position.y * 0.6));
         lightAt(heroCenter(), hd.light); hd.light.r += heroGlowCol.r * heroGlow * 0.22; hd.light.g += heroGlowCol.g * heroGlow * 0.22; hd.light.b += heroGlowCol.b * heroGlow * 0.22;
@@ -935,7 +1025,7 @@
       }
       ghosts.forEach(function (gh) {
         if (gh.t >= gh.life) { gh.mesh.visible = false; return; }
-        gh.t += dt; var k = gh.t / gh.life; gh.wx += gh.vx * dt; gh.mesh.position.set(gh.wx - HB.x, gh.wy, gh.wz - HB.z); gh.mesh.material.uniforms.uOpacity.value = 0.5 * (1 - k);
+        gh.t += dt; var k = gh.t / gh.life; gh.wx += gh.vx * dt; gh.wz += (gh.vz || 0) * dt; gh.mesh.position.set(gh.wx - HB.x, gh.wy, gh.wz - HB.z); gh.mesh.material.uniforms.uOpacity.value = 0.5 * (1 - k);
         gh.mesh.material.uniforms.uScale.value.multiplyScalar(1 + dt * 0.25);
       });
       if (aura.ring) { aura.ring.rotation.z += dt * 0.8; aura.ring.material.opacity = 0.6 + Math.sin(time * 3) * 0.25; }
@@ -943,6 +1033,7 @@
       aura.orbs.forEach(function (o, i) { var a = time * 1.6 + i * Math.PI * 2 / aura.orbs.length; o.position.set(Math.cos(a) * 0.75, 1.0 + Math.sin(time * 2 + i) * 0.25, Math.sin(a) * 0.45); });
       aura.wings.forEach(function (w, i) { w.rotation.y = (i ? -1 : 1) * (0.25 + Math.sin(time * 2.2) * 0.18); });
       costumeTick(dt);
+      turnToCam();
       // monsters
       mobs.forEach(function (m) { mobBrain(m, dt); });
       separate();
@@ -969,8 +1060,8 @@
         }
         stepSpring(m.tilt, dt);
         if (m.pull !== undefined) { m.x += (m.pull - m.x) * Math.min(1, dt * 5); if (m.pullZ !== undefined) m.z += (m.pullZ - m.z) * Math.min(1, dt * 5); rest.bend = Math.sin(time * 18 + m.phase) * 0.18; rest.sq = -0.12; }
-        rest.bend += m.vx * 0.035 + Math.sin(d.anim.ph) * 0.04 * d.anim.walk;
-        if (m.state === 'windup') { rest.sq = -0.17; rest.bend = (m.x > HB.x ? 1 : -1) * 0.14; }
+        rest.bend += scrX(m.vx, m.vz) * 0.035 + Math.sin(d.anim.ph) * 0.04 * d.anim.walk;
+        if (m.state === 'windup') { rest.sq = -0.17; rest.bend = (scrX(m.x - HB.x, m.z - HB.z) > 0 ? 1 : -1) * 0.14; }
         m.hurt = Math.max(0, m.hurt - dt * 3);
         var P = { walk: frozen ? 0 : m.walk, speed: m.sp, stride: m.boss ? 0.42 : 0.22, air: m.y > 0.12, armL: -m.atk * 1.15, armR: m.atk * 0.3, hurt: m.hurt, cheer: m.cheer, stepRate: m.boss ? 0.65 : 1,
           flap: m.flyer ? 0.32 : m.boss ? 0.16 : 0.1, flapF: m.flyer ? 9 : 6, wingOpen: m.state === 'roar' ? 0.25 : 0 };
@@ -987,7 +1078,7 @@
         stepSpring(m.kx, dt);
         var hover = m.flyer ? 0.4 + Math.sin(time * 2.4 + m.phase) * 0.12 : m.gait === 'float' ? 0.2 + Math.sin(time * 2.2 + m.phase) * 0.08 : 0;
         var bounce = m.y <= 0.01 ? Math.abs(Math.sin(d.anim.ph)) * (m.boss ? 0.035 : 0.035 + 0.06 * Math.min(1, m.sp / 3)) * d.anim.walk : 0;
-        g.position.set(m.x + m.kx.x * 0.12, m.y + hover + bounce, m.z);
+        g.position.set(m.x + m.kx.x * 0.12 * cY, m.y + hover + bounce, m.z - m.kx.x * 0.12 * sY);
         // the body rocks with the way it moves: waddlers sway from foot to foot, heavy ones lurch, gliders bank into their turns
         var gz = 0, wkA = d.anim.walk, phA = d.anim.ph;
         if (m.pull !== undefined) gz = Math.sin(time * 9 + m.phase) * 0.12;
@@ -1042,15 +1133,51 @@
       kick.multiplyScalar(Math.max(0, 1 - rdt * 7));
       if (Math.abs(viewShift - viewShiftT) > 0.001) { viewShift += (viewShiftT - viewShift) * Math.min(1, rdt * 9); applyShift(); }
       // the picture moves up with the ground when a menu sheet pushes the view up
-      var bgY = -Math.round(viewShift * cssH); if (bgY !== bgEl._y) { bgEl._y = bgY; bgEl.style.transform = bgY ? 'translateY(' + bgY + 'px)' : ''; }
+      // the region's painted backdrop stays on the screen however the camera is turned (the user, 2026-11-17: 돌려도 정면
+      // 배경이 똑같이) — the camera keeps its height and lean, so from any side it is the same field seen the same way;
+      // only the fight on it turns. Zooming in makes the picture bigger with the fight; zooming out leaves it filling the screen
+      var bgY = -Math.round(viewShift * cssH), bgS = Math.round(1000 / Math.min(1, orb.zoom)) / 1000, bgK = bgY + '|' + bgS;
+      if (bgK !== bgEl._k) { bgEl._k = bgK; bgEl.style.transform = (bgY ? 'translateY(' + bgY + 'px)' : '') + (bgS !== 1 ? ' scale(' + bgS + ')' : ''); }
       var fk = Math.min(1, rdt * 2.2); pan.x += (HB.x * 0.3 - pan.x) * fk; pan.z += (HB.z * 0.22 - pan.z) * fk;
-      camera.position.set(camBase.x + pan.x + sx + kick.x + Math.sin(time * 0.35) * 0.06, camBase.y + sy + kick.y + Math.sin(time * 0.5) * 0.03, camBase.z + pan.z + kick.z);
-      camera.lookAt(lookAt.x + pan.x + sx * 0.3, lookAt.y + sy * 0.3, lookAt.z + pan.z);
+      // the usual view (kept for where monsters may go), then the one turned and zoomed by hand; the shake and the slow
+      // drift go along the screen's left/right, whichever way the camera looks
+      homeCam.position.set(camBase.x + pan.x, camBase.y, camBase.z + pan.z); homeCam.lookAt(lookAt.x + pan.x, lookAt.y, lookAt.z + pan.z);
+      homeCam.updateMatrixWorld(); homeInv.copy(homeCam.matrixWorld).invert();
+      homeCam.fov = baseFov * (1 - Math.max(-0.2, Math.min(0.2, punch))); homeCam.aspect = camera.aspect;
+      if (camera.view && camera.view.enabled) homeCam.setViewOffset(camera.view.fullWidth, camera.view.fullHeight, camera.view.offsetX, camera.view.offsetY, camera.view.width, camera.view.height); else homeCam.clearViewOffset();
+      homeCam.updateProjectionMatrix();
+      var hz = CAM_D * Math.cos(PITCH), hy = CAM_D * Math.sin(PITCH), dr = sx + Math.sin(time * 0.35) * 0.06;
+      camera.position.set(lookAt.x + pan.x + hz * sY + dr * cY + kick.x, lookAt.y + hy + sy + kick.y + Math.sin(time * 0.5) * 0.03, lookAt.z + pan.z + hz * cY - dr * sY + kick.z);
+      camera.lookAt(lookAt.x + pan.x + sx * 0.3 * cY, lookAt.y + sy * 0.3, lookAt.z + pan.z - sx * 0.3 * sY);
       camera.rotation.z += (Math.sin(st * 19.3) * 0.012) * tq;
-      camera.fov = baseFov * (1 - Math.max(-0.2, Math.min(0.2, punch))); camera.updateProjectionMatrix();
+      orbFit(rdt);
+      var zk = orb.zoom * fitK, zFov = zk === 1 ? baseFov : 2 * Math.atan(Math.tan(baseFov * Math.PI / 360) * zk) * 180 / Math.PI;
+      camera.fov = zFov * (1 - Math.max(-0.2, Math.min(0.2, punch))); camera.updateProjectionMatrix();
       flashEl.style.opacity = flashA; flashA = Math.max(0, flashA - rdt * 2.8);
       if (dimT > 0) { dimT -= rdt; dimA += (dimTarget - dimA) * Math.min(1, rdt * 9); } else { dimTarget = 0; dimA += (0 - dimA) * Math.min(1, rdt * 4); }
       dimMat.uniforms.uDim.value = dimA; dimMesh.visible = dimA > 0.01;
+    }
+    // Turned, the field is long across the screen (seen from the side it is twice as deep as it is wide), so monsters at
+    // its ends walked off the screen (2026-11-17). The lens opens just enough to keep the wizard and every monster on it,
+    // clear of the top bar, the skill bar and the buttons at the side — quickly when one would leave, slowly back. From
+    // the front nothing changes (fitK 1: the usual view already keeps them inside).
+    var fitK = 1, fitInv = new T.Matrix4(), fitP = new T.Vector3();
+    function orbFit(rdt) {
+      var want = 1;
+      if (orb.yaw) {
+        camera.updateMatrixWorld(); fitInv.copy(camera.matrixWorld).invert();
+        var tn = Math.tan(baseFov * Math.PI / 360), tx = tn * (camera.aspect || 1);
+        var see = function (x, z) {
+          fitP.set(x, MID_Y, z).applyMatrix4(fitInv); var d = -fitP.z; if (d < 0.5) return;
+          var nx = fitP.x / d / tx, ny = fitP.y / d / tn;
+          want = Math.max(want, Math.abs(nx) / 0.8, ny / 0.72, -ny / 0.6);
+        };
+        see(HB.x, HB.z);
+        // (one still coming in from beyond the edge is not waited for)
+        for (var i = 0; i < mobs.length; i++) if (mobs[i].arrived) see(mobs[i].x, mobs[i].z);
+        want = Math.min(1.6, want);
+      }
+      fitK += (want - fitK) * Math.min(1, rdt * (want > fitK ? 5 : 1.2)); if (Math.abs(fitK - want) < 0.0005) fitK = want;
     }
     // ---------- bending the picture around a black hole ----------
     // While a lens is open the scene is drawn into a texture first and then onto the screen through a pass that pulls
@@ -1123,6 +1250,10 @@
       minions: minions, spawnMob: spawnMob, hitMob: hitMob, killMob: killMob, dismissMob: dismissMob, clearMobs: clearMobs, mobs: function () { return mobs; }, mobPos: mobPos, mobTop: mobTop,
       setTierAura: setTierAura, damageText: damageText, screenPos: screenPos, flash: flash, dim: dim, shake: shake, punch: camPunch, light: light,
       hitStop: hitStop, slowmo: slowmo, climax: climax, scaleDt: scaleDt, update: update, render: render, lens: lens, warmLens: warmLens,
+      scrX: function (dx, dz) { return scrX(dx, dz); },
+      // a step u across the screen (+ right) and w toward the camera, as a step on the field
+      fromScreen: function (u, w) { return { x: u * cY + w * sY, z: -u * sY + w * cY }; },
+      camView: function () { return { yaw: orb.yaw, zoom: orb.zoom, fit: fitK, idle: orb.idle, fingers: orb.n }; },
       setPixel: setPixel, setDamageStyle: setDamageStyle, setQuality: setQuality, getQuality: function () { return quality; }
     };
   }

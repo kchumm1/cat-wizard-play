@@ -61,8 +61,10 @@
   function fitHeight(a, h) { return a.aspect > 1.05 ? h / Math.pow(a.aspect, 0.45) : h; }
   var VIEW_IDS = ['hero-v0', 'hero-v1', 'hero-v2', 'hero-v3'];
   // pictures that have four views (the user's turnarounds, 2026-11-15): the plain wizard (staff cut out and put in its
-  // paw), and costumes (staff drawn in); a costume's views are fetched when it is worn
-  var VIEW_SETS = { hero: VIEW_IDS, cos11: ['cos11-v0', 'cos11-v1', 'cos11-v2', 'cos11-v3'], cos16: ['cos16-v0', 'cos16-v1', 'cos16-v2', 'cos16-v3'] };
+  // paw), and every costume (staff drawn in; cos11/cos16 2026-11-15, the other sixteen 2026-11-17, rigs js/rig.js
+  // VIEW_RIGS); a costume's views are fetched when it is worn
+  var VIEW_SETS = { hero: VIEW_IDS };
+  CW.COSTUME_ART.forEach(function (c) { VIEW_SETS[c] = [0, 1, 2, 3].map(function (i) { return c + '-v' + i; }); });
   // the staff cut out of the plain wizard's picture, trimmed to itself, with where the paw holds it (rig armL.p) and
   // where its star is (armL.tip), in picture heights from its bottom-left — for the side views' paws (scene.js)
   function staffPiece(cv, base, mk) {
@@ -293,7 +295,7 @@
   }
   function pickTargets(skill) {
     // nearest first, leaning toward the ones the wizard already faces so it does not keep turning round
-    var H = sc.heroState(), dist = function (m) { var dx = m.x - H.x, dz = m.z - H.z; return (dx * dx + dz * dz) * (dx * H.faceT < -0.3 ? 1.8 : 1); };
+    var H = sc.heroState(), dist = function (m) { var dx = m.x - H.x, dz = m.z - H.z, sx = sc.scrX ? sc.scrX(dx, dz) : dx; return (dx * dx + dz * dz) * (sx * H.faceT < -0.3 ? 1.8 : 1); };
     var list = aliveMobs().filter(function (m) { return m.arrived; }).sort(function (a, b) { return dist(a) - dist(b); });
     return list.slice(0, CW.targetCount(skill, !!dun));
   }
@@ -302,7 +304,7 @@
     if (!peek.length) { castT = 0.12; return; }
     var s = rot.next(); if (!s) { castT = 0.5; return; }
     nowSlot = rot.index();
-    var tg = pickTargets(s); if (tg[0]) sc.heroFaceTo(tg[0].x);
+    var tg = pickTargets(s); if (tg[0]) sc.heroFaceTo(tg[0].x, tg[0].z);
     // mana surge: when the gauge is full this cast hits far harder and is drawn bigger
     var surge = CW.surgeTick(state, st), weak = CW.isWeak(s, CW.regionOf(state));
     if (surge) { sc.shake(0.3); sc.flash('rgba(190,140,255,0.32)', 0.22); }

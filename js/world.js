@@ -257,10 +257,11 @@
   function createWorld(scene, opts) {
     var group = new T.Group(); scene.add(group);
     var time = 0, sway = [], amb = null, ambSpec = null, ambVel = null, built = -1;
+    var props = [], yaw = 0;   // the standing pictures, turned to the camera (scene.js, 2026-11-17)
     var tilt = opts.tilt || 0.6, halfX = opts.halfX, field = opts.field;
     function disposeAll() {
       while (group.children.length) { var o = group.children.pop(); o.traverse(function (x) { if (x.geometry) x.geometry.dispose(); if (x.material) { if (x.material.map && !x.material.map._cached) x.material.map.dispose(); if (x.material.uniforms && x.material.uniforms.map && !x.material.uniforms.map.value._cached) x.material.uniforms.map.value.dispose(); x.material.dispose(); } }); }
-      sway.length = 0; amb = null;
+      sway.length = 0; amb = null; props.length = 0;
     }
     // backdrop: the region's picture is shown behind the canvas (scene.js), so no drawn ground, props, sky or fog — only the
     // drifting particles
@@ -273,9 +274,10 @@
       scene.background = fogCol.clone().lerp(new T.Color(0x000000), 0.15); scene.fog = new T.Fog(fogCol, 30, 62);
       // ground tile
       var tc = cvs(TS, TS), tg = tc.getContext('2d'); GROUNDS[spec.ground](tg, R, P);
-      var tile = texOf(tc, true); tile.repeat.set(70 / 3.6, 70 / 3.6);
-      var ground = new T.Mesh(new T.PlaneGeometry(70, 70), new T.MeshBasicMaterial({ map: tile }));
-      ground.rotation.x = -Math.PI / 2; ground.position.set(0, -0.01, -14); ground.renderOrder = 0; group.add(ground);
+      // wide enough to fill the view from every side when the camera is turned (2026-11-17)
+      var tile = texOf(tc, true); tile.repeat.set(160 / 3.6, 160 / 3.6);
+      var ground = new T.Mesh(new T.PlaneGeometry(160, 160), new T.MeshBasicMaterial({ map: tile }));
+      ground.rotation.x = -Math.PI / 2; ground.position.set(0, -0.01, -4); ground.renderOrder = 0; group.add(ground);
       // big ground map
       var mc = cvs(MS, MS), mg = mc.getContext('2d');
       var vg = mg.createRadialGradient(MS / 2, MS * 0.7, MS * 0.1, MS / 2, MS * 0.6, MS * 0.75); vg.addColorStop(0, 'rgba(255,255,255,0.12)'); vg.addColorStop(1, 'rgba(0,0,0,0.28)'); mg.fillStyle = vg; mg.fillRect(0, 0, MS, MS);
@@ -298,7 +300,7 @@
         var mat = new T.ShaderMaterial({ uniforms: { map: { value: tex }, uTime: { value: 0 }, uSway: { value: /tree|pine|palm|reeds|bush|topiary|mushroom/.test(kind) ? w * 0.04 : 0 }, uSeed: { value: R() * 6 }, uFog: { value: fogCol }, uFogK: { value: p.z < -8 ? spec.fogK : 0 } },
           vertexShader: PROP_VS, fragmentShader: PROP_FS, transparent: true, depthWrite: true });
         var geo = new T.PlaneGeometry(w, h); geo.translate(0, h / 2, 0);
-        var m = new T.Mesh(geo, mat); m.position.set(p.x, kind === 'floatRock' ? 0.4 + R() * 0.6 : 0, p.z); m.rotation.x = -tilt; m.renderOrder = 2;
+        var m = new T.Mesh(geo, mat); m.position.set(p.x, kind === 'floatRock' ? 0.4 + R() * 0.6 : 0, p.z); m.rotation.order = 'YXZ'; m.rotation.x = -tilt; m.rotation.y = yaw; m.renderOrder = 2; props.push(m);
         if (R() < 0.5) m.scale.x = -1;
         var sh = new T.Mesh(new T.CircleGeometry(w * 0.34, 16), new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false }));
         sh.rotation.x = -Math.PI / 2; sh.position.set(p.x, 0.012, p.z); sh.renderOrder = 1; group.add(sh);
@@ -332,7 +334,8 @@
       }
       amb.geometry.attributes.position.needsUpdate = true;
     }
-    return { build: build, update: update, region: function () { return built; } };
+    function turn(y) { yaw = y; for (var i = 0; i < props.length; i++) props[i].rotation.y = y; }
+    return { build: build, update: update, turn: turn, region: function () { return built; } };
   }
   CW.createWorld = createWorld;
 })(this);
