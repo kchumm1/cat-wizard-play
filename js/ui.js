@@ -32,7 +32,7 @@
   function createUI(G) {
     var tab = 'battle', selSlot = -1, lastPanel = '', toastT = 0, lastBuffs = '', dockHtml = '';
     var TITLES = { dungeon: '던전', up: '훈련', skill: '스킬', gear: '장비', gacha: '뽑기', more: '더보기', stage: '스테이지 선택' };
-    var bagKind = 'staff', selKey = null, bagAll = false;   // bagAll: 장비 목록에 미보유 등급까지 (보기만)
+    var bagKind = 'staff', selKey = null, bagAll = true;   // 사용자 2026-11-16: 모든 등급을 늘 보여 줌 (「고른 등급만 보기」 버튼 뺌)   // bagAll: 장비 목록에 미보유 등급까지 (보기만)
     var KIND_SHORT = { hat: '모자', staff: '지팡이', robe: '로브', belt: '벨트', necklace: '목걸이', ear: '귀걸이', ring: '반지' };
     function statLine(stat, v) { return stat === 'speedBoss' ? '공격 속도 +' + pct(v) + ' · 보스 피해 +' + pct(v * 8) : (STAT_NAME[stat] || STAT_KO[stat] || stat) + ' +' + pct(v); }
     function potTag(q) { return q > 0.85 ? ['레전더리', '#ff4d6d'] : q > 0.6 ? ['유니크', '#ffd84a'] : q > 0.3 ? ['에픽', '#c47bff'] : ['레어', '#6fb8ff']; }
@@ -60,7 +60,7 @@
       // 승인 시안 (2026-11-16 최종): 왼쪽 성운 전시대 위 선택 장비, 오른쪽 이름·Lv·별 + 한 덩어리 효과 영역(장착·보유·잠재력)
       var ST = CW.opalUI ? CW.opalUI.stage : function (x) { return x; };
       var gsrc = CW.ICO.gearSrc && CW.ICO.gearSrc(p.kind, p.grade, p.sub + 1);   // 전시대엔 원판 없는 원본 그림
-      var top = '<div class="bagtop opbag">' + ST(gsrc ? '<img class="gshow" src="' + gsrc + '" alt="" draggable="false">' : gearArt(p.kind, p.grade, p.sub), { cls: 'gstage' + (e ? '' : ' none'), seed: 0, objAttr: ' data-opfx="bl:' + k + '" data-opdur=".25"' }) +
+      var top = '<div class="bagtop opbag">' + ST(gsrc ? '<img class="gshow" src="' + gsrc + '" alt="" draggable="false">' : gearArt(p.kind, p.grade, p.sub), { cls: 'gstage k-' + p.kind + (e ? '' : ' none'), seed: 0, objAttr: ' data-opfx="bl:' + k + '" data-opdur=".25"' }) +
         '<div class="binfo"><div class="bname"><b>' + DATA.kindName[p.kind] + '</b><em class="glv" data-opv="blv">Lv.' + lv + '<small> / ' + max + '</small></em></div><span class="gstars">' + stars + '<em class="ggr" style="color:' + gc(p.grade) + '">' + DATA.grades[p.grade].name + ' ' + CW.roman(p.sub) + '</em></span>' +
         '</div>' +   // 승인 시안: 이름·Lv 아래엔 별만 (등급·장착·개수는 아래 목록 칸과 장착 버튼에)
         // 승인 시안: 효과 상자(장착·보유)와 잠재력 상자(옵션 줄 + 자물쇠)를 따로
@@ -83,12 +83,10 @@
         if (g !== p.grade && !bagAll) { hidden++; continue; }
         for (var sb = 0; sb < 4; sb++) rows += bagCell(CW.keyOf(bagKind, g * 4 + sb));
       }
-      rows += '<button class="ballg" data-act="bagall">' + (bagAll ? '고른 등급만 보기' : '다른 등급 보기') + '</button>';
       var tl = CW.gearTotalLevel(s);
       var ns = CW.gearStars(s);
       return top + kinds + '<div class="bgrid opgrade' + (bagAll ? ' all' : '') + '" data-grade="' + DATA.grades[p.grade].name + '">' + rows + '</div>' + bagActs + '<div class="codexbar"><span>장비 통합 레벨 효과 (Lv.' + fmt(tl) + ')</span><b>공격력 +' + pct(tl * DATA.gearCodex.per) + '</b></div>' +
-        '<div class="codexbar"><span>장비 초월 통합 성급 (★' + ns + ')</span><b>모든 피해 +' + pct(ns * BG.starFinal) + '</b></div>' +
-        guideRow('gear', '같은 장비 ' + DATA.bagConf.mergeCount + '개 → 한 단계 위 · 초월로 더 강하게');
+        '<div class="codexbar"><span>장비 초월 통합 성급 (★' + ns + ')</span><b>모든 피해 +' + pct(ns * BG.starFinal) + '</b></div>';
     }
     var ghdSeen = null, ghdPlay = false, ghdFrom = 0, ghdBar = 0;   // 뽑기 레벨 칸 움직임
     var selDiff = -1, selRegion = -1, gearSub = 'gear', upMul = 1, trainSub = 'grow', selTalent = null, selRune = null, fxRune = null, rnFilter = 'all', rnGroup = 'all', selSigil = null, sgFilter = -1, moreSub = 0;
@@ -99,8 +97,9 @@
       var lv = CW.alchLevel(s), cost = CW.potionCost(s), brews = (s.alch && s.alch.brews) || 0, toNext = AC.brewsPerLv - brews % AC.brewsPerLv;
       // 연금술 부품 (사용자, 2026-11-16, tools/import-alchemy-parts.py): 성운 → 받침대 → 유리 가마솥 → 기포·연기 | 레벨 칸,
       // 그 아래 「제작 → 효과 즉시 적용 → 남은 시간」, 물약 카드 3장. 만들면 바로 효과(대기·재료·보관함 없음), 다시 만들면 시간이 늘어남.
-      // 물약이 켜져 있으면 남은 시간 때문에 1초마다 다시 그려지므로, 움직임은 지금 시각만큼 앞당겨 시작(--ph)해서 끊기지 않게 한다
-      var ph = 'style="--ph:-' + ((now % 60000) / 1000).toFixed(2) + 's"';
+      // 물약이 켜져 있으면 남은 시간 때문에 1초마다 다시 그려지므로, 움직임은 지금 시각만큼 앞당겨 시작(--ph)해서 끊기지 않게 한다.
+      // --ph 는 그린 뒤 renderPanel 이 넣음 (그림 코드에 넣으면 0.3초마다 화면을 통째로 다시 만들어 폰 스크롤이 끊김 — 사용자 2026-11-16)
+      var ph = '';
       var stars = ''; for (var di = 0; di < AC.brewsPerLv; di++) stars += '<i class="' + (di < AC.brewsPerLv - toNext ? 'on' : '') + '"></i>';
       var head = '<div class="alchhead opalch anw" ' + ph + '><div class="acaul" data-opfx="brew" data-opdur=".55" aria-hidden="true"><i class="aneb"></i><i class="aped"></i>' +
         '<i class="asteam s1"></i><i class="asteam s2"></i><img class="acimg" src="art/al-cauldron.webp" alt=""><i class="abub b1"></i><i class="abub b2"></i><i class="abub b3"></i></div>' +
@@ -167,9 +166,21 @@
       if (t) {
         var lv = (s.talents || {})[t.id] || 0;
         var tart = CW.ICO.talentArt && CW.ICO.talentArt(t.id), tmax = lv >= t.max && t.crit !== undefined;
+        // 조건 줄 = 실제 열림 규칙 그대로: 계정 레벨 + 위 줄들에 쓴 포인트 합 (특정 특성이 아님), 열렸으면 남은 포인트
+        var tnote = (function () {   // 이 줄 = 지금 누르면 어떻게 되는지 / 왜 잠겼는지 (사용자 2026-11-16: 쉬운 말로, 한 가지만)
+          var free = pts - spent, lvNow = s.level || 1, LK = '<i class="tnlock"></i>';
+          if (tmax) return { txt: '최대 레벨까지 올렸어요' };
+          if (!CW.talentOpen(s, t.id)) {
+            if (t.crit !== undefined) return { lock: 1, txt: LK + DATA.critTiers[t.crit].name + '이 열리면 쓸 수 있어요' };
+            var needLv = TC.rowLevel[t.row], needPt = t.row ? TC.rowNeed[t.row] : 0, had = t.row ? CW.talentSpent(s, t.row - 1) : 0;
+            if (lvNow < needLv) return { lock: 1, txt: LK + '계정 Lv.' + needLv + '이 되면 열려요' };
+            return { lock: 1, txt: LK + '위 특성에 ' + needPt + '포인트 쓰면 열려요' };
+          }
+          return { txt: free > 0 ? '포인트 1개로 1레벨 올라가요' : '포인트가 없어요 · ' + TC.levelsPerPoint + '레벨마다 1개' };
+        })();
         info = '<div class="tinfo tnw"><span class="tidome"><i class="tdome"></i><span class="ti">' + (tart ? '<img class="tico" src="' + tart + '" alt="">' : mi('talent', t)) + '</span><i class="tglint"></i><i class="tped"></i></span>' +
           '<div class="tidesc"><b>' + t.name + ' <small>' + (lv > t.max ? 'Lv.' + lv : lv + '/' + t.max) + '</small></b><div class="tieff">' + STAT_KO[t.stat] + ' ' + CW.bonusAmount(t.stat, lv * t.per) + (t.crit === undefined || lv < t.max ? ' <i>→</i> <span>' + CW.bonusAmount(t.stat, (lv + 1) * t.per) + '</span>' : '') + '</div>' +
-          '<small class="tinote">' + (t.crit !== undefined ? DATA.critTiers[t.crit].name + ' 해금 · 최대 ' + t.max + '레벨' : (t.row ? '이전 줄 ' + TC.rowNeed[t.row] + '포인트 · ' : '') + '계정 Lv.' + TC.rowLevel[t.row]) + '</small></div>' +
+          '<small class="tinote' + (tnote.lock ? ' lock' : '') + '">' + tnote.txt + '</small></div>' +
           '<button class="buy tupb' + (CW.talentCan(s, t.id) ? '' : ' off') + '" data-tup="' + t.id + '">' + (tmax ? '최대' : '포인트 1로 강화') + '</button></div>';
       }
       return '<div class="tpoints tnw"><span class="tpp" title="받은 포인트 ' + pts + ' · 계정 ' + TC.levelsPerPoint + '레벨마다 1개 · 초기화 무료">남은 포인트 <b data-opv="tpt">' + (pts - spent) + '</b></span><button class="btn treset" data-act="treset">초기화</button></div><div class="ttree opboard tnw">' + rows + '</div>' + (info || '<p class="note">특성을 선택하면 효과를 확인할 수 있어요.</p>');
@@ -232,7 +243,7 @@
       // → 고리 앞 반쪽 → 고리를 도는 은구슬(결정 뒤로 지나갈 땐 뒤에). 계속 도는 움직임은 시계로 이어서 다시 그려도 처음부터 안 돌아감.
       // 레벨·서클·비용·판정은 기존 함수 그대로
       if (circleFx === 'tierup' && CW.opalUI) CW.opalUI.fx('mctier');
-      var inTier = lv - tier * CC.tierEvery, ok = (s.mana || 0) >= cost, ph = -(Date.now() % 60000) / 1000;
+      var inTier = lv - tier * CC.tierEvery, ok = (s.mana || 0) >= cost;   // 움직임 시각(--ph)은 renderPanel 이 그린 뒤 넣음
       // 별자리 별 (사용자: 「빛나는 게 없어」): 시안처럼 분홍빛 빛번짐 + 굵은 네 갈래 반짝이 + 하얀 심. 큰 별은 짧은 대각선 빛줄기도
       var star = function (x, y, L, big) {
         var w = L * 0.11, V = L * 1.18, d = 'M' + x + ' ' + (y - V) + 'Q' + (x + w) + ' ' + (y - w) + ' ' + (x + L) + ' ' + y + 'Q' + (x + w) + ' ' + (y + w) + ' ' + x + ' ' + (y + V) + 'Q' + (x - w) + ' ' + (y + w) + ' ' + (x - L) + ' ' + y + 'Q' + (x - w) + ' ' + (y - w) + ' ' + x + ' ' + (y - V) + 'Z';   // 가늘고 뾰족한 가시, 세로가 조금 더 김 (시안)
@@ -242,7 +253,7 @@
       var cst = '<svg class="mcv-cst" viewBox="0 0 359 245"><defs><radialGradient id="mcCstGlow"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".28" stop-color="#ffe4f4" stop-opacity=".6"/><stop offset=".62" stop-color="#e3d2ff" stop-opacity=".2"/><stop offset="1" stop-color="#e3d2ff" stop-opacity="0"/></radialGradient></defs>' +
         '<g class="ln"><polyline points="36,94 49,71 88,53 118,34"/><polyline points="339,139 314,162"/></g><g class="st">' +
         star(36, 94, 4.5) + star(49, 71, 3.2) + star(88, 53, 7, 1) + star(118, 34, 5.5, 1) + star(339, 139, 6, 1) + star(314, 162, 3.2) + '</g></svg>';
-      var dev = '<div class="mcwrap"><div class="mcv" data-opfx="circle" data-opdur=".6" aria-hidden="true" style="--ph:' + ph.toFixed(2) + 's"><i class="mcv-neb"></i><i class="mcv-rim"></i>' + cst +
+      var dev = '<div class="mcwrap"><div class="mcv" data-opfx="circle" data-opdur=".6" aria-hidden="true"><i class="mcv-neb"></i><i class="mcv-rim"></i>' + cst +
         '<i class="mcv-ped"></i><i class="mcv-o o1 b"></i><i class="mcv-o o2 b"></i>' +
         '<img class="mcv-cry" src="art/mn-crystal.webp" alt=""><img class="mcv-paw" src="art/mn-paw.webp" alt="">' +
         '<i class="mcv-o o1 f"></i><i class="mcv-o o2 f"></i>' +
@@ -1013,6 +1024,17 @@
       });
     }
     // 연금술 카드: 효과 알약·만들기 버튼 글이 칸보다 길면 글씨만 줄임 (최소 9.5px) — 값·비용은 그대로 다 보이게
+    // 장비 (사용자 2026-11-16 아이폰): 효과 숫자가 길면 「장착 효과」 위로 넘쳐 겹치고, 레벨업 비용이 버튼 밖으로 넘침 → 글자만 줄임.
+    // 효과가 둘(반지: 공격 속도 · 보스 피해)이면 두 줄로 나눔
+    function fitGear() {
+      var shrink = function (el, kids, min) { var g = 0; while (el.scrollWidth > el.clientWidth + 0.5 && g++ < 16) { var done = true; kids.forEach(function (k) { var f = parseFloat(getComputedStyle(k).fontSize); if (f > min) { k.style.setProperty('font-size', Math.max(min, f * 0.95).toFixed(2) + 'px', 'important'); done = false; } }); if (done) break; } };
+      panel.querySelectorAll('.opbag .ef b').forEach(function (v) {
+        if (v.textContent.indexOf(' · ') > 0 && !v.classList.contains('two')) { v.innerHTML = v.innerHTML.split(' · ').join('<br>'); v.classList.add('two'); }
+        shrink(v, [v], 9.5);
+      });
+      var b = panel.querySelector('.bagbtns>.buy');
+      if (b) shrink(b, [].slice.call(b.querySelectorAll('small, span')), 10);
+    }
     function fitAlch() {   // 세 카드는 늘 같은 글씨 크기 (가장 많이 줄어야 하는 카드에 맞춤)
       ['.pcard.anw .peff', '.pcard.anw .buy'].forEach(function (sel) {
         var els = panel.querySelectorAll(sel), fs = Infinity;
@@ -1044,21 +1066,27 @@
       var cut = function (n) { return n.scrollHeight > n.clientHeight + 1; };
       list.querySelectorAll('.snm b').forEach(function (n) { n.classList.remove('tiny', 'tiny3'); if (cut(n)) n.classList.add('tiny'); if (cut(n)) n.classList.add('tiny3'); });
     }
+    // 손가락으로 스크롤하는 동안(그리고 멈춘 직후 0.5초)은 저절로 다시 그리지 않음 — 다시 그리면 폰에서 스크롤이 끊기고 제자리로 돌아감 (사용자 2026-11-16).
+    // 직접 누른 것(force)은 그대로 바로 그림
+    var panelTouch = false, panelScrollAt = 0, panelTouchEnd = -1e9;
     function renderPanel(force) {
       if (tab === 'battle') return;
+      if (!force && (panelTouch || performance.now() - panelScrollAt < 500)) return;
       dockHtml = '';
       var html = PANELS[tab](), dh = dockHtml, key = html + '|dock|' + dh;
       if (!force && key === lastPanel) return;
       var y = panel.scrollTop; panel.innerHTML = html; panel.scrollTop = y; lastPanel = key;
+      var phv = (-(Date.now() % 60000) / 1000).toFixed(2) + 's';   // 계속 도는 움직임(마나서클·연금술)은 시계에 맞춰 이어서
+      panel.querySelectorAll('.mcv, .alchhead.anw, .pgrid.anw').forEach(function (e) { e.style.setProperty('--ph', phv); });
       if (ghdPlay) { ghdPlay = false; var ghd = panel.querySelector('.ghd'); if (ghd) { ghd.style.setProperty('--from', ghdFrom + '%'); ghd.classList.add('play'); } }
-      keepCircle(); if (tab === 'stage') fitStageRows(); if (tab === 'up') { fitGrowNames(); fitAlch(); }
+      keepCircle(); if (tab === 'stage') fitStageRows(); if (tab === 'up') { fitGrowNames(); fitAlch(); } if (tab === 'gear') fitGear();
       if (CW.opalUI) { CW.opalUI.bumpValues(panel); CW.opalUI.applyFx(panel); }   // 오팔 메뉴: 바뀐 숫자·성공 반응만 짧게
       var stb = $('sheet').classList.contains('opal') && panel.querySelector(':scope > .subtabs');
       var ohd = stb && panel.querySelector('.ophold, .tinfo.tnw');   // 성장 시안: 「길게 누르면 연속 강화」는 아래 탭 바로 위 고정 자리
       if (typeof opTabs !== 'undefined' && opTabs) { opTabs.innerHTML = ''; opTabs.hidden = !stb; if (ohd) opTabs.appendChild(ohd); if (stb) opTabs.appendChild(stb); }
       // 특성 상세 칸 효과 줄: 길면 글씨를 10.5px 까지 줄이고, 그래도 넘치면 두 줄 (조건 줄은 숨김)
       var tef = ohd && ohd.querySelector('.tieff');
-      if (tef) { tef.style.fontSize = ''; tef.classList.remove('wrap'); var tfull = tef.scrollWidth, troom = tef.clientWidth; if (tfull > troom + 0.5) { var tfs = parseFloat(getComputedStyle(tef).fontSize) * (troom - 1) / tfull; if (tfs >= 10.5) tef.style.fontSize = tfs.toFixed(2) + 'px'; else { tef.style.fontSize = '11px'; tef.classList.add('wrap'); } } }
+      [tef, ohd && ohd.querySelector('.tinote')].forEach(function (el) { if (!el) return; el.style.fontSize = ''; var full = el.scrollWidth, room = el.clientWidth; if (full > room + 0.5) el.style.fontSize = Math.max(9, parseFloat(getComputedStyle(el).fontSize) * (room - 1) / full).toFixed(2) + 'px'; });   // 한 줄 그대로, 글자만 줄임
       if (stb) { var stSel = stb.querySelector('[aria-selected="true"]'); if (stSel) $('sheetTitle').textContent = stSel.textContent; }   // 승인 시안: 제목 = 지금 화면 이름 (장비 / 코스튬 …)
       // the selected 신성력/룬 sits at the bottom of the sheet, always in sight (2026-11-15); it slides up when it opens
       var was = !dock.hidden; dock.innerHTML = dh; dock.hidden = !dh;
@@ -1089,7 +1117,7 @@
     // the rest, then repeating while held. The first step says why it cannot go on; the repeats stop quietly.
     function stepAct(d, quiet) {
       var ok;
-      if (d.tup) { ok = G.talentUp(d.tup); if (ok) toast(CW.talentById(d.tup).name + ' · 특성 레벨이 올랐어요.'); else if (!quiet) toast(CW.talentSpent(G.state) >= CW.talentPoints(G.state) ? '사용할 특성 포인트가 없어요.' : '해금 조건을 먼저 달성해 주세요.'); }
+      if (d.tup) { ok = G.talentUp(d.tup); if (ok) { /* 성공은 글 없이 노드 빛으로만 (사용자 2026-11-16) */ } else if (!quiet) toast(CW.talentSpent(G.state) >= CW.talentPoints(G.state) ? '사용할 특성 포인트가 없어요.' : '해금 조건을 먼저 달성해 주세요.'); }
       else if (d.cup) { ok = G.upCostume(d.cup); if (ok) toast(CW.costumeById(d.cup).name + ' Lv.' + G.state.costume.owned[d.cup]); else if (!quiet) toast(G.state.costume.owned[d.cup] >= DATA.costumeConf.maxLv ? '최대 레벨에 도달했어요.' : '다이아가 부족해요.'); }
       else if (d.dlv) { ok = G.divineUp(d.dlv); if (ok) toast('삼신기 레벨이 올랐어요.'); else if (!quiet) toast(!CW.divineOpen(G.state) ? DATA.divineConf.unlockTier + '차 전직 후 해금' : '골드가 부족해요.'); }
       else if (d.sup) { ok = G.skillUp(d.sup); if (ok) toast(CW.skillById(d.sup).name + ' +' + CW.skillLevel(G.state, d.sup) + ' · 스킬 강화 완료'); else if (!quiet) toast(CW.skillLevel(G.state, d.sup) >= DATA.balance.skillMaxLv ? '최대 강화에 도달했어요.' : '골드가 부족해요.'); }
@@ -1107,6 +1135,10 @@
       once(); holdT = setTimeout(function () { holdI = setInterval(once, 90); }, 380);
     };
     panel.addEventListener('pointerdown', onDown); dock.addEventListener('pointerdown', onDown);
+    panel.addEventListener('touchstart', function () { panelTouch = true; }, { passive: true });
+    ['touchend', 'touchcancel'].forEach(function (ev) { panel.addEventListener(ev, function () { panelTouch = false; panelScrollAt = panelTouchEnd = performance.now(); }, { passive: true }); });
+    // 손가락 스크롤과 그 뒤 미끄러짐(2초 안)만 셈 — 다시 그릴 때 제자리로 맞추는 스크롤은 세지 않음
+    panel.addEventListener('scroll', function () { var t = performance.now(); if (panelTouch || t - panelTouchEnd < 2000) panelScrollAt = t; }, { passive: true });
     ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { panel.addEventListener(ev, stopHold); dock.addEventListener(ev, stopHold); });
     var onClick = function (e) {
       var t = e.target.closest('button'); if (!t) return;

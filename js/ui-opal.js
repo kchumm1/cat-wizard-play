@@ -999,11 +999,14 @@
     '@keyframes opBtnGlow3{0%,100%{filter:brightness(1)}50%{filter:brightness(1.08) drop-shadow(0 0 4px rgba(90,220,210,.45))}}',
     '#sheet.opal#sheet.opal .pcard.anw .pcheck{left:auto;right:5px;top:6px;transform:none;width:20px;height:20px;background:url(art/al-check.webp) 50% 50%/contain no-repeat}',
     '#sheet.opal#sheet.opal .pcard.anw.on{filter:drop-shadow(0 0 3px rgba(80,210,200,.55))}',
+    '#sheet.opal #panel{overflow-x:hidden!important;overscroll-behavior-x:none}',   // 그림이 조금 넘쳐도 화면이 옆으로 밀리지 않게 (사용자 2026-11-16)
     // ---- 승급 = 사용자 승급 부품 + 시안 실측 (2026-11-16, 시안 패널 948px = 화면 391px) ----
     '#sheet.opal#sheet.opal .rkwrap{margin:-11px 0 0!important;padding:0!important;display:block}',
     '#sheet.opal#sheet.opal .rkv{position:relative;height:216.5px;margin:0 0 12px!important;padding:0!important;background:none!important;border:0!important;box-shadow:none!important}',
     '#sheet.opal#sheet.opal .rkv>*{position:absolute;pointer-events:none}',
-    '#sheet.opal#sheet.opal .rkv-neb{left:-29px;top:-19.3px;width:426px;height:266px;background:url(art/rk-neb.webp) 50% 50%/100% 100% no-repeat;animation:opAlNeb 30s ease-in-out infinite alternate}',
+    '#sheet.opal#sheet.opal .rkv-neb{left:-15px;top:-19.3px;width:392px;height:266px;overflow:hidden}',
+    // 성운 그림은 예전처럼 426px(시안 크기)로 그리되, 상자는 패널 안(화면 1~393)까지만 — 넘치면 승급 화면이 옆으로 밀림 (사용자 2026-11-16). 숨쉬기도 상자 안에서만
+    '#sheet.opal#sheet.opal .rkv-neb::before{content:"";position:absolute;left:-14px;top:0;width:426px;height:266px;background:url(art/rk-neb.webp) 50% 50%/100% 100% no-repeat;animation:opAlNeb 30s ease-in-out infinite alternate}',
     // 빛줄기: 훈장 가운데(179.5,111)에서 각 징표 쪽으로 (길이·각도는 ui.js 가 계산)
     '#sheet.opal#sheet.opal .rkv-ray{left:179.5px;top:111px;width:var(--l);height:24px;margin-top:-12px;transform-origin:0 50%;transform:rotate(var(--a));background:url(art/rk-ray.webp) 50% 50%/100% 100% no-repeat;opacity:.45}',
     '#sheet.opal#sheet.opal .rkv-ray.on{opacity:1;filter:brightness(1.25) drop-shadow(0 0 2px #fff) drop-shadow(0 0 5px rgba(150,220,255,.85));animation:opRay 3s ease-in-out infinite}',
@@ -1151,7 +1154,35 @@
     '#sheet.opal#sheet.opal .mcup:active{border-image-source:url(art/mn-btn-press.webp)!important;transform:scale(.98)}#sheet.opal#sheet.opal .mcup.off{border-image-source:url(art/mn-btn-off.webp)!important;color:#8d93ab!important;text-shadow:none!important}#sheet.opal#sheet.opal .mcup.off .sp,#sheet.opal#sheet.opal .mcup.off .sep{background:#a3a8bd}#sheet.opal#sheet.opal .mcup.off .gem{filter:grayscale(.6) opacity(.7)}',
     '#sheet.opal .mcup:not(.off){animation:opBtnGlow3 3s ease-in-out infinite}',
     '#sheet.opal#sheet.opal .mch{margin:-3px 0 0!important;text-align:center;font:600 11.5px/1.3 var(--body);color:#7b8099}#sheet.opal#sheet.opal .mch.bad{color:#c0603d}',
-    '@media (prefers-reduced-motion:reduce){.op-num,.op-pop,#sheet.opal .opfx,#sheet.opal .opfx *,#sheet.opal .opcaul .bub,#sheet.opal .ns-obj,#sheet.opal .ns-sh,#sheet.opal .ns-stars circle,#sheet.opal .ns-neb,#sheet.opal .ns-neb::before,#sheet.opal .ns-neb::after,#sheet.opal .cstage .ns-obj>img.cosart,#sheet.opal .ricon.gnew .gorbbg,#sheet.opal .ricon.gnew .gico,#sheet.opal .row.grow>.buy,#sheet.opal .mcv-neb,#sheet.opal .mcv-neb::before,#sheet.opal .mcv-o,#sheet.opal .mcv-bw,#sheet.opal .mcv-bw i,#sheet.opal .mcv-bw i b,#sheet.opal .mcv-cry,#sheet.opal .mcv-paw,#sheet.opal .mcv-cst .st g,#sheet.opal .mcup,#sheet.opal .rkv-neb,#sheet.opal .rkv.opfx::after,#sheet.opal .rkv-ray,#sheet.opal .rkv-badge,#sheet.opal .rkv-paw,#sheet.opal .rkv-mk img,#sheet.opal .rkv-mk .rkv-dome,#sheet.opal .rkup,#sheet.opal .alchhead.anw .aneb,#sheet.opal .alchhead.anw .abub,#sheet.opal .alchhead.anw .asteam,#sheet.opal .pcard.anw .paimg,#sheet.opal .pcard.anw .buy,#sheet.opal .ttree.tnw,#sheet.opal .tnode.tnw .tico,#sheet.opal .tnode.tnw>.thalo,#sheet.opal .tinfo.tnw .tico,#sheet.opal .tinfo.tnw .tupb,#sheet.opal .cstage.cosnew .ns-obj::before,#sheet.opal .cstage.cosnew .ns-obj::after,#sheet.opal .runering *,#sheet.opal .rcore,#sheet.opal .sggrid *,#sheet.opal .sgcell,#sheet.opal .dv-fig *,#sheet.opal .rk-sock *,#sheet.opal .rk-paths *,#sheet.opal .tnode *,#sheet.opal .rlsock *{animation:none!important}}'
+    // ---- 특성 상세 칸 다시 맞춤 (사용자 2026-11-16): 돔 | 이름 / 효과 / 조건 (세 줄 높이 고정, 두 줄로 안 넘어감) | 강화 버튼 — 버튼 가운데 = 효과 줄 가운데 ----
+    '#sheet.opal#sheet.opal .tinfo.tnw{grid-template-columns:66px minmax(0,1fr) 100px!important;column-gap:10px!important;align-items:start!important;height:78px!important;padding:0 12px 0 4px!important}',
+    '#sheet.opal#sheet.opal .tinfo.tnw .tidome{width:80px!important;height:75px!important;margin:1.5px 0 0 -2px!important;transform:scale(.84);transform-origin:0 50%}',
+    '#sheet.opal#sheet.opal .tinfo.tnw .tidesc{top:0!important;height:78px!important;overflow:hidden;padding:12.5px 0 0 10px!important;display:grid!important;grid-template-columns:minmax(0,1fr);grid-template-rows:22px 16px 12px;row-gap:1.5px;align-content:start;gap:0!important;row-gap:1.5px!important}',
+    '#sheet.opal#sheet.opal .tinfo.tnw .tidesc>b{height:22px;padding-bottom:4px!important;font-size:15px!important;line-height:17px!important}',
+    '#sheet.opal#sheet.opal .tinfo.tnw .tieff{height:16px;margin-top:1.5px;font-size:12.5px;line-height:16px!important;white-space:nowrap!important;text-overflow:clip!important}',
+    '#sheet.opal#sheet.opal .tinfo.tnw .tinote{display:block!important;height:12px;margin:2px 0 0!important;font:700 10px/12px var(--body)!important;color:#6f7590!important;white-space:nowrap;text-overflow:clip!important}#sheet.opal#sheet.opal .tinfo.tnw .tinote.lock{color:#b0623f!important}',
+    '#sheet.opal#sheet.opal .tinfo.tnw .tinote .tnlock{display:inline-block;width:12px;height:13px;margin:0 2px 0 -1px;vertical-align:-2.5px;background:url(art/tp-lock.webp) 50% 50%/contain no-repeat}',   // 자물쇠 = 특성 부품 (사용자 2026-11-16)
+    '#sheet.opal#sheet.opal .tinfo.tnw .tupb{width:100px!important;height:30px!important;margin-top:31px!important;align-self:start!important;font-size:12px!important;gap:0!important}',
+    '#sheet.opal#sheet.opal .tinfo.tnw .tupb::before,#sheet.opal#sheet.opal .tinfo.tnw .tupb::after{content:none!important}',
+    // ---- 알림 (노란 상자 → 오팔 진주 알약): 메뉴가 열려 있을 때, 아래에서 톡 떠오르며 반짝 ----
+    'body:has(#sheet.opal.on) #toast{background:linear-gradient(180deg,#ffffff,#f1ecfa)!important;color:var(--navy,#2b3157)!important;border:1px solid rgba(170,160,220,.55)!important;border-radius:999px!important;box-shadow:0 8px 20px rgba(80,70,140,.25),inset 0 1px 0 #fff,inset 0 -2px 5px rgba(150,140,210,.18)!important;font:800 13.5px/1.25 "Noto Sans KR","Malgun Gothic",sans-serif!important;padding:10px 18px 10px 16px!important;text-shadow:none!important;overflow:hidden;white-space:nowrap!important;width:max-content!important}',
+    'body:has(#sheet.opal.on) #toast::before{content:"✦";margin-right:7px;color:#1f9a96;font-size:11px;vertical-align:1px}',
+    'body:has(#sheet.opal.on) #toast::after{content:"";position:absolute;top:0;bottom:0;left:-40%;width:35%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.85),transparent);transform:skewX(-18deg);opacity:0}',
+    'body:has(#sheet.opal.on) #toast.on{animation:opToastIn .42s cubic-bezier(.2,1.4,.4,1) both}body:has(#sheet.opal.on) #toast.on::after{animation:opToastShine .9s .15s ease-out both}',
+    '@keyframes opToastIn{0%{opacity:0;transform:translateX(-50%) translateY(16px) scale(.9)}100%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}',
+    '@keyframes opToastShine{0%{left:-40%;opacity:1}100%{left:120%;opacity:1}}',
+    // ---- 장비 다듬기 (사용자 2026-11-16 아이폰) ----
+    // 그림: 오른쪽으로 25px 민 자리는 지팡이(비스듬한 시안 자리)만, 나머지는 받침대 가운데
+    '#sheet.opal#sheet.opal .gstage:not(.k-staff) .ns-obj>img{left:4.2px!important}',
+    // 종류 탭: 고른 탭의 청록 표시(9px)가 글자를 가리지 않게 글자 아래 여백을 13px로
+    '#sheet.opal#sheet.opal .kindtabs[role=tablist]:not(.rgroup) button{padding:3px 0 13px!important}',
+    // 효과 줄: 숫자는 남은 칸 안에서 오른쪽 맞춤 (넘치면 글자만 줄임, 두 효과면 두 줄)
+    '#sheet.opal#sheet.opal .opbag .ef b{justify-self:stretch!important;width:100%;min-width:0;overflow:hidden;text-overflow:clip!important;text-align:right}',
+    '#sheet.opal#sheet.opal .opbag .ef b.two{white-space:nowrap;line-height:1.25}',
+    '#sheet.opal#sheet.opal .opbag .ef span{white-space:nowrap}',
+    // 레벨업 버튼: 안 글자가 버튼 밖으로 나가지 않게
+    '#sheet.opal#sheet.opal .bagbtns>.buy{overflow:hidden;min-width:0!important;padding-left:8px!important;padding-right:8px!important;gap:4px!important}#sheet.opal#sheet.opal .bagbtns>.buy span{white-space:nowrap}',
+    '@media (prefers-reduced-motion:reduce){.op-num,.op-pop,#sheet.opal .opfx,#sheet.opal .opfx *,#sheet.opal .opcaul .bub,#sheet.opal .ns-obj,#sheet.opal .ns-sh,#sheet.opal .ns-stars circle,#sheet.opal .ns-neb,#sheet.opal .ns-neb::before,#sheet.opal .ns-neb::after,#sheet.opal .cstage .ns-obj>img.cosart,#sheet.opal .ricon.gnew .gorbbg,#sheet.opal .ricon.gnew .gico,#sheet.opal .row.grow>.buy,#toast,#toast::after,#sheet.opal .mcv-neb,#sheet.opal .mcv-neb::before,#sheet.opal .mcv-o,#sheet.opal .mcv-bw,#sheet.opal .mcv-bw i,#sheet.opal .mcv-bw i b,#sheet.opal .mcv-cry,#sheet.opal .mcv-paw,#sheet.opal .mcv-cst .st g,#sheet.opal .mcup,#sheet.opal .rkv-neb,#sheet.opal .rkv-neb::before,#sheet.opal .rkv.opfx::after,#sheet.opal .rkv-ray,#sheet.opal .rkv-badge,#sheet.opal .rkv-paw,#sheet.opal .rkv-mk img,#sheet.opal .rkv-mk .rkv-dome,#sheet.opal .rkup,#sheet.opal .alchhead.anw .aneb,#sheet.opal .alchhead.anw .abub,#sheet.opal .alchhead.anw .asteam,#sheet.opal .pcard.anw .paimg,#sheet.opal .pcard.anw .buy,#sheet.opal .ttree.tnw,#sheet.opal .tnode.tnw .tico,#sheet.opal .tnode.tnw>.thalo,#sheet.opal .tinfo.tnw .tico,#sheet.opal .tinfo.tnw .tupb,#sheet.opal .cstage.cosnew .ns-obj::before,#sheet.opal .cstage.cosnew .ns-obj::after,#sheet.opal .runering *,#sheet.opal .rcore,#sheet.opal .sggrid *,#sheet.opal .sgcell,#sheet.opal .dv-fig *,#sheet.opal .rk-sock *,#sheet.opal .rk-paths *,#sheet.opal .tnode *,#sheet.opal .rlsock *{animation:none!important}}'
   ].join('\n');
   function addCss() {
     if (!doc || doc.getElementById('opal-css')) return;
