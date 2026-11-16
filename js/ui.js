@@ -1174,11 +1174,13 @@
       return parts.join('');
     }
     // one line of a box: name | value (| second value); with parts it opens to them
-    function profRow(label, value, keys, by, value2, short) {
-      var parts = profParts(keys, by, short);
-      var cells = '<span>' + label + '</span>' + (value2 === undefined ? '<b class="w2">' + value + '</b>' : '<b>' + value + '</b><b>' + value2 + '</b>');
-      if (!parts) return '<div class="pfrow"><div class="pfl">' + cells + '</div></div>';
-      return '<details class="pfrow"><summary class="pfl">' + cells + '</summary><ul>' + parts + '</ul></details>';
+    // cell4: a 4th column's cell (the crit table's 초과 피해), extraLi: one more line for the breakdown
+    function profRow(label, value, keys, by, value2, short, cell4, extraLi) {
+      var parts = profParts(keys, by, short) + (extraLi || '');
+      var cls = 'pfl' + (cell4 !== undefined ? ' four' : '');
+      var cells = '<span>' + label + '</span>' + (value2 === undefined ? '<b class="w2">' + value + '</b>' : '<b>' + value + '</b><b>' + value2 + '</b>') + (cell4 || '');
+      if (!parts) return '<div class="pfrow"><div class="' + cls + '">' + cells + '</div></div>';
+      return '<details class="pfrow"><summary class="' + cls + '">' + cells + '</summary><ul>' + parts + '</ul></details>';
     }
     function profBox(id, ico, name, sum, body) {
       var on = !!profOpen[id];
@@ -1188,10 +1190,21 @@
     function profHtml() {
       var s = G.state, st = CW.stats(s), by = CW.bonusBySource(s), tier = DATA.tiers[s.tier - 1] || {}, worn = CW.titleWorn(s), owned = CW.titlesOwned(s);
       var x = function (v) { return '×' + (Math.round(v * 100) / 100).toFixed(2); };
-      // 크리티컬 (2026-11-16): the open tiers, each 'rate | multiplier'; a rate past 100% says how much went to its damage
-      var crit = DATA.critTiers.filter(function (t, i) { return CW.critTierOpen(s, i); }).map(function (t) {
-        var raw = st[t.rate + 'Raw'] || 0, rate = pct(st[t.rate] || 0) + (raw > 1 ? ' <small>(넘침 +' + Math.round((raw - 1) * 1000) / 10 + '%p → 피해 +' + Math.round((st[t.dmg + 'Over'] || 0) * 1000) / 10 + '%)</small>' : '');
-        return profRow(t.short, rate, [t.rate, t.dmg, t.dmg + 'Pct'], by, x(st[t.dmg] || 0), ['확률', '배율', '피해']);
+      // 크리티컬 (2026-11-16): the open tiers by full name, each 'rate | multiplier'. When some rate is past 100% a
+      // 4th column '초과 피해' shows what that overflow adds to the tier's damage (one line per tier, columns lined
+      // up), and a card under the table says the rule.
+      var critOpen = DATA.critTiers.filter(function (t, i) { return CW.critTierOpen(s, i); });
+      var overAny = critOpen.some(function (t) { return (st[t.rate + 'Raw'] || 0) > 1; });
+      // the 확률 column shows the real rate (9,276% rather than 100%), so it is plain what went past 100%
+      var pctBig = function (v) { return (v >= 10 ? Math.round(v * 100).toLocaleString('ko-KR') : Math.round(v * 1000) / 10) + '%'; };
+      var crit = critOpen.map(function (t) {
+        var raw = st[t.rate + 'Raw'] || 0, over = st[t.dmg + 'Over'] || 0, cell, rate = pct(st[t.rate] || 0);
+        if (!overAny) cell = undefined;
+        else if (raw > 1) {
+          rate = '<em class="over">' + pctBig(raw) + '</em>';
+          cell = '<em class="pfov">+' + Math.round(over * 1000) / 10 + '%</em>';
+        } else cell = '<em class="pfov none">-</em>';
+        return profRow(t.name, rate, [t.rate, t.dmg, t.dmg + 'Pct'], by, x(st[t.dmg] || 0), ['확률', '배율', '피해'], cell);
       }).join('');
       var titles = DATA.titles.map(function (t) {
         var have = owned.indexOf(t.id) >= 0, on = worn === t.id;
@@ -1213,7 +1226,9 @@
         '<b>타이틀</b><span class="pfbar"></span><span class="pfbadge">' + esc(CW.titleById(worn).name) + '</span><em>변경</em></button><div class="pfin"><div class="ttls">' + titles + '</div></div></section>';
       return top + '<div class="pfbody">' + srcBox +
         profBox('atk', 'atk', '공격 효과', '', profRow('스킬 피해', x(st.skillDmg * st.mastery), ['skillDmg'], by) + profRow('보스 피해', x(st.bossDmg), ['bossDmg'], by) + profRow('모든 피해', x(st.finalMul), ['finalPct', 'potion'], by)) +
-        profBox('crit', 'crit', '크리티컬', '확률 ' + pct(st.critRate || 0) + ' · 배율 ' + x(st.critDmg || 0), '<div class="pfcols"><span></span><em>확률</em><em>배율</em></div>' + crit) +
+        profBox('crit', 'crit', '크리티컬', '확률 ' + pct(st.critRate || 0) + ' · 배율 ' + x(st.critDmg || 0), '<div class="pfcols' + (overAny ? ' four' : '') + '"><span></span><em>확률</em><em>배율</em>' + (overAny ? '<em>초과 피해</em>' : '') + '</div>' + crit +
+          (overAny ? '<div class="pfhint"><p class="hd">✦ 초과 피해란?</p>' +
+            '<p>확률은 <b>100%</b>까지만 쓰여요. 넘은 확률 <b>1%p</b>마다 그 단계 피해가 <b>+' + DATA.critConf.overPer + '%</b> 더 붙어요.<span class="cap">최대 +' + Math.round(DATA.critConf.overMax * 100) + '%</span></p></div>' : '')) +
         profBox('spec', 'spec', '특수 효과', '', profRow('약점 피해', x(st.weakMul), ['weakDmg'], by) + profRow('폭주 피해', x(st.surgeMul), ['surgeDmg', 'surgeRate'], by) +
           profRow('골드 획득', x(st.goldMul), ['goldMul', 'potionGold'], by) + profRow('경험치 획득', x(st.xpMul), ['xpMul', 'potionXp'], by)) +
         titleBox + '<p class="pfnote"><img src="art/prof-ico-hand.webp" alt="">능력치를 선택하면 증가 내역을 확인할 수 있어요.</p></div>';
@@ -1222,7 +1237,7 @@
     // (the room is the box's own width, capped by its max-width; the serif digits arrive late, so it fits again then)
     function profFit() {
       if (!profEl) return;
-      profEl.querySelectorAll('.pfv,.pfboss,.pfname,.pflv,.pfbadge,.pfhd small').forEach(function (el) {
+      profEl.querySelectorAll('.pfv,.pfboss,.pfname,.pflv,.pfbadge,.pfhd small,.pfl b').forEach(function (el) {
         el.style.fontSize = ''; var f = parseFloat(getComputedStyle(el).fontSize);
         for (var i = 0; i < 40 && el.scrollWidth > el.clientWidth + 0.5; i++) { f *= 0.95; el.style.fontSize = f + 'px'; }
       });

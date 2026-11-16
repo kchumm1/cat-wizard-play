@@ -17,7 +17,7 @@
 <body>
 <script>window.CW_FRIEND=1</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Noto+Serif+KR:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Jua&family=Noto+Sans+KR:wght@400;700;900&family=Noto+Serif+KR:wght@500;700&family=Gowun+Batang:wght@400;700&display=swap">
 <style>
 /* Layout: one-screen portrait game — HUD over a 3D stage, skill bar, tabbed panel, tab bar. Single dark night-sky look. */
 :root{
@@ -68,17 +68,17 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .dmg{position:absolute;left:0;top:0;font:400 19px var(--display);color:#fff;-webkit-text-stroke:4px #2a1030;paint-order:stroke fill;opacity:0;white-space:nowrap;will-change:transform}
 .dmg.crit{color:var(--gold);font-size:26px}
 .dmg small{display:block;font-size:.5em;line-height:1;text-align:center;letter-spacing:.02em}
-.dmg.c2{color:#ff7a3a;font-size:31px;-webkit-text-stroke:5px #3a0a10;paint-order:stroke fill}
-.dmg.c3{color:#d07bff;font-size:36px;-webkit-text-stroke:5px #20063a;paint-order:stroke fill}
-.dmg.c4{font-size:42px;color:#8ff9ff;-webkit-text-stroke:6px #062a3a;paint-order:stroke fill;text-shadow:0 0 14px #ff7ae0,0 0 4px #fff}
-.dmg.c4 small{color:#fff}
-.dmg.c5{font-size:46px;color:#ff86c8;-webkit-text-stroke:6px #3a0622;paint-order:stroke fill;text-shadow:0 0 16px #ff4fa8,0 0 4px #fff}
-.dmg.c6{font-size:50px;color:#fff;-webkit-text-stroke:6px #3a2a10;paint-order:stroke fill;text-shadow:0 0 18px #ffd84a,0 0 6px #fff}
-.dmg.c7{font-size:54px;color:#a6ff8f;-webkit-text-stroke:7px #0a2a06;paint-order:stroke fill;text-shadow:0 0 22px #3aff5a,0 0 6px #fff}
-.dmg.c8{font-size:56px;color:#ff6a5a;-webkit-text-stroke:7px #2a0606;paint-order:stroke fill;text-shadow:0 0 22px #ff2a2a,0 0 6px #fff}
-.dmg.c9{font-size:58px;color:#8fb8ff;-webkit-text-stroke:7px #06143a;paint-order:stroke fill;text-shadow:0 0 24px #3d7bff,0 0 6px #fff}
-.dmg.c10{font-size:60px;color:#fff6c8;-webkit-text-stroke:7px #3a2a06;paint-order:stroke fill;text-shadow:0 0 26px #ffcf40,0 0 10px #fff}
-.dmg.c5 small,.dmg.c6 small,.dmg.c7 small,.dmg.c8 small,.dmg.c9 small,.dmg.c10 small{color:#fff}
+/* 크리티컬 단계 숫자 색 (2026-11-16): 무지개였던 걸 한 계열로 — 노랑(치명타) → 주황 → 빨강(제네시스). 단계는 크기·위의 작은 이름으로 구분, 빛번짐은 높은 단계만 같은 색으로 은은하게 */
+.dmg.c2{color:#ffc43a;font-size:31px;-webkit-text-stroke:5px #3a1a06;paint-order:stroke fill}
+.dmg.c3{color:#ffad33;font-size:36px;-webkit-text-stroke:5px #3a1606;paint-order:stroke fill}
+.dmg.c4{font-size:42px;color:#ff9a2e;-webkit-text-stroke:6px #3a1406;paint-order:stroke fill}
+.dmg.c5{font-size:46px;color:#ff872a;-webkit-text-stroke:6px #3a1006;paint-order:stroke fill}
+.dmg.c6{font-size:50px;color:#ff7428;-webkit-text-stroke:6px #3a0e06;paint-order:stroke fill;text-shadow:0 0 10px rgba(255,116,40,.45)}
+.dmg.c7{font-size:54px;color:#ff6026;-webkit-text-stroke:7px #340a06;paint-order:stroke fill;text-shadow:0 0 12px rgba(255,96,38,.5)}
+.dmg.c8{font-size:56px;color:#ff4d28;-webkit-text-stroke:7px #300806;paint-order:stroke fill;text-shadow:0 0 14px rgba(255,77,40,.5)}
+.dmg.c9{font-size:58px;color:#f53a2e;-webkit-text-stroke:7px #2c0606;paint-order:stroke fill;text-shadow:0 0 16px rgba(245,58,46,.55)}
+.dmg.c10{font-size:60px;color:#ff2e3a;-webkit-text-stroke:7px #280408;paint-order:stroke fill;text-shadow:0 0 18px rgba(255,46,58,.6)}
+.dmg.crit small{color:#fff0c8}
 .screen-flash{position:absolute;inset:0;opacity:0}
 .coin.fly{position:fixed;left:0;top:0;z-index:15;pointer-events:none;will-change:transform}
 .chip.pulse{animation:pulse .25s}
@@ -1646,20 +1646,34 @@ html.fullh #mailbox{position:absolute;bottom:auto;height:var(--apph)}
 #prof .pfhd{position:relative}
 #prof .pfbox.on:not(.pftbox) .pfhd b{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
 #prof .pfbox.on:not(.pftbox) .pfhd small{visibility:hidden}
-#prof .pfin{display:none;padding:.3cqw 4cqw .7cqw 5.4cqw}
+#prof .pfin{display:none;padding:.3cqw 4.7cqw .7cqw}
 #prof .pfbox.on .pfin{display:block}
 #prof .pfrow{border-bottom:.15cqw solid #d6c7ba}
 #prof .pfrow:last-child{border-bottom:0}
-#prof .pfl,#prof .pfrow li,#prof .pfcols{display:grid;grid-template-columns:25cqw 13cqw 17cqw;column-gap:2cqw;justify-content:start;align-items:center}
-#prof .pfl{min-height:5.4cqw;list-style:none;cursor:default}
+/* 표 (2026-11-16): 상자 안 가운데 80cqw 표 — 줄 선도 표 너비만큼. 세 상자(공격·크리티컬·특수 효과) 모두 같은 너비라
+   숫자 끝이 한 줄에 맞음. 크리티컬은 이름을 줄이지 않고 다 적음(제네시스 크리티컬). 글꼴: 이름·설명은 고운바탕 */
+#prof .pfrow,#prof .pfcols,#prof .pfhint{width:80cqw;margin-left:auto;margin-right:auto;box-sizing:border-box}
+#prof .pfl,#prof .pfrow li,#prof .pfcols{display:grid;grid-template-columns:minmax(0,1fr) 18cqw 18cqw;column-gap:2cqw;align-items:center}
+#prof .pfl{min-height:5.6cqw;list-style:none;cursor:default}
 #prof summary.pfl{cursor:pointer}
 #prof .pfl::-webkit-details-marker{display:none}
-#prof .pfl span{font:400 3.3cqw/1.1 var(--body);color:#27201f}
+#prof .pfl span{font:700 3.2cqw/1.1 'Gowun Batang','Noto Serif KR',serif;color:#2e2420;white-space:nowrap;letter-spacing:-.01em}
 #prof details.pfrow>summary span::after{content:"›";display:inline-block;margin-left:1.4cqw;color:#b49a86;transition:transform .15s}
 #prof details[open].pfrow>summary span::after{transform:rotate(90deg)}
 #prof .pfl b{text-align:right;white-space:nowrap;font:700 3.6cqw/1 'Noto Serif KR',Georgia,serif;font-variant-numeric:lining-nums tabular-nums;color:#15090a}
 #prof .pfl b.w2{grid-column:2/4;font-size:4.1cqw}
-#prof .pfcols{min-height:3.8cqw;font-size:2.5cqw;color:#8a7768}
+/* 크리티컬 표: 어느 단계든 확률이 100%를 넘으면 오른쪽에 '초과 피해' 칸이 하나 더 생김 (한 줄에 한 단계, 칸 맞춤 그대로) */
+#prof .pfl.four,#prof .pfcols.four{grid-template-columns:minmax(0,1fr) 14cqw 13cqw 11cqw}
+#prof .pfl .pfov{font:700 3.1cqw/1 'Noto Serif KR',Georgia,serif;font-style:normal;font-variant-numeric:lining-nums tabular-nums;text-align:right;white-space:nowrap;color:#b0602a}
+#prof .pfl .pfov.none{font-weight:400;color:#c9b8a8}
+/* 초과 피해 설명 카드: 제목 · 규칙 한 줄(+최대 표시) */
+#prof .pfhint{margin-top:2cqw;margin-bottom:1.6cqw;padding:2.4cqw 3cqw 2.6cqw;border-radius:2cqw;background:#f8efe4;box-shadow:inset 0 0 0 .15cqw #e6d3bd;font:400 2.75cqw/1.6 'Gowun Batang','Noto Serif KR',serif;color:#4a3b31;word-break:keep-all}
+#prof .pfhint p{margin:0}
+#prof .pfhint .hd{margin-bottom:1cqw;font-weight:700;font-size:2.9cqw;color:#a0552a;letter-spacing:.02em}
+#prof .pfhint b{font-weight:700;color:#b0602a}
+#prof .pfhint .cap{display:inline-block;margin-left:1.2cqw;padding:.3cqw 1.4cqw;border-radius:99px;background:#c97a34;color:#fff;font-weight:700;font-size:2.3cqw;line-height:1.4;vertical-align:.15em}
+#prof .pfl b .over{font-style:normal;color:#b0602a}
+#prof .pfcols{min-height:3.8cqw;font:700 2.4cqw/1 'Gowun Batang','Noto Serif KR',serif;color:#9a8574}
 #prof .pfcols em{font-style:normal;text-align:right}
 #prof .pfrow ul,#prof .pfsrc ul{margin:0 0 1.4cqw;padding:.8cqw 2cqw;list-style:none;border-radius:1.2cqw;background:#fbf6f0}
 #prof .pfsrc ul{margin:0;padding:0;background:none}
