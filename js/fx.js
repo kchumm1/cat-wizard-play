@@ -12,6 +12,23 @@
   function sway(p, dt) { p.x += Math.sin(p.t * 6 + p.s0 * 40) * dt * 0.5; }
 
   function createFx(sc) {
+    // A monster that falls while more of a spell is still on its way hands the rest to its stand-in: the nearest one
+    // standing to where it fell. Every shape asks where a monster is through sc.mobPos / sc.mobTop, so the spell's
+    // picture flies on to the stand-in too and the damage lands where the spell is seen to land (c.hit uses the same
+    // stand-in). With no one near, the picture finishes where the monster fell. (2026-11-16, user: "스킬이 너무 빨라서
+    // 몬스터에게 안 맞는 건지 타격이 이상해" — the stars kept chasing the corpse as it was knocked flying, while the
+    // damage jumped to whoever stood near the corpse's new spot, with nothing drawn on it.)
+    var realSc = sc;
+    function standIn(m) {
+      if (!m || m.alive) return m;
+      if (m.standIn && m.standIn.alive) return m.standIn;
+      var f = m.fellAt || m, s = near(liveMobs(), f.x, f.z, 2.6);
+      if (s) m.standIn = s;
+      return s;
+    }
+    sc = Object.create(realSc);
+    sc.mobPos = function (m) { var s = standIn(m); return s ? realSc.mobPos(s) : m.fellPos ? m.fellPos.clone() : realSc.mobPos(m); };
+    sc.mobTop = function (m) { var s = standIn(m); return s ? realSc.mobTop(s) : m.fellTop ? m.fellTop.clone() : realSc.mobTop(m); };
     var vx = CW.createVfx(sc.scene, sc.camera);
     // real 3D parts (js/fx3d.js) for the spells whose body should have a shape: the laser, the meteors, the black hole
     var P3 = CW.createFx3d(sc);
@@ -306,7 +323,7 @@
         if (o.emit && dt > 0) o.emit(cur, vel, dt, k);
         if (o.fancy !== false && dt > 0 && Math.random() < dt * 34 * vx.quality()) E({ pos: cur.clone().add(rdir(hw * 0.6)), vel: rdir(0.5), frame: pick(['star', 'dot', 'flare']), color: [0xffffff, hc], size: [rr(0.06, 0.12), 0], life: rr(0.3, 0.55), spin: rr(-8, 8), drag: 1 });
         last.copy(cur);
-        if (k >= 1) { heads.forEach(vx.kill); if (rib) rib.detach(); if (halo) halo.detach(); o.onHit(end.clone()); return true; }
+        if (k >= 1) { heads.forEach(vx.kill); if (rib) rib.detach(); if (halo) halo.detach(); if (CW.fxLand) CW.fxLand(end); o.onHit(end.clone()); return true; }   // fxLand: checks only (where a shot came down)
       });
     }
     function spiralTo(tip, a0, r0) {
@@ -666,7 +683,7 @@
         // a tail of fire behind it, smoke hanging along its way; the spot where it will land darkens and glows first
         var rock = null, spot = null;
         after(big ? c.D(0.22) : 0, function () { rock = P3.rock({ size: R, col: 0xffb83a, hot: 0xff7a1a }); spot = P3.mark({ col: 0xff9a30 });
-        homing({ from: from, to: function () { if (mob && mob.alive) land = sc.mobPos(mob); return land; }, time: c.D(big ? 0.46 : 0.34), ease: function (k) { return k * k * 0.55 + k * 0.45; },
+        homing({ from: from, to: function () { land = sc.mobPos(mob); return land; }, time: c.D(big ? 0.46 : 0.34), ease: function (k) { return k * k * 0.55 + k * 0.45; },
           fancy: false, heads: [],
           emit: function (p, v, dt, k) {
             rock.set(p, v, dt); spot.set(land, k, R * 1.6);
@@ -1140,7 +1157,7 @@
       c.hit = function (mob, frac, power) {
         if (c.epoch !== epoch) return;   // the field was cleared in the meantime (a boss arrived, the stage changed)
         // a shot whose monster has already fallen lands on the nearest one still standing instead of being wasted
-        if (!mob || !mob.alive) { mob = near(liveMobs(), mob ? mob.x : c.center.x, mob ? mob.z : c.center.z, 2.6); if (!mob) return; }
+        if (!mob || !mob.alive) { mob = mob ? standIn(mob) : near(liveMobs(), c.center.x, c.center.z, 2.6); if (!mob) return; }
         // Decorate at the existing contact time; retain every damage fraction and argument.
         if (!c.plain && decorated.indexOf(mob) < 0 && decorated.length < 3) {
           // wide spells get one big picture over the crowd; the others get one on each monster they land on
@@ -1234,6 +1251,8 @@
       sc.punch(0.08); sc.hitStop(0.05);
     };
     sc.hooks.die = function (mob, pos, big) {
+      // where it fell, before it is knocked flying: spells still on their way look for a stand-in from here (standIn)
+      mob.fellAt = { x: mob.x, z: mob.z }; mob.fellPos = realSc.mobPos(mob); mob.fellTop = realSc.mobTop(mob);
       var col = mob.lastCol || 0xffd84a, d = mob.group.userData, life = big ? 1.15 : 0.55;
       flare(pos, 0xffffff, big ? 2.2 : 1.1, 0.2, { white: true });
       shock(pos, col, big ? 3 : 1.4, 0.35);

@@ -290,7 +290,7 @@
         var t = 0, T_FALL = c.D(0.18), from = above(gp(mob), 6.0), to = mp(mob), P = from.clone(), size = 0.4 * c.s * (mob.boss ? 1.4 : 1);
         var paw = P3.emblem(5, { col: JELLY.col, deep: JELLY.deep, line: JELLY.line, glow: false, rock: 0.25, spin: 3 });
         tick(function (dt) {
-          t += dt; var k = Math.min(1, t / T_FALL); if (mob.alive) to = mp(mob);
+          t += dt; var k = Math.min(1, t / T_FALL); to = mp(mob);
           P.lerpVectors(from, to, k * k); paw.set(P, size, dt, 0.1, 1 + 0.25 * k);
           if (Math.random() < dt * 50 * c.n) E({ pos: P.clone().add(rdir(0.4)), vel: UPC.clone().multiplyScalar(rr(2, 4)), frame: 'dot', color: [0xffffff, c.col], size: [rr(0.06, 0.1), 0], life: rr(0.25, 0.4) });
           if (k < 1) return false;
