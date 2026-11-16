@@ -64,6 +64,20 @@
   I.skillArt = function (id) { return SK2.indexOf(id) >= 0 ? (CW.ART_BASE || 'art/') + 'sk2-' + id + '.webp' : null; };
   I.cosFeetShift = function (id) { return COS_FEET[id] ? (COS_FEET[id] - 1204) / 1254 : 0; };
 
+  // ---------- 룬·신성력 새 원화 (사용자 부품 2026-11-17, tools/import-rune-sigil-parts.py) ----------
+  // 그림은 종류(룬 id / 신성력 옵션 stat)마다 하나, 등급은 따로 얹는 등급 테두리(gf-00..10, 일반 → 멸망).
+  // 예전 그림(sg-paw/bolt-<등급>, rn-<id>-<1..3>)은 목록에 없는 id 가 올 때만 쓰임.
+  var SG2 = ['superRate', 'ultraRate', 'hyperRate', 'megaRate', 'critDmg', 'superDmg', 'skillDmg', 'bossDmg', 'weakDmg', 'surgeDmg', 'atkPct', 'hyperDmg', 'megaDmg',
+    'alphaDmg', 'ultimateRate', 'alphaRate', 'ultraDmg', 'ultimateDmg', 'omegaRate', 'omegaDmg', 'eternalRate', 'eternalDmg', 'genesisRate', 'genesisDmg'];
+  var RN2 = ['rFire', 'rWind', 'rEarth', 'rDark', 'rOrigin', 'rWave', 'rLight', 'rBolt', 'rNebula', 'rComet', 'rUltraD', 'rUltiD', 'rCritR', 'rSuperR', 'rUltraR',
+    'rHyperR', 'rMegaR', 'rUltiR', 'rAlphaR', 'rOmegaR', 'rOmegaD', 'rEterR', 'rEterD', 'rGenR', 'rGenD'];
+  I.sigilSrc = function (stat) { return SG2.indexOf(stat) >= 0 ? src('sg2-' + stat) : null; };
+  I.runeSrc = function (id) { return RN2.indexOf(id) >= 0 ? src('rn2-' + id) : null; };
+  I.gradeFrameSrc = function (g) { g = clamp(g, 0, 10); return src('gf-' + (g < 10 ? '0' : '') + g); };
+  function framed(cls, art, grade) {
+    return '<span class="ico ' + cls + '"><img class="gfr" src="' + I.gradeFrameSrc(grade) + '" alt="" draggable="false"><img class="gart" src="' + art + '" alt="" draggable="false"></span>';
+  }
+
   // ---------- sigils (신성력) ----------
   var BOLT = { superRate: 1, ultraRate: 1, hyperRate: 1, megaRate: 1, critDmg: 1, superDmg: 1, weakDmg: 1, surgeDmg: 1 };
   // every crit option (2026-11-16) uses the bolt picture
@@ -79,6 +93,7 @@
   }
   I.sigil = function (stat, grade, gcol, q) {
     var g = clamp(grade, 0, 10), band = g <= 1 ? 0 : g <= 3 ? 1 : g <= 5 ? 2 : g <= 7 ? 3 : 4;
+    if (I.sigilSrc(stat)) return framed('isg2 b' + band, I.sigilSrc(stat), g);   // 옵션 그림 + 등급 테두리
     // q is given for a real sigil (bag, equipped, selected); package icons pass none and need no stat mark
     return '<span class="ico isg sgpic b' + band + '"><img src="' + src('sg-' + (BOLT[stat] ? 'bolt' : 'paw') + '-' + g) + '" alt="" draggable="false">' + (q !== undefined ? mark(stat) : '') + '</span>';
   };
@@ -86,6 +101,7 @@
   // ---------- runes ----------
   var RUNES = ['rFire', 'rWave', 'rWind', 'rEarth', 'rLight', 'rDark', 'rBolt', 'rNebula', 'rComet', 'rOrigin'], rune0 = I.rune; // the last four: tools/make-new-runes.py
   I.rune = function (id, color, grade, gcol) {
+    if (I.runeSrc(id)) return framed('irn2', I.runeSrc(id), grade);   // 룬 그림 + 등급 테두리
     if (RUNES.indexOf(id) < 0) return rune0(id, color, grade, gcol);
     var t = grade >= 8 ? 3 : grade >= 4 ? 2 : 1;
     return pic('rn-' + id + '-' + t, 'irune' + (grade >= 4 ? ' hi' : ''), '--gc:' + gcol);
@@ -117,7 +133,11 @@
       '.gart.gnew.gk-staff.gx8 .gimg.gpic,.gart.gnew.gk-staff.gx9 .gimg.gpic{left:6%!important;top:-7%!important;width:114%!important;height:114%!important}' +
       '.ico.sgpic{position:relative}' +
       '.ico.sgpic>img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;-webkit-user-drag:none;user-select:none}' +
-      '.ico.sgpic .sgmark{position:absolute;left:-8%;bottom:-6%;width:42%;height:42%;overflow:visible;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.6))}';
+      '.ico.sgpic .sgmark{position:absolute;left:-8%;bottom:-6%;width:42%;height:42%;overflow:visible;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.6))}' +
+      // 새 룬·신성력 그림: 등급 테두리(뒤) + 원화(앞). 테두리는 빈 투명 선이라 그림을 가리지 않게 원화보다 크게, 원화는 안쪽 72%
+      '.ico.isg2,.ico.irn2{position:relative;display:block;width:100%;height:100%;filter:none!important}' +
+      '.ico.isg2>img,.ico.irn2>img{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;-webkit-user-drag:none;user-select:none;-webkit-touch-callout:none;pointer-events:none}' +
+      '.ico.isg2>.gart,.ico.irn2>.gart{left:14%;top:14%;width:72%;height:72%;filter:drop-shadow(0 2px 3px rgba(60,40,120,.28))}';
     (document.body || document.head || document.documentElement).appendChild(css);
   }
 })(this);

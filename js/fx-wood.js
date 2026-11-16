@@ -394,35 +394,42 @@
     // a fruit bursting on a monster like a bomb (2nd, the user: "no impact — make the blasts bigger"): the great comet's
     // golden landing (P3.impact: flash, fire dome, crown of earth, rolling ring, a scorched hollow — lite for all but the
     // first few, as the meteor rain does, so a phone keeps up), golden juice, seeds, leaves, rings of shock, light
-    function fruitBurst(c, p, g, first, lite) {
-      P3.impact(V(g.x, 0.03, g.z), { size: 0.78, col: 0xffc84a, hot: 0xffa020, ringCol: 0xffe08a, dirt: new T.Color(K.dustCol()).lerp(new T.Color(0x4a382c), 0.75).getHex(), chips: 8, ring: 2.4, lite: lite, hollow: !lite, dome: !lite, smoke: !lite, paint: true });
+    // beat: the first fruit of its wave (the fruits fall in three waves, left to right: 쾅–쾅–쾅, 2026-11-17, the user: more
+    // impact) — a short stop and a jolt on each beat
+    function fruitBurst(c, p, g, first, lite, beat) {
+      P3.impact(V(g.x, 0.03, g.z), { size: 0.78, col: 0xffc84a, hot: 0xffa020, ringCol: 0xffe08a, dirt: new T.Color(K.dustCol()).lerp(new T.Color(0x4a382c), 0.75).getHex(), chips: 8, ring: 2.4, lite: lite, hollow: !lite, dome: false, smoke: false, paint: true });
       // the 4th fruit on (lite): its hollow, ball of fire and smoke drawn batched instead (thirteen fruits each with their
       // own 3D landing held an iPhone at 46 frames, 2026-11-17)
-      if (lite) {   // (a golden flash, a glow on the ground, a brief puff of light)
-        K.scorch(g, 0.75, 1.6); K.gGlow(g, 0xffc040, 1.5, 0.45);
-        E({ pos: V(g.x, 0.45, g.z), frame: 'glow', color: 0xffd060, size: [0.5, 1.5], ease: 1, life: 0.35, fadeOut: 0.3, alpha: 0.9 });
-        K.flare(V(g.x, 0.4, g.z), 0xfff0b0, 1.6, 0.18);
-      }
+      // every fruit's ball of fire and smoke: the painted pictures (art/fx-fruitboom.webp — baked from the 3D landing, then
+      // painted over with ComfyUI; the user picked the painted fire, 2026-11-17). The first few (not lite) add the 3D flash,
+      // crown of earth, ring and hollow on top
+      P3.boom(g); if (lite) K.scorch(g, 0.75, 1.6);
       K.flare(p, 0xffd060, 0.6, 0.1);
+      // the moment it bursts: a white-hot flash, a quick white ring on the ground, sparks shooting out (all batched)
+      K.flare(V(g.x, 0.5, g.z), 0xfff4d0, 2.4, 0.12, { white: true }); K.gRing(g, 0xfff6d8, 2.2, 0.2);
+      K.sparks(V(g.x, 0.4, g.z), [0xffffff, 0xffd040], N(10, c), 7, { size: 0.12, stretch: 0.12, life: 0.35 });
       for (var j = 0; j < N(12, c); j++) E({ pos: p.clone().add(K.rdir(0.2)), vel: K.rdir(3.4).add(V(0, 2.6, 0)), frame: 'dot', color: K.pick([0xffd040, 0xffa020, 0xfff0a0]), size: [rr(0.08, 0.13), 0.03], life: rr(0.45, 0.7), grav: 8, drag: 0.8 });
       for (var s = 0; s < N(5, c); s++) E({ pos: p.clone(), vel: K.rdir(2.6).add(V(0, 2.2, 0)), frame: 'dot', color: 0x3a2008, size: [0.07, 0.05], life: rr(0.5, 0.7), grav: 9, drag: 0.6 });
       for (var l = 0; l < N(2, c); l++) toss('woodLeaf', p, K.rdir(2.5).add(V(0, 2, 0)), rr(0.12, 0.17), 0xffffff, true);
       K.gRing(g, GOLDC, 1.4, 0.3);
       E({ sys: 'gnorm', pos: V(g.x, 0.035, g.z), frame: 'shock', color: 0x2f5a12, size: [0.3, 2.2], ease: 1, life: 0.38, fadeOut: 0.3, rot: 0, alpha: 0.7 });
       K.dust(g, N(3, c), 0.9); sc.light(p, 0xffc040, 1.3, 0.25);
-      if (first) { sc.hitStop(0.07); sc.shake(0.26); } else sc.shake(0.12);
+      if (first) { sc.hitStop(0.08); sc.shake(0.3); sc.punch(0.12); sc.flash('rgba(255,236,170,0.22)', 0.12); }
+      else if (beat) { sc.hitStop(0.05); sc.shake(0.24); sc.punch(0.08); }
+      else sc.shake(0.1);
       after(c.D(0.15), function () { sprout(g); });
     }
     // the great fruit from the top of the crown landing in the middle of them all: the biggest golden blast, time all but
     // stopping, the screen shaking hard, a ring of sprouts
     function greatBurst(c, p, g) {
-      P3.impact(V(g.x, 0.03, g.z), { size: 1.7, col: 0xffd04a, hot: 0xffa020, ringCol: 0xfff0a0, dirt: new T.Color(K.dustCol()).lerp(new T.Color(0x4a382c), 0.75).getHex(), chips: 22, ring: 4.4, paint: true });
+      P3.impact(V(g.x, 0.03, g.z), { size: 1.7, col: 0xffd04a, hot: 0xffa020, ringCol: 0xfff0a0, dirt: new T.Color(K.dustCol()).lerp(new T.Color(0x4a382c), 0.75).getHex(), chips: 22, ring: 4.4, dome: false, smoke: false, paint: true }); P3.boom(g, 2.2);   // (its ball of fire: the painted one, big)
       E({ sys: 'gnorm', pos: V(g.x, 0.035, g.z), frame: 'shock', color: 0x2f5a12, size: [0.4, 5.2], ease: 1, life: 0.5, fadeOut: 0.35, rot: 0, alpha: 0.75 }); K.gRing(g, GOLDC, 3.6, 0.4);
       for (var j = 0; j < N(26, c); j++) E({ pos: p.clone().add(K.rdir(0.4)), vel: K.rdir(5).add(V(0, 3.4, 0)), frame: 'dot', color: K.pick([0xffd040, 0xffa020, 0xfff0a0]), size: [rr(0.1, 0.16), 0.03], life: rr(0.5, 0.8), grav: 8, drag: 0.7 });
       for (var s = 0; s < N(10, c); s++) E({ pos: p.clone(), vel: K.rdir(3.6).add(V(0, 2.8, 0)), frame: 'dot', color: 0x3a2008, size: [0.08, 0.05], life: rr(0.5, 0.8), grav: 9, drag: 0.6 });
       for (var l = 0; l < N(8, c); l++) toss('woodLeaf', p, K.rdir(3.5).add(V(0, 2.5, 0)), rr(0.14, 0.2), 0xffffff, true);
       K.dust(g, N(8, c), 1.6); sc.light(p, 0xffc040, 2.2, 0.35);
-      if (!(CW.fxOff && CW.fxOff.dim)) sc.climax(0.6, 0.24); sc.shake(0.5); sc.hitStop(0.1);
+      if (!(CW.fxOff && CW.fxOff.dim)) sc.climax(0.6, 0.24); sc.shake(0.6); sc.hitStop(0.14); sc.punch(0.25); sc.flash('rgba(255,240,190,0.34)', 0.2);
+      K.flare(V(g.x, 0.8, g.z), 0xffffff, 2.6, 0.18, { white: true }); K.gRing(g, 0xffffff, 5, 0.3); K.sparks(V(g.x, 0.6, g.z), [0xffffff, 0xffd040], N(24, c), 10, { size: 0.16, stretch: 0.16, life: 0.45 });
       for (var k = 0; k < 5; k++) { var a = k / 5 * 6.283; after(c.D(0.15 + k * 0.03), (function (q) { return function () { sprout(q); }; })(V(g.x + Math.cos(a) * 1.3, 0, g.z + Math.sin(a) * 0.9))); }
     }
     S.worldTree = function (c) {
@@ -439,17 +446,20 @@
       E({ sys: 'gnorm', pos: V(base.x, 0.026, base.z + 0.3), frame: 'smoke', color: 0x1a0e08, size: [0.6, 3.4], ease: 1, life: 1.8, alpha: 0.55, fadeIn: 0.05, fadeOut: 0.5 });
       for (var m = 0; m < 6; m++) { var a = m / 6 * 6.283; heave(V(base.x + Math.cos(a) * 1.1, 0, base.z + Math.sin(a) * 0.7), a, 0.5, c.D(0.6), earthCol()); }
       K.dust(base, N(8, c), 1.8); sc.shake(0.16); splinters(V(base.x, 0.3, base.z), N(6, c), 3.5);
-      var GROW = c.D(0.34), FRUIT = c.D(0.42), DROP = c.D(0.54), GONE = c.D(1.05), OUT = c.D(0.4), t = 0, S3 = V(), first = true;
+      var GROW = c.D(0.34), FRUIT = c.D(0.42), DROP = c.D(0.54), GONE = c.D(1.22), OUT = c.D(0.4), t = 0, S3 = V(), first = true;
       // one fruit for each monster, hanging under the leaf masses (spread left to right as the monsters are)
       var mobs = list.slice().sort(function (p, q) { return p.x - q.x; }), anchors = tips.slice().sort(function (p, q) { return p.p.x - q.p.x; }), n = mobs.length;
       var fruits = mobs.map(function (mob, i) {
         var A = anchors[Math.round((n > 1 ? i / (n - 1) : 0.5) * (anchors.length - 1))] || { p: V(base.x, 3, base.z + 1.5), r: 0.5 };
-        return { mob: mob, h: null, hang: A.p.clone().add(V(rr(-0.45, 0.45) * A.r, -0.8 * A.r, rr(-0.1, 0.5) * A.r)), sz: rr(0.3, 0.36), rel: DROP + c.D(0.18 * (n > 1 ? i / (n - 1) : 0)), fly: c.D(0.2), q: new T.Quaternion(), spin: K.rdir(1).normalize(), done: false };
+        return { mob: mob, h: null, hang: A.p.clone().add(V(rr(-0.45, 0.45) * A.r, -0.8 * A.r, rr(-0.1, 0.5) * A.r)), sz: rr(0.3, 0.36), wave: n > 2 ? Math.min(2, Math.floor(i * 3 / n)) : 0, rel: DROP + c.D(0.14 * (n > 2 ? Math.min(2, Math.floor(i * 3 / n)) : 0) + rr(0, 0.035)), fly: c.D(0.2), q: new T.Quaternion(), spin: K.rdir(1).normalize(), done: false };
       });
       // and the great fruit, swelling at the top of the crown, last to fall: into the middle of them all
       var top = tips.reduce(function (b2, T2) { return !b2 || T2.p.y > b2.p.y ? T2 : b2; }, null) || { p: V(base.x, 3, base.z), r: 0.6 };
-      var great = { h: null, hang: top.p.clone().add(V(0, -0.85 * top.r, 0.25)), sz: 0.8, rel: c.D(0.82), fly: c.D(0.14), q: new T.Quaternion(), done: false };
-      var R = new T.Quaternion(), P = V(), fell = 0;
+      var great = { h: null, hang: top.p.clone().add(V(0, -0.85 * top.r, 0.25)), sz: 0.8, rel: c.D(1.0), fly: c.D(0.14), q: new T.Quaternion(), done: false };
+      // how many fruits land as real 3D (the rest play the baked pictures): more while the phone keeps up, fewer when
+      // the safety valve (js/fxload.js) has had to ease off — so a phone that has warmed up draws less (2026-11-17)
+      var ld = K.load ? K.load() : 1, full = ld >= 0.99 ? 4 : ld >= 0.9 ? 3 : ld >= 0.8 ? 2 : 1;
+      var R = new T.Quaternion(), P = V(), fell = 0, beat = [false, false, false];
       tick(function (dt) {
         t += dt;
         var grow = easeOut(t / GROW), gone = Math.max(0, (t - GONE) / OUT), k = Math.max(0.001, grow * (1 - gone));
@@ -474,7 +484,7 @@
           F.q.multiply(R.setFromAxisAngle(F.spin, dt * 12)); F.h.set(P, F.q, F.sz, 1, 2);
           if (u < 1) return;
           F.done = true; F.h.kill();
-          fruitBurst(c, to, gp(F.mob), first, fell++ >= 3); first = false;
+          fruitBurst(c, to, gp(F.mob), first, fell++ >= full, !beat[F.wave]); beat[F.wave] = true; first = false;
           c.hit(F.mob, 0.6, 1.2);   // its own fruit: 60% (the great fruit brings the rest)
         });
         if (!great.done && t >= FRUIT) {

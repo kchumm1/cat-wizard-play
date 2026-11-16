@@ -1254,7 +1254,7 @@
     function picClear() { pics.forEach(picDrop); pics.length = 0; picHeads.forEach(picDrop); picHeads.length = 0; }
     // the rest of the skills live in js/fx-more.js and are built from the same parts
     var KIT = { T: T, sc: sc, vx: vx, V: V, rr: rr, rdir: rdir, pick: pick, STAY: STAY, sway: sway, deep: deep, E: E, N: N, after: after, tick: tick, FC: FC, UPC: UPC, above: above,
-      fieldPt: fieldPt, fieldPops: fieldPops, fieldWave: fieldWave, fieldRain: fieldRain, flare: flare, glow: glow, sparks: sparks, embers: embers, smoke: smoke, fire: fire, trailFire: trailFire, shock: shock, ring: ring, gRing: gRing, gGlow: gGlow,
+      fieldPt: fieldPt, fieldPops: fieldPops, fieldWave: fieldWave, fieldRain: fieldRain, flare: flare, glow: glow, load: function () { return vx.load(); }, sparks: sparks, embers: embers, smoke: smoke, fire: fire, trailFire: trailFire, shock: shock, ring: ring, gRing: gRing, gGlow: gGlow,
       scorch: scorch, dust: dust, circle: circle, seal: seal, converge: converge, impact: impact, muzzle: muzzle, heavy: heavy, homing: homing, explosion: explosion, toonBall: toonBall, toonBoom: toonBoom, STARC: STARC, starHeads: starHeads, starAt: starAt, starBurst: starBurst, iceRise: iceRise, iceChips: iceChips, iceHitFx: iceHitFx, sharpSpike: sharpSpike, iceCrown: iceCrown, spiralTo: spiralTo, spiralIn: spiralIn,
       P3: P3, liveMobs: liveMobs, gp: gp, near: near, share: share, volley: volley, ringHits: ringHits, passHits: passHits, skyBolt: skyBolt, zapHit: zapHit, beamOf: beamOf, picHead: picHead, picAt: picAt, picFall: picFall,
       dustCol: function () { return dustCol; } };

@@ -490,10 +490,22 @@
   // taken from the 3 × 2 sheet of paintings (uMap; cell = floor(vT.x), 0 the top-left; across = the rest of vT.x, along
   // = vT.y, repeating past 1) and only shaded in two steps, so the painting shows. Until the sheet has loaded (uPaint
   // 0) or where there is no picture (vT.x -1: teeth, thorns) it is drawn as before.
-  FS_BM.woodPaint = FS_BM.wood.replace('varying vec4 vX;void main(){', 'varying vec4 vX;varying vec2 vT;uniform sampler2D uMap;uniform float uPaint;void main(){')
+  FS_BM.woodPaint = FS_BM.wood.replace('varying vec4 vX;void main(){', 'varying vec4 vX;varying vec2 vT;uniform sampler2D uMap;uniform float uPaint,uAnim;void main(){')
     .replace(/gl_FragColor=vec4\(c,vX\.x\);\}$/, 'if(uPaint>0.5&&vT.x>-0.5){float cell=floor(vT.x),lu=clamp((vT.x-cell-0.01)/0.98,0.0,1.0),lv=vT.y<=1.0?vT.y:fract(vT.y);' +
       'vec2 at=vec2((mod(cell,3.0)+0.015+0.97*lu)/3.0,(1.0-floor(cell/3.0)+0.015+0.97*lv)*0.5);' +
-      'c=texture2D(uMap,at).rgb*(lam>0.42?1.0:0.72);}gl_FragColor=vec4(c,vX.x);}');
+      'c=texture2D(uMap,at).rgb*(lam>0.42?1.0:0.72);' +
+      // the world tree's pictures alive (uAnim 1, 2026-11-17, the user: 세계수 나무를 이렇게 — 3D wearing pictures that move):
+      // 0 bark: a warm light rising up the dark grooves; 1 leaf mass: light rippling over it; 2 fruit: a heartbeat glow
+      // (faster as the tree grows old, vX.w = k); 3 leaf: light running up the veins
+      'if(uAnim>0.5){vec3 pc=texture2D(uMap,at).rgb;float pl=max(dot(pc,vec3(0.3,0.59,0.11)),0.02),q=pl<0.22?0.16:pl<0.5?0.42:0.74;' +
+      // cel look (2026-11-17, the user: 더 또렷하게): the picture's light flattened into three tones, and the light on the
+      // shape cut hard into two
+      'c=mix(pc,pc*(q/pl),0.75)*(lam>0.32?1.08:0.58);float lum=dot(c,vec3(0.3,0.59,0.11)),ph=vX.z*3.0;' +
+      'if(cell<0.5){float gr=smoothstep(0.22,0.08,lum),up=pow(0.5+0.5*sin(lv*9.0-uTime*3.2+ph),3.0);c+=vec3(1.0,0.72,0.28)*gr*up*1.3;}' +
+      'else if(cell<1.5){float rip=smoothstep(0.82,1.0,0.5+0.5*sin(lv*7.0+lu*4.0-uTime*2.6+ph));c+=vec3(0.75,1.0,0.45)*rip*smoothstep(0.2,0.55,lum)*0.8;}' +
+      'else if(cell<2.5){float beat=pow(0.5+0.5*sin(uTime*(6.0+8.0*clamp(vX.y,0.0,1.0))+ph),6.0);c=c*(1.0+0.45*beat)+vec3(1.0,0.7,0.25)*beat*0.22;}' +
+      'else{float vein=max(smoothstep(0.035,0.0,abs(lu-0.5)),smoothstep(0.62,0.82,lum)),run=pow(0.5+0.5*sin(lv*11.0-uTime*4.5+ph),4.0);c+=vec3(1.0,0.95,0.55)*vein*run*1.15;}}' +
+      '}gl_FragColor=vec4(c,vX.x);}');
   var VS_BMT = VS.replace('void main(){', 'attribute vec4 iX;attribute vec2 uvT;varying vec4 vX;varying vec2 vT;void main(){vX=iX;vT=uvT;');
 
   // smooth value noise for shaping rocks once, on the CPU
@@ -1646,9 +1658,9 @@
       trapJaw: { fs: 'woodPaint', map: 'trap-skin', lineFs: 'woodLine', cap: 32, line: 0x1a0608, lineW: 0.028, order: 6.64 },
       trapPetal: { fs: 'woodPaint', map: 'trap-skin', lineFs: 'woodLine', cap: 96, line: 0x2a0612, lineW: 0.02, order: 6.6 },
       // the world tree (세계수 열매 폭탄), painted (art/tree-skin.webp)
-      treeTrunk: { fs: 'woodPaint', map: 'tree-skin', lineFs: 'woodLine', cap: 4, line: 0x1a0e06, lineW: 0.034, order: 6.58 },
-      treeClump: { fs: 'woodPaint', map: 'tree-skin', lineFs: 'woodLine', cap: 96, line: 0x0c2208, lineW: 0.008, order: 6.6 },   // (a spray of leaves: a fine line)
-      treeFruit: { fs: 'woodPaint', map: 'tree-skin', lineFs: 'woodLine', cap: 48, line: 0x3a1a04, lineW: 0.02, order: 6.64 },
+      treeTrunk: { fs: 'woodPaint', map: 'tree-skin', lineFs: 'woodLine', cap: 4, line: 0x120804, lineW: 0.055, order: 6.58 },
+      treeClump: { fs: 'woodPaint', map: 'tree-skin', lineFs: 'woodLine', cap: 96, line: 0x061404, lineW: 0.02, order: 6.6 },   // (a spray of leaves: a fine line)
+      treeFruit: { fs: 'woodPaint', map: 'tree-skin', lineFs: 'woodLine', cap: 48, line: 0x2a1002, lineW: 0.035, order: 6.64 },
       woodLeaf: { fs: 'wood', lineFs: 'woodLine', cap: 320, line: 0x10240a, lineW: 0.006, order: 6.6 },
       leafBlade: { fs: 'wood', lineFs: 'woodLine', cap: 700, line: 0x0c2208, lineW: 0.005, order: 6.62 }
     };
@@ -1664,6 +1676,58 @@
       g.setIndex(new T.BufferAttribute(b64(d.i, Uint16Array), 1));
       if (d.t) g.setAttribute('uvT', new T.BufferAttribute(b64(d.t, Float32Array), 2));   // a painted skin's picture coordinates
       return g;
+    }
+
+    // ---------- the world tree's fruit bomb as pictures (art/fx-fruitboom.webp, 2026-11-17, the user: keep the impact,
+    // keep the phone cool): its ball of fire and its dust and smoke, baked from the real 3D landing by
+    // tools/bake-fruitboom.js into 16 moments on a 4 x 4 sheet, played on one batched layer of pictures that always face
+    // the camera. boom(pos): one more landing at pos (on the ground). BOOM must match the bake (BAKE there).
+    var BOOM = { grid: 4, frames: 16, span: 0.8, world: 2.6, centerY: 0.62, push: 1.2, cap: 40 }, boomL = null, boomTex = null;
+    var VS_BOOM = [
+      'attribute vec2 iF; varying vec2 vUv0; varying vec2 vUv1; varying float vMix; varying float vA;',
+      'void main(){',
+      '  vec4 mv = modelViewMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0); float s = length(instanceMatrix[0].xyz);',
+      '  mv.xy += position.xy * s; gl_Position = projectionMatrix * mv;',
+      '  float f0 = floor(iF.x), f1 = min(f0 + 1.0, ' + (BOOM.frames - 1) + '.0); vMix = iF.x - f0; vA = iF.y; vec2 uv = position.xy + 0.5;',
+      '  vUv0 = (vec2(mod(f0, 4.0), 3.0 - floor(f0 / 4.0)) + uv) / 4.0; vUv1 = (vec2(mod(f1, 4.0), 3.0 - floor(f1 / 4.0)) + uv) / 4.0; }'].join('\n');
+    var FS_BOOM = [
+      'uniform sampler2D uMap; varying vec2 vUv0; varying vec2 vUv1; varying float vMix; varying float vA;',
+      'void main(){ vec4 c = mix(texture2D(uMap, vUv0), texture2D(uMap, vUv1), vMix); c.a *= vA; if (c.a < 0.01) discard; gl_FragColor = c; }'].join('\n');
+    function boomLayer() {
+      if (boomL) return boomL;
+      if (!boomTex) {
+        boomTex = new T.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1); boomTex.needsUpdate = true;
+        if (T.TextureLoader) new T.TextureLoader().load((root.CW && root.CW.ART_BASE || 'art/') + 'fx-fruitboom.webp', function (t) {
+          t.generateMipmaps = false; t.minFilter = T.LinearFilter; boomTex = t; if (boomL) boomL.mat.uniforms.uMap.value = t;
+          try { if (sc.renderer && sc.renderer.initTexture) sc.renderer.initTexture(t); } catch (e) { }   // (not on the first landing: see skin())
+        }, undefined, function () { });
+      }
+      var g = new T.InstancedBufferGeometry().copy(new T.PlaneGeometry(1, 1)), fa = new Float32Array(BOOM.cap * 2);
+      g.setAttribute('iF', new T.InstancedBufferAttribute(fa, 2).setUsage(T.DynamicDrawUsage));
+      var m = new T.ShaderMaterial({ uniforms: { uMap: { value: boomTex } }, vertexShader: VS_BOOM, fragmentShader: FS_BOOM, transparent: true, depthWrite: false, depthTest: true });
+      var mesh = new T.InstancedMesh(g, m, BOOM.cap); mesh.instanceMatrix.setUsage(T.DynamicDrawUsage); mesh.frustumCulled = false; mesh.count = 0; mesh.visible = false; mesh.renderOrder = 6; mesh.name = 'core3d fruitboom';
+      group.add(mesh);
+      boomL = { mesh: mesh, mat: m, fa: fa, g: g, list: [] };
+      return boomL;
+    }
+    function boom(pos, size) {   // size: times the fruit's (the great fruit: 2.2)
+      var L = boomLayer(); if (L.list.length >= BOOM.cap) L.list.shift();
+      L.list.push({ x: pos.x, z: pos.z, t: 0, s: size || 1 });
+    }
+    var BOOM_M = new T.Matrix4(), BOOM_P = new T.Vector3(), BOOM_D = new T.Vector3(), BOOM_S = new T.Vector3(), BOOM_Q = new T.Quaternion();
+    function drawBoom(dt) {
+      var L = boomL; if (!L) return;
+      var cam = sc.camera, n = 0;
+      for (var i = L.list.length - 1; i >= 0; i--) { L.list[i].t += dt; if (L.list[i].t >= BOOM.span) L.list.splice(i, 1); }
+      for (var j = 0; j < L.list.length; j++) {
+        var b = L.list[j], f = Math.min(BOOM.frames - 1.001, b.t / BOOM.span * BOOM.frames);
+        // a little toward the camera so the ground does not cut its lower half off, and as much smaller, so it looks the
+        // same size where it is
+        BOOM_P.set(b.x, BOOM.centerY * b.s, b.z); BOOM_D.copy(cam.position).sub(BOOM_P); var D = BOOM_D.length(), k = Math.max(0.2, (D - BOOM.push) / D);
+        BOOM_P.addScaledVector(BOOM_D, BOOM.push / D); BOOM_S.setScalar(BOOM.world * b.s * k);
+        L.mesh.setMatrixAt(n, BOOM_M.compose(BOOM_P, BOOM_Q, BOOM_S)); L.fa[n * 2] = f; L.fa[n * 2 + 1] = 1; n++;
+      }
+      L.mesh.count = n; L.mesh.visible = n > 0; L.mesh.instanceMatrix.needsUpdate = true; L.g.attributes.iF.needsUpdate = true;
     }
     // the painted skins' sheet (BM_KIND map): loaded once; the layers wearing it switch to it when it has come
     var skins = {};
@@ -1687,7 +1751,7 @@
       var K = BM_KIND[kind], g = bmGeo(kind); if (!K || !g) return null;
       var cap = K.cap, ix = new T.InstancedBufferAttribute(new Float32Array(cap * 4), 4); ix.setUsage(T.DynamicDrawUsage); g.setAttribute('iX', ix);
       var uni = { uCol: { value: C(0xffffff) }, uDeep: { value: C(0x2a6cff) } }, SK = K.map ? skin(K.map) : null;
-      if (SK) { uni.uMap = { value: SK.tex }; uni.uPaint = { value: SK.ready ? 1 : 0 }; }
+      if (SK) { uni.uMap = { value: SK.tex }; uni.uPaint = { value: SK.ready ? 1 : 0 }; uni.uAnim = { value: K.map === 'tree-skin' ? 1 : 0 }; }
       var body = new T.InstancedMesh(g, mat(FS_BM[K.fs], uni, { normal: true, depthWrite: kind !== 'rift' && kind !== 'gravRing' && kind !== 'crater', depthTest: kind !== 'crater', side: K.side }, SK ? VS_BMT : VS_BM), cap);
       if (SK) SK.users.push(body.material.uniforms);
       body.instanceColor = new T.InstancedBufferAttribute(new Float32Array(cap * 3), 3);
@@ -1739,9 +1803,9 @@
         p.t += dt; var u = p.mesh.material && p.mesh.material.uniforms; if (u && u.uTime) u.uTime.value = time;
         if ((p.upd && p.upd(dt, p.t) === true) || p.t >= p.life) { drop(p); parts.splice(i, 1); }
       }
-      drawChips(dt); drawSpikes(dt); drawCrystals(dt); drawBM();
+      drawChips(dt); drawSpikes(dt); drawCrystals(dt); drawBM(); drawBoom(dt);
     }
-    function clear() { for (var bk in bmLayers) bmLayers[bk].list.forEach(function (h) { h.dead = true; }); drawBM(); parts.forEach(drop); parts.length = 0; spikes.length = 0; chips.forEach(function (l) { l.length = 0; }); xs.length = 0; drawSpikes(0); drawChips(0); drawCrystals(0); if (sc.lens) sc.lens(null); }
+    function clear() { if (boomL) { boomL.list.length = 0; drawBoom(0); } for (var bk in bmLayers) bmLayers[bk].list.forEach(function (h) { h.dead = true; }); drawBM(); parts.forEach(drop); parts.length = 0; spikes.length = 0; chips.forEach(function (l) { l.length = 0; }); xs.length = 0; drawSpikes(0); drawChips(0); drawCrystals(0); if (sc.lens) sc.lens(null); }
     // Build every program before it is needed. A compiled program also depends on the scene (whether it has fog, and of
     // which kind), so this is done again whenever that changes (fx.setRegion calls it); the same scene state is skipped.
     // Only the parts made here are dropped again, and their materials go into the pool, so the programs stay.
@@ -1756,15 +1820,16 @@
       var h = hole({ pos: far }); h.set(1, 1, 0); h.lens.dead = true; puff(far, {}); chip(far, 1, 0xff7a1a, false);
       fluffBall({}).set(far, 0.5); yarnBall({}).set(far, 0.5);
       var bmWarm = Object.keys(BM_KIND).map(function (k) { var h = bm(k, {}); h.set(far, null, 0.5, 1, 0.5); return h; }); drawBM();
+      if (!CW.FRIEND) { boomLayer().list.push({ x: 0, z: -40, t: 0, s: 1 }); drawBoom(0); }   // (the world tree's fruit bombs: 형꺼 only, the trial has no tier 10)
       for (var ek = 0; ek < 7; ek++) emblem(ek, { col: 0xff8a3a, deep: 0x8a2a10 }).set(far, 0.5, 0); glassOrb({ kind: 0, col: 0xff8a3a, deep: 0x8a2a10 }).set(far, 0.5, 0, 1); elemRing({ cols: [0xff0000, 0xffff00, 0xff00ff, 0x00ffff, 0x00ff00] }).set(far, 1, 0, 0, 1); var xst = xs.length; crystal({ pos: far });
       drawSpikes(0); layoutSmoke(sc.camera, true); drawChips(0); drawCrystals(0);   // the layers must be drawing copies when compiled, so their (instanced) programs are built too
       sc.renderer.compile(sc.scene, sc.camera);
       for (var i = parts.length - 1; i >= start; i--) drop(parts[i]);
       parts.length = start; spikes.length = spikeStart; chips.forEach(function (l, i) { l.length = chipStart[i]; }); xs.length = xst; drawSpikes(0); drawChips(0); drawCrystals(0);
-      bmWarm.forEach(function (h) { h.kill(); }); drawBM();
+      bmWarm.forEach(function (h) { h.kill(); }); drawBM(); if (boomL) { boomL.list.length = 0; drawBoom(0); }
       if (sc.warmLens) sc.warmLens();
     }
-    return { beam: beam, orb: orb, moon: moon, rock: rock, fireball: fireball, column: column, twister: twister, toonFire: toonFire, ringWall: ringWall, fireWave: fireWave, picWave: picWave, waveShards: waveShards, seqWave: seqWave, iceSpear: iceSpear, iceSpikes: iceSpikes, iceSpike: iceSpike, mark: mark, impact: impactP, puff: puff, blast: blast, chip: chip, hole: hole, emblem: emblem, glassOrb: glassOrb, elemRing: elemRing, crystal: crystal, fluffBall: fluffBall, yarnBall: yarnBall, bm: bm, update: update,
+    return { boom: boom, beam: beam, orb: orb, moon: moon, rock: rock, fireball: fireball, column: column, twister: twister, toonFire: toonFire, ringWall: ringWall, fireWave: fireWave, picWave: picWave, waveShards: waveShards, seqWave: seqWave, iceSpear: iceSpear, iceSpikes: iceSpikes, iceSpike: iceSpike, mark: mark, impact: impactP, puff: puff, blast: blast, chip: chip, hole: hole, emblem: emblem, glassOrb: glassOrb, elemRing: elemRing, crystal: crystal, fluffBall: fluffBall, yarnBall: yarnBall, bm: bm, update: update,
       // for checks: the live copies of a Blender mesh kind ({ p, q, s, a })
       bmList: function (kind) { var L = bmLayers[kind]; return L ? L.list.filter(function (h) { return !h.dead && h.a > 0.002; }) : []; }, clear: clear, warm: warm, setBright: function (v) { bright = !!v; }, setBatchSmoke: function (v) { batchSmoke = !!v; }, setBatchChips: function (v) { batchChips = !!v; },
       count: function () { return bmCount() + parts.length + xs.length + spikes.length + chips[0].length + chips[1].length + chips[2].length; }, spikeTops: spikeTops,

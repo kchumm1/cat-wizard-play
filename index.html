@@ -13,6 +13,22 @@
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <title>냥법사 키우기</title>
 <style>html,body{height:100%;margin:0;background:#0f1019;overscroll-behavior:none}</style>
+<script>
+// New version: the worker stores every file first (copies the unchanged ones, downloads the rest), then takes over; the
+// page saves and restarts once, right away. Listened for from the page's first script: an update that only copies can
+// take over before the page has loaded (2026-11-17, pretend iPhone: at 2.0 s, load at 2.4 s; tests/site.test.cjs).
+if ('serviceWorker' in navigator) (function () {
+  var had = !!navigator.serviceWorker.controller, done = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    if (!had) { had = true; return; }
+    if (done) return; done = true;
+    try { sessionStorage.setItem('cwJustUpdated', '1'); } catch (e) {}
+    try { dispatchEvent(new Event('pagehide')); } catch (e) {}
+    var t = document.getElementById('toast'); if (t) { t.textContent = '새 버전을 받았어요. 다시 여는 중…'; t.classList.add('on'); }
+    setTimeout(function () { location.reload(); }, 700);
+  });
+})();
+</script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2464,20 +2480,11 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script src="js/idle-ui.js"></script>
 <script src="js/grow-text.js"></script>
 <script src="js/ui-opal.js"></script>
+<script src="js/opal-rune-sigil.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>
 <script>
-// New version: the worker downloads every file first, then takes over; the page saves and restarts once, right away.
 if ('serviceWorker' in navigator) addEventListener('load', function () {
-  var had = !!navigator.serviceWorker.controller, done = false;
-  navigator.serviceWorker.addEventListener('controllerchange', function () {
-    if (!had) { had = true; return; }
-    if (done) return; done = true;
-    try { sessionStorage.setItem('cwJustUpdated', '1'); } catch (e) {}
-    try { dispatchEvent(new Event('pagehide')); } catch (e) {}
-    var t = document.getElementById('toast'); if (t) { t.textContent = '새 버전을 받았어요. 다시 여는 중…'; t.classList.add('on'); }
-    setTimeout(function () { location.reload(); }, 700);
-  });
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (reg) {
     var check = function () { reg.update().catch(function () {}); };
     check(); setInterval(check, 60000);
