@@ -1133,7 +1133,11 @@
     var epoch = 0;
     function tint(base, tier) { var col = new T.Color(base); if (tier >= 5) col.lerp(new T.Color(0xffffff), 0.12); return col.getHex(); }
     function cast(skill, tier, targets, hit, speedMul, lv) {
-      var sp = speedMul || 1; lv = lv || 0;
+      // Every skill plays at its own length whatever the attack speed (2026-11-16, user: "every skill must show properly
+      // every time"). Attack speed only shortens the gap before the next cast (main.js castTime), so at speed x2 two or
+      // three skills overlap instead of each one rushing by in half the time. CW.fxSpeedVisual = true brings back the
+      // old rushed timing (for comparing). speedMul stays in the signature for the callers.
+      var sp = CW.fxSpeedVisual ? (speedMul || 1) : 1; lv = lv || 0;
       var c = { sk: skill, noCircle: !!NO_CIRCLE[skill.id], tier: tier, lv: lv, col: tint(skill.color, tier), s: 1.12 * (1 + 0.08 * (tier - 1)) * (1 + 0.018 * lv), n: Math.min(2.4, 1 + 0.1 * (tier - 1) + 0.025 * lv), sp: sp,
         D: function (t) { return t / sp; }, deep: deep(tint(skill.color, tier)), from: sc.heroPaw(), targets: targets.slice(), hit: hit || function () { } };
       c.center = crowdCenter(c.targets);
@@ -1379,10 +1383,12 @@
       vx.update(dt); P3.update(dt);
     }
     function setQuality(q) { vx.setQuality(q); }
+    // the safety valve (js/fxload.js): a factor on how many small pieces new effects spawn while frames run late
+    function setLoad(k) { vx.setLoad(k); }
     function setBright(v) { vx.setBright(v); P3.setBright(v); }
     function setRegion(regionData) { dustCol = new T.Color(regionData.ground).lerp(new T.Color(0xffffff), 0.45).getHex(); P3.warm(); warmPics(); }
     function clear() { epoch++; timers.length = 0; ticks.length = 0; vx.clear(); P3.clear(); picClear(); if (BEASTS) BEASTS.clear(); sc.mobs().forEach(function (m) { m.pull = undefined; m.pullZ = undefined; m.lift = undefined; }); }
-    return { setStaffColor: function (c) { staffCol = c; }, setCostume: function (f) { cosFx = f; cosAcc = 0; }, cast: cast, update: update, setQuality: setQuality, setBright: setBright, setRegion: setRegion, clear: clear, count: vx.count, minionBurst: minionBurst,
+    return { setStaffColor: function (c) { staffCol = c; }, setCostume: function (f) { cosFx = f; cosAcc = 0; }, cast: cast, update: update, setQuality: setQuality, setLoad: setLoad, load: function () { return vx.load(); }, setBright: setBright, setRegion: setRegion, clear: clear, count: vx.count, minionBurst: minionBurst,
       impact: impact, levelUp: levelUp, bossEnter: bossEnter, coinPop: coinPop, burst: function (pos, col) { impact(pos, col, 0.8); }, vfx: vx,
       // for checks: 3D parts alive, and painted heads alive (only those of the given pictures when names are given)
       count3d: function () { return P3.count(); }, bm3d: function (k) { return P3.bmList(k); }, beasts: function () { return BEASTS ? BEASTS.count() : 0; }, spikeTops: function () { return P3.spikeTops(); }, batchSmoke: function (v) { P3.setBatchSmoke(v); }, smoke3d: function () { return P3.smoke(); }, batchChips: function (v) { P3.setBatchChips(v); }, watch: function (fn) { watcher = fn || null; }, picCount: function (names) { return picHeads.filter(function (h) { return !names || names.indexOf(h.name) >= 0; }).length; } };

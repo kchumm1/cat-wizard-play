@@ -176,7 +176,7 @@
       add: new Layer(scene, atlas, 1500, { add: true, order: 11 })
     };
     var CAP = { high: [1, 1500, 500, 700], mid: [0.6, 850, 300, 420], low: [0.35, 460, 170, 240] };
-    var qf = 1, bright = false, pool = [], camPos = new T.Vector3(), camDir = new T.Vector3();
+    var qf = 1, load = 1, bright = false, pool = [], camPos = new T.Vector3(), camDir = new T.Vector3();
 
     function emit(o) {
       // (measuring on a phone, dev/phone-perf-*.html: CW.fxOff.bits leaves out the little flying bits; unset in the game)
@@ -398,7 +398,7 @@
     }
     function count() { var n = 0; for (var key in layers) n += layers[key].list.length; return n; }
     return { emit: emit, kill: kill, ribbon: ribbon, lightning: lightning, boltPath: boltPath, update: update, setQuality: setQuality, setBright: setBright, clear: clear, count: count,
-      quality: function () { return qf; }, isBright: function () { return bright; }, atlas: atlas, layers: layers };
+      quality: function () { return qf * load; }, setLoad: function (k) { load = k > 0 ? Math.min(1, k) : 1; }, load: function () { return load; }, isBright: function () { return bright; }, atlas: atlas, layers: layers };
   }
   CW.createVfx = createVfx;
 })(this);

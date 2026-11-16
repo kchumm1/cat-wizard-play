@@ -535,6 +535,8 @@
   // not a one-off such as a picture loading; a phone held at 30 frames a second (low power) is not counted as stalls.
   // The game may draw fewer frames on purpose (절전, a menu sheet open, no touch for a while: js/framepace.js); the
   // limits are measured against the rate it aims for, so drawing 30 a second on purpose never lowers the quality.
+  // safety valve for skill spam (js/fxload.js): fewer small pieces while frames run late, never fewer skills
+  var fxLoad = CW.createFxLoad ? CW.createFxLoad() : null;
   var autoQ = 'high', fpsAcc = 0, fpsN = 0, fpsT = 0, stalls = 0, fpsAim = 60;
   function watchFps(rdt, aim) {
     if (state.settings.quality !== 'auto') return;
@@ -624,6 +626,7 @@
         if (panelT > 0.3) { panelT = 0; ui.renderPanel(); }
         if (saveT > 5) { saveT = 0; save(); }
         watchFps(rdt, aim);
+        if (fxLoad) { var lk = CW.fxLoadOff ? 1 : fxLoad.note(rdt, aim); if (lk !== fx.load()) fx.setLoad(lk); }
       } catch (e) { noteError(e); }
     }
     try { sc.render(); } catch (e) { noteError(e); }
