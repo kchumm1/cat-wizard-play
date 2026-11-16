@@ -70,7 +70,8 @@
         else { var b = rr(0, Math.PI * 2), q = rr(1.4, 3.3); p = { x: H.x + Math.cos(b) * q, z: H.z + Math.sin(b) * q * 1.15 }; }
         p = ctx.clampField(p);
         var ok = Math.hypot(p.x - H.x, (p.z - H.z) / 1.15) > 1.05;
-        for (var i = 0; ok && i < mobs.length; i++) if (Math.hypot(mobs[i].x - p.x, mobs[i].z - p.z) < 0.5) ok = false;
+        // (0.65 apart since they are 80 % of a monster's size, 2026-11-17; 0.5 when they were half)
+        for (var i = 0; ok && i < mobs.length; i++) if (Math.hypot(mobs[i].x - p.x, mobs[i].z - p.z) < 0.65) ok = false;
         best = p; if (ok) break;
       }
       m.tx = best.x; m.tz = best.z; m.retarget = rr(1.0, 2.4);

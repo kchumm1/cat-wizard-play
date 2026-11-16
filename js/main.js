@@ -154,11 +154,13 @@
   }
   // the little ones (js/minions.js): the user's six small-fry pictures, mixed at random in every region (2026-11-16);
   // they bring nothing and count for nothing. Their pictures are fetched once, the first time any are wanted.
+  // Size: about 80 % of a monster (2026-11-17, the user: 키우되 몬스터의 80% — they were about 55 %; as big as a monster
+  // they would be taken for the ones that count)
   var minionArt = {}, minionLoad = null;
   function minionPick() {
     if (!minionLoad) minionLoad = CW.loadArt(CW.MINION_KINDS.map(function (k) { return k.id; })).then(function (m) { minionArt = m; });
     var k = CW.pickMinionKind(minionArt), a = k && minionArt[k.id];
-    return a ? { art: a, height: fitHeight(a, 0.5 + Math.random() * 0.1), fly: !!k.fly } : null;
+    return a ? { art: a, height: fitHeight(a, 0.72 + Math.random() * 0.11), fly: !!k.fly } : null;
   }
   var mins = sc.minions;
   function startBoss() {
