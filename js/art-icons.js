@@ -13,7 +13,12 @@
   var skill0 = I.skill, misc0 = I.misc, rune0 = I.rune;
   // 10차 나무 4종은 따로 그린 그림이 없어 스킬 카드 그림(sk2-<id>)을 슬롯·목록 아이콘으로 (2026-11-16)
   var WOOD = ['rootSpikes', 'flytrap', 'leafBlades', 'worldTree'];
-  I.skill = function (id) { return SKILLS.indexOf(id) >= 0 ? img('sk-' + id, 'isk') : WOOD.indexOf(id) >= 0 ? img('sk2-' + id, 'isk wood') : skill0(id); };
+  // 새 원화(sk2, js/art-items.js skillArt)가 있는 스킬은 전투 칸·전직 메달 등 모든 아이콘도 새 그림으로 (사용자 2026-11-17 "다 교체, 있는것만")
+  I.skill = function (id) {
+    if (WOOD.indexOf(id) >= 0) return img('sk2-' + id, 'isk wood');
+    if (I.skillArt && I.skillArt(id)) return img('sk2-' + id, 'isk nw');
+    return SKILLS.indexOf(id) >= 0 ? img('sk-' + id, 'isk') : skill0(id);
+  };
   I.misc = function (cat, id) { return MISC.indexOf(cat + ':' + id) >= 0 ? img('ui-' + cat + '-' + id, 'imisc p-' + cat) : misc0(cat, id); };
   I.rune = function (id, color, grade, gcol) { return RUNES.indexOf(id) >= 0 ? img('ui-rune-' + id, 'irune', '--gc:' + gcol) : rune0(id, color, grade, gcol); };
   I.pic = function (name, cls) { return img('ui-' + name, cls || ''); };
