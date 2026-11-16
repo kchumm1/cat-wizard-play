@@ -947,7 +947,7 @@
     '#sheet.opal#sheet.opal .alchhead.anw{position:relative;display:block!important;height:175px;margin:0!important;padding:0!important;background:none!important;border:0!important;box-shadow:none!important;border-radius:0!important;overflow:visible}',
     '#sheet.opal#sheet.opal .alchhead.anw .acaul{position:absolute;left:0;top:0;width:200px;height:175px;z-index:0;margin:0!important;padding:0!important;background:none!important;border:0!important;box-shadow:none!important;overflow:visible}',
     '#sheet.opal#sheet.opal .alchhead.anw .acaul>*{position:absolute;pointer-events:none}',
-    '#sheet.opal#sheet.opal .alchhead.anw .aneb{left:-13.4px;top:-12.6px;width:385.8px;height:193.5px;background:url(art/opal-neb-cos2.webp) 0 0/100% 100% no-repeat;animation:opAlNeb 30s ease-in-out calc(var(--ph,0s) + 0s) infinite alternate}',
+    '#sheet.opal#sheet.opal .alchhead.anw .aneb{left:-13.4px;top:-8px;width:385.8px;height:214px;background:url(art/al-neb-fill.webp) 40% 55%/cover no-repeat;-webkit-mask:url(art/al-win.webp) 0 0/100% 100% no-repeat;mask:url(art/al-win.webp) 0 0/100% 100% no-repeat;animation:opAlNeb 30s ease-in-out calc(var(--ph,0s) + 0s) infinite alternate}',
     '@keyframes opAlNeb{from{transform:scale(1);filter:brightness(1)}to{transform:scale(1.025);filter:brightness(1.05) saturate(1.08)}}',
     '#sheet.opal#sheet.opal .alchhead.anw .aped{left:-19.4px;top:106px;width:264.6px;height:88.3px;background:url(art/al-ped.webp) 50% 50%/100% 100% no-repeat}',
     '#sheet.opal#sheet.opal .alchhead.anw .acimg{left:9.8px;top:27.4px;width:206.8px!important;height:138px!important;max-width:none!important;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(60,40,120,.18))}',
@@ -1089,9 +1089,9 @@
     '#sheet.opal#sheet.opal .mcv{position:relative;height:245px;margin:0!important;padding:0!important;background:none!important;border:0!important;box-shadow:none!important}',
     '#sheet.opal#sheet.opal .mcv>*{position:absolute;pointer-events:none}',
     // 성운: 시안처럼 달걀형 창 (tools/import-mana-parts.py make_egg — 위는 둥근 초타원, 옆은 불룩, 아래는 받침대 쪽으로 말리며 흐려짐) + 안쪽 흰 빛 테두리
-    '#sheet.opal#sheet.opal .mcv-neb{z-index:0;left:-12px;top:4px;width:380px;height:260px;-webkit-mask:url(art/mn-egg.webp) 0 0/100% 100% no-repeat;mask:url(art/mn-egg.webp) 0 0/100% 100% no-repeat}',
+    '#sheet.opal#sheet.opal .mcv-neb{z-index:0;left:-12px;top:4px;width:380px;height:260px;-webkit-mask:url(art/mn-egg2.webp) 0 0/100% 100% no-repeat;mask:url(art/mn-egg2.webp) 0 0/100% 100% no-repeat}',   // 사용자 2026-11-16: 시안처럼 아래 가장자리는 보라 안개로 녹아듦 (tools/make-neb-window.py)
     // 창 모양은 그대로, 안의 성운만 천천히 숨쉬듯 (마스크까지 커지면 테두리와 어긋남)
-    '#sheet.opal#sheet.opal .mcv-neb::before{content:"";position:absolute;inset:0;background:url(art/mn-neb.webp) 50% 60%/132% auto no-repeat;animation:opAlNeb 30s ease-in-out infinite alternate}',
+    '#sheet.opal#sheet.opal .mcv-neb::before{content:"";position:absolute;inset:0;background:url(art/mn-neb-fill.webp) 50% 60%/132% auto no-repeat;animation:opAlNeb 30s ease-in-out infinite alternate}',
     '#sheet.opal#sheet.opal .mcv-rim{z-index:0;left:-12px;top:4px;width:380px;height:260px;background:url(art/mn-eggrim.webp) 0 0/100% 100% no-repeat}',
     '#sheet.opal#sheet.opal .mcv-cst{z-index:0;left:0;top:0;width:359px;height:245px;overflow:visible}',
     '#sheet.opal#sheet.opal .mcv-cst .ln{fill:none;stroke:rgba(255,255,255,.82);stroke-width:.9;filter:drop-shadow(0 0 1.5px rgba(255,255,255,.75))}',
@@ -1108,6 +1108,17 @@
     '@keyframes mcSway{from{rotate:-3deg}to{rotate:3deg}}',
     // 물방울 결정 (보이는 104×150, 꼭대기 y50) + 발바닥 (보이는 37×32, 가운데 177.5,129): 함께 위아래 3px, 발바닥 밝기 0.8~1
     '#sheet.opal#sheet.opal .mcv-cry{z-index:4;left:83.9px;top:26.9px;width:187px!important;height:204.6px!important;max-width:none!important;filter:drop-shadow(0 0 6px rgba(255,255,255,.55)) drop-shadow(0 0 14px rgba(200,190,255,.45));animation:mcFloat 3s ease-in-out infinite;animation-delay:var(--ph,0s)}',
+    // 시안 대조 (사용자 2026-11-16: 「윤택·대비가 없다」): 결정은 면 색을 진하게 + 둘레 분홍빛, 고리는 유리 무지개빛·명암, 은구슬은 덜 밝게(반들반들한 명암), 결정 뒤 성운은 환하게
+    '#sheet.opal#sheet.opal .mcv-cry{filter:contrast(1.14) saturate(1.4) drop-shadow(0 0 5px rgba(255,255,255,.6)) drop-shadow(0 0 16px rgba(255,170,232,.55))}',
+    '#sheet.opal#sheet.opal .mcv-o{filter:saturate(1.3) contrast(1.3) brightness(1.04) drop-shadow(0 0 1.5px rgba(255,255,255,.85)) drop-shadow(0 0 5px rgba(210,190,255,.4))}',
+    '@keyframes mcBall{0%{scale:.94;filter:contrast(1.25) brightness(1.02) drop-shadow(0 2px 2px rgba(40,40,90,.4))}25%{scale:1.08;filter:contrast(1.25) brightness(1.12) drop-shadow(0 2px 2px rgba(40,40,90,.4))}50%{scale:.94;filter:contrast(1.25) brightness(1) drop-shadow(0 2px 2px rgba(40,40,90,.4))}75%{scale:.84;filter:contrast(1.25) brightness(.88) drop-shadow(0 2px 2px rgba(40,40,90,.4))}100%{scale:.94;filter:contrast(1.25) brightness(1.02) drop-shadow(0 2px 2px rgba(40,40,90,.4))}}',
+    '#sheet.opal#sheet.opal .mcv-neb::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 30% 40% at 49% 46%,rgba(255,240,255,.55),rgba(225,200,255,.25) 55%,transparent 80%),radial-gradient(ellipse 62% 70% at 50% 46%,transparent 62%,rgba(190,165,238,.42) 100%)}',
+    // 폭이 넓은 폰(412·430)에서도 성운이 패널 양옆까지 차고, 그림은 가운데로 (그림 자리는 폭 359 기준 실측이라 그 틀을 가운데에 두고 성운만 넓힘)
+    '#sheet.opal#sheet.opal .mcwrap{container-type:inline-size}#sheet.opal#sheet.opal .mcv{width:359px;margin:0 auto!important}',
+    // 시안(cat-wizard-complete-art/screens/05-mana.png): 달걀 창 바깥 아래 양옆·받침대 둘레를 연보라·분홍 안개 빛이 채움 (사용자 2026-11-16: 「아래 양옆이 비어 보인다」)
+    '#sheet.opal#sheet.opal .mcv::before{content:"";position:absolute;z-index:0;pointer-events:none;left:calc((359px - 100cqw) / 2);width:100cqw;top:40px;height:240px;background:radial-gradient(ellipse 50% 16% at 50% 84%,rgba(255,255,255,.95),rgba(240,232,255,.6) 50%,transparent 100%),radial-gradient(ellipse 30% 36% at 5% 72%,rgba(178,146,232,.85),rgba(206,180,246,.55) 55%,transparent 100%),radial-gradient(ellipse 30% 36% at 95% 72%,rgba(178,146,232,.85),rgba(206,180,246,.55) 55%,transparent 100%),radial-gradient(ellipse 16% 18% at 8% 82%,rgba(244,190,232,.6),transparent 100%),radial-gradient(ellipse 16% 18% at 92% 82%,rgba(244,190,232,.6),transparent 100%),radial-gradient(ellipse 56% 62% at 50% 50%,transparent 80%,rgba(236,226,255,.7) 92%,transparent 100%)}',
+    '#sheet.opal#sheet.opal .alchhead.anw{container-type:inline-size}#sheet.opal#sheet.opal .alchhead.anw .acaul{left:calc((100cqw - 359px) / 2)}#sheet.opal#sheet.opal .alchhead.anw .al-lv{left:calc((100cqw - 359px) / 2 + 192px)}',
+    '#sheet.opal#sheet.opal .alchhead.anw .aneb{left:calc(-13.4px - (100cqw - 359px) / 2);width:calc(100cqw + 26.8px)}',
     '#sheet.opal#sheet.opal .mcv-paw{z-index:5;left:148px;top:98.9px;width:58px!important;height:58px!important;max-width:none!important;animation:mcFloat 3s ease-in-out infinite,mcPaw 3s ease-in-out infinite;animation-delay:var(--ph,0s),var(--ph,0s)}',
     '@keyframes mcFloat{0%,100%{translate:0 0}50%{translate:0 -3px}}',
     '@keyframes mcPaw{0%,100%{filter:brightness(1) drop-shadow(0 0 4px rgba(255,255,255,.85)) drop-shadow(0 0 9px rgba(190,225,255,.6))}50%{filter:brightness(1.12) drop-shadow(0 0 8px #fff) drop-shadow(0 0 16px rgba(170,220,255,.9))}}',
