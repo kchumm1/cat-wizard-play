@@ -501,7 +501,16 @@
       // cel look (2026-11-17, the user: 더 또렷하게): the picture's light flattened into three tones, and the light on the
       // shape cut hard into two
       'c=mix(pc,pc*(q/pl),0.75)*(lam>0.32?1.08:0.58);float lum=dot(c,vec3(0.3,0.59,0.11)),ph=vX.z*3.0;' +
-      'if(cell<0.5){float gr=smoothstep(0.22,0.08,lum),up=pow(0.5+0.5*sin(lv*9.0-uTime*3.2+ph),3.0);c+=vec3(1.0,0.72,0.28)*gr*up*1.3;}' +
+      // the flytrap (uAnim 2, 2026-11-17, the user: 덩굴 대신 넣었던 스킬도 똑같이): 0 the mouth's flesh throbbing, a wet shine
+      // sliding over it; 1 the jaw's skin, its veins glowing red in time; 2 the neck, a swallow of light running up it;
+      // 3 petals shimmering; 4 leaf: light up the veins
+      'if(uAnim>1.5){' +
+      'if(cell<0.5){float th=pow(0.5+0.5*sin(uTime*5.0+ph),3.0),wet=smoothstep(0.9,1.0,0.5+0.5*sin(lu*5.0+lv*3.0-uTime*2.2+ph));c=c*(1.0+0.3*th)+vec3(1.0,0.75,0.8)*wet*0.35;}' +
+      'else if(cell<1.5){float vn=smoothstep(0.3,0.12,lum),th=pow(0.5+0.5*sin(uTime*5.0+ph),3.0);c+=vec3(1.0,0.2,0.15)*vn*th*0.8;}' +
+      'else if(cell<2.5){float sw=pow(0.5+0.5*sin(lv*6.0-uTime*4.0+ph),6.0);c+=vec3(0.85,1.0,0.4)*sw*0.55;}' +
+      'else if(cell<3.5){float sh=smoothstep(0.85,1.0,0.5+0.5*sin(lv*8.0+lu*3.0-uTime*3.0+ph));c+=vec3(1.0,0.8,0.9)*sh*0.45;}' +
+      'else{float vein=max(smoothstep(0.035,0.0,abs(lu-0.5)),smoothstep(0.62,0.82,lum)),run=pow(0.5+0.5*sin(lv*11.0-uTime*4.5+ph),4.0);c+=vec3(1.0,0.95,0.55)*vein*run*0.9;}}' +
+      'else if(cell<0.5){float gr=smoothstep(0.22,0.08,lum),up=pow(0.5+0.5*sin(lv*9.0-uTime*3.2+ph),3.0);c+=vec3(1.0,0.72,0.28)*gr*up*1.3;}' +
       'else if(cell<1.5){float rip=smoothstep(0.82,1.0,0.5+0.5*sin(lv*7.0+lu*4.0-uTime*2.6+ph));c+=vec3(0.75,1.0,0.45)*rip*smoothstep(0.2,0.55,lum)*0.8;}' +
       'else if(cell<2.5){float beat=pow(0.5+0.5*sin(uTime*(6.0+8.0*clamp(vX.y,0.0,1.0))+ph),6.0);c=c*(1.0+0.45*beat)+vec3(1.0,0.7,0.25)*beat*0.22;}' +
       'else{float vein=max(smoothstep(0.035,0.0,abs(lu-0.5)),smoothstep(0.62,0.82,lum)),run=pow(0.5+0.5*sin(lv*11.0-uTime*4.5+ph),4.0);c+=vec3(1.0,0.95,0.55)*vein*run*1.15;}}' +
@@ -1654,9 +1663,9 @@
       woodRoots: { fs: 'wood', lineFs: 'woodLine', cap: 64, line: 0x2a160a, lineW: 0.016, order: 6.6 },
       woodChip: { fs: 'wood', lineFs: 'woodLine', cap: 160, line: 0x2a160a, lineW: 0.008, order: 6.6 },
       woodMound: { fs: 'wood', lineFs: 'woodLine', cap: 240, line: 0x2a1a0e, lineW: 0.01, order: 6.55 },
-      trapStem: { fs: 'woodPaint', map: 'trap-skin', lineFs: 'woodLine', cap: 16, line: 0x10180a, lineW: 0.03, order: 6.6 },
-      trapJaw: { fs: 'woodPaint', map: 'trap-skin', lineFs: 'woodLine', cap: 32, line: 0x1a0608, lineW: 0.028, order: 6.64 },
-      trapPetal: { fs: 'woodPaint', map: 'trap-skin', lineFs: 'woodLine', cap: 96, line: 0x2a0612, lineW: 0.02, order: 6.6 },
+      trapStem: { fs: 'woodPaint', map: 'trap-skin', lineFs: 'woodLine', cap: 16, line: 0x0a1006, lineW: 0.045, order: 6.6 },
+      trapJaw: { fs: 'woodPaint', map: 'trap-skin', lineFs: 'woodLine', cap: 32, line: 0x120304, lineW: 0.042, order: 6.64 },
+      trapPetal: { fs: 'woodPaint', map: 'trap-skin', lineFs: 'woodLine', cap: 96, line: 0x20040c, lineW: 0.03, order: 6.6 },
       // the world tree (세계수 열매 폭탄), painted (art/tree-skin.webp)
       treeTrunk: { fs: 'woodPaint', map: 'tree-skin', lineFs: 'woodLine', cap: 4, line: 0x120804, lineW: 0.055, order: 6.58 },
       treeClump: { fs: 'woodPaint', map: 'tree-skin', lineFs: 'woodLine', cap: 96, line: 0x061404, lineW: 0.02, order: 6.6 },   // (a spray of leaves: a fine line)
@@ -1678,17 +1687,19 @@
       return g;
     }
 
+    // (2026-11-17 later: the sheet is now the anime explosion the user had ChatGPT draw — flash, ball of fire, tearing
+    // flames, smoke — shown one moment after another without blending, like animation)
     // ---------- the world tree's fruit bomb as pictures (art/fx-fruitboom.webp, 2026-11-17, the user: keep the impact,
     // keep the phone cool): its ball of fire and its dust and smoke, baked from the real 3D landing by
     // tools/bake-fruitboom.js into 16 moments on a 4 x 4 sheet, played on one batched layer of pictures that always face
     // the camera. boom(pos): one more landing at pos (on the ground). BOOM must match the bake (BAKE there).
-    var BOOM = { grid: 4, frames: 16, span: 0.8, world: 2.6, centerY: 0.62, push: 1.2, cap: 40 }, boomL = null, boomTex = null;
+    var BOOM = { grid: 4, frames: 16, span: 0.9, world: 2.6, centerY: 0.62, push: 1.2, cap: 40 }, boomL = null, boomTex = null;
     var VS_BOOM = [
       'attribute vec2 iF; varying vec2 vUv0; varying vec2 vUv1; varying float vMix; varying float vA;',
       'void main(){',
       '  vec4 mv = modelViewMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0); float s = length(instanceMatrix[0].xyz);',
       '  mv.xy += position.xy * s; gl_Position = projectionMatrix * mv;',
-      '  float f0 = floor(iF.x), f1 = min(f0 + 1.0, ' + (BOOM.frames - 1) + '.0); vMix = iF.x - f0; vA = iF.y; vec2 uv = position.xy + 0.5;',
+      '  float f0 = floor(iF.x), f1 = min(f0 + 1.0, ' + (BOOM.frames - 1) + '.0); vMix = 0.0; vA = iF.y; vec2 uv = position.xy + 0.5;',
       '  vUv0 = (vec2(mod(f0, 4.0), 3.0 - floor(f0 / 4.0)) + uv) / 4.0; vUv1 = (vec2(mod(f1, 4.0), 3.0 - floor(f1 / 4.0)) + uv) / 4.0; }'].join('\n');
     var FS_BOOM = [
       'uniform sampler2D uMap; varying vec2 vUv0; varying vec2 vUv1; varying float vMix; varying float vA;',
@@ -1751,7 +1762,7 @@
       var K = BM_KIND[kind], g = bmGeo(kind); if (!K || !g) return null;
       var cap = K.cap, ix = new T.InstancedBufferAttribute(new Float32Array(cap * 4), 4); ix.setUsage(T.DynamicDrawUsage); g.setAttribute('iX', ix);
       var uni = { uCol: { value: C(0xffffff) }, uDeep: { value: C(0x2a6cff) } }, SK = K.map ? skin(K.map) : null;
-      if (SK) { uni.uMap = { value: SK.tex }; uni.uPaint = { value: SK.ready ? 1 : 0 }; uni.uAnim = { value: K.map === 'tree-skin' ? 1 : 0 }; }
+      if (SK) { uni.uMap = { value: SK.tex }; uni.uPaint = { value: SK.ready ? 1 : 0 }; uni.uAnim = { value: K.map === 'tree-skin' ? 1 : K.map === 'trap-skin' ? 2 : 0 }; }
       var body = new T.InstancedMesh(g, mat(FS_BM[K.fs], uni, { normal: true, depthWrite: kind !== 'rift' && kind !== 'gravRing' && kind !== 'crater', depthTest: kind !== 'crater', side: K.side }, SK ? VS_BMT : VS_BM), cap);
       if (SK) SK.users.push(body.material.uniforms);
       body.instanceColor = new T.InstancedBufferAttribute(new Float32Array(cap * 3), 3);
