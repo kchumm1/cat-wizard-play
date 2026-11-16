@@ -56,16 +56,27 @@
   // 1500000000300 → 1조 5000억 300 (2026-11-15, the user: 1원부터 9999조까지)
   function goldWords(n) {
     n = Math.round(+n || 0); if (n <= 0) return '0';
-    var u = [[1e12, '조'], [1e8, '억'], [1e4, '만']], a = [];
+    var u = [[1e16, '경'], [1e12, '조'], [1e8, '억'], [1e4, '만']], a = [];
     u.forEach(function (x) { var k = Math.floor(n / x[0]); if (k) { a.push(k + x[1]); n -= k * x[0]; } });
     if (n) a.push(String(n));
     return a.join(' ');
   }
-  function mailGoldText(l) { return goldWords(mailGold(l)); }
+  // the game shows a letter's gold short, the rest is not shown (2026-11-16, the user: 8542442…경 → 8.54경): the biggest
+  // unit, two decimals under 10, one under 100, none above, cut (not rounded up): 8.54경 · 85.4경 · 8542경, 1조 5000억 300
+  // → 1.5조, 300 → 300. ops.html keeps goldWords.
+  function goldShort(n) {
+    n = Math.round(+n || 0); if (n <= 0) return '0'; if (n < 10000) return String(n);
+    var U = ['', '만', '억', '조', '경', '해'], k = Math.min(U.length - 1, Math.floor(Math.log10(n) / 4)), v = n / Math.pow(10, 4 * k);
+    if (v < 1 && k > 0) { k -= 1; v = n / Math.pow(10, 4 * k); }
+    var cut = function (x) { var p = x < 10 ? 100 : x < 100 ? 10 : 1; return Math.floor(x * p + 1e-6) / p; }, r = cut(v);
+    if (r >= 10000 && k < U.length - 1) { k += 1; r = cut(n / Math.pow(10, 4 * k)); }
+    return String(r) + U[k];
+  }
+  function mailGoldText(l) { return goldShort(mailGold(l)); }
   function mailRewardText(l) {
     var a = [], G = gift(); if (mailGold(l) > 0) a.push('골드 ' + mailGoldText(l)); if (+l.gems > 0) a.push('다이아 ' + l.gems);
     if (G && G.giftHas(l)) a.push(G.giftText(l));
     return a.join(' · ');
   }
-  return { mailClaimBlock: mailClaimBlock, mailAll: mailAll, mailGot: mailGot, mailHasReward: mailHasReward, mailWhen: mailWhen, mailPid: mailPid, mailWaiting: mailWaiting, mailClaim: mailClaim, mailRewardText: mailRewardText, mailGold: mailGold, mailGoldText: mailGoldText, goldWords: goldWords };
+  return { mailClaimBlock: mailClaimBlock, mailAll: mailAll, mailGot: mailGot, mailHasReward: mailHasReward, mailWhen: mailWhen, mailPid: mailPid, mailWaiting: mailWaiting, mailClaim: mailClaim, mailRewardText: mailRewardText, mailGold: mailGold, mailGoldText: mailGoldText, goldWords: goldWords, goldShort: goldShort };
 });

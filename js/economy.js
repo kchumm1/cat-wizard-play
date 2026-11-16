@@ -281,11 +281,13 @@
     return time > 0 ? cap(dmg / time) : 0;
   }
   function killsPerSecond(state, st) { st = st || stats(state); return Math.max(0.02, Math.min(dps(state, st) / stageMonsterHp(state), 2.5)); }
-  // ---------- gold read in Korean units, at most 9999조 (2026-11-15, the user) ----------
+  // ---------- gold read in Korean units, at most 9999경 (2026-11-15 9999조, 2026-11-16 the user: 9999경까지) ----------
   // The game's gold grows ×1.2 a stage, so by 엘리멘탈 it is 10^120 and more. What the player sees and holds is that gold
   // divided by goldScale. Rewards and every price are divided by the same number, so what a reward buys is exactly as
-  // before; only the numbers are smaller. Holdings stop at 9999조.
-  var GOLD_MAX = 9999e12;
+  // before; only the numbers are smaller. Holdings stop at 9999경.
+  var GOLD_MAX = 9999e16;
+  // the scale still moves when the attack price would pass 999조 (a tenth of the old 9999조 cap), so prices read as before
+  var PRICE_MAX = 9999e11;
   function progressIndex(state) {
     var p = Math.max(0, (state.diff || 0) * SPAN + (state.best === undefined ? -1 : state.best)), db = state.diffBest || {};
     Object.keys(db).forEach(function (d) { var b = db[d] && db[d].best; if (typeof b === 'number') p = Math.max(p, d * SPAN + b); });
@@ -301,12 +303,12 @@
   function goldScale(state) {
     var p = progressIndex(state), price = atkPrice(state);
     if (state.goldScaleP !== p || !(state.goldScale2 > 0)) { state.goldScale2 = Math.max(1, price / Math.pow(10, atkShownLog(p))); state.goldScaleP = p; }
-    var d = Math.max(state.goldScale2, price / (GOLD_MAX / 10));
+    var d = Math.max(state.goldScale2, price / PRICE_MAX);
     if (!(d < CAP)) d = CAP;
     state.goldScale2 = d;
     return d;
   }
-  // keeps holdings under 9999조 (as shown); returns the scale
+  // keeps holdings under 9999경 (as shown); returns the scale
   function capGold(state) {
     var d = goldScale(state);
     if (state.gold > GOLD_MAX * d) state.gold = GOLD_MAX * d;

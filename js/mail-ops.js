@@ -4,7 +4,7 @@
 // lines, 「냥법사 운영팀 드림」; a gift letter is titled 「모험 응원 선물」. Not loaded by the game itself.
 (function (root, f) { if (typeof module !== 'undefined' && module.exports) module.exports = f(require('./mail.js'), require('./mail-gift.js')); else { root.CW = root.CW || {}; Object.assign(root.CW, f(root.CW, root.CW)); } })(this, function (M, GF) {
   var GIFT_TEXT = '안녕하세요, 냥법사님!\n\n오늘도 모험을 즐겨주셔서 고마워요.\n작은 응원 선물을 준비했어요.\n새로운 모험도 함께해 주세요!';
-  var GOLD_MAX = 9999e12;       // the most gold a player can hold: 9999조 (js/economy.js capGold)
+  var GOLD_MAX = 9999e16;       // the most gold a player can hold: 9999경 (js/economy.js capGold)
   var GEMS_MAX = 100000000;     // 1억 diamonds per letter at most, so a typo cannot break a save
   var PID = /^[0-9A-HJ-NP-Z]{8}$/; // player numbers (js/mail.js mailPid: no I, no O)
 
@@ -16,20 +16,20 @@
   // 500000 → 50만, 1500000000300 → 1조 5000억 300 (the same words the game's mailbox uses)
   function countText(n) { return M.goldWords(n); }
   // what the 골드 box says, as gold: "1조 5000억 300", "5000억", "1,000,000", "1.5조", "골드 300" → a whole number;
-  // '' → 0; anything it cannot read → NaN (2026-11-15, the user: 1원부터 9999조까지)
+  // '' → 0; anything it cannot read → NaN (2026-11-15, the user: 1원부터 9999조까지; 2026-11-16: 9999경까지)
   function parseGold(text) {
     var t = String(text == null ? '' : text).replace(/[,\s]|골드|원/g, '');
     if (!t) return 0;
-    if (!/^(\d+(\.\d+)?(조|억|만)?)+$/.test(t)) return NaN;
-    var sum = 0, unit = { '조': 1e12, '억': 1e8, '만': 1e4, '': 1 };
-    t.replace(/(\d+(?:\.\d+)?)(조|억|만)?/g, function (m, n, u) { sum += parseFloat(n) * unit[u || '']; return m; });
+    if (!/^(\d+(\.\d+)?(경|조|억|만)?)+$/.test(t)) return NaN;
+    var sum = 0, unit = { '경': 1e16, '조': 1e12, '억': 1e8, '만': 1e4, '': 1 };
+    t.replace(/(\d+(?:\.\d+)?)(경|조|억|만)?/g, function (m, n, u) { sum += parseFloat(n) * unit[u || '']; return m; });
     var r = Math.round(sum);
     return Math.abs(r - sum) < 1e-6 ? r : NaN;
   }
   // does the words end with a sound that takes 과/을 (조 → 와/를, 억 · 만 · 300 (삼백) → 과/을)
   function closed(words) {
     var c = words.slice(-1);
-    if (c === '조') return false; if (c === '억' || c === '만') return true;
+    if (c === '조') return false; if (c === '억' || c === '만' || c === '경') return true;
     var m = /(\d+)$/.exec(words); if (!m) return false;
     var n = m[1].replace(/^0+/, ''); if (/0$/.test(n)) return true; // 십 · 백 · 천
     return '013678'.indexOf(n.slice(-1)) >= 0;                      // 일 삼 육 칠 팔 (영)
@@ -59,7 +59,7 @@
     if (!isFinite(g)) return '골드를 읽지 못했어요. 「1조 5000억」이나 「300」처럼 적어 주세요.';
     if (!(g > 0) && !(d > 0) && !items) return '골드나 다이아, 다른 재화나 아이템 중 하나는 넣어 주세요.';
     if (d < 0 || Math.floor(d) !== d) return '다이아는 0 이상의 정수로 적어 주세요.';
-    if (g > GOLD_MAX) return '골드는 한 번에 9999조까지예요(가질 수 있는 최대 골드).';
+    if (g > GOLD_MAX) return '골드는 한 번에 9999경까지예요(가질 수 있는 최대 골드).';
     if (d > GEMS_MAX) return '다이아는 한 번에 1억 개까지예요.';
     if (f.toAll === false) {
       var to = parseTo(f.toText);

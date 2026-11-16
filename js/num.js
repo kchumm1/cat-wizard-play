@@ -18,7 +18,7 @@
     return s + unit(k);
   }
   // Gold (2026-11-15, the user): Korean units like everything else, as the player holds it — the game's gold divided by
-  // the gold scale (economy.goldScale, set by the game with setGoldScale). Holdings stop at 9999조.
+  // the gold scale (economy.goldScale, set by the game with setGoldScale). Holdings stop at 9999경.
   var goldDiv = 1;
   function setGoldScale(d) { goldDiv = d > 0 && isFinite(d) ? d : 1; }
   function fmtGold(n) { if (!(typeof n === 'number' && isFinite(n) && n > 0)) return '0'; var v = n / goldDiv; return v < 1 ? '1' : fmt(v); }

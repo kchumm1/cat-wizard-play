@@ -23,7 +23,7 @@
   function ROMAN(s) { return ['I', 'II', 'III', 'IV'][s] || 'I'; }
   function ko(n) {
     n = Math.floor(+n || 0); if (n < 10000) return String(n);
-    var u = [[1e12, '조'], [1e8, '억'], [1e4, '만']], a = [];
+    var u = [[1e16, '경'], [1e12, '조'], [1e8, '억'], [1e4, '만']], a = [];
     u.forEach(function (x) { var k = Math.floor(n / x[0]); if (k) { a.push(k + x[1]); n -= k * x[0]; } });
     if (n) a.push(String(n));
     return a.join(' ');

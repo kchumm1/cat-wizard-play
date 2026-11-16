@@ -101,9 +101,9 @@ label.small{margin:8px 0 2px;font-size:13px}
       <input id="pids" type="text" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="AB12CD34">
       <p class="hint">우편번호는 게임 우편함 화면에 보여요.</p>
     </div>
-    <label for="gold">골드 (1골드 ~ 9999조)</label>
+    <label for="gold">골드 (1골드 ~ 9999경)</label>
     <input id="gold" type="text" autocomplete="off" spellcheck="false" placeholder="예: 1조 5000억 · 5000억 · 300">
-    <p class="hint" id="goldRead">조·억·만을 붙여 적거나 숫자만 적어도 돼요.</p>
+    <p class="hint" id="goldRead">경·조·억·만을 붙여 적거나 숫자만 적어도 돼요.</p>
     <label for="gems">다이아 (개)</label>
     <input id="gems" type="number" inputmode="numeric" min="0" step="1" placeholder="0">
     <label>다른 재화 (개)</label>
@@ -294,9 +294,9 @@ label.small{margin:8px 0 2px;font-size:13px}
   function form() { return { toAll: toAll, toText: $('pids').value, gold: $('gold').value, gems: $('gems').value === '' ? 0 : +$('gems').value, give: give(), from: $('from').value, until: $('until').value, sub: $('sub').value }; }
   function preview() {
     var f = form(), g = CW.parseGold(f.gold), gr = $('goldRead');
-    if (!f.gold.trim()) { gr.textContent = '조·억·만을 붙여 적거나 숫자만 적어도 돼요.'; gr.style.color = ''; }
+    if (!f.gold.trim()) { gr.textContent = '경·조·억·만을 붙여 적거나 숫자만 적어도 돼요.'; gr.style.color = ''; }
     else if (!isFinite(g)) { gr.textContent = '읽지 못했어요. 「1조 5000억」이나 「300」처럼 적어 주세요.'; gr.style.color = 'var(--bad)'; }
-    else if (g > 9999e12) { gr.textContent = '= ' + CW.countText(g) + ' (9999조까지만 보낼 수 있어요)'; gr.style.color = 'var(--bad)'; }
+    else if (g > 9999e16) { gr.textContent = '= ' + CW.countText(g) + ' (9999경까지만 보낼 수 있어요)'; gr.style.color = 'var(--bad)'; }
     else { gr.textContent = '= 골드 ' + CW.countText(g); gr.style.color = 'var(--ok)'; }
     if (!isFinite(g)) g = 0;
     if (!subTouched) $('sub').value = CW.rewardSub(g, f.gems, f.give);
@@ -335,7 +335,7 @@ label.small{margin:8px 0 2px;font-size:13px}
       var li = document.createElement('li'), t = document.createElement('span'); t.className = 't';
       var top = document.createElement('div'); top.textContent = (l.title || '') + ' · ' + (l.sub || '');
       var info = document.createElement('small');
-      var gift = []; if (CW.mailGold(l) > 0) gift.push('골드 ' + CW.mailGoldText(l)); if (+l.gems > 0) gift.push('다이아 ' + CW.countText(l.gems) + '개');
+      var gift = []; if (CW.mailGold(l) > 0) gift.push('골드 ' + CW.countText(CW.mailGold(l))); if (+l.gems > 0) gift.push('다이아 ' + CW.countText(l.gems) + '개');
       if (CW.giftHas(l)) gift.push(CW.giftText(l));
       info.textContent = (l.date || '') + ' · ' + (l.to === 'all' ? '모두' : (Array.isArray(l.to) ? l.to.join(', ') : '')) + (gift.length ? ' · ' + gift.join(' · ') : ' · 공지') + (l.until ? ' · ~' + l.until : '');
       t.appendChild(top); t.appendChild(info); li.appendChild(t);
