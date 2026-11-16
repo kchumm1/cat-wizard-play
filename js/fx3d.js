@@ -1673,7 +1673,8 @@
         // sent to the graphics card now, while it arrives (warm() asks for every skin), not on the first frame that draws
         // it: a 1536×1024 sheet uploading mid-fight was the stall on the flytrap's and the world tree's first cast
         // (about 150 ms on a 4×-slowed phone emulation, 2026-11-16)
-        try { if (sc.renderer && sc.renderer.initTexture) sc.renderer.initTexture(t); } catch (e) { }
+        // (형꺼만: the trial has no tier-10 skills, the user: 친구꺼는 빼)
+        try { if (!CW.FRIEND && sc.renderer && sc.renderer.initTexture) sc.renderer.initTexture(t); } catch (e) { }
         S.users.forEach(function (u) { u.uMap.value = t; u.uPaint.value = 1; });
       }, undefined, function () { });
       return S;
