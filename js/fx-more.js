@@ -603,8 +603,8 @@
       var mob = c.pool()[0]; if (!mob) return;
       sc.heroPose('thrust', c.D(0.26), c.col); sc.dim(0.4, c.D(0.95));
       // the spear is a gold crystal (the ice lance's 3D spear, gold with a dark amber outline and no frost mist)
-      var up = sc.heroCenter().add(V(0, 1.4, -0.2)), aim = mp(mob), t = 0, T_FORM = c.D(0.26), T_FLY = c.D(0.11), L = 1.9 * c.s, P = up.clone(), dir = V(), stage = 0, end = V(), hit = false;
-      var spear = P3.iceSpear({ size: L, col: 0xffe08a, deep: 0xff8a1a, line: 0x6a3a08, mist: false }), vel = V();
+      var up = sc.heroCenter().add(V(0, 2.4, -0.3)), aim = mp(mob), t = 0, T_FORM = c.D(0.26), T_FLY = Math.max(0.13, c.D(0.14)), L = 1.9 * Math.min(1.2, c.s), P = up.clone(), dir = V(), stage = 0, end = V(), hit = false;
+      var spear = P3.iceSpear({ size: L, col: 0xfff2b0, deep: 0xffb030, line: 0xb8650c, mist: false }), vel = V();
       converge(up, [0xffffff, 0xffd84a, 0xff9a40], N(22, c), 1.5, T_FORM); seal(up, 0xffd84a, 1.1 * c.s, T_FORM);
       tick(function (dt) {
         t += dt;
@@ -612,7 +612,7 @@
           aim = mp(mob);
           dir.copy(aim).sub(up).normalize(); var kf = Math.min(1, t / T_FORM);
           spear.set(up, dir, dt, kf);
-          if (kf >= 1) { stage = 1; t = 0; end.copy(aim).addScaledVector(dir, 2.6); flare(up, 0xffffff, 1.6 * c.s, 0.14, { white: true }); ring(up, 0xffd84a, 1.6 * c.s, 0.2); sc.punch(0.05); }
+          if (kf >= 1) { stage = 1; t = 0; end.copy(aim).addScaledVector(dir, 2.6); flare(up, 0xffffff, 0.7 * Math.min(1.5, c.s), 0.1, { white: true }); ring(up, 0xffd84a, 1.0 * Math.min(1.5, c.s), 0.2); sc.punch(0.05); }
           return false;
         }
         if (stage === 1) {
@@ -657,7 +657,7 @@
     // of light, vanes of orange light) that flies at its monster pointing the way it goes, and stays stuck in it a moment.
     S.sunArrows = function (c) {
       sc.heroPose('raise', c.D(0.14), c.col);
-      var side = sc.heroState().faceT > 0 ? -1 : 1, sun = above(V(2.3 * side, 0, -1.2), 4.6), life = c.D(0.85), st = 0, R = 0.5 * Math.min(1.4, c.s);
+      var side = sc.heroState().faceT > 0 ? -1 : 1, sun = above(V(0.9 * side, 0, -1.2), 4.0), life = c.D(0.85), st = 0, R = 0.5 * Math.min(1.4, c.s);
       var sunBall = P3.moon({ lit: 0xfff0a0, dark: 0xff7a1a, rim: 0xffd84a, deep: 0xff8a20, solid: true, line: 0x7a3006, glowA: 0.5, spin: 1.5 });
       converge(sun, [0xffffff, 0xffd84a, 0xff9a40], N(14, c), 1.6, c.D(0.14));
       tick(function (dt) {
@@ -670,7 +670,7 @@
         if (!mob) return;
         var from = sun.clone().add(rdir(0.35)), L = 1.1 * Math.min(1.3, c.s), arrow = P3.bm('arrow', { col: 0xffd04a }), scl = V(L * 1.6, L, L * 1.6), D = V(0, -1, 0);
         flare(from, 0xffffff, 0.5, 0.08, { white: true });
-        homing({ from: from, to: function () { mob = liveTarget(mob); return mp(mob); }, time: c.D(0.15), fancy: false,
+        homing({ from: from, to: function () { mob = liveTarget(mob); return mp(mob); }, time: Math.max(0.12, c.D(0.18)), fancy: false,
           trail: { w: 0.07 * c.s, col: 0xffd84a, core: 1.4, pts: 12, shrink: 90, halo: false },
           heads: [],
           emit: function (p, v) { if (v.lengthSq() > 1e-6) D.copy(v).normalize(); arrow.set(p.clone().addScaledVector(D, -L * 0.92), alongQ(D), scl, 1, 0); },
