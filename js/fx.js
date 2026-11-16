@@ -425,15 +425,25 @@
       var cr = P3.toonFire('fireballCore', { kind: o.kind, core: true, tw: 2.0, rise: 3.2, band: 0.35, foot: true }), spin = Math.random() * 6.283, ax = V(0, 1, 0), f1 = V(), f2 = V();
       // o.thick: one more layer of fire round it (its own flame pattern, turning the other way) so it reads solid
       var b2 = o.thick ? P3.toonFire('fireball', { kind: o.kind, tw: -2.2, rise: 2.2, band: 0.3, lift: 0.0, foot: true, noGlow: true }) : null;
+      // (2026-11-17) the fire's ball is the user's painted flying fireball (art/fx-flyball.webp): its head at p, its tail
+      // streaming back along the flight on the screen, its flames looping; the 3D one stays hidden behind it (and shows
+      // only until the picture has come, and for the sun's gold ball)
+      var pic = o.kind !== 'sun' && P3.sheetFx ? P3.sheetFx('fx-flyball') : null, pf = Math.random() * 16, vv = V(0, -1, 0);
       return {
         set: function (p, v, dt, k) {
           var Lk = L * (k === undefined ? 1 : Math.max(0.01, k));
+          if (pic && pic.ready()) {
+            pf += (dt || 0) * 22; if (v.lengthSq() > 1e-8) vv.copy(v);
+            pic.set(p, Lk * 1.55, pf, P3.screenAngle(vv), 1);
+            b.set(p, Lk, 0, 1, 0, 0); cr.set(p, Lk, 0, 1, 0, 0); if (b2) b2.set(p, Lk, 0, 1, 0, 0);   // (k 1: hidden)
+            return;
+          }
           spin += (dt || 0) * 13; var sp = v.length(); if (sp > 1e-4) ax.copy(v).multiplyScalar(-1 / sp);
           f1.copy(p).addScaledVector(ax, -0.3 * Lk); f2.copy(p).addScaledVector(ax, -0.3 * 0.72 * Lk);
           b.set(f1, Lk, spin, 0, 0, 0, undefined, ax); cr.set(f2, Lk * 0.72, spin * 1.2, 0, 0, 0, undefined, ax);
           if (b2) b2.set(f1, Lk * 0.96, -spin * 0.8 + 1.7, 0, 0, 0, Lk / 1.6 * 0.9, ax);
         },
-        kill: function () { b.kill(); cr.kill(); if (b2) b2.kill(); }
+        kill: function () { b.kill(); cr.kill(); if (b2) b2.kill(); if (pic) pic.kill(); }
       };
     }
     // where a ball of fire lands (real 3D): a lumpy dome of toon fire (the Blender 'boom') bursts up out of the ground round
@@ -663,6 +673,8 @@
             onHit: function (p) {
               ball.kill(); var g = V(p.x, 0, p.z);
               if (!toonBoom(g, 0.52 * S_)) P3.blast(g, { size: 0.4 * S_, col: 0xff8a2b, chips: 3, ring: 2.0, life: 0.6 });
+              if (P3.fireBoom) P3.fireBoom(g, 0.62 * S_, c.D(1.0));   // (2026-11-17: the user's painted explosion, small)
+              if (P3.lavaMark) P3.lavaMark(g, 1.0 * S_, c.D(1.1));
               sparks(p, [0xffe080, 0xff8a2b], N(8, c), 5, { size: 0.15, stretch: 0.14 });
               embers(p, [0xffe080, 0xff6a2b], N(6, c), { speed: 2.4, up: 2.2 });
               scorch(g, 1.0 * S_, 2.2); sc.light(p, 0xff8a3a, 1.6, 0.35); sc.shake(0.12);

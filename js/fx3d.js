@@ -212,17 +212,29 @@
     // rather than standing straight like a torch's). uOut 1: a dark toon outline (uRim) along the cut edges and the
     // shape's silhouette, for bright ground where the fire's own colours wash out. uRise: the flame streaks race up it
     // (shape heights per second: a pillar's fire shoots upward)
-    toon: 'uniform vec3 uC0,uC1,uC2,uC3,uC4,uRim;uniform vec4 uStep;uniform float uCut,uLift,uSpin,uK,uFrom,uDis,uSeed,uTw,uOut,uRise,uFoot,uBand,uTop;void main(){' +
+    toon: 'uniform vec3 uC0,uC1,uC2,uC3,uC4,uRim;uniform vec4 uStep;uniform float uCut,uLift,uSpin,uK,uFrom,uDis,uSeed,uTw,uOut,uRise,uFoot,uBand,uTop,uPaint,uPaintEdge,uPaintK,uEdgeH,uEdgeRep;uniform vec2 uRep;uniform sampler2D uMap,uEdge;void main(){' +
       'float u=vUv.x,v=vUv.y,an=uSpin+v*uTw,cs=cos(an),sn=sin(an);vec3 q=vec3(cs*vP.x-sn*vP.z,vP.y-uTime*uRise,sn*vP.x+cs*vP.z);' +
-      'float nz=fb(vec3(q.x*1.6,q.y*0.6,q.z*1.6)*2.4+uSeed);' +
+      // (painted: the picture brings the flames, so the noise that made them is skipped — lighter for the phone)
+      'float nz=uPaint>0.5?0.62:fb(vec3(q.x*1.6,q.y*0.6,q.z*1.6)*2.4+uSeed);' +
       'float pp=mod(v*3.0+u,1.0/3.0),band=(1.0/6.0-abs(pp-1.0/6.0))*2.1*uBand;' +
       'vec2 ring=normalize(vP.xz+vec2(1e-4))*2.4;float tn=fb2(vec3(ring,v)+uSeed*0.37);' +
-      'float tm=clamp((v-uTop-0.75*tn+0.3-0.98)/(0.8-0.98),0.0,1.0),bm=max(uFoot,clamp(v/0.08,0.0,1.0));' +
+      'float tm=uEdgeH>0.0&&uPaint>0.5?1.0:clamp((v-uTop-0.75*tn+0.3-0.98)/(0.8-0.98),0.0,1.0),bm=max(uFoot,clamp(v/0.08,0.0,1.0));' +
       'float f=(nz+band-uLift)*tm*bm;' +
       'float n2=fbm2(vec3(q*2.0)+uSeed)*0.25;' +
       'if(uK>0.0&&v+n2>1.12-uK*1.3)discard;if(uFrom>0.0&&v+n2<uFrom)discard;' +
       'f-=uDis*(0.45+n2*1.2);if(f<uCut)discard;' +
       'vec3 c=f<uStep.x?uC0:f<uStep.y?uC1:f<uStep.z?uC2:f<uStep.w?uC3:uC4;' +
+      // painted (2026-11-17, the user's ChatGPT fire): the picture's flames wrap round the shape and race up it with the
+      // fire; its black is the gap between flames: near the edge of the fire it is cut away (painted tongues), inside it
+      // takes the fire's deep colour so the body stays solid
+      'if(uPaint>0.5){vec2 tv=vec2((u+v*uTw/6.2832)*uRep.x+uSeed,v*uRep.y-uTime*uRise*0.3+uSeed*0.37);vec3 tx=texture2D(uMap,tv).rgb;' +
+      'float lum=max(tx.r,max(tx.g,tx.b)),gap=1.0-smoothstep(0.1,0.32,lum),inner=smoothstep(uCut,uCut+uPaintEdge,f);' +
+      'if(gap>0.5&&inner<0.6)discard;c=mix(tx*uPaintK,uC0*0.82,gap);' +
+      // the top of the shape ends in painted flame tongues (art/fx-fireedge.webp: solid fire at its foot, tongues licking
+      // up into black): over the top uEdgeH of the shape, black there is cut away, so the outline is flames, not a smooth lump
+      'if(uEdgeH>0.0){float ev=(v-(1.0-uEdgeH))/uEdgeH;if(ev>0.0){' +
+      'vec3 ex=texture2D(uEdge,vec2(u*uEdgeRep+uSeed*0.31-uTime*0.06,clamp(ev+0.03*sin(uTime*7.0+u*25.0),0.0,0.995))).rgb;' +
+      'float el=max(ex.r,max(ex.g,ex.b));if(el<0.16)discard;c=mix(c,ex*uPaintK,smoothstep(0.1,0.45,ev));}}}' +
       'float sil=1.0-abs(dot(normalize(vN),normalize(vV)));' +
       'if(uOut>0.0&&(f<uCut+0.035||sil>0.88))c=uRim;' +
       'gl_FragColor=vec4(c,1.0);}',
@@ -1085,6 +1097,28 @@
       sun: { cut: 0.38, lift: 0.1, steps: [0.46, 0.6, 0.74, 0.88], cols: [0xe8780c, 0xffa61a, 0xffd23a, 0xfff08a, 0xffffff] },
       sunCore: { cut: 0.38, lift: 0.0, steps: [0.52, 0.7, 0.88, 9], cols: [0xffc23a, 0xffe070, 0xfff6c0, 0xffffff, 0xffffff] }
     };
+    // the painted fire (2026-11-17, the user had ChatGPT draw them; tools/comfyui/anime-fire-prep.py): one repeating picture
+    // each for the outer fire, the hot core and the smoke. Loaded once; every toon fire shares the uniform, so they all
+    // switch to the picture when it comes (until then, and for the sun's gold fire, the flat colour steps)
+    var TPAINT = {};
+    function toonPaint(name) {
+      var S = TPAINT[name]; if (S) return S;
+      var ph = new T.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1); ph.needsUpdate = true;
+      S = TPAINT[name] = { map: { value: ph }, on: { value: 0 } };
+      if (T.TextureLoader) new T.TextureLoader().load((root.CW && root.CW.ART_BASE || 'art/') + name + '.webp', function (t) {
+        t.wrapS = t.wrapT = T.RepeatWrapping; t.anisotropy = 4; S.map.value = t; S.on.value = 1;
+        try { if (sc.renderer && sc.renderer.initTexture) sc.renderer.initTexture(t); } catch (e) { }
+      }, undefined, function () { });
+      return S;
+    }
+    // per kind: which picture, how many times round (whole number: it meets itself) and up, how deep the cut-away edge
+    // runs, how bright
+    var TPAINT_K = {
+      fire: { pic: 'fx-firetile', rep: [1, 0.55], edge: 0.22, k: 1.0 },
+      fireCore: { pic: 'fx-firecore', rep: [1, 0.5], edge: 0.12, k: 1.0 },
+      smoke: { pic: 'fx-smoketile', rep: [1, 0.6], edge: 0.18, k: 1.0 },
+      smokeCore: { pic: 'fx-smoketile', rep: [1, 0.6], edge: 0.1, k: 1.15 }
+    };
     function toonFire(shape, o) {
       o = o || {};
       // o.tw: how far the flame streaks wind round as they rise (0 = straight up, a torch); o.rise: how fast they race up;
@@ -1092,9 +1126,14 @@
       var P = TOON[(o.smoke ? 'smoke' : (o.kind || 'fire')) + (o.core ? 'Core' : '')], p = null, glow = null, seed = Math.random() * 7;
       // the glow shell: only round the outer fire (not the core inside it, not smoke)
       var wantGlow = !o.smoke && !o.core && !o.noGlow, glowA = o.glow === undefined ? 1.3 : o.glow;
+      // (materials come back from a pool with their uniforms copied, so the picture is handed over in set() each frame)
+      var PK = TPAINT_K[(o.smoke ? 'smoke' : (o.kind || 'fire')) + (o.core ? 'Core' : '')], PT = PK && o.paint !== false ? toonPaint(o.pic || PK.pic) : null;
+      // the outer fire's top ends in the painted flame tongues (o.edge: how much of its height, 0 = none)
+      var EH = o.edge === undefined ? 0.3 : o.edge, PE = PT && !o.smoke && !o.core && EH > 0 ? toonPaint('fx-fireedge') : null;
       function make() {
         var g = meshGeometry(shape); if (!g) return null;
-        var uni = { uC0: { value: hexv(P.cols[0]) }, uC1: { value: hexv(P.cols[1]) }, uC2: { value: hexv(P.cols[2]) }, uC3: { value: hexv(P.cols[3]) }, uC4: { value: hexv(P.cols[4]) },
+        // (uMap starts empty: mat() would copy a texture into a pooled one's old texture; set() hands it over)
+        var uni = { uMap: { value: null }, uPaint: { value: 0 }, uEdge: { value: null }, uEdgeH: { value: 0 }, uEdgeRep: { value: o.edgeRep || 2 }, uRep: { value: new T.Vector2(PK ? PK.rep[0] : 1, PK ? PK.rep[1] : 1) }, uPaintEdge: { value: o.paintEdge || (PK ? PK.edge : 0.2) }, uPaintK: { value: PK ? PK.k : 1 }, uC0: { value: hexv(P.cols[0]) }, uC1: { value: hexv(P.cols[1]) }, uC2: { value: hexv(P.cols[2]) }, uC3: { value: hexv(P.cols[3]) }, uC4: { value: hexv(P.cols[4]) },
           uRim: { value: hexv(o.smoke ? 0x24202e : o.kind === 'sun' ? 0x8a4a06 : 0x6e1004) }, uOut: { value: 0 }, uTw: { value: o.tw || 0 }, uRise: { value: o.rise || 0 },
           uStep: { value: new T.Vector4(P.steps[0], P.steps[1], P.steps[2], P.steps[3]) }, uCut: { value: P.cut }, uLift: { value: o.lift === undefined ? P.lift : o.lift }, uSpin: { value: 0 }, uK: { value: 0 }, uFrom: { value: 0 }, uDis: { value: 0 }, uSeed: { value: seed }, uFoot: { value: o.foot ? 1 : 0 }, uBand: { value: o.band === undefined ? 1 : o.band }, uTop: { value: o.top || 0 } };
         var q = add(new T.Mesh(g, mat(FS.toon, uni, { solid: true, side: T.DoubleSide })), { order: 6 }); q.mesh.name = 'core3d toon ' + shape;
@@ -1109,6 +1148,8 @@
           if (!p) { p = make(); if (!p) return; }
           var u = U(p), s = Math.max(0.001, h) / (p.mesh.geometry.userData.h || 1), sw = w || s, shown = (k || 0) < 1 && (dis || 0) < 1;
           p.mesh.position.copy(pos); p.mesh.scale.set(sw, s, sw); turn(p.mesh, spin, axis);
+          if (PT) { u.uMap.value = PT.map.value; u.uPaint.value = PT.on.value; } else u.uPaint.value = 0;
+          if (PE && PE.on.value) { u.uEdge.value = PE.map.value; u.uEdgeH.value = EH; } else u.uEdgeH.value = 0;
           u.uSpin.value = -(spin || 0) * 2; u.uK.value = k || 0; u.uFrom.value = from || 0; u.uDis.value = dis || 0;
           // bright ground: the dark outline instead of the glow (light added on snow is lost and only washes it out)
           u.uOut.value = bright ? 1 : 0;
@@ -1740,6 +1781,116 @@
       }
       L.mesh.count = n; L.mesh.visible = n > 0; L.mesh.instanceMatrix.needsUpdate = true; L.g.attributes.iF.needsUpdate = true;
     }
+    // ---------- the fire bomb as pictures (art/fx-fireboom.webp, 2026-11-17, the user's ChatGPT anime explosion: a spark,
+    // a ball of fire rising into a mushroom of flame, then smoke drifting off; 4 x 4, black made clear by
+    // tools/comfyui/anime-fire-prep.py). It stands on the ground (the foot of each picture is the blast's foot), faces the
+    // camera, one moment after another without blending. fireBoom(pos, size): size 1 = 3 wide
+    var FBOOM = { span: 1.5, world: 3.0, foot: 0.06, push: 1.2, cap: 24 }, fbL = null, fbTex = null;
+    function fbLayer() {
+      if (fbL) return fbL;
+      fbTex = new T.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1); fbTex.needsUpdate = true;
+      if (T.TextureLoader) new T.TextureLoader().load((root.CW && root.CW.ART_BASE || 'art/') + 'fx-fireboom.webp', function (t) {
+        t.generateMipmaps = false; t.minFilter = T.LinearFilter; fbTex = t; if (fbL) fbL.mat.uniforms.uMap.value = t;
+        try { if (sc.renderer && sc.renderer.initTexture) sc.renderer.initTexture(t); } catch (e) { }
+      }, undefined, function () { });
+      var g = new T.InstancedBufferGeometry().copy(new T.PlaneGeometry(1, 1)), fa = new Float32Array(FBOOM.cap * 2);
+      g.setAttribute('iF', new T.InstancedBufferAttribute(fa, 2).setUsage(T.DynamicDrawUsage));
+      var m = new T.ShaderMaterial({ uniforms: { uMap: { value: fbTex } }, vertexShader: VS_BOOM, fragmentShader: FS_BOOM, transparent: true, depthWrite: false, depthTest: true });
+      var mesh = new T.InstancedMesh(g, m, FBOOM.cap); mesh.instanceMatrix.setUsage(T.DynamicDrawUsage); mesh.frustumCulled = false; mesh.count = 0; mesh.visible = false; mesh.renderOrder = 6.5; mesh.name = 'core3d fireboom';
+      group.add(mesh);
+      fbL = { mesh: mesh, mat: m, fa: fa, g: g, list: [] };
+      return fbL;
+    }
+    function fireBoom(pos, size, span) {
+      var L = fbLayer(); if (L.list.length >= FBOOM.cap) L.list.shift();
+      L.list.push({ x: pos.x, z: pos.z, t: 0, s: size || 1, span: span || FBOOM.span });
+    }
+    function drawFireBoom(dt) {
+      var L = fbL; if (!L) return;
+      var cam = sc.camera, n = 0;
+      for (var i = L.list.length - 1; i >= 0; i--) { L.list[i].t += dt; if (L.list[i].t >= L.list[i].span) L.list.splice(i, 1); }
+      for (var j = 0; j < L.list.length; j++) {
+        var b = L.list[j], f = Math.min(15.001, b.t / b.span * 16), W = FBOOM.world * b.s;
+        // its centre half a picture up from its foot, pulled toward the camera (so the ground does not cut it) and as much smaller
+        BOOM_P.set(b.x, W * (0.5 - FBOOM.foot), b.z); BOOM_D.copy(cam.position).sub(BOOM_P); var D = BOOM_D.length(), k = Math.max(0.2, (D - FBOOM.push) / D);
+        BOOM_P.addScaledVector(BOOM_D, FBOOM.push / D); BOOM_S.setScalar(W * k);
+        L.mesh.setMatrixAt(n, BOOM_M.compose(BOOM_P, BOOM_Q, BOOM_S)); L.fa[n * 2] = Math.floor(f); L.fa[n * 2 + 1] = 1; n++;
+      }
+      L.mesh.count = n; L.mesh.visible = n > 0; L.mesh.instanceMatrix.needsUpdate = true; L.g.attributes.iF.needsUpdate = true;
+    }
+    // ---------- painted 4 x 4 scene sheets the skills move themselves (2026-11-17, the user's ChatGPT pictures,
+    // tools/comfyui/anime-fire-prep.py): art/fx-flyball.webp a flying fireball (head on the right, its tail streaming
+    // left; 16 scenes that loop), art/fx-pillar.webp a column of fire (1-4 bursting up, 5-12 roaring, 13-16 dying into
+    // smoke; its foot at the bottom middle of each scene). Each sheet is one batched layer of pictures facing the camera.
+    // sheetFx(name) → { set(pos, size, frame, angle, alpha), kill() }: pos is the picture's anchor (head: the ball's head;
+    // foot: its foot on the ground), size its width in the world, angle (radians, on the screen) turns it
+    var SHEETS = {
+      'fx-flyball': { anchor: [0.33, -0.06], order: 6.4 },
+      'fx-pillar': { anchor: [0, -0.46], order: 6.3 }
+    }, sheetL = {};
+    var VS_SHEET = [
+      'attribute vec3 iF; uniform vec2 uAnchor; varying vec2 vUv0; varying float vA;',
+      'void main(){',
+      '  vec4 mv = modelViewMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0); float s = length(instanceMatrix[0].xyz);',
+      '  vec2 q = position.xy - uAnchor; float c = cos(iF.z), n = sin(iF.z); mv.xy += vec2(q.x * c - q.y * n, q.x * n + q.y * c) * s;',
+      '  gl_Position = projectionMatrix * mv; vA = iF.y; float f0 = floor(iF.x + 0.001);',
+      '  vUv0 = (vec2(mod(f0, 4.0), 3.0 - floor(f0 / 4.0)) + position.xy + 0.5) / 4.0; }'].join('\n');
+    var FS_SHEET = 'uniform sampler2D uMap; varying vec2 vUv0; varying float vA; void main(){ vec4 c = texture2D(uMap, vUv0); c.a *= vA; if (c.a < 0.01) discard; gl_FragColor = c; }';
+    function sheetLayer(name) {
+      var L = sheetL[name]; if (L) return L;
+      var S = SHEETS[name], cap = 32, ph = new T.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1); ph.needsUpdate = true;
+      var g = new T.InstancedBufferGeometry().copy(new T.PlaneGeometry(1, 1)), fa = new Float32Array(cap * 3);
+      g.setAttribute('iF', new T.InstancedBufferAttribute(fa, 3).setUsage(T.DynamicDrawUsage));
+      var m = new T.ShaderMaterial({ uniforms: { uMap: { value: ph }, uAnchor: { value: new T.Vector2(S.anchor[0], S.anchor[1]) } }, vertexShader: VS_SHEET, fragmentShader: FS_SHEET, transparent: true, depthWrite: false, depthTest: true });
+      var mesh = new T.InstancedMesh(g, m, cap); mesh.instanceMatrix.setUsage(T.DynamicDrawUsage); mesh.frustumCulled = false; mesh.count = 0; mesh.visible = false; mesh.renderOrder = S.order; mesh.name = 'core3d sheet ' + name;
+      group.add(mesh);
+      L = sheetL[name] = { mesh: mesh, mat: m, fa: fa, g: g, cap: cap, list: [], ready: false };
+      if (T.TextureLoader) new T.TextureLoader().load((root.CW && root.CW.ART_BASE || 'art/') + name + '.webp', function (t) {
+        t.generateMipmaps = false; t.minFilter = T.LinearFilter; m.uniforms.uMap.value = t; L.ready = true;
+        try { if (sc.renderer && sc.renderer.initTexture) sc.renderer.initTexture(t); } catch (e) { }
+      }, undefined, function () { });
+      return L;
+    }
+    function sheetFx(name) {
+      var L = sheetLayer(name), h = { p: new T.Vector3(), s: 1, f: 0, a: 0, al: 0, dead: false };
+      L.list.push(h);
+      return {
+        set: function (pos, size, frame, angle, alpha) { h.p.copy(pos); h.s = size; h.f = frame; h.a = angle || 0; h.al = alpha === undefined ? 1 : alpha; },
+        ready: function () { return L.ready; },
+        kill: function () { h.dead = true; }
+      };
+    }
+    var SH_V = new T.Vector3();
+    // the angle on the screen of a direction in the world (for a fireball's flight)
+    function screenAngle(v) { SH_V.copy(v).transformDirection(sc.camera.matrixWorldInverse); return Math.atan2(SH_V.y, SH_V.x); }
+    function drawSheets() {
+      for (var k in sheetL) {
+        var L = sheetL[k], n = 0;
+        for (var i = L.list.length - 1; i >= 0; i--) if (L.list[i].dead) L.list.splice(i, 1);
+        for (var j = 0; j < L.list.length && n < L.cap; j++) {
+          var h = L.list[j]; if (h.al <= 0.001) continue;
+          BOOM_S.setScalar(h.s); L.mesh.setMatrixAt(n, BOOM_M.compose(h.p, BOOM_Q, BOOM_S)); L.fa[n * 3] = ((Math.floor(h.f) % 16) + 16) % 16; L.fa[n * 3 + 1] = h.al; L.fa[n * 3 + 2] = h.a; n++;
+        }
+        L.mesh.count = n; L.mesh.visible = n > 0 && L.ready; L.mesh.instanceMatrix.needsUpdate = true; L.g.attributes.iF.needsUpdate = true;
+      }
+    }
+    // the ground where fire landed, seen from above (art/fx-lavamark.webp: cracked glowing lava in a ring of low flame):
+    // lavaMark(pos, size, life) lies flat on the ground, flickers and fades
+    var lavaTex = null;
+    function lavaMark(pos, size, life) {
+      if (!lavaTex && T.TextureLoader) lavaTex = new T.TextureLoader().load((root.CW && root.CW.ART_BASE || 'art/') + 'fx-lavamark.webp');
+      var m = new T.MeshBasicMaterial({ map: lavaTex, transparent: true, depthWrite: false, opacity: 0 });
+      var p = add(new T.Mesh(PLANE_FLAT, m), { order: 2.2 }); p.mesh.name = 'core3d lavamark';
+      p.mesh.rotation.set(-Math.PI / 2, 0, Math.random() * 6.283); p.mesh.position.set(pos.x, 0.03, pos.z); p.mesh.scale.setScalar(0.01);
+      var t = 0, L = life || 1.6, S = size || 1;
+      p.upd = function (dt) {
+        t += dt; var k = t / L; if (k >= 1) return true;
+        p.mesh.scale.setScalar(S * (0.55 + 0.45 * Math.min(1, t / 0.12)));
+        m.opacity = Math.min(1, t / 0.06) * (1 - Math.pow(k, 2.2)) * (0.92 + 0.08 * Math.sin(t * 30));
+      };
+      return p;
+    }
+    var PLANE_FLAT = new T.PlaneGeometry(1, 1);
     // the painted skins' sheet (BM_KIND map): loaded once; the layers wearing it switch to it when it has come
     var skins = {};
     function skin(name) {
@@ -1814,9 +1965,9 @@
         p.t += dt; var u = p.mesh.material && p.mesh.material.uniforms; if (u && u.uTime) u.uTime.value = time;
         if ((p.upd && p.upd(dt, p.t) === true) || p.t >= p.life) { drop(p); parts.splice(i, 1); }
       }
-      drawChips(dt); drawSpikes(dt); drawCrystals(dt); drawBM(); drawBoom(dt);
+      drawChips(dt); drawSpikes(dt); drawCrystals(dt); drawBM(); drawBoom(dt); drawFireBoom(dt); drawSheets();
     }
-    function clear() { if (boomL) { boomL.list.length = 0; drawBoom(0); } for (var bk in bmLayers) bmLayers[bk].list.forEach(function (h) { h.dead = true; }); drawBM(); parts.forEach(drop); parts.length = 0; spikes.length = 0; chips.forEach(function (l) { l.length = 0; }); xs.length = 0; drawSpikes(0); drawChips(0); drawCrystals(0); if (sc.lens) sc.lens(null); }
+    function clear() { if (boomL) { boomL.list.length = 0; drawBoom(0); } if (fbL) { fbL.list.length = 0; drawFireBoom(0); } for (var sk in sheetL) sheetL[sk].list.length = 0; drawSheets(); for (var bk in bmLayers) bmLayers[bk].list.forEach(function (h) { h.dead = true; }); drawBM(); parts.forEach(drop); parts.length = 0; spikes.length = 0; chips.forEach(function (l) { l.length = 0; }); xs.length = 0; drawSpikes(0); drawChips(0); drawCrystals(0); if (sc.lens) sc.lens(null); }
     // Build every program before it is needed. A compiled program also depends on the scene (whether it has fog, and of
     // which kind), so this is done again whenever that changes (fx.setRegion calls it); the same scene state is skipped.
     // Only the parts made here are dropped again, and their materials go into the pool, so the programs stay.
@@ -1832,15 +1983,19 @@
       fluffBall({}).set(far, 0.5); yarnBall({}).set(far, 0.5);
       var bmWarm = Object.keys(BM_KIND).map(function (k) { var h = bm(k, {}); h.set(far, null, 0.5, 1, 0.5); return h; }); drawBM();
       if (!CW.FRIEND) { boomLayer().list.push({ x: 0, z: -40, t: 0, s: 1 }); drawBoom(0); }   // (the world tree's fruit bombs: 형꺼 only, the trial has no tier 10)
+      fbLayer().list.push({ x: 0, z: -40, t: 0, s: 1, span: 1 }); drawFireBoom(0);
+      ['fx-firetile', 'fx-firecore', 'fx-smoketile', 'fx-fireedge', 'fx-fireswirl'].forEach(toonPaint);
+      var shWarm = Object.keys(SHEETS).map(function (k) { var h = sheetFx(k); h.set(far, 1, 0, 0, 1); return h; }); drawSheets();
+      lavaMark(far, 1, 1);
       for (var ek = 0; ek < 7; ek++) emblem(ek, { col: 0xff8a3a, deep: 0x8a2a10 }).set(far, 0.5, 0); glassOrb({ kind: 0, col: 0xff8a3a, deep: 0x8a2a10 }).set(far, 0.5, 0, 1); elemRing({ cols: [0xff0000, 0xffff00, 0xff00ff, 0x00ffff, 0x00ff00] }).set(far, 1, 0, 0, 1); var xst = xs.length; crystal({ pos: far });
       drawSpikes(0); layoutSmoke(sc.camera, true); drawChips(0); drawCrystals(0);   // the layers must be drawing copies when compiled, so their (instanced) programs are built too
       sc.renderer.compile(sc.scene, sc.camera);
       for (var i = parts.length - 1; i >= start; i--) drop(parts[i]);
       parts.length = start; spikes.length = spikeStart; chips.forEach(function (l, i) { l.length = chipStart[i]; }); xs.length = xst; drawSpikes(0); drawChips(0); drawCrystals(0);
-      bmWarm.forEach(function (h) { h.kill(); }); drawBM(); if (boomL) { boomL.list.length = 0; drawBoom(0); }
+      bmWarm.forEach(function (h) { h.kill(); }); drawBM(); if (boomL) { boomL.list.length = 0; drawBoom(0); } fbL.list.length = 0; drawFireBoom(0); shWarm.forEach(function (h) { h.kill(); }); drawSheets();
       if (sc.warmLens) sc.warmLens();
     }
-    return { boom: boom, beam: beam, orb: orb, moon: moon, rock: rock, fireball: fireball, column: column, twister: twister, toonFire: toonFire, ringWall: ringWall, fireWave: fireWave, picWave: picWave, waveShards: waveShards, seqWave: seqWave, iceSpear: iceSpear, iceSpikes: iceSpikes, iceSpike: iceSpike, mark: mark, impact: impactP, puff: puff, blast: blast, chip: chip, hole: hole, emblem: emblem, glassOrb: glassOrb, elemRing: elemRing, crystal: crystal, fluffBall: fluffBall, yarnBall: yarnBall, bm: bm, update: update,
+    return { boom: boom, fireBoom: fireBoom, sheetFx: sheetFx, screenAngle: screenAngle, lavaMark: lavaMark, beam: beam, orb: orb, moon: moon, rock: rock, fireball: fireball, column: column, twister: twister, toonFire: toonFire, ringWall: ringWall, fireWave: fireWave, picWave: picWave, waveShards: waveShards, seqWave: seqWave, iceSpear: iceSpear, iceSpikes: iceSpikes, iceSpike: iceSpike, mark: mark, impact: impactP, puff: puff, blast: blast, chip: chip, hole: hole, emblem: emblem, glassOrb: glassOrb, elemRing: elemRing, crystal: crystal, fluffBall: fluffBall, yarnBall: yarnBall, bm: bm, update: update,
       // for checks: the live copies of a Blender mesh kind ({ p, q, s, a })
       bmList: function (kind) { var L = bmLayers[kind]; return L ? L.list.filter(function (h) { return !h.dead && h.a > 0.002; }) : []; }, clear: clear, warm: warm, setBright: function (v) { bright = !!v; }, setBatchSmoke: function (v) { batchSmoke = !!v; }, setBatchChips: function (v) { batchChips = !!v; },
       count: function () { return bmCount() + parts.length + xs.length + spikes.length + chips[0].length + chips[1].length + chips[2].length; }, spikeTops: spikeTops,

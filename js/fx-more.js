@@ -178,13 +178,21 @@
           // racing upward (P3.toonFire), with a hotter core inside; the drawn column only until those shapes have loaded
           var tp = P3.toonFire ? P3.toonFire('pillar', { tw: 1.2, rise: 1.8, lift: 0.04, band: 0.6, top: 0.12 }) : null, tp2 = tp && P3.toonFire('pillar', { tw: -1.0, rise: 2.1, lift: 0.0, band: 0.5, top: 0.16, noGlow: true }), tpc = tp && P3.toonFire('pillarCore', { core: true, tw: 1.0, rise: 2.2, lift: -0.04, band: 0.6, top: 0.12 }), pspin = Math.random() * 6.283;
           var col3 = tp && tp.ready() ? null : P3.column({ col: 0xff3a0c, hot: 0xffa028, flare: true, speed: 3.6 });
+          // (2026-11-17) the column is the user's painted pillar of fire (art/fx-pillar.webp: bursting up, roaring, dying
+          // into smoke) standing on the crack; the 3D one only until the picture has come
+          var pp = P3.sheetFx ? P3.sheetFx('fx-pillar') : null, pfr = Math.random() * 8;
           var R = 0.62 * Math.min(1.4, c.s), H2 = Math.min(7.5, 5.0 * c.s), ct = 0, CT = c.D(0.62), base = g.clone();
           P3.blast(V(g.x, 0, g.z), { size: 0.38 * Math.min(1.4, c.s), col: 0xff5a14, low: 0x5a0a08, hotness: 0.2, flash: false, chips: 4, ring: 2.4, life: 0.5, crater: true });
           tick(function (dt) {
             ct += dt; if (mob.alive) { var gg = gp(mob); base.x = gg.x; base.z = gg.z; }
             var up = Math.min(1, ct / c.D(0.07)), burn = Math.max(0, (ct - CT * 0.5) / (CT * 0.5)), roar = 1 + Math.sin(ct * 38) * 0.05;
             var hNow = H2 * (1 - (1 - up) * (1 - up)) * roar;
-            if (col3) col3.set(base, hNow, R * (1.25 - 0.25 * up), Math.min(1, burn));
+            if (pp && pp.ready()) {
+              // scenes 1-4 as it bursts up, 5-12 looping while it roars, 13-16 as it burns down
+              var fr = ct < c.D(0.1) ? ct / c.D(0.1) * 4 : burn <= 0 ? 4 + (pfr + (ct - c.D(0.1)) * 20) % 8 : 12 + Math.min(3.99, burn * 4);
+              pp.set(V(base.x, 0, base.z), Math.min(3.4, H2 * 0.5) * (0.8 + 0.2 * up), fr, 0, 1);
+              if (col3) { col3.kill(); col3 = null; } if (tp) { tp.set(base, 1, 0, 1); tpc.set(base, 1, 0, 1); tp2.set(base, 1, 0, 1); }
+            } else if (col3) col3.set(base, hNow, R * (1.25 - 0.25 * up), Math.min(1, burn));
             else {
               // lower than the drawn column (its flaring top stays on screen); as it dies the fire comes away from the ground
               // and drifts up as it breaks apart, like a fountain cut off at its source
@@ -192,12 +200,12 @@
               tp.set(lift3, hT, pspin, 0, b3 * 1.05, b3 * 0.55, wNow); tpc.set(lift3, hT, pspin * 1.3, 0, Math.min(1, b3 * 1.25), b3 * 0.7, wNow);
               tp2.set(lift3, hT * 0.95, -pspin * 0.8 + 1.9, 0, Math.min(1, b3 * 1.12), b3 * 0.6, wNow * 0.85);
             }
-            if (ct < CT) return false; if (col3) col3.kill(); if (tp) { tp.kill(); tpc.kill(); tp2.kill(); } return true;
+            if (ct < CT) return false; if (col3) col3.kill(); if (tp) { tp.kill(); tpc.kill(); tp2.kill(); } if (pp) pp.kill(); return true;
           });
           // (no balls of fire thrown up the column: the user found them odd, 2026-11-16)
           for (var f = 0; f < N(16, c); f++) E({ pos: V(g.x + rr(-0.35, 0.35), rr(0.2, 1.2), g.z + rr(-0.1, 0.1)), vel: V(rr(-1.2, 1.2), rr(12, 22), 0), frame: pick(['dot', 'dot', 'streak']), color: [0xffe080, 0xff6a2b], size: [rr(0.06, 0.13), 0.02], life: rr(0.35, 0.6), grav: 8, stretch: 0.06 });
           sc.shake(0.18); sc.punch(0.05);
-          flare(q, 0xffffff, 1.4 * c.s, 0.15, { white: true }); gRing(g, 0xff7a2b, 2.6 * c.s, 0.45); scorch(g, 1.3 * c.s, 2.4);
+          flare(q, 0xffffff, 1.4 * c.s, 0.15, { white: true }); gRing(g, 0xff7a2b, 2.6 * c.s, 0.45); scorch(g, 1.3 * c.s, 2.4); if (P3.lavaMark) P3.lavaMark(g, 1.5 * Math.min(1.5, c.s), c.D(1.3));
           smoke(V(g.x, 0.6, g.z), [0x6a5a54, 0x2e2624], N(5, c), { size: 1.0, rise: 1.6, speed: 0.8, life: 1.2 });
           embers(q, [0xffe080, 0xff6a2b], N(10, c), { speed: 2.6, up: 3.5 });
           sc.light(q, 0xff8a3a, 1.8, 0.4); heavy(0.9); if (!i) sc.flash('rgba(255,170,90,0.3)', 0.2);
@@ -295,7 +303,7 @@
       function ease3(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
       // the tornado: real 3D shapes made in Blender (an outer swirl and a hot core inside it, and the same swirl as smoke for
       // the end), painted as toon fire by the game (P3.toonFire); the drawn tornado only until those shapes have loaded
-      var tf = P3.toonFire ? P3.toonFire('tornado', { tw: 5.5, top: 0.1 }) : null, tcore = tf && P3.toonFire('tornadoCore', { core: true, tw: 4.5, top: 0.1 }), tsm = tf && P3.toonFire('tornado', { smoke: true, tw: 3.5, top: 0.1 }), toonOn = function () { return tf && tf.ready(); };
+      var tf = P3.toonFire ? P3.toonFire('tornado', { tw: 5.5, top: 0.1, pic: 'fx-fireswirl', edge: 0.22, paintEdge: 3 }) : null, tcore = tf && P3.toonFire('tornadoCore', { core: true, tw: 4.5, top: 0.1 }), tsm = tf && P3.toonFire('tornado', { smoke: true, tw: 3.5, top: 0.1 }), toonOn = function () { return tf && tf.ready(); };
       var tw = toonOn() ? null : P3.twister({}), spin = Math.random() * 6.283, P = start.clone(), trailT = 0, emT = 0, chipT = 0, tgT = 0, lightT = 0, flung = false;
       // a monster caught up in it: little flames whirl up round it and sparks fly. Only a boss, and the last monster it
       // reaches, get the big effect (a column of fire, a ring on the ground): one under every monster cluttered the whirl
@@ -411,7 +419,8 @@
             sc.climax(0.45, 0.3); sc.flash('rgba(255,140,50,0.42)', 0.24); sc.shake(0.55); sc.punch(0.13); sc.light(p, 0xff8a3a, 2.6, 0.5);
             // the burst: flung out wide at once, a taller one bursting up inside it
             if (!K.toonBoom(g, 0.95 * S_, { tall: 1.25, climb: 1.4, grow: 0.06, spread: 0.55, end: 1.05 })) P3.blast(g, { size: 0.6 * S_, col: 0xff7a1a, chips: 6, ring: 2.6, life: 0.8 });
-            after(c.D(0.06), function () { K.toonBoom(g, 0.55 * S_, { tall: 2.1, climb: 1.6, grow: 0.07, spread: 0.2, end: 0.8, layers: 1 }); });
+            // (2026-11-17) the tall one inside is the user's painted anime explosion: a ball of fire rising into a mushroom, then smoke
+            if (P3.fireBoom) P3.fireBoom(g, 0.95 * S_, c.D(1.5)); else after(c.D(0.06), function () { K.toonBoom(g, 0.55 * S_, { tall: 2.1, climb: 1.6, grow: 0.07, spread: 0.2, end: 0.8, layers: 1 }); });
             // the ground all round bursts a beat later, flung outward
             for (var f = 0; f < 6; f++) (function (f) {
               var a = f / 6 * 6.283 + rr(-0.25, 0.25), q = V(g.x + Math.cos(a) * 1.3 * S_, 0, g.z + Math.sin(a) * 1.0 * S_);
@@ -424,7 +433,7 @@
             for (var b = 0; b < N(14, c); b++) E({ sys: b % 2 ? 'col' : 'add', pos: p.clone().add(rdir(0.2)), vel: V(rr(-5.5, 5.5), rr(3, 6.5), rr(-3.5, 3.5)), frame: 'flame', color: [0xffe080, 0xff7a1a, 0xc8301a], size: [rr(0.28, 0.45) * S_, 0.08], life: rr(0.7, 1.1), grav: 9, drag: 0.6, spin: rr(-5, 5), fadeOut: 0.3 });
             sparks(p, [0xffe080, 0xff8a2b], N(16, c), 7.5, { size: 0.2, stretch: 0.16 });
             embers(p, [0xffe080, 0xff6a2b], N(12, c), { speed: 3.4, up: 3.2 });
-            scorch(g, 1.8 * S_, 2.6);
+            scorch(g, 1.8 * S_, 2.6); if (P3.lavaMark) P3.lavaMark(g, 2.4 * S_, c.D(2.0));
             c.hit(mob, 1, 2); c.splash(mob, 2.0, 1.2);
           } });
       });
