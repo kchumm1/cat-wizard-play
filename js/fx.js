@@ -610,7 +610,6 @@
     S.orbitRing = function (c) {
       sc.heroPose('spin', c.D(0.08), c.col);
       var center = sc.heroCenter(), n = 6, orbs = [], t = 0, launch = c.D(0.34), R = 1.25, hits = share(c.targets, n);
-      circle(V(center.x, 0, center.z), c.col, 1.7 * c.s, c.D(0.7), { spin: 3 });
       for (var i = 0; i < n; i++) orbs.push({ a0: i * Math.PI / 3, pos: center.clone(),
         rib: vx.ribbon({ solid: true, mode: 'trail', w: 0.1 * c.s, color: c.deep, core: 0.8, maxPts: 14, shrink: 70 }),
         head: E({ pos: center, frame: 'flare', color: 0xffffff, size: 0.46 * c.s, life: 30, upd: STAY, fadeOut: 1, spin: 6, white: true }),
@@ -729,7 +728,6 @@
       E({ sys: 'gadd', pos: V(FC.x, 0.035, FC.z), frame: 'frost', color: 0xdff4ff, size: [1.5, 10.5], ease: 1, life: dur * 1.5, spin: -0.12, fadeIn: 0.15, fadeOut: 0.5, alpha: 0.5 });
       for (var wv = 0; wv < N(22, c); wv++) { var wp = fieldPt(rr(0.3, 2.8)); wp.x = rr(-5, -1); E({ pos: wp, vel: V(rr(7, 11), rr(-1.4, -0.4), 0), frame: 'streak', color: 0xe8f8ff, size: [0.3, 0.5], life: rr(0.4, 0.7), delay: rr(0, dur * 0.8), stretch: 0.14, alpha: 0.5, fadeIn: 0.2, fadeOut: 0.4 }); }
       fieldRain(c, 55, dur * 0.7, { vel: function () { return V(rr(0.8, 2.2), rr(-3, -1.6), 0); }, frames: ['snow', 'snow', 'dot'], cols: 0xffffff, size: function () { return rr(0.07, 0.16) * c.s; }, life: 1.2, sway: true, white: true });
-      circle(V(sc.heroCenter().x, 0, sc.heroCenter().z), c.col, 1.4, c.D(0.5));
       smoke(V(C.x, 0.2, C.z), 0xdff4ff, N(8, c), { r: 1.2, size: 1.4, rise: 0.15, speed: 0.6, alpha: 0.32, life: 1.4 });
       sc.light(V(C.x, 1, C.z), c.col, 0.7, dur);
       sc.flash('rgba(210,240,255,0.3)', 0.15);
@@ -978,7 +976,6 @@
         if (sunOn === 1 && sunT < dur && Math.random() < dt * 90 * c.n) { var d = rdir(rr(2.2, 4.2)); d.z *= 0.2; E({ pos: sun.clone().add(d), vel: d.clone().multiplyScalar(-1 / 0.22), frame: pick(['streak', 'dot']), color: FIRE, size: [rr(0.16, 0.3), 0.04], life: 0.22, stretch: 0.07, fadeIn: 0.3 }); }
         if (!sunOn && sunSize < 0.04) { sunBall.kill(); sunGlow.kill(); return true; }
       });
-      circle(G, 0xffd84a, 3.0 * cs, dur + c.D(0.6), { spin: 1.6, alpha: 0.6 });
       sc.light(V(G.x, 2, G.z), 0xffd84a, 0.6, dur);
       // heat comes up off the whole ground, and a thin shaft marks the place of the column and every monster
       fieldRain(c, 34, dur, { y: function () { return rr(0.05, 0.3); }, vel: function () { return UPC.clone().multiplyScalar(rr(1.5, 3.5)); }, frames: ['dot', 'flare'], cols: [0xffe080, 0xff6a2b], size: function () { return [rr(0.06, 0.12), 0]; }, life: 0.8 });
@@ -1275,7 +1272,8 @@
       // three skills overlap instead of each one rushing by in half the time. CW.fxSpeedVisual = true brings back the
       // old rushed timing (for comparing). speedMul stays in the signature for the callers.
       var sp = CW.fxSpeedVisual ? (speedMul || 1) : 1; lv = lv || 0;
-      var c = { sk: skill, noCircle: !!NO_CIRCLE[skill.id], tier: tier, lv: lv, col: tint(skill.color, tier), s: 1.12 * (1 + 0.08 * (tier - 1)) * (1 + 0.018 * lv), n: Math.min(2.4, 1 + 0.1 * (tier - 1) + 0.025 * lv), sp: sp,
+      // no magic circles under any skill (2026-11-16, the user: '마법진은 빼자'; NO_CIRCLE was the list of skills without one)
+      var c = { sk: skill, noCircle: true, tier: tier, lv: lv, col: tint(skill.color, tier), s: 1.12 * (1 + 0.08 * (tier - 1)) * (1 + 0.018 * lv), n: Math.min(2.4, 1 + 0.1 * (tier - 1) + 0.025 * lv), sp: sp,
         D: function (t) { return t / sp; }, deep: deep(tint(skill.color, tier)), from: sc.heroPaw(), targets: targets.slice(), hit: hit || function () { } };
       c.center = crowdCenter(c.targets);
       c.epoch = epoch;

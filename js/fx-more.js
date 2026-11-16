@@ -63,7 +63,7 @@
     function iceBurst(c, m, big, noCards) {
       var g = gp(m), q = mp(m), B = (m.boss ? 1.45 : 1) * (big || 1);
       // five sharp spikes of ice (3D, 2026-11-16; they were flat pictures), fanning out
-      for (var s = 0; s < 9 && !noCards; s++) K.sharpSpike(V(g.x + (s - 4) * 0.13 * B, 0, g.z + 0.25 + rr(-0.05, 0.1)), { h: rr(0.85, 1.35) * c.s * B * (s === 4 ? 1.12 : 0.95), life: c.D(0.6), lean: (s - 4) * 0.22 + rr(-0.08, 0.08) });
+      for (var s = 0; s < 9 && !noCards; s++) K.sharpSpike(V(g.x + (s - 4) * 0.13 * B, 0, g.z + 0.25 + rr(-0.05, 0.1)), { h: rr(0.72, 1.1) * Math.min(2.0, c.s) * B * (s === 4 ? 1.12 : 0.95), life: c.D(0.6), lean: (s - 4) * 0.22 + rr(-0.08, 0.08) });
       flare(q, 0xffffff, 1.2, 0.15, { white: true }); shock(q, c.col, 1.8 * B, 0.3);
       if (!noCards) K.iceChips(q, N(6, c), 3.2, 2.2, 0.13);
       else for (var k = 0; k < N(8, c); k++) E({ sys: 'norm', pos: q.clone().add(rdir(0.3)), vel: rdir(3.2).add(V(0, 2.2, 0)), frame: 'shard', color: pick(ICE), size: [rr(0.1, 0.2), 0.05], ar: 2, life: rr(0.5, 0.8), grav: 7, spin: rr(-12, 12), white: true });
@@ -438,7 +438,6 @@
       var g0 = gp(mob), cl = above(g0, 4.4);
       for (var i = 0; i < N(10, c); i++) E({ sys: 'norm', pos: cl.clone().add(V(rr(-1.3, 1.3), rr(-0.25, 0.25), 0)), vel: V(rr(-0.3, 0.3), 0, 0), frame: 'smoke', color: [0x59607a, 0x2a2e40], size: [0.5, rr(1.3, 1.9)], ease: 1, life: c.D(0.75), alpha: 0.8, fadeIn: 0.3, fadeOut: 0.7 });
       for (var k = 0; k < 4; k++) after(c.D(0.05 + k * 0.05), function () { var a = cl.clone().add(V(rr(-1, 1), 0, 0)); vx.lightning(a, a.clone().add(V(rr(-0.8, 0.8), rr(-0.3, 0.3), 0)), { w: 0.05, color: c.col, life: 0.1, branches: 0, segs: 6, amp: 0.3 }); });
-      circle(g0, c.col, 1.5 * c.s, c.D(0.4), { spin: 5 });
       function strike(w, frac, power) {
         var g = gp(mob), sky = above(g, 7.6).add(V(rr(-0.4, 0.4), 0, 0)), to = function () { return mp(mob); }, q = mp(mob);
         vx.lightning(sky, to, { w: 0.95 * w * c.s, color: c.col, core: 0, alpha: 0.5, life: c.D(0.3), branches: 0, segs: 18, amp: 0.16 });
@@ -472,28 +471,54 @@
     // Ball lightning: a crackling orb hops from monster to monster, zapping each one it lands on.
     S.orb = function (c) {
       var list = c.pool(); if (!list.length) return;
+      // (2026-11-16, the user: "keep it, but a lightning-orb bomb — a ball wrapped in lightning, thrown, bang bang bang with
+      // a lightning impact"): the same ball hopping from monster to monster, now wrapped in bolts that crackle round it
+      // all the time and growing a little with every hop; every time it comes down it goes off — a blue burst of
+      // lightning swelling out of it, bolts running out over the ground, a ring, sparks, the screen shaking — and the last
+      // one goes off biggest. Sizes no longer grow without end with the skill's size (skill level 50)
       sc.heroPose('thrust', c.D(0.12), c.col);
-      var k = Math.max(1, Math.ceil(5 / list.length)), seq = []; for (var r = 0; r < k; r++) seq = seq.concat(list);
+      var cs = Math.min(1.5, c.s), k = Math.max(1, Math.ceil(5 / list.length)), seq = []; for (var r = 0; r < k; r++) seq = seq.concat(list);
+      var BOLT = [0xffffff, 0xbff4ff, c.col];
+      // a ball of lightning going off at p (B: how big)
+      function bang(p, B, mob) {
+        var g = V(p.x, 0, p.z), burst = lightBall(c.col, 1.6, 0.5), bt = 0, BT = 0.2;
+        tick(function (dt) { bt += dt; var e = Math.min(1, bt / BT), s = (0.25 + 0.75 * (1 - (1 - e) * (1 - e))) * 0.5 * B * cs * (1 - Math.max(0, (bt - BT * 0.6) / (BT * 0.4))); if (bt >= BT) { burst.kill(); return true; } burst.set(p, Math.max(0.001, s)); return false; });
+        // bolts running out over the ground, and up off the ball
+        for (var f = 0; f < Math.round(6 * B); f++) {
+          var a = f / Math.round(6 * B) * 6.283 + rr(-0.25, 0.25), L = rr(1.0, 1.6) * B * cs, e2 = V(g.x + Math.cos(a) * L, 0.08, g.z + Math.sin(a) * L * 0.75);
+          vx.lightning(V(g.x, 0.15, g.z), e2, { solid: true, w: 0.06 * cs, color: 0x3d8cff, core: 0.9, life: c.D(0.22), branches: 1, segs: 8, amp: 0.28 });
+        }
+        for (var u = 0; u < 3; u++) vx.lightning(p.clone(), p.clone().add(rdir(rr(0.6, 1.0) * B * cs)).add(V(0, 0.4, 0)), { w: 0.05 * cs, color: c.col, life: 0.1, branches: 0, segs: 6, amp: 0.3 });
+        flare(p, 0xbff4ff, 1.1 * B * cs, 0.12); gRing(g, c.col, 2.2 * B * cs, 0.35); gGlow(g, c.col, 1.4 * B * cs, 0.3);
+        sparks(p, BOLT, N(Math.round(10 * B), c), 7, { size: 0.16, stretch: 0.2, up: 1.2 });
+        sc.light(p, c.col, 1.8 * B, 0.3); sc.shake(0.08 + 0.08 * B); sc.flash('rgba(190,235,255,' + (0.18 + 0.12 * B).toFixed(2) + ')', 0.12);
+        if (mob) zapHit(c, mob, B > 1.2);
+      }
       after(c.D(0.12), function () {
-        var from = sc.heroPaw(), cur = from.clone(), i = 0, t = 0, seg = c.D(0.52 / seq.length + 0.02), to = mp(seq[0]);
-        // the ball is 3D light: a white-hot heart in a blue-white glow, crackling with little bolts as it bounces
-        var bs = 0.3 * Math.min(1.5, c.s), ball = lightBall(c.col, 2.1, 0.55), tw = 0;
-        function putBall(p) { tw += 0.016; var f = 1 + Math.sin(tw * 50) * 0.08; ball.set(p, bs * f); }
-        var rib = vx.ribbon({ solid: true, mode: 'trail', w: 0.12 * c.s, color: c.deep, core: 0.9, maxPts: 14, shrink: 60 });
-        flare(from, 0xffffff, 1.0 * c.s, 0.14, { white: true });
+        var from = sc.heroPaw(), cur = from.clone(), i = 0, t = 0, seg = c.D(0.52 / seq.length + 0.04), to = mp(seq[0]);
+        // the ball: 3D light, a white-hot heart in a blue-white glow, wrapped in bolts, a little bigger after every hop
+        var bs = 0.3 * cs, ball = lightBall(c.col, 2.1, 0.55), tw = 0, grow = 1;
+        function putBall(p) { tw += 0.016; var f = 1 + Math.sin(tw * 50) * 0.08; ball.set(p, bs * grow * f); }
+        var rib = vx.ribbon({ solid: true, mode: 'trail', w: 0.12 * cs, color: c.deep, core: 0.9, maxPts: 14, shrink: 60 });
+        flare(from, 0xbff4ff, 0.9 * cs, 0.12);
         tick(function (dt) {
           var mob = seq[i]; t += dt / seg; var kk = Math.min(1, t); to = mp(mob);
-          cur.lerpVectors(from, to, kk); cur.y += Math.sin(kk * Math.PI) * 0.7;
+          cur.lerpVectors(from, to, kk); cur.y += Math.sin(kk * Math.PI) * 0.8;
           putBall(cur); if (rib) rib.head(cur);
-          if (Math.random() < dt * 34 * c.n) vx.lightning(cur.clone(), cur.clone().add(rdir(0.8)), { w: 0.04, color: c.col, life: 0.08, branches: 0, segs: 5, amp: 0.3 });
+          // the bolts wrapped round it: short arcs from one side of it to another, all the time
+          var R = bs * grow * 1.25;
+          if (Math.random() < dt * 60 * c.n) { var a1 = rdir(1).normalize().multiplyScalar(R), a2 = rdir(1).normalize().multiplyScalar(R); vx.lightning(cur.clone().add(a1), cur.clone().add(a2), { solid: true, w: 0.035 * cs, color: 0xbff4ff, core: 1.0, life: 0.06, branches: 0, segs: 5, amp: 0.35 }); }
+          if (Math.random() < dt * 30 * c.n) vx.lightning(cur.clone(), cur.clone().add(rdir(R * 2.6)), { w: 0.04 * cs, color: c.col, life: 0.07, branches: 0, segs: 5, amp: 0.3 });
           if (kk < 1) return false;
-          zapHit(c, mob, i === 0); sc.shake(0.06);
-          vx.lightning(from.clone(), to.clone(), { solid: true, w: 0.08 * c.s, color: 0x3d8cff, core: 0.9, life: c.D(0.2), branches: 1, segs: 10, amp: 0.2 });
-          c.hit(mob, 1 / k, 1.1);
-          i++; t = 0; from.copy(cur);
+          // it comes down: bang
+          var last = i === seq.length - 1;
+          bang(cur.clone(), last ? 1.7 : 1.0, mob);
+          vx.lightning(from.clone(), to.clone(), { solid: true, w: 0.08 * cs, color: 0x3d8cff, core: 0.9, life: c.D(0.2), branches: 1, segs: 10, amp: 0.2 });
+          c.hit(mob, 1 / k, last ? 1.4 : 1.1);
+          i++; t = 0; from.copy(cur); grow = Math.min(1.5, grow + 0.1);
           if (i < seq.length) return false;
           ball.kill(); if (rib) rib.detach();
-          flare(cur, 0xffffff, 1.3 * c.s, 0.15, { white: true }); ring(cur, c.col, 1.6 * c.s, 0.25); sparks(cur, [0xffffff, c.col], N(12, c), 7, { size: 0.16, stretch: 0.2 });
+          if (sc.climax) sc.climax(0.35, 0.22);
           return true;
         });
       });
@@ -556,7 +581,6 @@
       sc.heroPose('spin', c.D(0.12), c.col);
       var H = sc.heroCenter(), G = V(H.x, 0.04, H.z);
       converge(V(H.x, 0.3, H.z), [0xffffff, c.col], N(16, c), 1.4, c.D(0.14), { frame: 'snow' });
-      circle(G, c.col, 1.6, c.D(0.4), { spin: 4 });
       after(c.D(0.14), function () {
         var r = 0;
         sc.flash('rgba(210,240,255,0.45)', 0.2); sc.punch(0.05); sc.shake(0.2);
@@ -567,7 +591,7 @@
         tick(function (dt) {
           r += 13 * c.sp * dt;
           wall.set(G, r, hw * (1 - 0.35 * Math.min(1, r / 10.5)), Math.max(0, (r - 7.5) / 3));
-          for (var i = 0; i < N(7, c); i++) { var a = rr(0, 6.283), p = V(G.x + Math.cos(a) * r * 0.97, 0, G.z + Math.sin(a) * r * 0.97); if (Math.abs(p.x) < 4.2 && p.z > -4.8 && p.z < 4) { K.sharpSpike(p, { h: rr(0.42, 0.82) * c.s, lean: rr(-0.3, 0.3), life: c.D(0.5) + 0.1, col: c.col }); if (i % 2) E({ sys: 'norm', pos: V(p.x, 0.15, p.z), vel: V(Math.cos(a) * 3, 0.3, Math.sin(a) * 3), frame: 'smoke', color: 0xe8f8ff, size: [0.3, 0.9], ease: 1, life: 0.6, alpha: 0.3, drag: 2 }); } }
+          for (var i = 0; i < N(7, c); i++) { var a = rr(0, 6.283), p = V(G.x + Math.cos(a) * r * 0.97, 0, G.z + Math.sin(a) * r * 0.97); if (Math.abs(p.x) < 4.2 && p.z > -4.8 && p.z < 4) { K.sharpSpike(p, { h: rr(0.42, 0.82) * Math.min(2.2, c.s), lean: rr(-0.3, 0.3), life: c.D(0.5) + 0.1, col: c.col }); if (i % 2) E({ sys: 'norm', pos: V(p.x, 0.15, p.z), vel: V(Math.cos(a) * 3, 0.3, Math.sin(a) * 3), frame: 'smoke', color: 0xe8f8ff, size: [0.3, 0.9], ease: 1, life: 0.6, alpha: 0.3, drag: 2 }); } }
           if (r > 10.5) { wall.kill(); return true; }
           return false;
         });
@@ -618,7 +642,6 @@
       var mob = c.pool()[0]; if (!mob) return;
       sc.heroPose('raise', c.D(0.2), c.col); sc.dim(0.45, c.D(1.0));
       var g0 = gp(mob);
-      E({ sys: 'gadd', pos: V(g0.x, 0.045, g0.z), frame: 'circle', color: c.col, size: [3.6 * c.s, 1.3 * c.s], life: c.D(0.5), spin: 3, fadeIn: 0.15, alpha: 0.9 });
       E({ sys: 'gadd', pos: V(g0.x, 0.04, g0.z), frame: 'ring', color: 0xffffff, size: [4.2, 0.8], life: c.D(0.5), rot: 0, alpha: 0.7, fadeIn: 0.2 });
       E({ pos: above(g0, 5.6).add(V(2.2, 0, 0)), frame: 'flare', color: [0xffffff, c.col], size: [0.1, 1.8], ease: 2, life: c.D(0.3), spin: 3, white: true });
       after(c.D(0.24), function () {
@@ -788,35 +811,59 @@
     // Moon orbs: five small moons rise around the wizard and each one fires its own thin beam into a monster.
     S.moonOrbs = function (c) {
       var list = c.pool(); if (!list.length) return;
-      sc.heroPose('raise', c.D(0.16), c.col); sc.dim(0.35, c.D(0.9));
-      var H = sc.heroCenter(), shots = share(list, Math.max(5, list.length));
+      // (2026-11-16, the user: "well made, but the moons can hardly be seen — bigger moons, and more of a laser"): the moons
+      // are twice the size and spread wider round the wizard; each gathers light before it fires (it brightens, light
+      // streams into it), then fires a thick beam of moonlight that hums (its width flickers) and is held longer, the moon
+      // pushed back a little by it, the monster burning where it is held (sparks pouring off it); the flashes and rings no
+      // longer grow with the skill's size (at skill level 50 they hid the moons) and are in the moon's colour
+      sc.heroPose('raise', c.D(0.16), c.col); sc.dim(0.4, c.D(1.0));
+      var cs = Math.min(1.5, c.s), H = sc.heroCenter(), shots = share(list, Math.max(5, list.length)), MOON = [0xffffff, 0xd8ccff, c.col];
       shots.forEach(function (h, i) {
-        // each one a little real moon (the moon laser's moon, small) that pops out round the wizard, bobs, and fires a thin
-        // tube of moonlight; when its beam is spent it shrinks away
-        var a = -0.5 + i * 0.55 + 0.4, O = V(H.x + Math.cos(a + 1.2) * 1.25, H.y + 0.9 + Math.sin(a + 1.2) * 0.55, H.z - 0.2), moon = null, done = false, R = 0.2 * Math.min(1.5, c.s), P = V();
-        after(c.D(i * 0.03), function () {
+        var n = shots.length, a = Math.PI * (0.12 + 0.76 * (n > 1 ? i / (n - 1) : 0.5)), O = V(H.x + Math.cos(a) * 2.15, H.y + 0.75 + Math.sin(a) * 1.15, H.z - 0.25);
+        var moon = null, done = false, R = 0.3 * cs, P = V(), push = V(), charge = 0;
+        after(c.D(i * 0.04), function () {
           moon = P3.moon({ lit: 0xfbf8ea, dark: 0x4a4070, rim: 0xd8d0ff, deep: c.col });
-          ring(O, c.col, 0.8 * c.s, 0.2);
+          ring(O, c.col, 0.9 * cs, 0.22);
           var t = 0, gone = 0;
           tick(function (dt) {
             t += dt; if (done) gone += dt;
-            var g = Math.min(1, t / c.D(0.12)), s = R * (g < 1 ? (1 - (1 - g) * (1 - g)) * 1.15 : 1) * Math.max(0, 1 - gone / c.D(0.14));
-            P.copy(O); P.y += Math.sin(t * 6 + i) * 0.06; moon.set(P, Math.max(0.001, s), dt);
-            if (done && gone >= c.D(0.14)) { moon.kill(); return true; }
+            var g = Math.min(1, t / c.D(0.12)), s = R * (g < 1 ? (1 - (1 - g) * (1 - g)) * 1.12 : 1) * (1 + 0.12 * charge) * Math.max(0, 1 - gone / c.D(0.16));
+            P.copy(O).add(push); P.y += Math.sin(t * 6 + i) * 0.06; push.multiplyScalar(Math.max(0, 1 - dt * 8)); moon.set(P, Math.max(0.001, s), dt);
+            if (done && gone >= c.D(0.16)) { moon.kill(); return true; }
             return false;
           });
         });
-        after(c.D(0.2 + i * 0.05), function () {
-          var mob = h.mob, st = { a: O.clone(), b: O.clone(), open: 1 }, beam = P3.beam({ col: 0xcbbcff, deep: 0x6a4cff, r: 0.08 * Math.min(1.5, c.s) }), t = 0, T_OUT = c.D(0.06), T_HOLD = c.D(0.2), T_END = c.D(0.08), hits = 0, to = mp(mob);
-          flare(O, 0xffffff, 0.9 * c.s, 0.12, { white: true });
+        // gathering light before it fires: light streams into the moon and it brightens
+        var T_FIRE = 0.3 + i * 0.07;
+        after(c.D(T_FIRE - 0.14), function () {
+          var gt = 0; glow(O, c.col, [0.3, 1.1 * cs], c.D(0.16), { fadeIn: 0.7, alpha: 0.7 });
+          tick(function (dt) {
+            gt += dt; charge = Math.min(1, gt / c.D(0.14));
+            if (Math.random() < dt * 60 * c.n) { var d = rdir(rr(0.7, 1.2)); E({ pos: P.clone().add(d), vel: d.clone().multiplyScalar(-1 / 0.14), frame: pick(['streak', 'dot']), color: MOON, size: [rr(0.1, 0.2), 0.03], life: 0.14, stretch: 0.06, fadeIn: 0.3 }); }
+            return gt >= c.D(0.14);
+          });
+        });
+        after(c.D(T_FIRE), function () {
+          var mob = h.mob, st = { a: O.clone(), b: O.clone(), open: 1 }, beam = P3.beam({ col: 0xd8ccff, deep: 0x6a4cff, r: 0.15 * cs }), t = 0, T_OUT = c.D(0.05), T_HOLD = c.D(0.32), T_END = c.D(0.1), hits = 0, to = mp(mob), dir = V();
+          flare(O, 0xe8e0ff, 0.9 * cs, 0.1); charge = 0;
+          // the kick: the moon is pushed back from the way it fires
+          dir.copy(to).sub(O).normalize(); push.copy(dir).multiplyScalar(-0.18);
           tick(function (dt) {
             t += dt; to = mp(mob);
-            st.b.lerpVectors(O, to, Math.min(1, t / T_OUT)); st.open = t > T_OUT + T_HOLD ? Math.max(0, 1 - (t - T_OUT - T_HOLD) / T_END) : 1;
+            st.b.lerpVectors(O, to, Math.min(1, t / T_OUT));
+            // the beam hums: its width flickers while it is held, then it closes
+            st.open = t > T_OUT + T_HOLD ? Math.max(0, 1 - (t - T_OUT - T_HOLD) / T_END) : 1 + 0.14 * Math.sin(t * 70) + 0.06 * Math.sin(t * 131);
             st.a.copy(P); beam.set(st.a, st.b, st.open);
+            if (t >= T_OUT && t < T_OUT + T_HOLD) {
+              // the monster burns where it is held: sparks pour off it, a little light at the moon's end
+              if (Math.random() < dt * 40 * c.n) E({ pos: to.clone().add(rdir(0.12)), vel: rdir(rr(2, 4)).add(V(0, 1.5, 0)), frame: pick(['dot', 'streak']), color: MOON, size: [rr(0.08, 0.14), 0], life: rr(0.2, 0.4), grav: 3, stretch: 0.06 });
+              if (Math.random() < dt * 20) glow(P.clone(), c.col, [0.4, 0.7 * cs], 0.08, { alpha: 0.6 });
+            }
             // the beam burns twice while it is held on the monster
             if ((hits === 0 && t >= T_OUT) || (hits === 1 && t >= T_OUT + T_HOLD * 0.6)) {
               hits++;
-              flare(to, 0xffffff, 1.0 * c.s, 0.12, { white: true }); sparks(to, [0xffffff, c.col], N(6, c), 5, { size: 0.16 }); if (hits === 1) { ring(to, c.col, 1.2 * c.s, 0.22); sc.light(to, c.col, 1.3, 0.3); sc.shake(0.05); }
+              flare(to, 0xe8e0ff, 0.9 * cs, 0.12); sparks(to, [0xffffff, c.col], N(6, c), 5, { size: 0.16 });
+              if (hits === 1) { ring(to, c.col, 1.0 * cs, 0.22); sc.light(to, c.col, 1.4, 0.35); sc.shake(0.06); }
               c.hit(mob, h.frac / 2, hits === 1 ? 1.1 : 0.7);
             }
             if (t < T_OUT + T_HOLD + T_END) return false;
