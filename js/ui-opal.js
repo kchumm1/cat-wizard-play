@@ -1179,6 +1179,17 @@
     // 효과 줄: 숫자는 남은 칸 안에서 오른쪽 맞춤 (넘치면 글자만 줄임, 두 효과면 두 줄)
     '#sheet.opal#sheet.opal .opbag .ef b{justify-self:stretch!important;width:100%;min-width:0;overflow:hidden;text-overflow:clip!important;text-align:right}',
     '#sheet.opal#sheet.opal .opbag .ef b.two{white-space:nowrap;line-height:1.25}',
+    // 반지 두 효과: 이름 칸(왼쪽 맞춤) | 숫자 칸(오른쪽 맞춤) 두 줄 표, 표는 칸 오른쪽에 붙임 (사용자 2026-11-16 줄맞춤)
+    '#sheet.opal#sheet.opal .opbag .ef b.two{display:grid;grid-template-columns:auto auto;column-gap:5px;row-gap:1px;justify-self:end!important;width:auto!important;max-width:100%;overflow:visible!important}',
+    '#sheet.opal#sheet.opal .opbag .ef b.two>.k{text-align:left;font-weight:700}#sheet.opal#sheet.opal .opbag .ef b.two>.v{text-align:right;font-variant-numeric:tabular-nums}',
+    '#sheet.opal#sheet.opal .opbag .ef.stack{grid-template-columns:auto minmax(0,1fr);row-gap:2px}#sheet.opal#sheet.opal .opbag .ef.stack>b.two{grid-column:1/-1}',
+    // 장비 목록 칸: 큰 그림(불멸 반지 등)이 위쪽 「불멸 I」 글자를 덮지 않게 — 글자는 위로, 그림은 글자 아래부터 (사용자 2026-11-16)
+    '#sheet.opal#sheet.opal .bgrid .bcell .tg{top:2px!important;z-index:3;text-shadow:0 0 2px #fff,0 0 2px #fff,0 1px 0 #fff!important}',
+    // 폰: 그림을 꾸욱 누르면 아이폰은 그림이 상자째 떠오르는 미리보기, 갤럭시는 「이미지 저장」 메뉴가 뜸 → 메뉴 안 그림은 손가락을 받지 않음 (누름은 감싼 칸이 받음)
+    '#sheet img{pointer-events:none;-webkit-touch-callout:none;-webkit-user-drag:none}',
+    // 징표 그림(위쪽 돔·목록 그림)도 꾸욱 누르면 연속 강화
+    '#sheet.opal#sheet.opal .rkv .rkv-mk[data-mkhold],#sheet.opal#sheet.opal .rkr-ico[data-mkhold]{pointer-events:auto;cursor:pointer;-webkit-touch-callout:none}',
+    '#sheet.opal#sheet.opal .bgrid .bcell .gcimg{top:19%!important;left:12%!important;width:76%!important;height:62%!important}',
     '#sheet.opal#sheet.opal .opbag .ef span{white-space:nowrap}',
     // 레벨업 버튼: 안 글자가 버튼 밖으로 나가지 않게
     '#sheet.opal#sheet.opal .bagbtns>.buy{overflow:hidden;min-width:0!important;padding-left:8px!important;padding-right:8px!important;gap:4px!important}#sheet.opal#sheet.opal .bagbtns>.buy span{white-space:nowrap}',

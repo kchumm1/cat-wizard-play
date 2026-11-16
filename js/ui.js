@@ -199,7 +199,7 @@
       base.forEach(function (m, i) {
         var p = POS[i % POS.length], on = mlv(m) >= cap, dx = p[0] - CEN[0], dy = p[1] - CEN[1];
         rays += '<i class="rkv-ray' + (on ? ' on' : '') + '" style="--l:' + (Math.sqrt(dx * dx + dy * dy) - 22).toFixed(1) + 'px;--a:' + (Math.atan2(dy, dx) * 180 / Math.PI).toFixed(1) + 'deg"></i>';
-        domes += '<span class="rkv-mk' + (on ? ' on' : '') + '" style="left:' + (p[0] - 45).toFixed(1) + 'px;top:' + (p[1] - 34.5).toFixed(1) + 'px;--d:' + i + '" data-opfx="mk:' + m.id + '" data-opdur=".26" title="' + m.name + ' ' + mlv(m) + '/' + cap + '"><i class="rkv-nped"></i><i class="rkv-dome"></i><img src="art/rk-' + m.id + '.webp" alt=""><i class="rkv-glint"></i></span>';
+        domes += '<span class="rkv-mk' + (on ? ' on' : '') + '"' + (CW.markOpen(s, m.id) ? ' data-mkhold="' + m.id + '"' : '') + ' style="left:' + (p[0] - 45).toFixed(1) + 'px;top:' + (p[1] - 34.5).toFixed(1) + 'px;--d:' + i + '" data-opfx="mk:' + m.id + '" data-opdur=".26" title="' + m.name + ' ' + mlv(m) + '/' + cap + '"><i class="rkv-nped"></i><i class="rkv-dome"></i><img src="art/rk-' + m.id + '.webp" alt=""><i class="rkv-glint"></i></span>';
       });
       var next = r + 1 < RC.names.length ? RC.names[r + 1] : null;
       var head = '<div class="rkwrap"><div class="rkv" data-opfx="rankup" data-opdur=".9"><i class="rkv-neb"></i>' + rays + '<i class="rkv-ped"></i><span class="rkv-badge"><img class="rkv-frame" src="art/rk-badge.webp" alt=""><img class="rkv-paw" src="art/rk-paw.webp" alt=""></span>' + domes + '</div>' +
@@ -212,7 +212,7 @@
         var lv = mlv(m), cost = CW.markCost(lv), full = false, ov = lv - cap, rate = ({ critRate: '치명타 피해', superRate: '슈퍼 피해' })[m.stat];   // 한계 돌파 (2026-11-15)
         var ico = '<span class="rkr-ico" data-opfx="mk:' + m.id + '" data-opdur=".26"><i class="rkv-dome"></i><img src="art/rk-' + m.id + '.webp" alt=""></span>';
         if (!CW.markOpen(s, m.id)) return '<div class="row lockrow rkrow">' + ico + '<div class="info"><div class="name">' + m.name + '</div><div class="desc need">' + RC.names[m.openRank] + ' 달성 시 해금 · ' + STAT_KO[m.stat] + '</div></div><span class="lockic"></span></div>';
-        return '<div class="row rkrow' + (m.extra ? ' mkextra' : '') + '">' + ico + '<div class="info"><div class="name">' + m.name + ' <span class="lv" data-opv="mk:' + m.id + '">' + (ov > 0 ? 'Lv.' + lv : lv + '/' + cap) + '</span></div><div class="desc">' + STAT_KO[m.stat] + ' ' + CW.bonusAmount(m.stat, (rate && ov > 0 ? cap : lv) * m.per) + (rate && ov > 0 ? ' · ' + rate + ' +' + ov + '%' : '') + '</div></div>' +
+        return '<div class="row rkrow' + (m.extra ? ' mkextra' : '') + '">' + ico.replace('<span class="rkr-ico"', '<span class="rkr-ico" data-mkhold="' + m.id + '"') + '<div class="info"><div class="name">' + m.name + ' <span class="lv" data-opv="mk:' + m.id + '">' + (ov > 0 ? 'Lv.' + lv : lv + '/' + cap) + '</span></div><div class="desc">' + STAT_KO[m.stat] + ' ' + CW.bonusAmount(m.stat, (rate && ov > 0 ? cap : lv) * m.per) + (rate && ov > 0 ? ' · ' + rate + ' +' + ov + '%' : '') + '</div></div>' +
           '<button class="buy rkbuy' + (full || (s.mana || 0) < cost ? ' off' : '') + '" data-mark="' + m.id + '"><i class="rkgem"></i>' + (full ? '최대' : fmt(cost)) + '</button></div>';
       }).join('');
       return head + cond + '<div class="list rkl">' + list + '</div>';
@@ -1029,9 +1029,23 @@
     function fitGear() {
       var shrink = function (el, kids, min) { var g = 0; while (el.scrollWidth > el.clientWidth + 0.5 && g++ < 16) { var done = true; kids.forEach(function (k) { var f = parseFloat(getComputedStyle(k).fontSize); if (f > min) { k.style.setProperty('font-size', Math.max(min, f * 0.95).toFixed(2) + 'px', 'important'); done = false; } }); if (done) break; } };
       panel.querySelectorAll('.opbag .ef b').forEach(function (v) {
-        if (v.textContent.indexOf(' · ') > 0 && !v.classList.contains('two')) { v.innerHTML = v.innerHTML.split(' · ').join('<br>'); v.classList.add('two'); }
+        // 두 효과(반지: 공격 속도·보스 피해)는 이름 칸 | 숫자 칸 두 줄 표로 — 이름은 왼쪽, 숫자는 오른쪽 끝을 맞춤 (사용자 2026-11-16)
+        if (v.textContent.indexOf(' · ') > 0 && !v.classList.contains('two')) {
+          v.innerHTML = v.textContent.split(' · ').map(function (t) { var at = t.lastIndexOf(' +'); return at > 0 ? '<span class="k">' + t.slice(0, at) + '</span><span class="v">' + t.slice(at + 1) + '</span>' : '<span class="k"></span><span class="v">' + t + '</span>'; }).join('');
+          v.classList.add('two');
+        }
         shrink(v, [v], 9.5);
       });
+      // 장착 효과·보유 효과 두 표를 같은 글자 크기·같은 열 너비로 (위아래 줄이 똑같이 맞게)
+      var twos = [].slice.call(panel.querySelectorAll('.opbag .ef b.two'));
+      // 좁은 폰(360px 등)에서 가장 작은 글씨로도 안 들어가면: 「장착 효과」 이름은 위 줄, 표는 아래 줄 전체 폭
+      if (twos.some(function (v) { return v.scrollWidth > v.clientWidth + 0.5; })) twos.forEach(function (v) { v.closest('.ef').classList.add('stack'); v.style.removeProperty('font-size'); shrink(v, [v], 9.5); });
+      if (twos.length > 1) {
+        var fmin = Math.min.apply(null, twos.map(function (v) { return parseFloat(getComputedStyle(v).fontSize); }));
+        twos.forEach(function (v) { v.style.setProperty('font-size', fmin + 'px', 'important'); });
+        var cols = [0, 1].map(function (i) { return Math.max.apply(null, twos.map(function (v) { var c = v.children[i]; return c ? Math.ceil(c.getBoundingClientRect().width) : 0; })); });
+        twos.forEach(function (v) { v.style.gridTemplateColumns = cols[0] + 'px ' + cols[1] + 'px'; });
+      }
       var b = panel.querySelector('.bagbtns>.buy');
       if (b) shrink(b, [].slice.call(b.querySelectorAll('small, span')), 10);
     }
@@ -1129,11 +1143,19 @@
     var onDown = function (e) {
       var hs = e.target.closest(HOLD_STEP);
       if (hs) { var dd = { tup: hs.dataset.tup, cup: hs.dataset.cup, dlv: hs.dataset.dlv, sup: hs.dataset.sup }; stopHold(); if (!stepAct(dd, false)) return; holdT = setTimeout(function () { holdI = setInterval(function () { if (!stepAct(dd, true)) stopHold(); }, 90); }, 380); return; }
-      var b = e.target.closest('[data-up],[data-mark],[data-circle],[data-blv],[data-rune],[data-sglv]'); if (!b) return;
-      var key = b.dataset.up, mk = b.dataset.mark, ci = b.dataset.circle, bl = b.dataset.blv, ru = b.dataset.rune, sl = b.dataset.sglv;
+      var b = e.target.closest('[data-up],[data-mark],[data-mkhold],[data-circle],[data-blv],[data-rune],[data-sglv]'); if (!b) return;
+      var key = b.dataset.up, mk = b.dataset.mark || b.dataset.mkhold, ci = b.dataset.circle, bl = b.dataset.blv, ru = b.dataset.rune, sl = b.dataset.sglv;
       var once = function () { var ok = bl ? G.levelUp(bl) : ru ? G.runeUp(ru) : sl ? G.sigilLvUp() : mk ? G.markUp(mk) : ci ? G.circleUp() : (upMul > 1 ? G.upgradeN(key, upMul) : G.upgrade(key)); if (ok) { if (key) upSel = key; fxRune = ru || null; if (CW.opalUI) CW.opalUI.fx(key ? 'up:' + key : mk ? 'mk:' + mk : bl ? 'bl:' + bl : ru ? 'ru:' + ru : sl ? 'sglv' : 'circle'); renderPanel(true); fxRune = null; hud(); } else stopHold(); };
+      stopHold();
+      // 징표 그림(돔·목록 그림)을 꾸욱 (사용자 2026-11-16, 아이폰): 스크롤하려고 닿은 것과 헷갈리지 않게 0.38초 가만히 누르고 있어야 시작, 그다음 연속 강화
+      if (b.dataset.mkhold) { holdT = setTimeout(function () { once(); if (holdT) holdI = setInterval(once, 90); }, 380); return; }
       once(); holdT = setTimeout(function () { holdI = setInterval(once, 90); }, 380);
     };
+    // 폰: 누르던 버튼이 다시 그려지며 바뀌어도 손을 떼거나 스크롤이 시작되면 꼭 멈춤 (아이폰은 뗀 신호가 지워진 버튼으로 가서 패널까지 안 올 때가 있음)
+    ['pointerup', 'pointercancel', 'touchend', 'touchcancel'].forEach(function (ev) { window.addEventListener(ev, stopHold, true); });
+    var holdX = 0, holdY = 0;
+    panel.addEventListener('touchstart', function (e) { var t = e.touches[0]; if (t) { holdX = t.clientX; holdY = t.clientY; } }, { passive: true });
+    window.addEventListener('touchmove', function (e) { var t = e.touches[0]; if (t && Math.abs(t.clientX - holdX) + Math.abs(t.clientY - holdY) > 10) stopHold(); }, { passive: true, capture: true });
     panel.addEventListener('pointerdown', onDown); dock.addEventListener('pointerdown', onDown);
     panel.addEventListener('touchstart', function () { panelTouch = true; }, { passive: true });
     ['touchend', 'touchcancel'].forEach(function (ev) { panel.addEventListener(ev, function () { panelTouch = false; panelScrollAt = panelTouchEnd = performance.now(); }, { passive: true }); });
