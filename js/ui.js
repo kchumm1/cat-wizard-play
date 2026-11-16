@@ -1425,7 +1425,7 @@
     // the rune and sigil shortcuts use the user's pictures (art/ic-rune.webp, ic-sigil.webp, 2026-11-14)
     var QI = { map: CW.ICO.misc('quick', 'map'), alch: CW.ICO.misc('potion', 'rage'), rune: '<img class="ico" src="art/ic-rune.webp" alt="">', sigil: '<img class="ico" src="art/ic-sigil.webp" alt="">',
       // the monster codex (2026-11-15): the book off the user's codex picture, opens the full-screen page (js/dex-ui.js)
-      dex: '<img class="ico" src="art/dex-book.webp" alt="">', mail: '<img class="ico" src="art/mail-box.webp" alt="">', notice: CW.noticeHorn ? CW.noticeHorn() : '' };   // 우편함 (2026-11-15): the user's mailbox picture, js/mail-ui.js
+      dex: '<img class="ico" src="art/dex-book.webp" alt="">', mail: '<img class="ico" src="art/mail-box.webp" alt="">', notice: CW.noticeHorn ? CW.noticeHorn() : '', idle: CW.idleMoon ? CW.idleMoon() : '' };   // 우편함 (2026-11-15): the user's mailbox picture, js/mail-ui.js
     document.querySelectorAll('#quick [data-quick]').forEach(function (b) { b.querySelector('i').innerHTML = QI[b.dataset.quick] || ''; });
     $('quick').addEventListener('click', function (e) {
       var b = e.target.closest('[data-quick]'); if (!b) return; var q = b.dataset.quick; G.sound('click');
@@ -1434,6 +1434,7 @@
       else if (q === 'dex') { if (CW.dexOpen) CW.dexOpen(); }
       else if (q === 'mail') { if (CW.mailOpen) CW.mailOpen(); }
       else if (q === 'notice') { if (CW.noticeOpen) CW.noticeOpen(); }   // 공지 (2026-11-16, js/notice-ui.js)
+      else if (q === 'idle') { if (CW.idleOn) CW.idleOn(); }   // 방치모드 (2026-11-16, js/idle-ui.js)
       else { gearSub = q; openTab('gear'); }
     });
     $('pre').addEventListener('click', function (e) { var b = e.target.closest('[data-pre]'); if (!b) return; G.switchPreset(+b.dataset.pre); G.sound('click'); toast('스킬 프리셋 ' + (+b.dataset.pre + 1) + ' 적용'); slots(); if (tab === 'skill') renderPanel(true); });

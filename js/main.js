@@ -225,11 +225,12 @@
     var pos = sc.mobPos(mob);
     dexKill(mob.id);
     if (mob.boss && boss && boss.mob === mob) { bossWin(pos); return; }
-    if (dun) { dun.kills++; if (dun.kind === 'gold') { fx.coinPop(pos, 4); flyCoins(pos, 2); } else fx.coinPop(pos, 2); snd.play('kill'); return; }
+    if (dun) { dun.kills++; if (CW.idleNote) CW.idleNote({ kill: 1 }); if (dun.kind === 'gold') { fx.coinPop(pos, 4); flyCoins(pos, 2); } else fx.coinPop(pos, 2); snd.play('kill'); return; }
     var gold = CW.stageGold(state, undefined, st.goldMul) * st.goldMul / CROWD * DATA.balance.killPay;
     state.gold += gold; fx.coinPop(pos, 3); flyCoins(pos, 2); snd.play('kill');
     var kx = CW.killXp(state) / CROWD * st.xpMul * DATA.balance.killPay;
     gained.gold += gold; gained.xp += kx;
+    if (CW.idleNote) CW.idleNote({ kill: 1, gold: gold, xp: kx });   // 방치모드 counts it (js/idle-ui.js)
     onLevel(CW.gainXp(state, kx));
     if (state.bossTry) return;
     smallKills++;
@@ -248,6 +249,7 @@
     var isRB = CW.stageInfo(stage).isRegionBoss, rstone = CW.runeStoneForBoss(state, isRB); state.runeStone = (state.runeStone || 0) + rstone;
     var sigs = CW.sigilDrop(state, isRB), runeGot = CW.runeDrop(state, isRB);
     gained.gold += gold; gained.gems += gems; gained.xp += bx;
+    if (CW.idleNote) CW.idleNote({ kill: 1, gold: gold, xp: bx, rune: rstone });
     onLevel(CW.gainXp(state, bx));
     var res = CW.onBossResult(state, true);
     boss = null;
@@ -655,7 +657,7 @@
     ui.showOffline(r, function () { ui.showDaily(true); });
   }
   document.addEventListener('visibilitychange', function () {
-    if (document.hidden) { CW.onHidden(state); clearField(true); save(); }
+    if (document.hidden) { if (CW.idleOff) CW.idleOff(); CW.onHidden(state); clearField(true); save(); }   // 방치모드 ends when the app is left: the usual 돌아왔어요 comes back
     else { last = performance.now(); syncRegion(); giveOffline(); }
   });
   root.addEventListener('pagehide', save);

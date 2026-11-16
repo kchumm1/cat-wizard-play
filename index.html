@@ -1612,6 +1612,41 @@ html.fullh #mailbox{position:absolute;bottom:auto;height:var(--apph)}
 #noticebox{position:fixed;inset:0;z-index:22;display:none;align-items:center;justify-content:center;background:rgba(24,18,34,.58);padding:calc(14px + env(safe-area-inset-top,0px)) 10px calc(14px + env(safe-area-inset-bottom,0px));box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 #noticebox.on{display:flex}
 html.fullh #noticebox{position:absolute;bottom:auto;height:var(--apph)}
+/* 방치모드 (2026-11-16, js/idle-ui.js): 시안 8번 「별자리 냥법사」. A dim night sky comes down over everything (toasts too),
+   stars light one by one into a cat, a swipe up lifts it away. Low light on purpose: it stays up all night. */
+#idlebox{position:fixed;inset:0;z-index:40;display:none;overflow:hidden;background:linear-gradient(#05070f,#0b1024);font-family:var(--display,'Jua'),var(--body);color:#a3b0dc;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;will-change:transform}
+html.fullh #idlebox{position:absolute;bottom:auto;height:var(--apph)}
+#idlebox.enter{animation:idDown 1.1s cubic-bezier(.2,.8,.2,1) both}
+#idlebox.leave{transition:transform .45s cubic-bezier(.4,0,.2,1),opacity .45s;transform:translateY(-100%)!important;opacity:.4}
+@keyframes idDown{from{transform:translateY(-100%)}to{transform:none}}
+#idlebox .idsky{position:absolute;inset:0;pointer-events:none}
+#idlebox .iddust{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;opacity:.15;animation:idTw 3s ease-in-out infinite}
+@keyframes idTw{0%,100%{opacity:.12}50%{opacity:.75}}
+#idlebox .idwrap{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 4vh);bottom:calc(env(safe-area-inset-bottom,0px) + 86px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2vh;padding:0 max(24px,env(safe-area-inset-right,0px)) 0 max(24px,env(safe-area-inset-left,0px));animation:idFloat 40s ease-in-out infinite;pointer-events:none}
+@keyframes idFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
+#idlebox .idcon{width:min(72vw,280px,36vh);height:auto;flex:none;overflow:visible}
+#idlebox .ids{fill:#fff;opacity:0;transition:opacity 1s}
+#idlebox .ids.on{opacity:.9;animation:idTw 3s ease-in-out infinite}
+#idlebox .idl{stroke:rgba(180,200,255,.35);stroke-width:1.2;stroke-dasharray:200;stroke-dashoffset:200;transition:stroke-dashoffset 1.2s}
+#idlebox .idl.on{stroke-dashoffset:0}
+#idlebox .idname{font-size:15px;color:#8d9cd0}
+#idlebox .idnums{width:min(100%,300px)}
+#idlebox .idtime{text-align:center;font-size:14px;opacity:.75;margin-bottom:6px}
+#idlebox .idrow{display:flex;justify-content:space-between;align-items:baseline;font-size:16px;padding:3px 0}
+#idlebox .idrow b{font-weight:400;font-size:19px}
+#idlebox .idshoot{position:absolute;right:12%;top:16%;width:80px;height:2px;background:linear-gradient(90deg,#fff,transparent);opacity:0;transform:rotate(-25deg);pointer-events:none}
+#idlebox .idshoot.go{animation:idShoot 1s ease-out}
+@keyframes idShoot{0%{opacity:1;translate:0 0}100%{opacity:0;translate:-140px 64px}}
+#idlebox .idhint{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 22px);text-align:center;font-size:14px;color:rgba(255,255,255,.35);transition:color .3s;pointer-events:none}
+#idlebox .idhint i{display:block;width:14px;height:14px;margin:0 auto 5px;border-left:2px solid currentColor;border-top:2px solid currentColor;transform:rotate(45deg);animation:idUp 1.8s ease-in-out infinite}
+#idlebox .idhint.lit{color:rgba(255,255,255,.95)}
+@keyframes idUp{0%,100%{transform:translateY(4px) rotate(45deg);opacity:.4}50%{transform:translateY(-4px) rotate(45deg);opacity:1}}
+@media (orientation:landscape) and (max-height:500px){
+  #idlebox .idwrap{flex-direction:row;gap:6vw;bottom:calc(env(safe-area-inset-bottom,0px) + 56px)}
+  #idlebox .idcon{width:auto;height:min(58vh,260px)}
+  #idlebox .idname{position:absolute;left:0;right:0;top:4px;text-align:center}
+  #idlebox .idhint{bottom:calc(env(safe-area-inset-bottom,0px) + 8px)}
+}
 #noticebox .nzstage{display:flex;align-items:center;justify-content:center;width:100%;height:100%;min-height:0}
 #noticebox.pop .nzstage{visibility:hidden}
 #noticebox button{border:0;margin:0;padding:0;background:none;font-family:var(--body);color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
@@ -2314,7 +2349,7 @@ body{font-family:'Noto Sans KR',"Malgun Gothic","Apple SD Gothic Neo",system-ui,
       <div id="bossbox"><div class="boss-top"><span id="bossName">보스</span><span id="bossTime">30.0초</span></div><div class="bossrow"><div class="bar"><i id="bossHp"></i></div><b id="bossPct">100%</b></div></div>
       <button id="retry">보스 도전</button>
     </div>
-    <div id="quick" aria-label="바로가기"><button data-quick="map"><i></i><span>지도</span></button><button data-quick="rune"><i></i><span>룬</span></button><button data-quick="sigil"><i></i><span>신성력</span></button><button data-quick="dex"><i></i><span>도감</span></button><button data-quick="mail"><i></i><span>우편함</span></button><button data-quick="notice"><i></i><span>공지</span></button></div>
+    <div id="quick" aria-label="바로가기"><button data-quick="map"><i></i><span>지도</span></button><button data-quick="rune"><i></i><span>룬</span></button><button data-quick="sigil"><i></i><span>신성력</span></button><button data-quick="dex"><i></i><span>도감</span></button><button data-quick="mail"><i></i><span>우편함</span></button><button data-quick="notice"><i></i><span>공지</span></button><button data-quick="idle"><i></i><span>방치</span></button></div>
     <div id="banner"></div>
     <div id="dunHud"></div>
     <div id="gainlog" aria-live="off"></div>
@@ -2425,6 +2460,8 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script src="js/mail-ui.js"></script>
 <script src="js/notice.js"></script>
 <script src="js/notice-ui.js"></script>
+<script src="js/idle.js"></script>
+<script src="js/idle-ui.js"></script>
 <script src="js/grow-text.js"></script>
 <script src="js/ui-opal.js"></script>
 <script src="js/ui.js"></script>
