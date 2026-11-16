@@ -414,10 +414,18 @@
       K.gRing(g, GOLDC, 1.4, 0.3);
       E({ sys: 'gnorm', pos: V(g.x, 0.035, g.z), frame: 'shock', color: 0x2f5a12, size: [0.3, 2.2], ease: 1, life: 0.38, fadeOut: 0.3, rot: 0, alpha: 0.7 });
       K.dust(g, N(3, c), 0.9); sc.light(p, 0xffc040, 1.3, 0.25);
-      if (first) { sc.hitStop(0.08); sc.shake(0.3); sc.punch(0.12); sc.flash('rgba(255,236,170,0.22)', 0.12); }
-      else if (beat) { sc.hitStop(0.05); sc.shake(0.24); sc.punch(0.08); }
-      else sc.shake(0.1);
+      // no shaking (2026-11-17, the user: "take the shaking out") — the beat is a short stop and a flash of light
+      if (first) { sc.hitStop(0.08); sc.flash('rgba(255,236,170,0.22)', 0.12); }
+      else if (beat) sc.hitStop(0.05);
       after(c.D(0.15), function () { sprout(g); });
+    }
+    // the extra fruits' burst: showy but light — the painted ball of fire (smaller), a white-hot flash, a gold ring and
+    // a star of sparks, all batched; no 3D landing, no light, no sprout, no shaking
+    function miniBurst(c, p, g) {
+      P3.boom(g, 0.75);
+      K.flare(V(g.x, 0.45, g.z), 0xfff4d0, 1.7, 0.1, { white: true }); K.gRing(g, 0xffe08a, 1.6, 0.22); K.gRing(g, GOLDC, 1, 0.3);
+      K.sparks(V(g.x, 0.35, g.z), [0xffffff, 0xffd040, 0xffa020], N(12, c), 7, { size: 0.11, stretch: 0.14, life: 0.32 });
+      for (var j = 0; j < N(6, c); j++) E({ pos: p.clone().add(K.rdir(0.15)), vel: K.rdir(3).add(V(0, 2.4, 0)), frame: 'dot', color: K.pick([0xffd040, 0xfff0a0]), size: [rr(0.07, 0.11), 0.03], life: rr(0.4, 0.6), grav: 8, drag: 0.8 });
     }
     // the great fruit from the top of the crown landing in the middle of them all: the biggest golden blast, time all but
     // stopping, the screen shaking hard, a ring of sprouts
@@ -428,7 +436,7 @@
       for (var s = 0; s < N(10, c); s++) E({ pos: p.clone(), vel: K.rdir(3.6).add(V(0, 2.8, 0)), frame: 'dot', color: 0x3a2008, size: [0.08, 0.05], life: rr(0.5, 0.8), grav: 9, drag: 0.6 });
       for (var l = 0; l < N(8, c); l++) toss('woodLeaf', p, K.rdir(3.5).add(V(0, 2.5, 0)), rr(0.14, 0.2), 0xffffff, true);
       K.dust(g, N(8, c), 1.6); sc.light(p, 0xffc040, 2.2, 0.35);
-      if (!(CW.fxOff && CW.fxOff.dim)) sc.climax(0.6, 0.24); sc.shake(0.6); sc.hitStop(0.14); sc.punch(0.25); sc.flash('rgba(255,240,190,0.34)', 0.2);
+      if (!(CW.fxOff && CW.fxOff.dim)) sc.climax(0.6, 0.24); sc.hitStop(0.14); sc.flash('rgba(255,240,190,0.34)', 0.2);
       K.flare(V(g.x, 0.8, g.z), 0xffffff, 2.6, 0.18, { white: true }); K.gRing(g, 0xffffff, 5, 0.3); K.sparks(V(g.x, 0.6, g.z), [0xffffff, 0xffd040], N(24, c), 10, { size: 0.16, stretch: 0.16, life: 0.45 });
       for (var k = 0; k < 5; k++) { var a = k / 5 * 6.283; after(c.D(0.15 + k * 0.03), (function (q) { return function () { sprout(q); }; })(V(g.x + Math.cos(a) * 1.3, 0, g.z + Math.sin(a) * 0.9))); }
     }
@@ -445,7 +453,7 @@
       // the rumble: the ground splits and heaves where it comes up
       E({ sys: 'gnorm', pos: V(base.x, 0.026, base.z + 0.3), frame: 'smoke', color: 0x1a0e08, size: [0.6, 3.4], ease: 1, life: 1.8, alpha: 0.55, fadeIn: 0.05, fadeOut: 0.5 });
       for (var m = 0; m < 6; m++) { var a = m / 6 * 6.283; heave(V(base.x + Math.cos(a) * 1.1, 0, base.z + Math.sin(a) * 0.7), a, 0.5, c.D(0.6), earthCol()); }
-      K.dust(base, N(8, c), 1.8); sc.shake(0.16); splinters(V(base.x, 0.3, base.z), N(6, c), 3.5);
+      K.dust(base, N(8, c), 1.8); splinters(V(base.x, 0.3, base.z), N(6, c), 3.5);
       var GROW = c.D(0.34), FRUIT = c.D(0.42), DROP = c.D(0.54), GONE = c.D(1.22), OUT = c.D(0.4), t = 0, S3 = V(), first = true;
       // one fruit for each monster, hanging under the leaf masses (spread left to right as the monsters are)
       var mobs = list.slice().sort(function (p, q) { return p.x - q.x; }), anchors = tips.slice().sort(function (p, q) { return p.p.x - q.p.x; }), n = mobs.length;
@@ -453,6 +461,18 @@
         var A = anchors[Math.round((n > 1 ? i / (n - 1) : 0.5) * (anchors.length - 1))] || { p: V(base.x, 3, base.z + 1.5), r: 0.5 };
         return { mob: mob, h: null, hang: A.p.clone().add(V(rr(-0.45, 0.45) * A.r, -0.8 * A.r, rr(-0.1, 0.5) * A.r)), sz: rr(0.3, 0.36), wave: n > 2 ? Math.min(2, Math.floor(i * 3 / n)) : 0, rel: DROP + c.D(0.14 * (n > 2 ? Math.min(2, Math.floor(i * 3 / n)) : 0) + rr(0, 0.035)), fly: c.D(0.2), q: new T.Quaternion(), spin: K.rdir(1).normalize(), done: false };
       });
+      // more fruits (2026-11-17, the user: "more fruit falling" → "real damage, right on the monsters" → "no shaking, more
+      // hits, more falling, flashier, but no extra load"): one more for every monster (at least 3, at most 8), spread over
+      // them, each falling right onto its monster (followed to where it stands as it lands) just after that monster's own
+      // fruit, and hitting it. A monster's 60% is shared between all the fruits that fall on it, so the skill's whole
+      // damage stays the same. Their burst is a small one made only of batched pieces (miniBurst), so the load stays low
+      var nx = Math.min(8, Math.max(3, n)), per = mobs.map(function () { return 1; });
+      for (var e = 0; e < nx; e++) {
+        var mi = Math.min(n - 1, Math.floor((e + 0.5) * n / nx)), A2 = anchors[Math.floor(rr(0, anchors.length))] || { p: V(base.x, 3, base.z + 1.5), r: 0.5 }, F0 = fruits[mi];
+        per[mi]++;
+        fruits.push({ mob: mobs[mi], mi: mi, extra: true, h: null, hang: A2.p.clone().add(V(rr(-0.5, 0.5) * A2.r, -0.8 * A2.r, rr(-0.1, 0.5) * A2.r)), sz: rr(0.27, 0.33), wave: F0.wave, rel: F0.rel + c.D(0.06 * (per[mi] - 1)), fly: c.D(0.18), q: new T.Quaternion(), spin: K.rdir(1).normalize(), done: false });
+      }
+      fruits.forEach(function (F, i) { F.frac = 0.6 / per[F.extra ? F.mi : i]; });
       // and the great fruit, swelling at the top of the crown, last to fall: into the middle of them all
       var top = tips.reduce(function (b2, T2) { return !b2 || T2.p.y > b2.p.y ? T2 : b2; }, null) || { p: V(base.x, 3, base.z), r: 0.6 };
       var great = { h: null, hang: top.p.clone().add(V(0, -0.85 * top.r, 0.25)), sz: 0.8, rel: c.D(1.0), fly: c.D(0.14), q: new T.Quaternion(), done: false };
@@ -482,10 +502,12 @@
           var u = Math.min(1, (t - F.rel) / F.fly), to = sc.mobPos(F.mob);
           P.lerpVectors(F.hang, to, u * u); P.y += Math.sin(u * Math.PI) * 0.4;   // dropping, falling faster
           F.q.multiply(R.setFromAxisAngle(F.spin, dt * 12)); F.h.set(P, F.q, F.sz, 1, 2);
+          if (Math.random() < dt * 30) E({ pos: P.clone(), frame: 'glow', color: 0xffd060, size: [0.35, 0.1], life: 0.22, alpha: 0.55 });   // a golden streak behind it
           if (u < 1) return;
           F.done = true; F.h.kill();
-          fruitBurst(c, to, gp(F.mob), first, fell++ >= full, !beat[F.wave]); beat[F.wave] = true; first = false;
-          c.hit(F.mob, 0.6, 1.2);   // its own fruit: 60% (the great fruit brings the rest)
+          if (F.extra) miniBurst(c, to, V(to.x, 0, to.z));
+          else { fruitBurst(c, to, gp(F.mob), first, fell++ >= full, !beat[F.wave]); beat[F.wave] = true; first = false; }
+          c.hit(F.mob, F.frac, 1.2);   // its fruits: 60% between them (the great fruit brings the rest)
         });
         if (!great.done && t >= FRUIT) {
           if (!great.h) great.h = P3.bm('treeFruit', { col: GOLDC });
