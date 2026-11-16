@@ -71,7 +71,7 @@
     // on every monster within a moment went to a white field)
     function wallBurn(c, m) {
       var q = mp(m), g = gp(m);
-      fire(q, N(3, c), { size: 0.7 * c.s, speed: 2, up: 2 }); gRing(g, 0xffb040, 1.6 * c.s, 0.35); scorch(g, 0.9, 2); embers(q, [0xffe080, 0xff6a2b], N(4, c), { speed: 2.4, up: 2.6 });
+      fire(q, N(2, c), { size: 0.5 * Math.min(1.3, c.s), speed: 2, up: 2 }); gRing(g, 0xffb040, 1.6 * Math.min(1.4, c.s), 0.35); scorch(g, 0.9, 2); embers(q, [0xffe080, 0xff6a2b], N(4, c), { speed: 2.4, up: 2.6 });
     }
     function fireBurst(c, m, size) {
       var q = mp(m), g = gp(m);
@@ -701,15 +701,17 @@
         var r = 0.3;
         sc.flash('rgba(255,200,110,0.5)', 0.25); sc.punch(0.07); sc.shake(0.3);
         flare(H, 0xffffff, 2.2 * c.s, 0.18, { white: true }); fieldWave(G, 0xffa040, 0.75, 0xffe14a); shock(H, 0xffd84a, 4, 0.3);
-        var wall = P3.ringWall({ kind: 'sun', col: 0xff9a3a, heat: 0.5 }), hw = 1.5 * Math.min(1.4, c.s);
+        var wall = P3.ringWall({ kind: 'sun', col: 0xff7a1a, heat: 0.9 }), hw = 1.5 * Math.min(1.4, c.s), RING_V = 9;
         tick(function (dt) {
-          r += 12.5 * c.sp * dt;
+          // the ring grows at the same pace whatever the cast speed (2026-11-16, user "홍염의 고리도 잘 안 보여": at speed x2 it
+          // crossed the whole screen in 0.4 s, under a fog of big painted flame puffs)
+          r += RING_V * dt;
           wall.set(G, r, hw * (1 - 0.3 * Math.min(1, r / 10.5)), Math.max(0, (r - 7.5) / 3));
           if (r > 10.5) wall.kill();
-          for (var j = 0; j < N(2, c); j++) {
+          for (var j = 0; j < N(1, c); j++) {
             var a = rr(0, 6.283), p = V(G.x + Math.cos(a) * r, 0.3, G.z + Math.sin(a) * r);
             if (Math.abs(p.x) > 4.4 || p.z < -5 || p.z > 4.2) continue;
-            fire(p, 1, { size: rr(0.7, 1.0) * c.s, speed: 0.5, up: 3.2, life: 0.75, v: V(Math.cos(a) * 4, 0, Math.sin(a) * 4) });
+            fire(p, 1, { size: rr(0.45, 0.65) * Math.min(1.4, c.s), speed: 0.5, up: 3.2, life: 0.75, v: V(Math.cos(a) * 4, 0, Math.sin(a) * 4) });
             if (j === 0) {
               // a tongue of flame loops up off the ring and falls back
               var q = V(G.x + Math.cos(a + 0.35) * r, 0.2, G.z + Math.sin(a + 0.35) * r), bez = new T.QuadraticBezierCurve3(V(p.x, 0.2, p.z), above(V((p.x + q.x) / 2, 0, (p.z + q.z) / 2), 1.8), q), pts = [];
@@ -720,7 +722,7 @@
           if (Math.random() < dt * 16) scorch(V(G.x + Math.cos(rr(0, 6.28)) * r, 0, G.z + Math.sin(rr(0, 6.28)) * r), 0.8, 1.6);
           return r > 10.5;
         });
-        ringHits(c, G, 12.5, 10.5, function (m) { wallBurn(c, m); sc.shake(0.05); c.hit(m, 1, 1.4); });
+        ringHits(c, G, RING_V / c.sp, 10.5, function (m) { wallBurn(c, m); sc.shake(0.05); c.hit(m, 1, 1.4); });
       });
     };
 
