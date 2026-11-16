@@ -1251,7 +1251,10 @@
       fl.set(new T.Vector3(x, R * 0.35, z), R * 0.4, calm);
       add(new T.Object3D(), { life: fT, upd: function (dt, t) { var k = t / fT; fl.set(new T.Vector3(x, R * 0.35, z), R * (0.4 + 0.8 * ease(k / 0.4)), Math.max(0, 1 - k * k) * calm); if (k >= 1) { fl.kill(); return true; } } });
       }
-      if (!OFF.impDome) {
+      // (o.dome false / o.smoke false: without the ball of fire / the dust and smoke — the world tree's 4th and later fruit
+      // bombs: thirteen landing together, these two were what an iPhone could not keep up with, 46 → 60 frames without
+      // the landings, 2026-11-17)
+      if (!OFF.impDome && o.dome !== false) {
       var fbL = lite ? 0.5 : 0.7, fb = add(new T.Mesh(GEO.ball, mat(FS.dome, { uCol: { value: C(col) }, uLow: { value: C(0x8a1a08) }, uHot: { value: 0.42 }, uK: { value: 0 }, uSeed: { value: Math.random() * 9 }, uAlpha: { value: 0.4 + 0.6 * calm } })), {
         order: 6, life: fbL, upd: function (dt, t) { var k = t / fbL; fb.mesh.scale.setScalar(R * (0.28 + 0.62 * ease(k / 0.28))); fb.mesh.position.y = R * (0.3 + 0.9 * ease(k)); U(fb).uK.value = Math.min(1, Math.max(0, (k - 0.1) / 0.9)); }
       });
@@ -1282,7 +1285,7 @@
       }
       }
       // dust rolling out along the ground, then smoke climbing out of the hollow
-      if (!OFF.impSmoke) {
+      if (!OFF.impSmoke && o.smoke !== false) {
       // (four puffs of dust a little bigger instead of six, one smoke instead of two when others land close by: see above)
       for (var i = 0, nd = lite ? 2 : 4; i < nd; i++) { var a = i / nd * 6.283 + Math.random() * 0.5; puff(new T.Vector3(x + Math.cos(a) * R * 0.4, R * 0.18, z + Math.sin(a) * R * 0.3), { s0: R * 0.2, s1: R * 0.46, life: 0.6, vel: new T.Vector3(Math.cos(a) * R * 4.0, 0.25, Math.sin(a) * R * 3.0), drag: 3.4, dark: 0x4a3e34, light: dirt, alpha: 0.42 }); }
       later(0.07, function () { for (var j = 0; j < (calm < 1 ? 1 : 2); j++) puff(new T.Vector3(x + (Math.random() - 0.5) * R * 0.4, R * (0.3 + j * 0.18), z + (Math.random() - 0.5) * R * 0.3), { s0: R * 0.22, s1: R * (0.5 + Math.random() * 0.25), life: 1.0 + Math.random() * 0.4, vel: new T.Vector3((Math.random() - 0.5) * 0.4, 1.0 + j * 0.25, 0), drag: 1.2, dark: 0x3a3230, light: 0x8a807a, alpha: 0.38 }); });

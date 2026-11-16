@@ -121,6 +121,7 @@
     // a piece thrown off (a petal, a blade leaf): it tumbles through the air, lands, lies a moment and withers away (a
     // hard piece browns; all fade). leaf: falls slowly, fluttering
     function toss(kind, p, vel, sz, col, leaf) {
+      if (CW.fxOff && CW.fxOff.toss) return;   // (switches for measuring on a phone, dev/phone-perf-tree.html; unset in the game)
       var h = P3.bm(kind, { col: col }), P = p.clone(), v = vel.clone(), q = new T.Quaternion().setFromEuler(new T.Euler(rr(0, 6.3), rr(0, 6.3), rr(0, 6.3)));
       var w = K.rdir(1).normalize(), spin = rr(6, 12), t = 0, landed = -1, R = new T.Quaternion(), lie = rr(0.25, 0.45), browned = false, ph = rr(0, 6.3);
       tick(function (dt) {
@@ -394,8 +395,14 @@
     // golden landing (P3.impact: flash, fire dome, crown of earth, rolling ring, a scorched hollow — lite for all but the
     // first few, as the meteor rain does, so a phone keeps up), golden juice, seeds, leaves, rings of shock, light
     function fruitBurst(c, p, g, first, lite) {
-      P3.impact(V(g.x, 0.03, g.z), { size: 0.78, col: 0xffc84a, hot: 0xffa020, ringCol: 0xffe08a, dirt: new T.Color(K.dustCol()).lerp(new T.Color(0x4a382c), 0.75).getHex(), chips: 8, ring: 2.4, lite: lite, hollow: !lite, paint: true });
-      if (lite) K.scorch(g, 0.75, 1.6);   // (the hollow, batched: thirteen fruits each drawing their own hollow made the tree twice as heavy as the other skills)
+      P3.impact(V(g.x, 0.03, g.z), { size: 0.78, col: 0xffc84a, hot: 0xffa020, ringCol: 0xffe08a, dirt: new T.Color(K.dustCol()).lerp(new T.Color(0x4a382c), 0.75).getHex(), chips: 8, ring: 2.4, lite: lite, hollow: !lite, dome: !lite, smoke: !lite, paint: true });
+      // the 4th fruit on (lite): its hollow, ball of fire and smoke drawn batched instead (thirteen fruits each with their
+      // own 3D landing held an iPhone at 46 frames, 2026-11-17)
+      if (lite) {   // (a golden flash, a glow on the ground, a brief puff of light)
+        K.scorch(g, 0.75, 1.6); K.gGlow(g, 0xffc040, 1.5, 0.45);
+        E({ pos: V(g.x, 0.45, g.z), frame: 'glow', color: 0xffd060, size: [0.5, 1.5], ease: 1, life: 0.35, fadeOut: 0.3, alpha: 0.9 });
+        K.flare(V(g.x, 0.4, g.z), 0xfff0b0, 1.6, 0.18);
+      }
       K.flare(p, 0xffd060, 0.6, 0.1);
       for (var j = 0; j < N(12, c); j++) E({ pos: p.clone().add(K.rdir(0.2)), vel: K.rdir(3.4).add(V(0, 2.6, 0)), frame: 'dot', color: K.pick([0xffd040, 0xffa020, 0xfff0a0]), size: [rr(0.08, 0.13), 0.03], life: rr(0.45, 0.7), grav: 8, drag: 0.8 });
       for (var s = 0; s < N(5, c); s++) E({ pos: p.clone(), vel: K.rdir(2.6).add(V(0, 2.2, 0)), frame: 'dot', color: 0x3a2008, size: [0.07, 0.05], life: rr(0.5, 0.7), grav: 9, drag: 0.6 });
@@ -415,18 +422,18 @@
       for (var s = 0; s < N(10, c); s++) E({ pos: p.clone(), vel: K.rdir(3.6).add(V(0, 2.8, 0)), frame: 'dot', color: 0x3a2008, size: [0.08, 0.05], life: rr(0.5, 0.8), grav: 9, drag: 0.6 });
       for (var l = 0; l < N(8, c); l++) toss('woodLeaf', p, K.rdir(3.5).add(V(0, 2.5, 0)), rr(0.14, 0.2), 0xffffff, true);
       K.dust(g, N(8, c), 1.6); sc.light(p, 0xffc040, 2.2, 0.35);
-      sc.climax(0.6, 0.24); sc.shake(0.5); sc.hitStop(0.1);
+      if (!(CW.fxOff && CW.fxOff.dim)) sc.climax(0.6, 0.24); sc.shake(0.5); sc.hitStop(0.1);
       for (var k = 0; k < 5; k++) { var a = k / 5 * 6.283; after(c.D(0.15 + k * 0.03), (function (q) { return function () { sprout(q); }; })(V(g.x + Math.cos(a) * 1.3, 0, g.z + Math.sin(a) * 0.9))); }
     }
     S.worldTree = function (c) {
       var list = c.pool(); if (!list.length) return;
       c.plain = true;
       sc.heroPose('raise', c.D(0.14), c.col);
-      sc.dim(0.26, c.D(1.4));
+      if (!(CW.fxOff && CW.fxOff.dim)) sc.dim(0.26, c.D(1.4));
       var base = V(Math.max(-1, Math.min(1, c.center.x * 0.5)), 0, TREE_Z), qT = yawQ(rr(-0.12, 0.12));
       var trunk = P3.bm('treeTrunk', { col: BARKC });
       var tips = (CW.TREE_TIPS || []).map(function (tp) {
-        return { p: V(tp[0], tp[1], tp[2]).applyQuaternion(qT).multiplyScalar(TS).add(base), r: tp[3] * TS, at: tp[4], h: P3.bm('treeClump', { col: LEAFC }), q: yawQ(rr(0, 6.3)), pop: -1 };
+        return { p: V(tp[0], tp[1], tp[2]).applyQuaternion(qT).multiplyScalar(TS).add(base), r: tp[3] * TS, at: tp[4], h: CW.fxOff && CW.fxOff.crown ? { set: function () {}, kill: function () {} } : P3.bm('treeClump', { col: LEAFC }), q: yawQ(rr(0, 6.3)), pop: -1 };
       });
       // the rumble: the ground splits and heaves where it comes up
       E({ sys: 'gnorm', pos: V(base.x, 0.026, base.z + 0.3), frame: 'smoke', color: 0x1a0e08, size: [0.6, 3.4], ease: 1, life: 1.8, alpha: 0.55, fadeIn: 0.05, fadeOut: 0.5 });
