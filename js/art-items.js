@@ -74,8 +74,10 @@
   I.sigilSrc = function (stat) { return SG2.indexOf(stat) >= 0 ? src('sg2-' + stat) : null; };
   I.runeSrc = function (id) { return RN2.indexOf(id) >= 0 ? src('rn2-' + id) : null; };
   I.gradeFrameSrc = function (g) { g = clamp(g, 0, 10); return src('gf-' + (g < 10 ? '0' : '') + g); };
-  function framed(cls, art, grade) {
-    return '<span class="ico ' + cls + '"><img class="gfr" src="' + I.gradeFrameSrc(grade) + '" alt="" draggable="false"><img class="gart" src="' + art + '" alt="" draggable="false"></span>';
+  // bg: 목록 칸과 같은 바탕 그림 (사용자 2026-11-17 「요걸로 다 통일」) — 룬 art/ru-orb(보석 원판), 신성력 art/si-cardbg(별빛 카드).
+  // 바탕이 없을 때(패키지 아이콘)만 등급 테두리.
+  function framed(cls, art, grade, bg) {
+    return '<span class="ico ' + cls + (bg ? ' onbg' : '') + '"><img class="' + (bg ? 'gbg' : 'gfr') + '" src="' + (bg || I.gradeFrameSrc(grade)) + '" alt="" draggable="false"><img class="gart" src="' + art + '" alt="" draggable="false"></span>';
   }
 
   // ---------- sigils (신성력) ----------
@@ -93,7 +95,7 @@
   }
   I.sigil = function (stat, grade, gcol, q) {
     var g = clamp(grade, 0, 10), band = g <= 1 ? 0 : g <= 3 ? 1 : g <= 5 ? 2 : g <= 7 ? 3 : 4;
-    if (I.sigilSrc(stat)) return framed('isg2 b' + band, I.sigilSrc(stat), g);   // 옵션 그림 + 등급 테두리
+    if (I.sigilSrc(stat)) return framed('isg2 b' + band, I.sigilSrc(stat), g, q !== undefined ? src('si-cardbg') : null);   // 옵션 그림 + (실제 신성력) 별빛 카드 / (패키지) 등급 테두리
     // q is given for a real sigil (bag, equipped, selected); package icons pass none and need no stat mark
     return '<span class="ico isg sgpic b' + band + '"><img src="' + src('sg-' + (BOLT[stat] ? 'bolt' : 'paw') + '-' + g) + '" alt="" draggable="false">' + (q !== undefined ? mark(stat) : '') + '</span>';
   };
@@ -101,7 +103,7 @@
   // ---------- runes ----------
   var RUNES = ['rFire', 'rWave', 'rWind', 'rEarth', 'rLight', 'rDark', 'rBolt', 'rNebula', 'rComet', 'rOrigin'], rune0 = I.rune; // the last four: tools/make-new-runes.py
   I.rune = function (id, color, grade, gcol) {
-    if (I.runeSrc(id)) return framed('irn2', I.runeSrc(id), grade);   // 룬 그림 + 등급 테두리
+    if (I.runeSrc(id)) return framed('irn2', I.runeSrc(id), grade, src('ru-orb'));   // 룬 그림 + 보석 원판
     if (RUNES.indexOf(id) < 0) return rune0(id, color, grade, gcol);
     var t = grade >= 8 ? 3 : grade >= 4 ? 2 : 1;
     return pic('rn-' + id + '-' + t, 'irune' + (grade >= 4 ? ' hi' : ''), '--gc:' + gcol);
@@ -137,7 +139,9 @@
       // 새 룬·신성력 그림: 등급 테두리(뒤) + 원화(앞). 테두리는 빈 투명 선이라 그림을 가리지 않게 원화보다 크게, 원화는 안쪽 72%
       '.ico.isg2,.ico.irn2{position:relative;display:block;width:100%;height:100%;filter:none!important}' +
       '.ico.isg2>img,.ico.irn2>img{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;-webkit-user-drag:none;user-select:none;-webkit-touch-callout:none;pointer-events:none}' +
-      '.ico.isg2>.gart,.ico.irn2>.gart{left:14%;top:14%;width:72%;height:72%;filter:drop-shadow(0 2px 3px rgba(60,40,120,.28))}';
+      '.ico.isg2>.gart,.ico.irn2>.gart{left:14%;top:14%;width:72%;height:72%;filter:drop-shadow(0 2px 3px rgba(60,40,120,.28))}' +
+      '.ico.irn2.onbg>.gbg{border-radius:50%;box-shadow:0 2px 5px rgba(110,80,180,.22)}.ico.irn2.onbg>.gart{left:21%;top:20%;width:58%;height:58%}' +
+      '.ico.isg2.onbg>.gbg{border-radius:18%;object-fit:fill}.ico.isg2.onbg>.gart{left:12%;top:12%;width:76%;height:76%}';
     (document.body || document.head || document.documentElement).appendChild(css);
   }
 })(this);

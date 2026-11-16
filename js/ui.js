@@ -475,7 +475,7 @@
     function gfImg(grade, cls) { return '<img class="' + cls + '" src="' + CW.ICO.gradeFrameSrc(grade) + '" alt="" draggable="false">'; }
     function rsCell(attr, id, grade, on, worn, lock, art, foot, label) {
       return '<button class="rsc' + (on ? ' sel' : '') + (worn ? ' eq' : '') + '" ' + attr + '="' + id + '" data-opfx="rc:' + id + '" data-opdur=".6" style="--gc:' + hc(grade) + '" aria-label="' + label + (worn ? ' 장착 중' : '') + (lock ? ' 잠금' : '') + '">' +
-        '<i class="rsc-orb">' + gfImg(grade, 'rsc-gf') + art + '</i><span class="rsc-g">' + hn(grade) + '</span>' + (lock ? '<i class="rsc-lk"></i>' : '') + (on ? '<i class="rsc-ck"></i>' : '') +
+        '<i class="rsc-orb">' + gfImg(grade, 'rsc-gf') + art + '</i><span class="rsc-g">' + hn(grade) + '</span>' + (lock ? '<i class="rsc-lk"></i>' : '') +
         '<span class="rsc-lv">' + (worn ? '<em>장착</em>' : '') + foot + '</span></button>';
     }
     function runeCell(s, it, curId) {
@@ -498,7 +498,7 @@
       var ids = rune ? CW.runeBag(s).aw : (s.sigil.aw || []);
       var cells = ids.map(function (id) {
         var it = id && (rune ? CW.runeItem(s, id) : CW.sigilById(s, id));
-        return it ? (rune ? runeCell(s, it) : sgCell(it, true)) : '<div class="rsc empty"><i class="rsc-orb"></i><span class="rsc-lv">빈 슬롯</span></div>';
+        return it ? (rune ? runeCell(s, it) : sgCell(it, true)) : '<div class="rsc empty' + (rune ? '' : ' sg') + '"><i class="rsc-orb"></i><span class="rsc-lv">빈 슬롯</span></div>';
       }).join('');
       var kinds = rune ? DATA.runes.filter(function (k) { return k.awaken && CW.runeKindOpen(s, k.id); }).map(function (k) { return [k.id, k.name, k.color]; })
         : CW.sigilPool(s, true).map(function (d) { return [d.stat, STAT_KO[d.stat] || d.stat, '']; });

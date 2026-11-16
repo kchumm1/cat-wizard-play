@@ -74,6 +74,7 @@
     '.rsc::before{content:"";position:absolute;left:3px;top:3px;right:3px;bottom:3px;border-radius:10px;pointer-events:none;background:url(art/ru-cardbg.webp) 50% 50%/100% 100% no-repeat}',
     '.rsc.empty::before{opacity:.55}',
     // 신성력 칸 바탕 = 사용자 「신성력-별빛-소켓배경」(art/si-cardbg, 별빛 연보라 둥근 네모) — 목록 칸·상세 보석 칸
+    '.rsc.empty.sg::before{left:2px;top:2px;right:2px;bottom:2px;border-radius:12px;background-image:url(art/si-cardbg.webp)}' + '.rsc.empty.sg .rsc-orb{border-radius:22%}',
     '.rsc[data-sg]::before{left:2px;top:2px;right:2px;bottom:2px;border-radius:12px;background-image:url(art/si-cardbg.webp)}',
     // 룬 칸은 유리 돔이 있어 등급 테두리 끝이 돔 위아래로 삐져나와 지저분 → 룬은 테두리 빼고 등급 글자로 (신성력 보석 칸은 테두리 유지)
     '.rsc .rsc-gf{display:none}' + D + '.rdpic .rd-gf{display:none}',   // 신성력 보석 칸도 시안처럼 테두리 없이 (등급은 칸 위 글자·상세 글자 색)
@@ -90,7 +91,7 @@
     '.rsc-g{left:7%;top:4.5%;z-index:1;font:800 10px/1 var(--body);color:var(--gc);text-shadow:0 0 2px #fff,0 0 2px #fff,0 0 3px #fff;white-space:nowrap}',
     '.rsc-lv{left:0;right:0;bottom:7%;text-align:center;font:800 12px/1 var(--body);color:#30364d;white-space:nowrap}',
     '.rsc-lv em{font-style:normal;margin-right:3px;padding:1px 4px 2px;border-radius:6px;background:#2f8f88;color:#fff;font-size:9.5px;vertical-align:1px}',
-    '.rsc-ck{right:-5%;top:-4%;width:28%;aspect-ratio:1;z-index:2;background:url(art/sk-check.webp) 50% 50%/contain no-repeat}',
+    '.rsc-ck{display:none}',   // 체크 표시 없앰 (사용자 2026-11-17)
     '.rsc-lk{right:7%;bottom:19%;width:15%;aspect-ratio:28/30;z-index:1;background:url(art/sk-lock.webp) 50% 50%/contain no-repeat}',
     '.rsc.empty{border-image-source:url(art/ru-slot-un.webp)!important}',
     '.rsc.empty .rsc-orb{left:22%;top:16%;width:56%;border-radius:50%;box-shadow:inset 0 0 0 1.5px rgba(150,140,190,.35)}' + '.rsc.empty .rsc-lv{color:#8f96aa;font-size:11px}',
@@ -151,6 +152,8 @@
     D + '.rdpic{position:relative;width:96px;height:104px;box-sizing:border-box;border:0 solid transparent;border-image:url(art/sk-slot-sel.webp) 51 fill / 15px / 2.7px 1.6px 1.6px 1.6px stretch}',
     D + '.rdpic.sg::before{left:2px!important;top:2px!important;right:2px!important;bottom:2px!important;border-radius:14px!important;background-image:url(art/si-cardbg.webp)!important}',
     D + '.rdpic::before{content:"";position:absolute;left:3px;top:3px;right:3px;bottom:3px;border-radius:12px;pointer-events:none;background:url(art/ru-cardbg.webp) 50% 50%/100% 100% no-repeat}',
+    // 룬 상세 그림 칸도 목록 칸과 같은 보석 원판 (사용자 2026-11-17 「요걸로 다 통일」): 돔·앞 반사 대신 art/ru-orb
+    D + '.rdpic:not(.sg) .run-dome{background:url(art/ru-orb.webp) 50% 50%/100% 100% no-repeat!important;box-shadow:0 2px 6px rgba(110,80,180,.22),0 0 10px rgba(220,200,255,.5)!important}' + D + '.rdpic:not(.sg) .run-glint{display:none}' + D + '.rdpic:not(.sg) .run-art{left:21%;top:19%;width:58%;height:58%}',
     D + '.rdpic>*{position:absolute}' + D + '.rdpic img{pointer-events:none;-webkit-touch-callout:none;user-select:none}',
     D + '.rdpic .run-dome{left:13px;top:6px;width:70px;height:70px}',
     D + '.rdpic .run-lv{top:49.5px}' + D + '.rdpic .run-anc{top:62px}',
