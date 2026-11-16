@@ -1270,8 +1270,12 @@
       });
       rg.mesh.position.set(x, 0.045, z); rg.mesh.scale.setScalar(R * (o.ring || 2.8));
       }
-      var scL = 1.8, sc2 = add(new T.Mesh(GEO.flat, mat(FS.scorch, { uK: { value: 0 }, uSeed: { value: Math.random() * 9 } }, { normal: true })), { order: 3, life: scL, upd: function (dt, t) { U(sc2).uK.value = t / scL; } });
-      sc2.mesh.position.set(x, 0.032, z); sc2.mesh.scale.setScalar(R * 0.95);
+      // (o.hollow false: no hollow of its own — the world tree's many fruit bombs, each a mesh drawn on its own that stays
+      // 1.8 s, leave a batched scorch instead, 2026-11-16)
+      if (o.hollow !== false) {
+        var scL = 1.8, sc2 = add(new T.Mesh(GEO.flat, mat(FS.scorch, { uK: { value: 0 }, uSeed: { value: Math.random() * 9 } }, { normal: true })), { order: 3, life: scL, upd: function (dt, t) { U(sc2).uK.value = t / scL; } });
+        sc2.mesh.position.set(x, 0.032, z); sc2.mesh.scale.setScalar(R * 0.95);
+      }
       if (!lite) {
       var ckL = 1.3, ck = add(new T.Mesh(GEO.flat, mat(FS.cracks, { uCol: { value: C(col) }, uK: { value: 0 }, uSeed: { value: Math.random() * 9 } })), { order: 4, life: ckL, upd: function (dt, t) { U(ck).uK.value = t / ckL; } });
       ck.mesh.position.set(x, 0.04, z); ck.mesh.scale.setScalar(R * 1.4);
@@ -1666,6 +1670,10 @@
       S.tex.needsUpdate = true;
       if (T.TextureLoader) new T.TextureLoader().load((root.CW && root.CW.ART_BASE || 'art/') + name + '.webp', function (t) {
         t.anisotropy = 4; t.generateMipmaps = false; t.minFilter = T.LinearFilter; S.tex = t; S.ready = true;
+        // sent to the graphics card now, while it arrives (warm() asks for every skin), not on the first frame that draws
+        // it: a 1536×1024 sheet uploading mid-fight was the stall on the flytrap's and the world tree's first cast
+        // (about 150 ms on a 4×-slowed phone emulation, 2026-11-16)
+        try { if (sc.renderer && sc.renderer.initTexture) sc.renderer.initTexture(t); } catch (e) { }
         S.users.forEach(function (u) { u.uMap.value = t; u.uPaint.value = 1; });
       }, undefined, function () { });
       return S;

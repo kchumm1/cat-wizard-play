@@ -124,6 +124,7 @@
       var h = P3.bm(kind, { col: col }), P = p.clone(), v = vel.clone(), q = new T.Quaternion().setFromEuler(new T.Euler(rr(0, 6.3), rr(0, 6.3), rr(0, 6.3)));
       var w = K.rdir(1).normalize(), spin = rr(6, 12), t = 0, landed = -1, R = new T.Quaternion(), lie = rr(0.25, 0.45), browned = false, ph = rr(0, 6.3);
       tick(function (dt) {
+        if (!h.live()) return true;   // pushed out of its layer (too many at once): nothing drawn, so stop moving it
         t += dt;
         if (landed < 0) {
           v.y -= (leaf ? 3.5 : 9) * dt;
@@ -393,7 +394,8 @@
     // golden landing (P3.impact: flash, fire dome, crown of earth, rolling ring, a scorched hollow — lite for all but the
     // first few, as the meteor rain does, so a phone keeps up), golden juice, seeds, leaves, rings of shock, light
     function fruitBurst(c, p, g, first, lite) {
-      P3.impact(V(g.x, 0.03, g.z), { size: 0.78, col: 0xffc84a, hot: 0xffa020, ringCol: 0xffe08a, dirt: new T.Color(K.dustCol()).lerp(new T.Color(0x4a382c), 0.75).getHex(), chips: 8, ring: 2.4, lite: lite, paint: true });
+      P3.impact(V(g.x, 0.03, g.z), { size: 0.78, col: 0xffc84a, hot: 0xffa020, ringCol: 0xffe08a, dirt: new T.Color(K.dustCol()).lerp(new T.Color(0x4a382c), 0.75).getHex(), chips: 8, ring: 2.4, lite: lite, hollow: !lite, paint: true });
+      if (lite) K.scorch(g, 0.75, 1.6);   // (the hollow, batched: thirteen fruits each drawing their own hollow made the tree twice as heavy as the other skills)
       K.flare(p, 0xffd060, 0.6, 0.1);
       for (var j = 0; j < N(12, c); j++) E({ pos: p.clone().add(K.rdir(0.2)), vel: K.rdir(3.4).add(V(0, 2.6, 0)), frame: 'dot', color: K.pick([0xffd040, 0xffa020, 0xfff0a0]), size: [rr(0.08, 0.13), 0.03], life: rr(0.45, 0.7), grav: 8, drag: 0.8 });
       for (var s = 0; s < N(5, c); s++) E({ pos: p.clone(), vel: K.rdir(2.6).add(V(0, 2.2, 0)), frame: 'dot', color: 0x3a2008, size: [0.07, 0.05], life: rr(0.5, 0.7), grav: 9, drag: 0.6 });
