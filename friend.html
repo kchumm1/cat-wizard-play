@@ -2145,6 +2145,111 @@ body{font-family:'Noto Sans KR',"Malgun Gothic","Apple SD Gothic Neo",system-ui,
 @keyframes idspin{0%,14%,100%{transform:none}8%{transform:rotate(90deg) scale(1.12)}}
 #tabs button.tap::before{display:block}
 @media (prefers-reduced-motion:reduce){#tabs,#tabs::after,#tabs button img.ico,#tabs button::before{animation:none!important}}
+/* 뽑기 메뉴 바탕을 성운으로 (2026-11-16, the user: 여기 배경도 성운으로, 색깔이 너무 튄다): 마나서클 성운 그림 위에 어두운 막,
+   칸·버튼은 반투명 유리(흰 글씨)로 성운이 비쳐 보이게. ui.js openTab 이 뽑기일 때 #sheet 에 .neb */
+#sheet.cream.neb{background:linear-gradient(180deg,rgba(26,16,70,.42),rgba(18,10,52,.62)),url(art/mn-neb-fill.webp) 50% 40%/cover;background-color:#2a2160}
+#sheet.cream.neb .sheet-head::before{background:rgba(255,255,255,.35)}
+#sheet.cream.neb .sheet-head b{color:#fff;text-shadow:0 1px 3px rgba(20,10,60,.7)}
+#sheet.cream.neb #panel h3{color:#fff;text-shadow:0 1px 3px rgba(20,10,60,.7)}
+#sheet.cream.neb #panel h3::before{background:linear-gradient(#ffc2e0,#b8a0ff)}
+#sheet.cream.neb .gchest::before{background:radial-gradient(closest-side,rgba(255,220,250,.75),rgba(180,150,255,.3) 60%,transparent)}
+#sheet.cream.neb .gchest img{filter:drop-shadow(0 8px 10px rgba(10,5,40,.5))}
+/* level box: frosted glass */
+#sheet.cream.neb #panel .gacha-head.ghd.gh2{background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.32),0 6px 16px -8px rgba(10,5,40,.6);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+#sheet.cream.neb #panel .gacha-head.ghd.gh2::after{background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.25) 48%,transparent 60%)}
+#sheet.cream.neb #panel .gacha-head.ghd.gh2 .lvl{background:radial-gradient(circle at 35% 28%,rgba(255,255,255,.95),rgba(230,215,255,.8) 60%,rgba(200,180,250,.75))}
+#sheet.cream.neb #panel .gh2 .ghnext{color:rgba(255,255,255,.85)}
+#sheet.cream.neb #panel .gh2 .ghnext b{color:#9ff0e2}
+#sheet.cream.neb #panel .gh2 .ghbar{background:rgba(255,255,255,.18);box-shadow:inset 0 1px 2px rgba(0,0,0,.25)}
+#sheet.cream.neb #panel .gh2 .ghchips span{background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+#sheet.cream.neb #panel .gh2 .ghchips em{color:rgba(255,255,255,.82)}
+#sheet.cream.neb #panel .gh2 .ghchips b{color:#fff}
+#sheet.cream.neb #panel .gh2 .c-leg b{color:#ffd77a}#sheet.cream.neb #panel .gh2 .c-myth b{color:#ff9cc0}#sheet.cream.neb #panel .gh2 .c-pri b{color:#d7c2ff}
+/* pull buttons: glass, gold glass for 100, opal glass for 500 */
+#sheet.cream.neb #panel .pull{background:rgba(255,255,255,.11);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.28),0 4px 10px -6px rgba(10,5,40,.6);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px)}
+#sheet.cream.neb #panel .pull b{color:#fff;text-shadow:0 1px 2px rgba(20,10,60,.6)}
+#sheet.cream.neb #panel .pull span{color:#bfe9ff}
+#sheet.cream.neb #panel .pull small{color:rgba(255,255,255,.72)}
+#sheet.cream.neb #panel .pull.big{background:linear-gradient(160deg,rgba(255,214,120,.32),rgba(255,170,90,.16));box-shadow:inset 0 0 0 1.5px rgba(255,220,140,.7),0 4px 12px -6px rgba(255,190,90,.6)}
+#sheet.cream.neb #panel .pull.big span{color:#ffe7a8}
+#sheet.cream.neb #panel .pulls .pull.huge{background:linear-gradient(110deg,rgba(255,170,215,.3),rgba(190,160,255,.28) 45%,rgba(150,215,255,.28));box-shadow:inset 0 0 0 1.5px rgba(230,210,255,.75),0 4px 14px -6px rgba(200,160,255,.7)}
+#sheet.cream.neb #panel .pulls .pull.huge::after{background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.35) 48%,transparent 60%)}
+#sheet.cream.neb #panel .pull.huge span{color:#ffe7f6}
+/* 던전·더보기도 성운 바탕 (2026-11-16): 카드는 그대로, 카드 밖 글씨만 흰색 */
+#sheet.cream.neb #panel .subh,#sheet.cream.neb #panel details.fold>summary{color:#fff;text-shadow:0 1px 3px rgba(20,10,60,.7)}
+#sheet.cream.neb #panel .tjnow{color:rgba(255,255,255,.85);text-shadow:0 1px 2px rgba(20,10,60,.7)}#sheet.cream.neb #panel .tjnow b{color:#fff}
+#sheet.cream.neb #panel .tjtrack .tjbar{background:rgba(255,255,255,.22)}
+/* 던전·더보기(전직·패키지·설정)도 반투명 유리 (2026-11-16, the user: 반투명이 잘 어울린다 → 던전이랑 더보기 전직 패키지 설정 전부다
+   반투명으로): 카드·줄은 성운이 비치는 유리, 글씨는 흰색·연한 색. 금빛 입장·구매 버튼은 그대로 */
+#sheet.cream.neb #panel .jump{background:none;box-shadow:none}
+#sheet.cream.neb #panel .jump button[aria-selected=false]{background:rgba(255,255,255,.12);color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.28)}
+#sheet.cream.neb #panel .jump button[aria-selected=true]{background:linear-gradient(160deg,rgba(255,214,120,.4),rgba(255,170,90,.22));color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,220,140,.75);text-shadow:0 1px 2px rgba(60,30,0,.5)}
+#sheet.cream.neb #panel :is(.dung,.tjob,.prod,.pack,.notice,.row,.guide-summary){background:rgba(255,255,255,.11);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.26),0 5px 12px -7px rgba(10,5,40,.65);border:0;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#fff}
+#sheet.cream.neb #panel .tjob.st-now{background:linear-gradient(115deg,rgba(255,170,215,.28),rgba(190,160,255,.26) 55%,rgba(150,215,255,.24));box-shadow:inset 0 0 0 2px rgba(230,210,255,.8),0 0 0 3px rgba(201,180,242,.25),0 6px 14px -6px rgba(120,80,190,.6)}
+#sheet.cream.neb #panel .tjob.st-now::after{background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.3) 48%,transparent 60%)}
+#sheet.cream.neb #panel .tjob.st-next{box-shadow:inset 0 0 0 2px rgba(127,230,214,.85),0 5px 12px -7px rgba(10,5,40,.65)}
+#sheet.cream.neb #panel .tjob.st-soon{background:repeating-linear-gradient(135deg,rgba(255,255,255,.1) 0 10px,rgba(255,255,255,.05) 10px 20px)}
+#sheet.cream.neb #panel .tjob.st-lock .tjmed,#sheet.cream.neb #panel .tjob.st-soon .tjmed{opacity:.6}
+#sheet.cream.neb #panel .tjst.done{background:rgba(127,230,214,.2);color:#a8f3e6}
+#sheet.cream.neb #panel .tjst.soon{background:rgba(255,255,255,.12);color:#e6dcff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
+#sheet.cream.neb #panel .tjst.lock i{background:rgba(255,255,255,.6)}
+#sheet.cream.neb #panel .tjcond i{background:rgba(127,230,214,.2);color:#a8f3e6;box-shadow:inset 0 0 0 1px rgba(127,230,214,.45)}
+#sheet.cream.neb #panel .tjtrack b:not(.done):not(.now){background:rgba(255,255,255,.18);color:rgba(255,255,255,.75);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.35)}
+#sheet.cream.neb #panel .row button:not(.btn):not(.buy){background:rgba(255,255,255,.14);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
+#sheet.cream.neb{box-shadow:0 -6px 22px rgba(10,5,40,.45),inset 0 1.5px 0 rgba(255,255,255,.2);border-top:0}
+/* 유리 위 글씨 */
+#sheet.cream.neb #panel :is(.dung,.tjob,.prod,.pack,.notice,.row) :is(.name,.tjname){color:#fff;text-shadow:0 1px 2px rgba(20,10,60,.6)}
+#sheet.cream.neb #panel .dung .dname{color:#ffe39a;text-shadow:0 1px 2px rgba(20,10,60,.6)}
+#sheet.cream.neb #panel :is(.dung,.prod,.pack,.notice,.row) :is(.note,.desc,.gn,small){color:rgba(255,255,255,.76)}
+#sheet.cream.neb #panel :is(.dung,.prod,.pack,.notice,.row) .note b{color:#fff}
+#sheet.cream.neb #panel .tjcond{color:rgba(255,255,255,.9)}
+#sheet.cream.neb #panel .tjob:is(.st-lock,.st-soon) :is(.tjname,.tjcond){color:rgba(255,255,255,.62)}
+#sheet.cream.neb #panel .prod .amt{color:#bfe9ff}
+#sheet.cream.neb #panel .row :is(.dmgval,.appver){color:#ffd77a}
+/* 유리 위 글씨가 잘 보이게 (2026-11-16, the user: 가시성이 떨어진다, 반투명하니까 글씨체를 바꿔야 할 듯): 유리를 조금 어둡게, 이름은 주아 흰색, 설명은 굵게·그림자 */
+#sheet.cream.neb #panel :is(.dung,.tjob,.prod,.pack,.notice,.row,.guide-summary){background:linear-gradient(180deg,rgba(255,255,255,.13),rgba(255,255,255,.05)),rgba(16,10,48,.42)}
+#sheet.cream.neb #panel .tjob.st-now{background:linear-gradient(115deg,rgba(255,170,215,.3),rgba(190,160,255,.26) 55%,rgba(150,215,255,.24)),rgba(16,10,48,.38)}
+#sheet.cream.neb #panel :is(.dung .dname,.tjob .tjname,.prod .name,.pack .name,.row .name){font-family:var(--display);font-weight:400;font-size:17px;letter-spacing:0;text-shadow:0 1px 0 rgba(10,5,40,.7),0 0 6px rgba(10,5,40,.5)}
+#sheet.cream.neb #panel :is(.dung,.prod,.pack,.notice,.row) :is(.note,.desc,.gn,small),#sheet.cream.neb #panel .tjcond{color:rgba(255,255,255,.92);font-weight:700;text-shadow:0 1px 2px rgba(10,5,40,.8)}
+#sheet.cream.neb #panel .tjob:is(.st-lock,.st-soon) :is(.tjname,.tjcond){color:rgba(255,255,255,.72)}
+#sheet.cream.neb #panel .dung .note b,#sheet.cream.neb #panel .row .note b{color:#ffe39a}
+#sheet.cream.neb #panel .dung .btn.off{background:rgba(255,255,255,.16);color:rgba(255,255,255,.75);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.3)}
+#sheet.cream.neb #panel .guide-summary{color:#fff;font-weight:700}
+/* 설정·던전의 버튼도 반투명 (2026-11-16, the user: 이것도 다 반투명하자) */
+#sheet.cream.neb #panel .btn:not(.buy){background:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,.12));color:#fff;text-shadow:0 1px 2px rgba(10,5,40,.7);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.42),0 3px 8px -4px rgba(10,5,40,.6);border:0;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+#sheet.cream.neb #panel .btn:not(.buy):active{transform:translateY(1px);background:rgba(255,255,255,.3)}
+#sheet.cream.neb #panel .btn.off:not(.buy){opacity:.6}
+#sheet.cream.neb #panel .buy.gemb{background:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,.12));color:#fff;text-shadow:0 1px 2px rgba(10,5,40,.7);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.42),0 3px 8px -4px rgba(10,5,40,.6)}
+#sheet.cream.neb #panel .buy:not(.gemb){background:linear-gradient(160deg,rgba(255,214,120,.5),rgba(255,170,90,.28));color:#fff;text-shadow:0 1px 2px rgba(60,30,0,.6);box-shadow:inset 0 0 0 1.5px rgba(255,220,140,.85),0 3px 10px -4px rgba(255,190,90,.6)}
+#sheet.cream.neb #panel .buy[disabled]{opacity:.55}
+/* 성운 메뉴에서 흰 글씨 지정(인라인 #fff)을 크림 규칙이 덮던 것 (던전 입장권 3/3 이 안 보였음) */
+#sheet.cream.neb b[style*="#fff"],#sheet.cream.neb span[style*="#fff"]{color:#ffe39a!important}
+/* 모든 닫기 버튼 반투명 (2026-11-16, the user: 모든 닫기 반투명해) */
+#sheet.cream .sheet-head #sheetClose{background:rgba(255,255,255,.38);color:#3b3550;border:0;box-shadow:inset 0 0 0 1.5px rgba(120,110,160,.35),0 2px 6px -2px rgba(60,50,90,.25);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+#sheet.cream.neb .sheet-head #sheetClose{background:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,.12));color:#fff;text-shadow:0 1px 2px rgba(10,5,40,.7);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.45),0 3px 8px -4px rgba(10,5,40,.6)}
+#gachaFx #gClose{background:linear-gradient(180deg,rgba(255,255,255,.24),rgba(255,255,255,.1));color:#fff;border:0;text-shadow:0 1px 2px rgba(10,5,40,.7);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.45),0 4px 10px -4px rgba(10,5,40,.6);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+#noticebox .nzx{background:rgba(255,255,255,.4);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.85),0 2px 6px -2px rgba(107,58,92,.35);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+/* 패키지·던전 그림 칸도 반투명 + 움직임 (2026-11-16, the user: 패키지 이미지도 애니메이션, 패키지 안도 반투명해서 이쁘게):
+   크림색 칸 → 성운이 비치는 둥근 유리(뒤에 분홍·보라 빛), 그림은 둥실 떠 있다가 차례로 한 번씩 톡 튀고, 유리 위로 빛이 훑고,
+   귀퉁이 별이 반짝임 */
+#sheet.cream.neb .pack .picon,#sheet.cream.neb .dung .dicon{position:relative;overflow:hidden;background:radial-gradient(circle at 50% 30%,rgba(255,255,255,.34),rgba(255,255,255,.08) 70%),radial-gradient(circle at 50% 80%,rgba(255,150,210,.35),transparent 70%);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.5),0 4px 10px -4px rgba(10,5,40,.6);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+#sheet.cream.neb .pack .picon::after,#sheet.cream.neb .dung .dicon::after{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.65) 48%,transparent 60%);transform:translateX(-130%);animation:pkshine 4.8s ease-in-out infinite;animation-delay:var(--pd,0s);pointer-events:none}
+#sheet.cream.neb .pack .picon::before{content:'';position:absolute;right:5px;top:5px;width:9px;height:9px;background:#fff8d2;clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);filter:drop-shadow(0 0 3px #ffd86a);animation:pktw 2.4s ease-in-out infinite;animation-delay:var(--pd,0s);z-index:2}
+#sheet.cream.neb .pack .picon .ico{position:relative;z-index:1;animation:pkbob 3s ease-in-out infinite,pkpop 6s ease-in-out infinite;animation-delay:var(--pd,0s),var(--pd,0s);filter:drop-shadow(0 3px 3px rgba(10,5,40,.45));-webkit-user-drag:none;-webkit-touch-callout:none}
+#sheet.cream.neb .packs .pack:nth-child(2){--pd:.7s}#sheet.cream.neb .packs .pack:nth-child(3){--pd:1.4s}#sheet.cream.neb .packs .pack:nth-child(4){--pd:2.1s}#sheet.cream.neb .packs .pack:nth-child(5){--pd:2.8s}#sheet.cream.neb .packs .pack:nth-child(6){--pd:3.5s}#sheet.cream.neb .packs .pack:nth-child(7){--pd:4.2s}#sheet.cream.neb .packs .pack:nth-child(8){--pd:4.9s}
+#sheet.cream.neb .dlist .dung:nth-child(2){--pd:1.2s}#sheet.cream.neb .dlist .dung:nth-child(3){--pd:2.4s}#sheet.cream.neb .dlist .dung:nth-child(4){--pd:3.6s}
+@keyframes pkbob{0%,100%{translate:0 0}50%{translate:0 -3px}}
+@keyframes pkpop{0%,12%,100%{transform:none}4%{transform:scale(1.16) rotate(-8deg)}8%{transform:scale(1.08) rotate(6deg)}}
+@keyframes pkshine{0%,70%{transform:translateX(-130%)}100%{transform:translateX(130%)}}
+@keyframes pktw{0%,100%{opacity:.2;transform:scale(.6)}50%{opacity:1;transform:scale(1.1) rotate(45deg)}}
+@media (prefers-reduced-motion:reduce){#sheet.cream.neb .pack .picon *,#sheet.cream.neb .pack .picon::before,#sheet.cream.neb .pack .picon::after,#sheet.cream.neb .dung .dicon::after{animation:none!important}}
+/* 전직 카드 메달 안쪽 크림색도 반투명 (2026-11-16, the user: 견습 냥법사 스킬 안에 크림색도 반투명) — 테두리는 그 직업 색 */
+#sheet.cream.neb #panel .tjmed{background:radial-gradient(circle at 35% 28%,rgba(255,255,255,.38),rgba(255,255,255,.08) 60%),radial-gradient(circle at 50% 75%,color-mix(in srgb,var(--c) 45%,transparent),transparent 72%);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--c) 65%,#fff),0 3px 8px -2px rgba(10,5,40,.6);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+#sheet.cream.neb #panel .tjob.st-soon .tjico{background:radial-gradient(circle,rgba(255,255,255,.2),rgba(255,255,255,.06))}
+#sheet.cream.neb #panel .tjob.st-soon .tjico::after{color:rgba(255,255,255,.75)}
+#sheet.cream.neb #panel .tjn{box-shadow:0 0 0 2px rgba(255,255,255,.7)}
+/* 성운 메뉴의 전직·패키지·설정 막대는 따라 내려오지 않고 내용과 같이 올라감 (2026-11-16, the user: 스크롤하면 저게 따라 내려와서 가려 버린다) */
+#sheet.cream.neb #panel .jump{position:static;background:none;-webkit-backdrop-filter:none;backdrop-filter:none}
 </style>
 
 <!-- 업데이트 화면 (2026-11-15, the user's design art-src/update-20261115; js/update-screen.js): shown first, "모험 시작" goes into the game -->

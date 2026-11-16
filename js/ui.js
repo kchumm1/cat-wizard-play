@@ -1430,6 +1430,7 @@
       tab = name; document.querySelectorAll('#tabs [data-tab]').forEach(function (x) { x.setAttribute('aria-selected', x.dataset.tab === name ? 'true' : 'false'); });
       var open = name !== 'battle';
       $('sheet').classList.toggle('on', open); $('sheet').classList.toggle('tall', name !== 'more' && name !== 'gacha'); G.setSheet(open);
+      $('sheet').classList.toggle('neb', name === 'gacha' || name === 'dungeon' || name === 'more');   // 뽑기·던전·더보기는 성운 바탕 (2026-11-16, the user: 색깔이 너무 튄다 / 여기랑 더보기 란도, 배경을)
       $('sheet').classList.toggle('opal', name === 'up' || name === 'gear' || name === 'skill');   // 오팔 연구소 메뉴 (js/ui-opal.js, 2026-11-16)
       if (open) { skDetail = null; $('sheetTitle').innerHTML = ((CW.ICO.misc && CW.ICO.misc('tab', name)) || (name === 'stage' ? CW.ICO.misc('quick', 'map') : '')) + TITLES[name]; panel.scrollTop = 0; renderPanel(true); }
     }
