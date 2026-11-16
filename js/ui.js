@@ -78,7 +78,7 @@
         guideRow('gear', '같은 장비 ' + DATA.bagConf.mergeCount + '개 → 한 단계 위 · 초월로 더 강하게');
     }
     var ghdSeen = null, ghdPlay = false, ghdFrom = 0, ghdBar = 0;   // 뽑기 레벨 칸 움직임
-    var selDiff = -1, selRegion = -1, gearSub = 'gear', upMul = 1, trainSub = 'grow', selTalent = null, selRune = null, fxRune = null, rnFilter = 'all', selSigil = null, sgFilter = -1, moreSub = 0;
+    var selDiff = -1, selRegion = -1, gearSub = 'gear', upMul = 1, trainSub = 'grow', selTalent = null, selRune = null, fxRune = null, rnFilter = 'all', rnGroup = 'all', selSigil = null, sgFilter = -1, moreSub = 0;
     function mmss(sec) { sec = Math.ceil(sec); return Math.floor(sec / 60) + ':' + ('0' + sec % 60).slice(-2); }
     function alchPanel() {
       var s = G.state, AC = DATA.alchConf, now = Date.now();
@@ -107,20 +107,27 @@
     }
     function talentPanel() {
       var s = G.state, pts = CW.talentPoints(s), spent = CW.talentSpent(s), TC = DATA.talentConf;
-      var last = TC.rowLevel.length - 1;
-      var rows = TC.rowLevel.map(function (_, r) {
-        var nodes = DATA.talents.filter(function (t) { return t.row === r; }).map(function (t) {
-          var lv = (s.talents || {})[t.id] || 0, open = s.level >= TC.rowLevel[r] && (r === 0 || CW.talentSpent(s, r - 1) >= TC.rowNeed[r]);
+      // the 크리티컬 row (row 4, 2026-11-16) is drawn on its own below the tree: rate | damage per tier, open tiers only
+      var CRIT_ROW = 4, last = CRIT_ROW - 1;
+      function node(t) {
+          var lv = (s.talents || {})[t.id] || 0, open = CW.talentOpen(s, t.id);
           // a closed talent still shows its picture, with a small lock on its corner (design pack 2026-11-14)
           return '<button class="tnode' + (selTalent === t.id ? ' sel' : '') + (open ? '' : ' lock') + (lv >= t.max ? ' max' : '') + '" data-tal="' + t.id + '"><span class="ti">' + mi('talent', t) + '</span>' + (open ? '' : '<i class="tlock">' + CW.ICO.pic('lock', 'ilock') + '</i>') + '<b>' + (lv > t.max ? 'Lv.' + lv : lv + '/' + t.max) + '</b><small>' + t.name + '</small></button>';
-        }).join('');
+      }
+      var rows = TC.rowLevel.slice(0, CRIT_ROW).map(function (_, r) {
+        var nodes = DATA.talents.filter(function (t) { return t.row === r; }).map(node).join('');
         return '<div class="trow">' + nodes + '</div>' + (r < last ? '<div class="tarrow">▼ ' + (TC.rowNeed[r + 1] ? '위에서 ' + TC.rowNeed[r + 1] + '포인트 · ' : '') + 'Lv.' + TC.rowLevel[r + 1] + '</div>' : '');
       }).join('');
+      var critRows = DATA.critTiers.map(function (ct, i) {
+        if (!CW.critTierOpen(s, i)) return '';
+        return '<div class="trow tcrit"><span class="tclabel" style="color:' + ct.color + '">' + ct.short + '</span>' + DATA.talents.filter(function (t) { return t.crit === i; }).map(node).join('') + '</div>';
+      }).join('');
+      if (critRows) rows += '<div class="tarrow">크리티컬 특성 · 단계마다 확률 또는 피해 (최대 2레벨)</div>' + critRows;
       var t = selTalent && CW.talentById(selTalent), info = '';
       if (t) {
         var lv = (s.talents || {})[t.id] || 0;
-        info = '<div class="tinfo"><b>' + t.name + ' ' + (lv > t.max ? 'Lv.' + lv : lv + '/' + t.max) + '</b><div>' + STAT_KO[t.stat] + ' ' + CW.bonusAmount(t.stat, lv * t.per) + (true ? ' → <span style="color:#8ff59a">' + CW.bonusAmount(t.stat, (lv + 1) * t.per) + '</span>' : '') + '</div>' +
-          '<div class="note">해금 조건 · ' + (t.row ? '이전 줄 ' + TC.rowNeed[t.row] + '포인트 이상 · ' : '') + '계정 Lv.' + TC.rowLevel[t.row] + '</div>' +
+        info = '<div class="tinfo"><b>' + t.name + ' ' + (lv > t.max ? 'Lv.' + lv : lv + '/' + t.max) + '</b><div>' + STAT_KO[t.stat] + ' ' + CW.bonusAmount(t.stat, lv * t.per) + (t.crit === undefined || lv < t.max ? ' → <span style="color:#8ff59a">' + CW.bonusAmount(t.stat, (lv + 1) * t.per) + '</span>' : '') + '</div>' +
+          '<div class="note">해금 조건 · ' + (t.crit !== undefined ? DATA.critTiers[t.crit].name + ' 해금 · 최대 ' + t.max + '레벨' : (t.row ? '이전 줄 ' + TC.rowNeed[t.row] + '포인트 이상 · ' : '') + '계정 Lv.' + TC.rowLevel[t.row]) + '</div>' +
           '<div class="btns"><button class="buy' + (CW.talentCan(s, t.id) ? '' : ' off') + '" data-tup="' + t.id + '">레벨업 (포인트 1)</button></div></div>';
       }
       return '<div class="artban ab-talent" aria-hidden="true"></div><div class="tpoints"><span>남은 포인트 <b>' + (pts - spent) + '</b> / ' + pts + '</span><button class="btn" data-act="treset">초기화</button></div>' + guideRow('talent', '계정 ' + TC.levelsPerPoint + '레벨마다 포인트 1개 · 초기화 무료') + '<div class="ttree">' + rows + '</div>' + (info || '<p class="note">특성을 선택하면 효과를 확인할 수 있어요.</p>');
@@ -184,6 +191,8 @@
       el.innerHTML = '<b>' + run.name + '</b><span>' + Math.max(0, run.t).toFixed(1) + '초</span><span>' + (run.kind === 'mana' ? '피해 ' + fmt(run.dmg) + ' · 골렘 Lv.' + run.level : '처치 ' + run.kills) + '</span>';
     }
     var STAT_KO = { atk: '기본 공격력', potion: '분노의 물약', potionGold: '황금 물약', potionXp: '지혜의 물약', megaRate: '메가 크리티컬 확률', megaDmg: '메가 크리티컬 피해', ultimateRate: '얼티밋 크리티컬 확률', ultimateDmg: '얼티밋 크리티컬 피해', alphaRate: '알파 크리티컬 확률', alphaDmg: '알파 크리티컬 피해', atkPct: '공격력', critRate: '치명타 확률', critDmg: '치명타 피해', superRate: '슈퍼 크리티컬 확률', superDmg: '슈퍼 크리티컬 피해', ultraRate: '울트라 크리티컬 확률', ultraDmg: '울트라 크리티컬 피해', hyperRate: '하이퍼 크리티컬 확률', hyperDmg: '하이퍼 크리티컬 피해', bossDmg: '보스 피해', normalDmg: '일반 몬스터 피해', skillDmg: '스킬 피해', goldMul: '골드 획득', xpMul: '경험치 획득', speed: '공격 속도', weakDmg: '약점 피해', surgeDmg: '폭주 피해', surgeRate: '폭주 충전 속도', finalPct: '모든 피해' };
+    // crit tiers (2026-11-16): rate, '배' damage and '%' damage of every tier
+    DATA.critTiers.forEach(function (t) { STAT_KO[t.rate] = t.name + ' 확률'; STAT_KO[t.dmg] = t.name + ' 피해'; STAT_KO[t.dmg + 'Pct'] = t.name + ' 피해'; });
     // "스킬 피해가" / "공격력이": the right particle after a Korean word (a final consonant takes 이)
     function iga(w) { var c = w.charCodeAt(w.length - 1) - 0xAC00; return w + (c >= 0 && c < 11172 && c % 28 ? '이' : '가'); }
     function bonusText(stat, v) { return (STAT_KO[stat] || stat) + ' +' + pct(v); }
@@ -298,6 +307,25 @@
       return '<button class="sgcell rcell' + (selRune === it.id ? ' sel' : '') + (worn ? ' eq' : '') + '" data-rpick="' + it.id + '" style="--gc:' + hc(it.grade) + '"><span class="tg">' + hn(it.grade) + '</span>' + CW.ICO.rune(it.kind, k.color, it.grade, hc(it.grade)) +
         (it.lock ? '<span class="lk">🔒</span>' : '') + '<span class="q">Lv.' + it.lv + '</span></button>';
     }
+    // 각성 슬롯 (2026-11-16): two slots for the 오메가·이터널·제네시스 runes / sigils, their own summon, and 각성 제작 from
+    // 각성 파편 (taking apart 불멸+ runes and sigils). Shown only once 오메가 is open (체험판 never: no 10th job).
+    function awakenBox(kind) {
+      var s = G.state; if (!CW.critTierOpen(s, 7)) return '';
+      var A = DATA.awakenConf, rune = kind === 'rune', sh = s.awakenShard || 0;
+      var ids = rune ? CW.runeBag(s).aw : (s.sigil.aw || []);
+      var cells = ids.map(function (id) {
+        var it = id && (rune ? CW.runeItem(s, id) : CW.sigilById(s, id));
+        return it ? (rune ? runeCell(s, it) : sgCell(it, true)) : '<div class="sgcell empty"></div>';
+      }).join('');
+      var kinds = rune ? DATA.runes.filter(function (k) { return k.awaken && CW.runeKindOpen(s, k.id); }).map(function (k) { return [k.id, k.name, k.color]; })
+        : CW.sigilPool(s, true).map(function (d) { return [d.stat, STAT_KO[d.stat] || d.stat, '']; });
+      var craft = kinds.map(function (k) { return '<button class="btn' + (sh < A.craftCost ? ' off' : '') + '" ' + (rune ? 'data-rcraft' : 'data-sgcraft') + '="' + k[0] + '"' + (k[2] ? ' style="color:' + k[2] + '"' : '') + '>' + k[1] + '</button>'; }).join('');
+      var sumAttr = rune ? 'data-rasum' : 'data-sgasum', cost = rune ? DATA.runeConf.summon : DATA.sigilConf.summon;
+      return '<div class="potbox awbox"><small>각성 슬롯 · 오메가 이상 ' + (rune ? '룬' : '신성력') + ' 전용</small><div class="sggrid aw">' + cells + '</div>' +
+        '<div class="pulls sgpulls">' + [5, 10].map(function (m) { return '<button class="pull' + (s.gems < cost[m] ? ' off' : '') + '" ' + sumAttr + '="' + m + '"><b>각성 ' + m + '회 소환</b><span><i class="gem"></i>' + cost[m] + '</span></button>'; }).join('') + '</div>' +
+        '<p class="awshard">✧ 각성 파편 <b>' + fmt(sh) + '</b> · 제작 1개 ' + A.craftCost + '개 (' + hn(A.craftGrade) + ' 등급)</p><div class="btns awcraft">' + craft + '</div>' +
+        '<p class="note">' + hn(A.from) + ' 등급 이상 룬·신성력을 분해하면 각성 파편을 얻어요. 기존 슬롯과 따로 쓰여요.</p></div>';
+    }
     function runePanel() {
       var s = G.state, RC = DATA.runeConf, open = CW.runeOpen(s), res = CW.runeResonance(s), bag = CW.runeBag(s), n = RC.slots;
       if (selRune && !CW.runeItem(s, selRune)) selRune = null;
@@ -325,18 +353,23 @@
           '<button class="btn' + (freeIt ? '' : ' off') + '" data-rdis="' + it.id + '">분해 ' + CW.ICO.cur('rune') + fmt(CW.runeDismantleValue(it)) + '</button><button class="btn' + (same >= 2 && !top && freeIt ? '' : ' off') + '" data-rfuse="' + it.id + '">합성 ' + Math.min(3, same + 1) + '/3</button></div>' +
           '<span class="note">' + (top ? '최고 등급' : '합성 · 같은 종류·등급의 룬 3개 → ' + hn(it.grade + 1)) + '</span>';
       }
-      var filt = '<div class="kindtabs">' + ['all'].concat(DATA.runes.map(function (x) { return x.id; })).map(function (kid) { var kk = CW.runeById(kid); return '<button role="tab" aria-selected="' + (rnFilter === kid) + '" data-rkf="' + kid + '"' + (kk ? ' style="color:' + kk.color + '"' : '') + '>' + (kk ? kk.name.replace(' 룬', '').replace('의', '') : '전체') + '</button>'; }).join('') + '</div>';
+      // only the kinds in the bag get a tab (25 kinds since 2026-11-16)
+      var have = {}; bag.items.forEach(function (x) { have[x.kind] = 1; });
+      var filt = '<div class="kindtabs">' + ['all'].concat(DATA.runes.filter(function (x) { return have[x.id] || rnFilter === x.id; }).map(function (x) { return x.id; })).map(function (kid) { var kk = CW.runeById(kid); return '<button role="tab" aria-selected="' + (rnFilter === kid) + '" data-rkf="' + kid + '"' + (kk ? ' style="color:' + kk.color + '"' : '') + '>' + (kk ? kk.name.replace(' 룬', '').replace('의', '') : '전체') + '</button>'; }).join('') + '</div>';
       var inv = bag.items.filter(function (x) { return rnFilter === 'all' || x.kind === rnFilter; }).sort(function (a, c) { return CW.runePower(c) - CW.runePower(a); }).map(function (x) { return runeCell(s, x); }).join('');
       var acts = '<div class="btns bagacts"><button class="btn pri" data-act="rbest">추천 장착</button><button class="btn" data-act="rdisall">잠금 안 한 것 모두 분해</button></div>' +
-        '<div class="pulls sgpulls">' + [5, 10].map(function (m) { return '<button class="pull' + (!open || s.gems < RC.summon[m] ? ' off' : '') + '" data-rsum="' + m + '"><b>룬 ' + m + '회 소환</b><span><i class="gem"></i>' + RC.summon[m] + '</span></button>'; }).join('') + '</div>';
+        // 소환 계열 (2026-11-16): every open kind, or only the crit rate runes / crit damage runes of the open tiers
+        '<div class="kindtabs rgroup" role="tablist" aria-label="소환 계열">' + [['all', '전체'], ['rate', '확률 계열'], ['dmg', '피해 계열']].map(function (g) { return '<button role="tab" aria-selected="' + (rnGroup === g[0]) + '" data-rgrp="' + g[0] + '">' + g[1] + '</button>'; }).join('') + '</div>' +
+        '<div class="pulls sgpulls">' + [5, 10].map(function (m) { return '<button class="pull' + (!open || s.gems < RC.summon[m] ? ' off' : '') + '" data-rsum="' + m + '"><b>' + ({ all: '룬', rate: '확률 룬', dmg: '피해 룬' })[rnGroup] + ' ' + m + '회 소환</b><span><i class="gem"></i>' + RC.summon[m] + '</span></button>'; }).join('') + '</div>' +
+        '<p class="note">확률 계열·피해 계열은 열린 크리티컬 단계의 룬만 나와요.</p>';
       if (detail) dockHtml = '<div class="dockbox rdock" style="--gc:' + hc(it.grade) + '">' + dockX('rn') + detail + '</div>';
-      return head + ring + acts + filt + '<div class="sggrid inv">' + (inv || '<p class="note">아직 보유한 룬이 없어요.<br>보스 처치나 소환으로 획득할 수 있어요.</p>') + '</div>' +
+      return head + ring + awakenBox('rune') + acts + filt + '<div class="sggrid inv">' + (inv || '<p class="note">아직 보유한 룬이 없어요.<br>보스 처치나 소환으로 획득할 수 있어요.</p>') + '</div>' +
         guideRow('rune', '다음 공명 · 최저 레벨 ' + ((res + 1) * RC.resEvery) + ' → ' + (res + 1) + '단계');
     }
     function showRunes(list) {
       var best = Math.max.apply(null, list.map(function (x) { return x.grade; }));
       modal('<h2 style="color:' + hc(best) + '">' + (best >= 5 ? hn(best) + ' 룬 획득' : '룬 ' + list.length + '개 획득') + '</h2><div class="sggrid got">' + list.slice().sort(function (a, c) { return c.grade - a.grade; }).map(function (x) { return runeCell(G.state, x); }).join('') + '</div>',
-        [{ label: '확인' }, { label: '다시 소환', pri: true, fn: function () { var r = G.runeSummon(list.length); if (!r) toast('소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showRunes(r); renderPanel(true); hud(); } } }]);
+        [{ label: '확인' }, { label: '다시 소환', pri: true, fn: function () { var r = G.runeSummon(list.length, rnGroup); if (!r) toast('소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showRunes(r); renderPanel(true); hud(); } } }]);
     }
     function sgCell(it, eqd) {
       return '<button class="sgcell' + (selSigil === it.id ? ' sel' : '') + (eqd ? ' eq' : '') + '" data-sg="' + it.id + '" style="--gc:' + hc(it.grade) + '"><span class="tg">' + hn(it.grade) + '</span>' + CW.ICO.sigil(it.stat, it.grade, hc(it.grade), it.q) +
@@ -352,13 +385,17 @@
         if (i < slots) cells += eq[i] ? sgCell(CW.sigilById(s, eq[i]), true) : '<div class="sgcell empty"></div>';
         else cells += '<div class="sgcell lockd"><span>🔒</span><small>Lv.' + ((i - C.slotsBase + 1) * C.slotsPer) + '</small></div>';
       }
-      var sum = {}; eq.forEach(function (id) { var it = CW.sigilById(s, id); sum[it.stat] = (sum[it.stat] || 0) + CW.sigilValue(it); });
-      var effs = Object.keys(sum).map(function (k) { return '<p><span>' + (STAT_KO[k] || k) + '</span><b>+' + pct(sum[k]) + '</b></p>'; }).join('') || '<p class="note">장착한 신성력이 없어요</p>';
+      var sum = {}; eq.concat(CW.sigilAwakened(s)).forEach(function (id) { var it = CW.sigilById(s, id); sum[it.stat] = (sum[it.stat] || 0) + CW.sigilValue(it); });
+      // a crit option counts up to critConf.caps.sigil for its tier (2026-11-16): the list says when the rest is wasted
+      var effs = Object.keys(sum).map(function (k) {
+        var d = CW.sigilStatDef(k), cap = d.awaken ? DATA.critConf.caps.sigil[d.kind] : null;
+        return '<p><span>' + (STAT_KO[k] || k) + '</span><b>+' + pct(cap !== null ? Math.min(cap, sum[k]) : sum[k]) + (cap !== null ? ' <small>(최대 ' + pct(cap) + (sum[k] > cap + 1e-9 ? ' · 넘친 ' + pct(sum[k] - cap) + ' 안 씀' : '') + ')</small>' : '') + '</b></p>';
+      }).join('') || '<p class="note">장착한 신성력이 없어요</p>';
       var lvbar = '<div class="codexbar"><span>신성력 레벨 효과 (Lv.' + b.lv + ')</span><b>신성력 데미지 +' + pct(b.lv * C.lvFinal) + '</b></div>' +
         '<div class="sglv"><span>' + CW.ICO.cur('sigil') + ' 신성석 <b>' + fmt(b.stone) + '</b><small class="note">신성력 분해로 획득</small></span><button class="buy gemb' + (b.stone < lvCost || b.lv >= C.lvMax ? ' off' : '') + '" data-sglv="1">' + (b.lv >= C.lvMax ? '최대' : '<small>레벨업</small><span>' + CW.ICO.cur('sigil') + ' ' + fmt(lvCost) + '</span>') + '</button></div>';
       var sel = selSigil ? CW.sigilById(s, selSigil) : null, selBox = '';
       if (sel) {
-        var on = eq.indexOf(sel.id) >= 0, same = b.items.filter(function (x) { return x !== sel && x.grade === sel.grade && !x.lock && !CW.isEquipped(s, x.id); }).length;
+        var on = eq.indexOf(sel.id) >= 0 || CW.sigilAwakened(s).indexOf(sel.id) >= 0, same = b.items.filter(function (x) { return x !== sel && x.grade === sel.grade && !x.lock && !CW.isEquipped(s, x.id); }).length;
         var sc = CW.sigilCompare(s, sel.id), swapTo = !on && sc && sc.full && sc.target;
         selBox = '<div class="sgsel dockbox" style="--gc:' + hc(sel.grade) + '">' + dockX('sg') + '<div class="sgselhead"><span class="sgbig">' + CW.ICO.sigil(sel.stat, sel.grade, hc(sel.grade), sel.q) + '</span><div><b style="color:' + hc(sel.grade) + '">' + hn(sel.grade) + ' ' + (STAT_KO[sel.stat] || sel.stat) + '</b><span class="note">' + CW.qualityName(sel.q) + ' (' + Math.round(sel.q * 100) + '%) · ' + bonusText(sel.stat, CW.sigilValue(sel)) + '</span></div></div>' +
           sigilCmp(s, sel, sum) +
@@ -370,7 +407,7 @@
       var acts = '<div class="btns bagacts"><button class="btn pri" data-act="sgbest">추천 장착</button><button class="btn" data-act="sgdisall">잠금 안 한 것 모두 분해</button></div>' +
         '<div class="pulls sgpulls">' + [5, 10].map(function (n) { return '<button class="pull' + (s.gems < C.summon[n] ? ' off' : '') + '" data-sgsum="' + n + '"><b>신성력 ' + n + '회 소환</b><span><i class="gem"></i>' + C.summon[n] + '</span></button>'; }).join('') + '</div>';
       dockHtml = selBox;
-      return head + '<div class="sggrid">' + cells + '</div>' + lvbar + '<div class="potbox sgeff"><small>신성력 장착 효과</small>' + effs + '</div>' + acts + filt + '<div class="sggrid inv">' + (inv || '<p class="note">아직 보유한 신성력이 없어요.<br>보스 처치나 소환으로 획득할 수 있어요.</p>') + '</div>' +
+      return head + '<div class="sggrid">' + cells + '</div>' + lvbar + '<div class="potbox sgeff"><small>신성력 장착 효과</small>' + effs + '</div>' + awakenBox('sigil') + acts + filt + '<div class="sggrid inv">' + (inv || '<p class="note">아직 보유한 신성력이 없어요.<br>보스 처치나 소환으로 획득할 수 있어요.</p>') + '</div>' +
         guideRow('sigil', '합성 · 분해 · 레벨업 · ' + C.slotsPer + '레벨마다 슬롯 1개');
     }
     function showSigils(list, fromPack) {
@@ -490,16 +527,16 @@
       var eff = {
         atk: '공격력 ' + fmt(st.atk) + ' · 강화마다 +5%',
         speed: '속도 ×' + st.speedMul.toFixed(2) + ' (최대 ×2)',
-        crit: '확률 ' + pct(st.critRate) + ' (최대 70%)',
+        crit: '확률 ' + pct(st.critRate) + ' (최대 100%)',
         critDmg: '치명타 피해 ×' + st.critDmg.toFixed(2),
         gold: '골드 +' + pct(st.goldMul - 1),
         mastery: '모든 스킬 피해 ×' + st.mastery.toFixed(2),
         superCrit: '치명타 중 ' + pct(st.superRate) + ' 슈퍼 (피해 ×' + st.superDmg + ')',
         ultraCrit: '슈퍼 중 ' + pct(st.ultraRate) + ' 울트라 (피해 ×' + st.ultraDmg + ')',
         hyperCrit: '울트라 중 ' + pct(st.hyperRate) + ' 하이퍼 (피해 ×' + st.hyperDmg + ')',
-        megaCrit: '하이퍼 중 ' + pct(st.megaRate) + ' 메가 (최대 30%)', megaDmg: '메가 크리티컬 피해 ×' + st.megaDmg.toFixed(2),
-        ultimateCrit: '메가 중 ' + pct(st.ultimateRate) + ' 얼티밋 (최대 25%)', ultimateDmg: '얼티밋 크리티컬 피해 ×' + st.ultimateDmg.toFixed(2),
-        alphaCrit: '얼티밋 중 ' + pct(st.alphaRate) + ' 알파 (최대 20%)', alphaDmg: '알파 크리티컬 피해 ×' + st.alphaDmg.toFixed(2),
+        megaCrit: '하이퍼 중 ' + pct(st.megaRate) + ' 메가 (최대 100%)', megaDmg: '메가 크리티컬 피해 ×' + st.megaDmg.toFixed(2),
+        ultimateCrit: '메가 중 ' + pct(st.ultimateRate) + ' 얼티밋 (최대 100%)', ultimateDmg: '얼티밋 크리티컬 피해 ×' + st.ultimateDmg.toFixed(2),
+        alphaCrit: '얼티밋 중 ' + pct(st.alphaRate) + ' 알파 (최대 100%)', alphaDmg: '알파 크리티컬 피해 ×' + st.alphaDmg.toFixed(2),
         chainInfo: ''
       };
       // 초월 lines: what each level grows, e.g. 하이퍼 크리티컬 피해 +0.20배 (1레벨당 +0.02배)
@@ -512,18 +549,18 @@
         }).join(' · ');
       });
       var mul ='<div class="mulpick" role="group" aria-label="한 번에 올릴 단계">' + [1, 10, 100].map(function (n) { return '<button class="btn' + (upMul === n ? ' on' : '') + '" data-mul="' + n + '" aria-pressed="' + (upMul === n) + '">×' + n + '</button>'; }).join('') + '</div>';
-      return '<h3>성장</h3>' + mul + '' + guideRow('growth', '길게 누르면 연속 강화 · ×10·×100은 골드만큼 한 번에') + '<div class="list">' + Object.keys(DATA.upgrades).map(function (k) {
+      return '<h3>성장</h3>' + mul + '' + guideRow('growth', '길게 누르면 연속 강화 · ×10·×100은 골드만큼 한 번에') + '<div class="list">' + Object.keys(DATA.upgrades).filter(function (k) { return !(CW.FRIEND && DATA.upgrades[k].tier > CW.FRIEND_MAX_TIER); }).map(function (k) { // 체험판: no 10차 rows (오메가 and up)
         var u = DATA.upgrades[k], lv = s.up[k] || 0, oi = CW.overInfo(s, k), one = CW.upgradeCost(k, lv, s), cost = one, nBuy = 1;
         // ×10·×100 show what the gold buys now (up to that many), so the price never runs past what one can hold
         if (upMul > 1) { var sum = 0, n = 0; while (n < upMul && sum + CW.upgradeCost(k, lv + n, s) <= s.gold) { sum += CW.upgradeCost(k, lv + n, s); n++; } if (n > 0) { cost = sum; nBuy = n; } }
         var max = u.max !== null && lv >= u.max && !oi;
         // 한계 돌파 (2026-11-15): past the row's max, each level adds 1% to the damage it is about
-        var OVK = { finalMul: '모든 피해', critDmg: '치명타 피해', superDmg: '슈퍼 피해', ultraDmg: '울트라 피해', hyperDmg: '하이퍼 피해', megaDmg: '메가 피해', ultimateDmg: '얼티밋 피해', alphaDmg: '알파 피해', bossDmg: '보스 피해', skillDmg: '스킬 피해', weakMul: '약점 피해', surgeMul: '폭주 피해' };
-        var past = oi && u.max !== null && lv > u.max, effTxt = past ? eff[k].replace(/ \((최대|1레벨당) [^)]*\)/g, '') : eff[k];
+        var OVK = { finalMul: '모든 피해', critDmg: '치명타 피해', superDmg: '슈퍼 피해', ultraDmg: '울트라 피해', hyperDmg: '하이퍼 피해', megaDmg: '메가 피해', ultimateDmg: '얼티밋 피해', alphaDmg: '알파 피해', omegaDmg: '오메가 피해', eternalDmg: '이터널 피해', genesisDmg: '제네시스 피해', bossDmg: '보스 피해', skillDmg: '스킬 피해', weakMul: '약점 피해', surgeMul: '폭주 피해' };
+        var past = oi && u.max !== null && lv > u.max, effTxt = past ? (eff[k] || '').replace(/ \((최대|1레벨당) [^)]*\)/g, '') : eff[k];
         var overTxt = past ? '<br>' + OVK[oi.stat] + ' +' + Math.round(oi.pct * 100) + '%' : '';
         var lvTxt = 'Lv.' + lv;
         if (!CW.upgradeOpen(s, k)) {
-          var nd = CW.upgradeNeed(k), why = u.tier && (s.tier || 1) < u.tier ? u.tier + '차 전직 후 해금' : DATA.upgrades[nd.key].name + ' Lv.' + nd.lv + ' 달성 시 해금';
+          var nd = CW.upgradeNeed(k), why = u.tier && (s.tier || 1) < u.tier ? u.tier + '차 전직 후 해금' : u.diff && (s.diffUnlocked || 0) < u.diff ? DATA.difficulties[u.diff].name + ' 난이도 해금 후 · ' + DATA.upgrades[nd.key].name + ' Lv.' + nd.lv : DATA.upgrades[nd.key].name + ' Lv.' + nd.lv + ' 달성 시 해금';
           return '<div class="row lockrow"><div class="ricon">' + CW.ICO.stat(k) + '</div><div class="info"><div class="name">' + u.name + '</div><div class="desc need">' + why + '</div></div><span class="lockic">' + CW.ICO.pic('lock', 'ilock') + '</span></div>';
         }
         // plain words (js/grow-text.js): what the row does, then 지금 / 다음 / 최대 / 돌파 lines whose labels line up
@@ -912,8 +949,13 @@
       else if (d.rlock) { G.runeLock(d.rlock); renderPanel(true); }
       else if (d.rdis) { var rn = G.runeDismantle(d.rdis); if (rn) { toast('룬석 +' + fmt(rn)); selRune = null; } else toast('장착 중이거나 잠긴 룬은 분해할 수 없어요.'); renderPanel(true); }
       else if (d.rfuse) { var rf = G.runeFuse(d.rfuse); if (rf) { selRune = rf.id; toast('룬 합성 완료 · ' + hn(rf.grade) + ' ' + CW.runeById(rf.kind).name); banner(hn(rf.grade) + ' 룬!'); } else toast('합성하려면 같은 종류·등급의 룬 3개가 필요해요.'); renderPanel(true); }
-      else if (d.rsum) { var rs = G.runeSummon(+d.rsum); if (!rs) toast('소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showRunes(rs); renderPanel(true); hud(); } }
+      else if (d.rsum) { var rs = G.runeSummon(+d.rsum, rnGroup); if (!rs) toast('소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showRunes(rs); renderPanel(true); hud(); } }
       else if (d.rkf) { rnFilter = d.rkf; renderPanel(true); }
+      else if (d.rgrp) { rnGroup = d.rgrp; renderPanel(true); }
+      else if (d.rasum) { var ra = G.runeSummon(+d.rasum, 'awaken'); if (!ra) toast('소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showRunes(ra); renderPanel(true); hud(); } }
+      else if (d.sgasum) { var sa = G.sigilSummon(+d.sgasum, true); if (!sa) toast('소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showSigils(sa); renderPanel(true); hud(); } }
+      else if (d.rcraft) { var rc2 = G.runeCraft(d.rcraft); if (!rc2) toast('각성 파편이 모자라거나 가방이 가득 찼어요.'); else { selRune = rc2.id; toast(CW.runeById(rc2.kind).name + ' 제작!'); renderPanel(true); } }
+      else if (d.sgcraft) { var sc2 = G.sigilCraft(d.sgcraft); if (!sc2) toast('각성 파편이 모자라거나 가방이 가득 찼어요.'); else { selSigil = sc2.id; toast('각성 신성력 제작!'); renderPanel(true); } }
       else if (d.act === 'rbest') { G.runeEquipBest(); toast('추천 룬을 장착했어요.'); renderPanel(true); }
       else if (d.act === 'rdisall') { confirmBox('룬을 일괄 분해할까요?', '장착하지 않고 잠기지 않은 룬을 모두 룬석으로 바꿔요.<br>분해한 룬은 되돌릴 수 없어요.', '룬 분해', function () { var rn2 = G.runeDismantleAll(); toast(rn2 ? '룬석 +' + fmt(rn2) : '분해할 룬이 없어요.'); selRune = null; renderPanel(true); }, { variant: 'danger' }); }
       else if (d.pack && CW.FRIEND) { toast('체험판에서는 수령할 수 없어요.'); }
@@ -1146,8 +1188,11 @@
     function profHtml() {
       var s = G.state, st = CW.stats(s), by = CW.bonusBySource(s), tier = DATA.tiers[s.tier - 1] || {}, worn = CW.titleWorn(s), owned = CW.titlesOwned(s);
       var x = function (v) { return '×' + (Math.round(v * 100) / 100).toFixed(2); };
-      var crit = [['치명타', 'critRate', 'critDmg'], ['슈퍼', 'superRate', 'superDmg'], ['울트라', 'ultraRate', 'ultraDmg'], ['하이퍼', 'hyperRate', 'hyperDmg'], ['메가', 'megaRate', 'megaDmg'], ['얼티밋', 'ultimateRate', 'ultimateDmg'], ['알파', 'alphaRate', 'alphaDmg']]
-        .map(function (c) { return profRow(c[0], pct(st[c[1]] || 0), [c[1], c[2]], by, x(st[c[2]] || 0), ['확률', '피해']); }).join('');
+      // 크리티컬 (2026-11-16): the open tiers, each 'rate | multiplier'; a rate past 100% says how much went to its damage
+      var crit = DATA.critTiers.filter(function (t, i) { return CW.critTierOpen(s, i); }).map(function (t) {
+        var raw = st[t.rate + 'Raw'] || 0, rate = pct(st[t.rate] || 0) + (raw > 1 ? ' <small>(넘침 +' + Math.round((raw - 1) * 1000) / 10 + '%p → 피해 +' + Math.round((st[t.dmg + 'Over'] || 0) * 1000) / 10 + '%)</small>' : '');
+        return profRow(t.short, rate, [t.rate, t.dmg, t.dmg + 'Pct'], by, x(st[t.dmg] || 0), ['확률', '배율', '피해']);
+      }).join('');
       var titles = DATA.titles.map(function (t) {
         var have = owned.indexOf(t.id) >= 0, on = worn === t.id;
         var eff = t.bonus ? Object.keys(t.bonus).map(function (k) { return (STAT_KO[k] || k) + ' ' + CW.bonusAmount(k, t.bonus[k]); }).join(' · ') : '효과 없음';

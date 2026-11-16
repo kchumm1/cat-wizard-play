@@ -443,7 +443,7 @@
     runeDismantle: function (id) { var n = CW.runeDismantle(state, id); if (n) { refreshStats(); save(); } return n; },
     runeDismantleAll: function () { var n = CW.runeDismantleAll(state); if (n) { refreshStats(); snd.play('win'); save(); } return n; },
     runeFuse: function (id) { var it = CW.runeFuse(state, id); if (it) { refreshStats(); snd.play('win'); save(); } return it; },
-    runeSummon: function (n) { var r = CW.runeSummon(state, n); if (r) { refreshStats(); snd.play('pull'); save(); } return r; },
+    runeSummon: function (n, group) { var r = CW.runeSummon(state, n, undefined, group); if (r) { refreshStats(); snd.play('pull'); save(); } return r; },
     runeEquipBest: function () { CW.runeEquipBest(state); refreshStats(); save(); },
     sigilSet: function (i) { var ok = CW.sigilSet(state, i); if (ok) { refreshStats(); save(); } return ok; },
     sigilEquipToggle: function (id) {
@@ -455,7 +455,10 @@
     sigilDismantle: function (id) { var n = CW.sigilDismantle(state, id); if (n) { refreshStats(); save(); } return n; },
     sigilDismantleAll: function () { var n = CW.sigilDismantleAll(state); if (n) { refreshStats(); snd.play('win'); save(); } return n; },
     sigilFuse: function (id) { var it = CW.sigilFuse(state, id); if (it) { refreshStats(); snd.play('win'); save(); } return it; },
-    sigilSummon: function (n) { var r = CW.sigilSummon(state, n); if (r) { refreshStats(); snd.play('pull'); save(); } return r; },
+    sigilSummon: function (n, awaken) { var r = CW.sigilSummon(state, n, undefined, awaken); if (r) { refreshStats(); snd.play('pull'); save(); } return r; },
+    // 각성 제작 (2026-11-16): 각성 파편 → one awakened rune / sigil of the chosen kind
+    runeCraft: function (kind) { var r = CW.runeCraft(state, kind); if (r) { refreshStats(); snd.play('pull'); save(); } return r; },
+    sigilCraft: function (stat) { var r = CW.sigilCraft(state, stat); if (r) { refreshStats(); snd.play('pull'); save(); } return r; },
     sigilEquipBest: function () { CW.sigilEquipBest(state); refreshStats(); save(); },
     sigilLvUp: function () { var ok = CW.sigilLvUp(state); if (ok) { refreshStats(); snd.play('click'); } return ok; },
     rollPotential: function (k) { var ok = CW.rollPotential(state, k); if (ok) { refreshStats(); snd.play('pull'); save(); } return ok; },

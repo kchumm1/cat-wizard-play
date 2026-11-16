@@ -16,6 +16,15 @@
     // 한계 돌파 (2026-11-15): a talent can go past its max; the points (one per 20 levels) are the only limit
     if (talentSpent(state) >= talentPoints(state)) return false;
     if ((state.level || 1) < TC.rowLevel[x.row]) return false;
+    // 크리티컬 talents (2026-11-16): open with their tier, stop at their max
+    if (x.crit !== undefined) return talentOpen(state, id) && (t[id] || 0) < x.max;
+    return x.row === 0 || talentSpent(state, x.row - 1) >= TC.rowNeed[x.row];
+  }
+  // is the talent's row (or, for a 크리티컬 talent, its crit tier) open
+  function talentOpen(state, id) {
+    var x = talentById(id); if (!x) return false;
+    if ((state.level || 1) < TC.rowLevel[x.row]) return false;
+    if (x.crit !== undefined) { var E = isNode ? require('./economy.js') : root.CW; return !E.critTierOpen || E.critTierOpen(state, x.crit); }
     return x.row === 0 || talentSpent(state, x.row - 1) >= TC.rowNeed[x.row];
   }
   function talentUp(state, id) {
@@ -64,7 +73,8 @@
   function trainingStats(state) {
     var b = {}, t = state.talents || {}, m = state.marks || {};
     function add(k, v) { b[k] = (b[k] || 0) + v; }
-    DATA.talents.forEach(function (x) { if (t[x.id]) add(x.stat, t[x.id] * x.per); });
+    // a 크리티컬 talent counts up to its max (a save may hold more) and only while its tier is open
+    DATA.talents.forEach(function (x) { if (t[x.id] && (x.crit === undefined || talentOpen(state, x.id))) add(x.stat, (x.crit !== undefined ? Math.min(t[x.id], x.max) : t[x.id]) * x.per); });
     // a rate mark (치명타·슈퍼 확률) counts up to the rank's cap; what is past it goes to that crit's damage (markOver)
     DATA.marks.forEach(function (x) { if (m[x.id]) add(x.stat, (RATE_TO[x.stat] ? Math.min(m[x.id], markCap(state)) : m[x.id]) * x.per); });
     if (state.circle) add('skillDmg', state.circle * CC.perLv);
@@ -79,7 +89,7 @@
     DATA.marks.forEach(function (x) { var t = RATE_TO[x.stat], n = (m[x.id] || 0) - cap; if (t && n > 0) o[t] = (o[t] || 0) + n; });
     return o;
   }
-  return { markOver: markOver, talentById: talentById, talentPoints: talentPoints, talentSpent: talentSpent, talentCan: talentCan, talentUp: talentUp, talentReset: talentReset,
+  return { markOver: markOver, talentById: talentById, talentPoints: talentPoints, talentSpent: talentSpent, talentCan: talentCan, talentOpen: talentOpen, talentUp: talentUp, talentReset: talentReset,
     markById: markById, markOpen: markOpen, markCap: markCap, markCost: markCost, markUp: markUp, rankReady: rankReady, rankUp: rankUp,
     circleCost: circleCost, circleTier: circleTier, circleUp: circleUp, manaForBoss: manaForBoss, trainingStats: trainingStats };
 });

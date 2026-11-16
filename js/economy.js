@@ -10,18 +10,28 @@
   function isMiniBoss(i) { var n = i % 31 + 1; return n <= 30 && n % 5 === 0; }
 
   function monsterHp(i) { return cap(B.hpBase * Math.pow(B.hpGrowth, i) * Math.pow(B.regionStep || 1, Math.floor(i / 31))); }
-  function bossHp(i, walls) {
-    var W = walls || B.wallMul, wall = (W && W[Math.floor(i / 31)]) || 1;
+  // raise (크리티컬 정비, 2026-11-16): how much stronger the same player got there with the ten crit tiers, per region
+  // (일반: balance.wallRaise, harder difficulties: balance.diffWallBoost). Every boss of a region is raised — the mini bosses
+  // going from the region before's raise to this one's along the region — so bosses stand to each other as before.
+  function bossHp(i, walls, raise) {
+    var W = walls || B.wallMul, r = Math.floor(i / 31), wall = (W && W[r]) || 1, f = (i % 31 + 1) / 31;
+    var R = raise === undefined ? B.wallRaise : raise, up = (R && R[r]) || 1, prev = r > 0 ? (R && R[r - 1]) || 1 : (walls ? up : 1);
     // mini bosses carry part of the region wall, growing toward the region boss
-    if (!isRegionBoss(i)) return cap(monsterHp(i) * B.bossMul * Math.pow(wall, (B.wallShare || 0) * ((i % 31 + 1) / 31)));
-    return cap(monsterHp(i) * B.regionBossMul * wall);
+    if (!isRegionBoss(i)) return cap(monsterHp(i) * B.bossMul * Math.pow(wall, (B.wallShare || 0) * f) * Math.pow(prev, 1 - f) * Math.pow(up, f));
+    return cap(monsterHp(i) * B.regionBossMul * wall * up);
   }
   function monsterGold(i) { return cap(B.goldBase * Math.pow(B.goldGrowth, i)); }
   // ---------- difficulty: each one continues the growth curve past 10-31 and multiplies bosses ----------
   var SPAN = 310;
   function diffOf(state) { return (DATA.difficulties && DATA.difficulties[state.diff || 0]) || { hpMul: 1, bossMul: 1, gemMul: 1, extraMobs: 0 }; }
   function stageMonsterHp(state, i) { i = i === undefined ? state.stage || 0 : i; return cap(monsterHp(i + SPAN * (state.diff || 0)) * diffOf(state).hpMul); }
-  function stageBossHp(state, i) { i = i === undefined ? state.stage || 0 : i; return cap(bossHp(i, state.diff ? B.diffWallMul : null) * Math.pow(B.hpGrowth, SPAN * (state.diff || 0)) * diffOf(state).bossMul); }
+  // diffWallBoost[d - 1][r] (2026-11-16, 크리티컬 정비): each harder difficulty's region walls are raised on their own, from
+  // that difficulty's own simulated play (tools/crit-walls.cjs), not copied from 일반
+  function stageBossHp(state, i) {
+    i = i === undefined ? state.stage || 0 : i;
+    var d = state.diff || 0, hp = d ? bossHp(i, B.diffWallMul, (B.diffWallBoost && B.diffWallBoost[d - 1]) || null) : bossHp(i);
+    return cap(hp * Math.pow(B.hpGrowth, SPAN * d) * diffOf(state).bossMul);
+  }
   // Gold a monster gives. On a harder difficulty (2026-11-14) at most 1/goldCapKills of the player's next attack level:
   // gold grows ×1.2 a stage, and sweeping the easy first stages of a new difficulty gave hundreds of attack levels in a
   // few days (measured 584 -> 934 in three days on 슬레이어 킹). With the cap an attack level always takes about
@@ -49,9 +59,12 @@
     return cap(Math.ceil(c));
   }
   function upgradeNeed(key) { var u = DATA.upgrades[key]; return u && u.need ? { key: u.need[0], lv: u.need[1] } : null; }
+  // a crit tier is open once its rate row can be bought (치명타 always); runes, sigils and talents of a closed tier do not appear
+  function critTierOpen(state, i) { return i === 0 || (!!TIERS[i] && upgradeOpen(state, TIERS[i].rateRow)); }
   function upgradeOpen(state, key) {
     var u = DATA.upgrades[key]; if (!u) return false;
     if (u.tier && (state.tier || 1) < u.tier) return false;
+    if (u.diff && (state.diffUnlocked || 0) < u.diff) return false;
     return !u.need || ((state.up || {})[u.need[0]] || 0) >= u.need[1];
   }
   // 한계 돌파 (2026-11-15, the user: rows that stopped at '최대' keep going). A row's own effect (a rate, a damage line, a
@@ -61,7 +74,9 @@
   // which stat the levels past the max raise: a crit-rate row raises that crit's damage, speed raises all damage,
   // a 초월 row raises what it adds
   var OVER_TO = { speed: 'finalMul', crit: 'critDmg', superCrit: 'superDmg', ultraCrit: 'ultraDmg', hyperCrit: 'hyperDmg',
-    megaCrit: 'megaDmg', megaDmg: 'megaDmg', ultimateCrit: 'ultimateDmg', ultimateDmg: 'ultimateDmg', alphaCrit: 'alphaDmg', alphaDmg: 'alphaDmg' };
+    megaCrit: 'megaDmg', megaDmg: 'megaDmg', ultimateCrit: 'ultimateDmg', ultimateDmg: 'ultimateDmg', alphaCrit: 'alphaDmg', alphaDmg: 'alphaDmg',
+    superDmg: 'superDmg', ultraDmg: 'ultraDmg', hyperDmg: 'hyperDmg', omegaCrit: 'omegaDmg', omegaDmg: 'omegaDmg',
+    eternalCrit: 'eternalDmg', eternalDmg: 'eternalDmg', genesisCrit: 'genesisDmg', genesisDmg: 'genesisDmg' };
   var ADD_TO = { superDmg: 'superDmg', hyperDmg: 'hyperDmg', megaDmg: 'megaDmg', ultimateDmg: 'ultimateDmg', alphaDmg: 'alphaDmg',
     bossDmg: 'bossDmg', finalPct: 'finalMul', skillDmg: 'skillDmg', weakDmg: 'weakMul', surgeDmg: 'surgeMul' };
   function overTarget(key) {
@@ -94,7 +109,10 @@
     state.up[key] = lv + 1;
     return true;
   }
-  var BONUS_KEYS = ['weakDmg', 'surgeDmg', 'surgeRate', 'finalPct', 'atk', 'atkPct', 'critRate', 'critDmg', 'goldMul', 'skillDmg', 'speed', 'bossDmg', 'normalDmg', 'xpMul', 'superRate', 'superDmg', 'ultraRate', 'ultraDmg', 'hyperRate', 'hyperDmg', 'megaRate', 'megaDmg', 'ultimateRate', 'ultimateDmg', 'alphaRate', 'alphaDmg', 'potion', 'potionGold', 'potionXp'];
+  var TIERS = DATA.critTiers, CC = DATA.critConf;
+  var BONUS_KEYS = ['weakDmg', 'surgeDmg', 'surgeRate', 'finalPct', 'atk', 'atkPct', 'goldMul', 'skillDmg', 'speed', 'bossDmg', 'normalDmg', 'xpMul', 'potion', 'potionGold', 'potionXp'];
+  // every crit tier: its rate, its '배' damage and its '%' damage (key + 'Pct')
+  TIERS.forEach(function (t) { BONUS_KEYS.push(t.rate, t.dmg, t.dmg + 'Pct'); });
   // every source of bonuses (gear, relics, costumes, star items, skill collection) adds into one object
   var SOURCES = [['gear', 'gearStats'], ['relics', 'relicStats'], ['costume', 'costumeStats'], ['divine', 'divineStats'], ['skills', 'skillOwnedStats'], ['training', 'trainingStats'], ['runes', 'runeStats'], ['sigil', 'sigilStats'], ['alchemy', 'alchemyStats'], ['titles', 'titleStats'], ['dex', 'dexStats']];
   // the bonus of every source on its own (for the stat window); growth = the 초월 lines; total = what stats() uses
@@ -144,12 +162,26 @@
   }
   // the stat bonus 한계 돌파 gives a row right now: { stat, pct } (for the 성장 list)
   function overInfo(state, key) { var t = overTarget(key), n = overLevels(state, key); return t ? { stat: t, levels: n, pct: n * OVER_PER } : null; }
+  // the rate a tier gets from its 성장 row (before items)
+  function rowRate(u, i) { var t = TIERS[i]; return i === 0 ? (u.crit || 0) * B.critPerLevel : (u[t.rateRow] || 0) * (B[t.id + 'PerLevel'] || 0); }
+  function rowDmg(u, i) { var t = TIERS[i]; return i === 0 ? B.critDmgBase + (u.critDmg || 0) * B.critDmgPerLevel : B[t.dmg] + (u[t.dmgRow] || 0) * (DATA.upgrades[t.dmgRow].per || B.highDmgPerLevel); }
+  // rates stop at 100%; each 1%p past it adds overPer% to that tier's damage (at most overMax). Damage = (base + '배'
+  // bonuses) × (1 + '%' bonuses + that overflow). st[rate + 'Raw'] keeps the rate before the stop, st[dmg + 'Pct'] the % part.
+  // a closed tier (체험판 keeps 오메가 levels from a loaded save, 2026-11-16) is not rolled at all
+  function critBase(st, u, gb, state) {
+    TIERS.forEach(function (t, i) {
+      var raw = state && !critTierOpen(state, i) ? 0 : rowRate(u, i) + (gb[t.rate] || 0), over = Math.min(CC.overMax, Math.max(0, raw - 1) * CC.overPer);
+      var pctAll = (gb[t.dmg + 'Pct'] || 0) + over;
+      st[t.rate] = Math.max(0, Math.min(1, raw)); st[t.rate + 'Raw'] = raw;
+      st[t.dmg + 'Add'] = rowDmg(u, i) + (gb[t.dmg] || 0); st[t.dmg + 'Pct'] = pctAll; st[t.dmg + 'Over'] = over;
+      st[t.dmg] = st[t.dmg + 'Add'] * (1 + pctAll);
+    });
+    return st;
+  }
   function statsBase(state, u, gb, atk) {
-    return {
+    return critBase({
       atk: cap(atk),
       speedMul: Math.min(2, 1 + u.speed * B.speedPerLevel + gb.speed),
-      critRate: Math.min(0.7, u.crit * B.critPerLevel + gb.critRate),
-      critDmg: B.critDmgBase + u.critDmg * B.critDmgPerLevel + gb.critDmg,
       goldMul: (1 + u.gold * B.goldPerLevel + gb.goldMul) * (1 + gb.potionGold),
       mastery: 1 + u.mastery * B.masteryPerLevel,
       skillDmg: 1 + gb.skillDmg,
@@ -160,18 +192,8 @@
       surgeMul: DATA.surgeConf.mul * (1 + (gb.surgeDmg || 0)),
       surgeRate: 1 + (gb.surgeRate || 0),
       xpMul: (1 + gb.xpMul) * (1 + gb.potionXp),
-      skillLv: state.skillLv || {},
-      superRate: Math.min(0.6, (u.superCrit || 0) * B.superPerLevel + (gb.superRate || 0)),
-      ultraRate: Math.min(0.5, (u.ultraCrit || 0) * B.ultraPerLevel + (gb.ultraRate || 0)),
-      hyperRate: Math.min(0.4, (u.hyperCrit || 0) * B.hyperPerLevel + (gb.hyperRate || 0)),
-      superDmg: B.superDmg + (gb.superDmg || 0), ultraDmg: B.ultraDmg + (gb.ultraDmg || 0), hyperDmg: B.hyperDmg + (gb.hyperDmg || 0),
-      megaRate: Math.min(0.3, (u.megaCrit || 0) * B.megaPerLevel + gb.megaRate),
-      ultimateRate: Math.min(0.25, (u.ultimateCrit || 0) * B.ultimatePerLevel + gb.ultimateRate),
-      alphaRate: Math.min(0.2, (u.alphaCrit || 0) * B.alphaPerLevel + gb.alphaRate),
-      megaDmg: B.megaDmg + (u.megaDmg || 0) * B.highDmgPerLevel + gb.megaDmg,
-      ultimateDmg: B.ultimateDmg + (u.ultimateDmg || 0) * B.highDmgPerLevel + gb.ultimateDmg,
-      alphaDmg: B.alphaDmg + (u.alphaDmg || 0) * B.highDmgPerLevel + gb.alphaDmg
-    };
+      skillLv: state.skillLv || {}
+    }, u, gb, state);
   }
   function hitDamage(st, skill, o) {
     o = o || {};
@@ -197,9 +219,9 @@
   // the average boost a surge gives over many casts
   function surgeFactor(st) { return 1 + (st.surgeMul - 1) * Math.min(1, (st.surgeRate || 1) / DATA.surgeConf.charge); }
   function weakFactor(state, st, skill) { return isWeak(skill, regionOf(state)) ? st.weakMul : 1; }
-  // tiers 1..7: crit, super, ultra, hyper, mega, ultimate, alpha
-  function tierRates(st) { return [st.critRate || 0, st.superRate || 0, st.ultraRate || 0, st.hyperRate || 0, st.megaRate || 0, st.ultimateRate || 0, st.alphaRate || 0]; }
-  function tierDmgs(st) { return [st.critDmg, st.superDmg || B.superDmg, st.ultraDmg || B.ultraDmg, st.hyperDmg || B.hyperDmg, st.megaDmg || B.megaDmg, st.ultimateDmg || B.ultimateDmg, st.alphaDmg || B.alphaDmg]; }
+  // tiers 1..10: crit, super, ultra, hyper, mega, ultimate, alpha, omega, eternal, genesis
+  function tierRates(st) { return TIERS.map(function (t) { return st[t.rate] || 0; }); }
+  function tierDmgs(st) { return TIERS.map(function (t, i) { return st[t.dmg] || (i ? B[t.dmg] : B.critDmgBase); }); }
   // each tier is only rolled after the one below it hits
   function rollCrit(st, rng) {
     rng = rng || Math.random;
@@ -321,6 +343,7 @@
   return {
     stageMonsterHp: stageMonsterHp, stageBossHp: stageBossHp, stageGold: stageGold, diffOf: diffOf,
     monsterHp: monsterHp, bossHp: bossHp, monsterGold: monsterGold, bossGems: bossGems,
+    critTierOpen: critTierOpen, tierRates: tierRates, tierDmgs: tierDmgs,
     isWeak: isWeak, regionOf: regionOf, surgeTick: surgeTick, surgeFactor: surgeFactor, weakFactor: weakFactor, upgradeBonus: upgradeBonus, bonusBySource: bonusBySource, upgradeCostN: upgradeCostN, tryUpgradeN: tryUpgradeN, upgradeOpen: upgradeOpen, upgradeNeed: upgradeNeed, rollCrit: rollCrit, critFactor: critFactor, upgradeCost: upgradeCost, tryUpgrade: tryUpgrade, stats: stats, overInfo: overInfo, hitDamage: hitDamage,
     atkPrice: atkPrice, progressIndex: progressIndex, goldScale: goldScale, capGold: capGold, GOLD_MAX: GOLD_MAX, dps: dps, bossDps: bossDps, bossDpsTypical: bossDpsTypical, evenCrit: evenCrit, killsPerSecond: killsPerSecond, goldPerSecond: goldPerSecond, skillById: skillById,
     isRegionBoss: isRegionBoss, isMiniBoss: isMiniBoss

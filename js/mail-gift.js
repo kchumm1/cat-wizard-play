@@ -32,7 +32,8 @@
     var names = { superRate: '슈퍼 크리 확률', ultraRate: '울트라 크리 확률', hyperRate: '하이퍼 크리 확률', megaRate: '메가 크리 확률', critDmg: '치명타 피해',
       superDmg: '슈퍼 크리 피해', skillDmg: '스킬 피해', bossDmg: '보스 피해', weakDmg: '약점 피해', surgeDmg: '폭주 피해', atkPct: '공격력',
       hyperDmg: '하이퍼 크리 피해', megaDmg: '메가 크리 피해', alphaDmg: '알파 크리 피해' };
-    return names[stat] || stat;
+    var t = DATA.critTiers.filter(function (x) { return x.rate === stat || x.dmg === stat; })[0];
+    return names[stat] || (t ? t.short + ' 크리 ' + (t.rate === stat ? '확률' : '피해') : stat);
   }
 
   // the letter's gift, cleaned: only things the game knows, whole counts, nothing empty. {} when there is none

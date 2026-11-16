@@ -40,7 +40,8 @@
   }
   // a bonus as the player reads it: crit-tier damage (super…alpha) adds to a ×multiplier, so it reads in 배; the rest in %
   function bonusAmount(stat, v) {
-    if (/^(super|ultra|hyper|mega|ultimate|alpha)Dmg$/.test(stat)) return "+" + (Math.round(v * 100) / 100) + "배";
+    // a crit tier's damage: '배' is added to the multiplier, 'Pct' multiplies it (×(1 + %)) — 2026-11-16 both read as they count
+    if (/^(super|ultra|hyper|mega|ultimate|alpha|omega|eternal|genesis)Dmg$/.test(stat)) return "+" + (Math.round(v * 100) / 100) + "배";
     return "+" + (Math.round(v * 1000) / 10) + "%";
   }
   // Monster and boss health (2026-11-15, the user: "11.9재" is hard to read): Korean units like fmt, rounded to a whole

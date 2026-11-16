@@ -11,28 +11,28 @@
   function pct(v) { return (Math.round(v * 1000) / 10) + '%'; }
   function x(v) { return '×' + (Math.round(v * 100) / 100).toFixed(2); }
   var NAME = { superDmg: '슈퍼 크리티컬 피해', hyperDmg: '하이퍼 크리티컬 피해', megaDmg: '메가 크리티컬 피해', ultimateDmg: '얼티밋 크리티컬 피해',
-    alphaDmg: '알파 크리티컬 피해', bossDmg: '보스 피해', finalPct: '모든 피해', skillDmg: '스킬 피해', weakDmg: '약점 피해', surgeDmg: '폭주 피해' };
+    alphaDmg: '알파 크리티컬 피해', omegaDmg: '오메가 크리티컬 피해', eternalDmg: '이터널 크리티컬 피해', genesisDmg: '제네시스 크리티컬 피해', bossDmg: '보스 피해', finalPct: '모든 피해', skillDmg: '스킬 피해', weakDmg: '약점 피해', surgeDmg: '폭주 피해' };
   var OVER_NAME = { finalMul: '모든 피해', critDmg: '치명타 피해', superDmg: '슈퍼 피해', ultraDmg: '울트라 피해', hyperDmg: '하이퍼 피해',
-    megaDmg: '메가 피해', ultimateDmg: '얼티밋 피해', alphaDmg: '알파 피해', bossDmg: '보스 피해', skillDmg: '스킬 피해', weakMul: '약점 피해', surgeMul: '폭주 피해' };
+    megaDmg: '메가 피해', ultimateDmg: '얼티밋 피해', alphaDmg: '알파 피해', omegaDmg: '오메가 피해', eternalDmg: '이터널 피해', genesisDmg: '제네시스 피해', bossDmg: '보스 피해', skillDmg: '스킬 피해', weakMul: '약점 피해', surgeMul: '폭주 피해' };
   // the base rows: the plain sentence, the stat it shows, how it reads, where the stat stops (if it does) and, for the
   // crit tiers, the damage that tier does when it lands
   var ROW = {
     atk: { about: '모든 공격의 기본이 되는 힘', val: function (s) { return N().fmt(s.atk); }, rise: function (a, b) { return ' (+' + Math.round((b.atk / a.atk - 1) * 100) + '%)'; } },
     speed: { about: '스킬을 사용하는 속도', val: function (s) { return x(s.speedMul); }, cap: '×2.00' },
-    crit: { about: '공격이 치명타로 적중할 확률', val: function (s) { return pct(s.critRate); }, cap: '70%' },
+    crit: { about: '공격이 치명타로 적중할 확률', val: function (s) { return pct(s.critRate); }, cap: '100%', own: pct(DATA.balance.critPerLevel * DATA.upgrades.crit.max) },
     critDmg: { about: '치명타가 적중했을 때의 피해 배율', val: function (s) { return x(s.critDmg); } },
     gold: { about: '몬스터·보스 처치 시 골드 획득량', val: function (s) { return '+' + pct(s.goldMul - 1); } },
     mastery: { about: '모든 스킬에 적용되는 피해 배율', val: function (s) { return x(s.mastery); } },
-    superCrit: { about: '치명타가 슈퍼 크리티컬로 이어질 확률', val: function (s) { return pct(s.superRate); }, cap: '60%', dmg: function (s) { return x(s.superDmg); } },
-    ultraCrit: { about: '슈퍼 크리티컬이 울트라로 이어질 확률', val: function (s) { return pct(s.ultraRate); }, cap: '50%', dmg: function (s) { return x(s.ultraDmg); } },
-    hyperCrit: { about: '울트라가 하이퍼로 이어질 확률', val: function (s) { return pct(s.hyperRate); }, cap: '40%', dmg: function (s) { return x(s.hyperDmg); } },
-    megaCrit: { about: '하이퍼가 메가로 이어질 확률', val: function (s) { return pct(s.megaRate); }, cap: '30%' },
-    megaDmg: { about: '메가 크리티컬 적중 시 피해 배율', val: function (s) { return x(s.megaDmg); } },
-    ultimateCrit: { about: '메가가 얼티밋으로 이어질 확률', val: function (s) { return pct(s.ultimateRate); }, cap: '25%' },
-    ultimateDmg: { about: '얼티밋 크리티컬 적중 시 피해 배율', val: function (s) { return x(s.ultimateDmg); } },
-    alphaCrit: { about: '얼티밋이 알파로 이어질 확률', val: function (s) { return pct(s.alphaRate); }, cap: '20%' },
-    alphaDmg: { about: '알파 크리티컬 적중 시 피해 배율', val: function (s) { return x(s.alphaDmg); } }
   };
+  // the crit tiers' rows (2026-11-16: every tier has a rate row and a damage row; rates stop at 100%)
+  DATA.critTiers.forEach(function (t, i) {
+    if (!i) return;
+    var below = DATA.critTiers[i - 1];
+    var from = i === 1 ? '치명타' : below.short, c = from.charCodeAt(from.length - 1) - 0xac00, ga = c >= 0 && c % 28 ? '이' : '가';
+    var to = t.short.charCodeAt(t.short.length - 1) - 0xac00, ro = to >= 0 && to % 28 && to % 28 !== 8 ? '으로' : '로';
+    ROW[t.rateRow] = { about: from + ga + ' ' + t.short + ro + ' 이어질 확률', val: function (s) { return pct(s[t.rate]); }, cap: '100%', own: pct(DATA.balance[t.id + 'PerLevel'] * DATA.upgrades[t.rateRow].max), dmg: function (s) { return x(s[t.dmg]); } };
+    ROW[t.dmgRow] = { about: t.name + ' 적중 시 피해 배율', val: function (s) { return x(s[t.dmg]); } };
+  });
   function withLevel(state, key, lv) { var up = {}; for (var k in state.up) up[k] = state.up[k]; up[key] = lv; var c = {}; for (var j in state) c[j] = state[j]; c.up = up; return c; }
   function overText(key, lv) {
     var u = DATA.upgrades[key], t = E().overInfo({ up: (function () { var o = {}; o[key] = lv; return o; })() }, key);
@@ -58,7 +58,8 @@
       var capped = R.cap && R.val(st) === R.cap;
       if (!atMax && !capped) lines.push(['다음', R.val(nx) + (R.rise ? R.rise(st, nx) : '')]);
       if (R.dmg) lines.push(['피해', '터지면 ' + R.dmg(st)]);
-      if (R.cap) lines.push(['최대', R.cap + (u.max !== null ? ' (Lv.' + u.max + ')' : '')]);
+      if (R.own) lines.push(['최대', R.own + ' (Lv.' + u.max + ') · 룬·신성력·특성으로 ' + R.cap + '까지']);
+      else if (R.cap) lines.push(['최대', R.cap + (u.max !== null ? ' (Lv.' + u.max + ')' : '')]);
       else if (u.max !== null) lines.push(['최대', 'Lv.' + u.max]);
     }
     // 한계 돌파: past the max each level adds 1% to the damage the row is about

@@ -33,9 +33,17 @@
       .replace(/<svg class="ico gstaff"[\s\S]*?<\/svg>/, '<img class="gimg gpic" src="' + pic + '" alt="" draggable="false">');
   };
   if (CW.GEAR_IMG) KINDS.forEach(function (k) { CW.GEAR_IMG[k] = gearPic(k, 1); });
+  // 원판·장식 없이 그림 파일만 (오팔 전시대용, 2026-11-16): I.gear와 같은 파일 고르기
+  I.gearSrc = function (kind, grade, sub) {
+    if (KINDS.indexOf(kind) < 0) return null;
+    var real = clamp(grade, 0, 9);
+    return STEP_PICS.indexOf(real) >= 0 ? src('gi-' + kind + '-' + real + '-' + clamp(sub, 1, 4)) : NEW_PICS.indexOf(real) >= 0 ? src('gi-' + kind + '-' + real) : gearPic(kind, real);
+  };
 
   // ---------- sigils (신성력) ----------
   var BOLT = { superRate: 1, ultraRate: 1, hyperRate: 1, megaRate: 1, critDmg: 1, superDmg: 1, weakDmg: 1, surgeDmg: 1 };
+  // every crit option (2026-11-16) uses the bolt picture
+  ((CW.DATA && CW.DATA.critTiers) || []).forEach(function (t) { BOLT[t.rate] = 1; BOLT[t.dmg] = 1; });
   var sigil0 = I.sigil, MARK = {};
   // the stat mark of the drawn sigil, shown small in the corner so sigils of one grade can still be told apart
   function mark(stat) {

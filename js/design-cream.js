@@ -70,14 +70,27 @@
   var TOP = ['#729d57', '#537a4f', '#9c935b', '#bfd0dc', '#3c2927', '#2d4986', '#5c675a', '#aa9675', '#363560', '#2e232f'];
   function regionTop(i) { return TOP[i] || '#2e232f'; }
 
-  var api = { MAP: MAP, regionMark: regionMark, regionTop: regionTop };
+  // 크리티컬 정비 (2026-11-16): the new rows and the 크리티컬 talents reuse the tier pictures; 오메가·이터널·제네시스 take the
+  // 알파 pictures turned red, blue and gold (TINT = a CSS filter on that picture)
+  var TINT = {}, TIER_PIC = [['growth-crit', 'growth-crit-dmg'], ['growth-super-crit', 'growth-super-crit'], ['growth-ultra-crit', 'growth-ultra-crit'],
+    ['growth-hyper-crit', 'growth-hyper-crit'], ['growth-mega-crit', 'growth-mega-dmg'], ['growth-ultimate-crit', 'growth-ultimate-dmg'], ['growth-alpha-crit', 'growth-alpha-dmg'],
+    ['growth-alpha-crit', 'growth-alpha-dmg', 'hue-rotate(-115deg) saturate(1.3)'], ['growth-alpha-crit', 'growth-alpha-dmg', 'hue-rotate(105deg) saturate(1.2)'],
+    ['growth-alpha-crit', 'growth-alpha-dmg', 'hue-rotate(-60deg) saturate(1.5) brightness(1.1)']];
+  [['superDmg', 1, 1], ['ultraDmg', 2, 1], ['hyperDmg', 3, 1], ['omegaCrit', 7, 0], ['omegaDmg', 7, 1], ['eternalCrit', 8, 0], ['eternalDmg', 8, 1], ['genesisCrit', 9, 0], ['genesisDmg', 9, 1]]
+    .forEach(function (r) { var p = TIER_PIC[r[1]]; MAP.stat[r[0]] = p[r[2]]; if (p[2]) TINT['stat:' + r[0]] = p[2]; });
+  var TAL = ['Crit', 'Super', 'Ultra', 'Hyper', 'Mega', 'Ulti', 'Alpha', 'Omega', 'Eter', 'Gen'];
+  TAL.forEach(function (n, i) {
+    var p = TIER_PIC[i]; MAP.talent['tc' + n + 'R'] = p[0]; MAP.talent['tc' + n + 'D'] = i === 0 ? 'talent-sharp-claws' : p[1];
+    if (p[2]) { TINT['talent:tc' + n + 'R'] = p[2]; TINT['talent:tc' + n + 'D'] = p[2]; }
+  });
+  var api = { MAP: MAP, TINT: TINT, regionMark: regionMark, regionTop: regionTop };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   var CW = root.CW, I = CW && CW.ICO; if (!I) return;
   var B = CW.ART_BASE || 'art/';
-  function img(name, cls) { return '<img class="ico pic ' + cls + '" src="' + B + 'tr-' + name + '.webp" alt="" draggable="false">'; }
+  function img(name, cls, tint) { return '<img class="ico pic ' + cls + '" src="' + B + 'tr-' + name + '.webp" alt="" draggable="false"' + (tint ? ' style="filter:' + tint + '"' : '') + '>'; }
   var stat0 = I.stat, misc0 = I.misc, cur0 = I.cur, pic0 = I.pic, MISC = ['talent', 'mark', 'potion', 'pack'];
-  I.stat = function (k) { return MAP.stat[k] ? img(MAP.stat[k], 'imisc tr') : stat0(k); };
-  I.misc = function (cat, id) { return MISC.indexOf(cat) >= 0 && MAP[cat][id] ? img(MAP[cat][id], 'imisc tr p-' + cat) : misc0(cat, id); };
+  I.stat = function (k) { return MAP.stat[k] ? img(MAP.stat[k], 'imisc tr', TINT['stat:' + k]) : stat0(k); };
+  I.misc = function (cat, id) { return MISC.indexOf(cat) >= 0 && MAP[cat][id] ? img(MAP[cat][id], 'imisc tr p-' + cat, TINT[cat + ':' + id]) : misc0(cat, id); };
   I.cur = function (k) { return MAP.cur[k] ? img(MAP.cur[k], 'icur tr') : cur0(k); };
   I.pic = function (name, cls) { return MAP.pic[name] ? img(MAP.pic[name], (cls || '') + ' tr') : pic0(name, cls); };
   I.region = regionMark;
