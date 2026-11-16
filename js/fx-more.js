@@ -1003,39 +1003,103 @@
           } });
       } });
     };
-    // Corona ring: the wizard flares up like a small sun and a ring of fire tears outward over the whole ground, tongues of flame arcing off it.
+    // Corona ring: a small sun is drawn together over the wizard, swells, and bursts — and the edge of that burst is a ring
+    // of the sun's fire that tears outward over the whole ground, great tongues of flame (prominences) looping off it.
+    // (2026-11-16, the user: "홍염 고리가 애매하고 임팩트가 없어 — 태양의 고리가 번쩍 터지면서 번지는 느낌으로": it was a
+    // screen-wide yellow fog round the wizard and a thin orange band; chose "a small sun bursts and becomes the ring")
     S.corona = function (c) {
-      sc.heroPose('spin', c.D(0.14), c.col);
-      var H = sc.heroCenter(), G = V(H.x, 0.04, H.z);
-      glow(H, 0xffb030, [0.3, 2.2 * c.s], c.D(0.2), { fadeIn: 0.5, hot: 1.4 }); converge(H, [0xffffff, 0xffd84a, 0xff9a40], N(18, c), 1.6, c.D(0.14));
-      for (var i = 0; i < 8; i++) E({ pos: H, frame: 'streak', color: [0xffffff, 0xffd84a], size: [0.3, 2.6 * c.s], ease: 1, life: c.D(0.24), rot: i / 8 * 3.1416, alpha: 0.7, spin: 2 });
-      after(c.D(0.14), function () {
-        var r = 0.3;
-        sc.flash('rgba(255,200,110,0.5)', 0.25); sc.punch(0.07); sc.shake(0.3);
-        flare(H, 0xffffff, 2.2 * c.s, 0.18, { white: true }); fieldWave(G, 0xffa040, 0.75, 0xffe14a); shock(H, 0xffd84a, 4, 0.3);
-        var wall = P3.ringWall({ kind: 'sun', col: 0xff7a1a, heat: 0.9 }), hw = 1.5 * Math.min(1.4, c.s), RING_V = 9;
+      sc.heroPose('raise', c.D(0.3), c.col); sc.dim(0.3, c.D(0.3) + 1.0);
+      var H = sc.heroCenter(), G = V(H.x, 0.04, H.z), cs = Math.min(1.3, c.s), sunP = H.clone().add(V(0, 1.25, -0.1));
+      var GOLD = [0xffffff, 0xffe14a, 0xff9a2b], FORM = c.D(0.2), SWELL = c.D(0.1), t = 0, tt = 0, R = 0.55 * cs, spin = rr(0, 6.283);
+      // the sun (2026-11-16, the user "태양 느낌을 살려보자": a plain ball of light read as a lamp): a ball of the sun's toon
+      // fire — two of the Blender fire domes back to back, their flames boiling up over the top and down under the bottom,
+      // turning — round a white-hot heart, in a gold halo; long rays of sunlight flicker out of it all round, loops of flame
+      // (prominences) leap off its rim and fall back, and it lights everything round it gold. (Tried before: the sun spear's
+      // ball of fire, a teardrop made to fly, read as a drop of flame standing still; the sun arrows' 3D sun has the moon's
+      // dark seas on it and read as a moon)
+      // (the Blender fire dome, js/mesh-fire.js 'boom', is 0.9 high and about half as wide at scale 1: widened 1.8 times
+      // so the two make a round ball; its flame streaks hardly wind, so they flare outward like the sun's surface — wound round
+      // more it read as a hairy cocoon, then a pinwheel)
+      var UP = V(0, 1, 0), DN = V(0, -1, 0), GH = 0.9, GW = 1.8;
+      var shellU = P3.toonFire('boom', { kind: 'sun', tw: 0.35, rise: 2.4, band: 0.28, lift: 0.0, glow: 1.0 }), shellD = P3.toonFire('boom', { kind: 'sun', tw: -0.35, rise: 2.4, band: 0.28, lift: 0.0, glow: 1.0 });
+      var heart = lightBall(0xffd040, 1.5, 0.55), halo = P3.orb({ col: 0xffd84a, deep: 0xff8a20, alpha: 0.4, order: 6 });
+      var cq = sc.camera.quaternion, ux = V(1, 0, 0).applyQuaternion(cq), uy = V(0, 1, 0).applyQuaternion(cq);
+      function rim(a, d, rk) { return sunP.clone().addScaledVector(ux, Math.cos(a) * rk * d).addScaledVector(uy, Math.sin(a) * rk * d); }
+      converge(sunP, GOLD, N(18, c), 2.1, FORM); sc.light(sunP, 0xffd080, 1.8, FORM + SWELL + 0.1);
+      tick(function (dt) {
+        t += dt; tt += dt; spin += dt * 2.6;
+        // drawn together (0.15 → 1), then it swells hard and flickers just before it goes
+        var k = Math.min(1, t / FORM), e = 1 - (1 - k) * (1 - k), sw = Math.max(0, Math.min(1, (t - FORM) / SWELL));
+        var fl = 1 + (0.04 + 0.07 * sw) * Math.sin(tt * 47) * Math.sin(tt * 29), rk = R * (0.15 + 0.85 * e) * (1 + 0.45 * sw * sw) * fl;
+        shellU.set(sunP, GH * rk, spin, 0, 0, 0, GW * rk, UP); shellD.set(sunP, GH * rk, -spin * 0.8 + 1.3, 0, 0, 0, GW * rk, DN);
+        heart.set(sunP, rk * 0.85); halo.set(sunP, rk * (2.7 + 0.4 * Math.sin(tt * 38)));
+        // rays of sunlight: long beams flickering out through it at every angle, longer as it swells
+        if (Math.random() < dt * (40 + 50 * sw)) { var L = rk * rr(3.4, 5) * (1 + 0.5 * sw); E({ pos: sunP, frame: 'streak', color: [0xffffff, 0xffd060], size: [L, L], ar: 0.07, rot: rr(0, 3.1416), life: rr(0.1, 0.18), alpha: rr(0.6, 0.9), fadeIn: 0.25, fadeOut: 0.5 }); }
+        if (Math.random() < dt * (10 + 30 * sw)) flare(sunP.clone().add(rdir(0.5 * rk)), 0xfff2b0, rr(0.5, 0.9) * cs * (1 + sw), 0.07);
+        // prominences: a loop of flame leaps off the rim and falls back (in the screen's plane)
+        if (Math.random() < dt * 26) {
+          var a0 = rr(0, 6.283), da = rr(0.45, 0.8), lb = new T.QuadraticBezierCurve3(rim(a0, 0.9, rk), rim(a0 + da / 2, rr(2.0, 2.8), rk), rim(a0 + da, 0.9, rk)), lp = [];
+          for (var s0 = 0; s0 <= 8; s0++) lp.push(lb.getPoint(s0 / 8));
+          vx.ribbon({ mode: 'static', sweep: true, pts: lp, w: 0.2 * rk, color: 0xff9a20, core: 0, alpha: 0.7, life: 0.24 });
+          vx.ribbon({ mode: 'static', sweep: true, pts: lp, w: 0.08 * rk, color: 0xffe070, core: 1.3, life: 0.24 });
+        }
+        if (sw > 0 && Math.random() < dt * 40) { var a1 = sunP.clone().add(rdir(1.3 * rk)); vx.lightning(a1, a1.clone().add(rdir(rr(0.4, 0.8))), { w: 0.04 * cs, color: 0xffd84a, life: 0.07, branches: 0, segs: 5, amp: 0.3 }); }
+        if (t < FORM + SWELL) return false;
+        shellU.kill(); shellD.kill(); heart.kill(); halo.kill(); burst(); return true;
+      });
+      function burst() {
+        // bang: a white flash and a catch, rays of light thrown out of it, a crown of the sun's fire bursting up off the ground
+        sc.flash('rgba(255,240,190,0.6)', 0.3); sc.hitStop(0.07); sc.shake(0.5); sc.punch(0.1);
+        flare(sunP, 0xffffff, 2.6, 0.2, { white: true }); glow(sunP, 0xffd060, [0.6, 2.6], 0.3, { ease: 1, alpha: 0.8 });
+        // (no crown of fire or glow on the ground here: they filled the middle of the screen with a mass of orange that went
+        // muddy on snow — the burst is light, and the fire is the ring)
+        shock(sunP, 0xfff2a0, 4.5 * cs, 0.4); gRing(G, 0xffd84a, 4 * cs, 0.45);
+        // sunlight thrown out of it: long beams at every angle shooting out across the field
+        for (var i = 0; i < 14; i++) E({ pos: sunP, frame: 'streak', color: [0xffffff, 0xffd84a], size: [0.6, rr(4.2, 5.6) * cs], ar: 0.06, ease: 1, life: 0.38, rot: i / 14 * 3.1416 + rr(-0.08, 0.08), alpha: 0.85, fadeOut: 0.45 });
+        sparks(sunP, GOLD, N(16, c), 9, { size: 0.24, stretch: 0.14, life: 1.0 });
+        for (var b = 0; b < N(10, c); b++) E({ sys: b % 2 ? 'col' : 'add', pos: sunP.clone().add(rdir(0.3)), vel: V(rr(-5, 5), rr(1.5, 5), rr(-3, 3)), frame: 'flame', color: [0xfff0a0, 0xffa020, 0xe8601a], size: [rr(0.3, 0.45) * cs, 0.08], life: rr(0.6, 0.9), grav: 9, drag: 0.6, spin: rr(-5, 5), fadeOut: 0.3 });
+        sc.light(sunP, 0xffe080, 2.6, 0.5);
+        // the ring: the sun's fire standing round the burst and pushed out over the ground, with a lower white-gold band of
+        // heat just inside it so it reads as burning light rather than a band of smoke
+        // (on bright ground — snow, sand — deeper colours: the pale ones went to a cream band of smoke on white)
+        var br = vx.isBright && vx.isBright(), r = 0.6;
+        var wall = P3.ringWall(br ? { kind: 'sun', col: 0xff8410, heat: 0.45 } : { kind: 'sun', col: 0xff9a20, heat: 0.75 });
+        var core = P3.ringWall(br ? { kind: 'sun', col: 0xffc030, lo: 0xe8600a, heat: 0.9, alpha: 0.95 } : { kind: 'sun', col: 0xfff2b0, lo: 0xff9a20, heat: 1.5, alpha: 0.95 });
+        var hw = 1.7 * Math.min(1.4, c.s), RING_V = 9, END = 10.5;
         tick(function (dt) {
           // the ring grows at the same pace whatever the cast speed (2026-11-16, user "홍염의 고리도 잘 안 보여": at speed x2 it
           // crossed the whole screen in 0.4 s, under a fog of big painted flame puffs)
           r += RING_V * dt;
-          wall.set(G, r, hw * (1 - 0.3 * Math.min(1, r / 10.5)), Math.max(0, (r - 7.5) / 3));
-          if (r > 10.5) wall.kill();
+          var h = hw * (1 - 0.3 * Math.min(1, r / END)), kOut = Math.max(0, (r - 7.5) / 3);
+          wall.set(G, r, h, kOut); core.set(G, r * 0.97, h * 0.5, Math.min(1, kOut * 1.2));
+          if (r > END) { wall.kill(); core.kill(); }
           for (var j = 0; j < N(1, c); j++) {
             var a = rr(0, 6.283), p = V(G.x + Math.cos(a) * r, 0.3, G.z + Math.sin(a) * r);
             if (Math.abs(p.x) > 4.4 || p.z < -5 || p.z > 4.2) continue;
-            fire(p, 1, { size: rr(0.45, 0.65) * Math.min(1.4, c.s), speed: 0.5, up: 3.2, life: 0.75, v: V(Math.cos(a) * 4, 0, Math.sin(a) * 4) });
-            if (j === 0) {
-              // a tongue of flame loops up off the ring and falls back
-              var q = V(G.x + Math.cos(a + 0.35) * r, 0.2, G.z + Math.sin(a + 0.35) * r), bez = new T.QuadraticBezierCurve3(V(p.x, 0.2, p.z), above(V((p.x + q.x) / 2, 0, (p.z + q.z) / 2), 1.8), q), pts = [];
-              for (var k = 0; k <= 10; k++) pts.push(bez.getPoint(k / 10));
-              vx.ribbon({ mode: 'static', sweep: true, pts: pts, w: 0.16 * c.s, color: 0xff8a2b, core: 1, life: 0.3 });
+            fire(p, 1, { size: rr(0.45, 0.65) * Math.min(1.4, c.s), speed: 0.5, up: 3.2, life: 0.75, v: V(Math.cos(a) * 4, 0, Math.sin(a) * 4), cols: [0xfff0a0, 0xffc040, 0xff8a20, 0xd2501a] });
+          }
+          // prominences: great loops of flame rising off the ring and falling back into it — an orange glow round a white-gold
+          // core, drawn up from one foot to the other
+          // (as tall as they are wide, so near the middle, where the ring is small, they stay small loops, not spikes)
+          if (r > 1.5 && Math.random() < dt * 30) {
+            var a1 = rr(0, 6.283), span = rr(0.3, 0.5), p1 = V(G.x + Math.cos(a1) * r, 0.2, G.z + Math.sin(a1) * r), p2 = V(G.x + Math.cos(a1 + span) * r, 0.2, G.z + Math.sin(a1 + span) * r);
+            if (Math.abs(p1.x) < 4.4 && p1.z > -5 && p1.z < 4.2) {
+              var lift = Math.max(0.6, Math.min(2.2, p1.distanceTo(p2) * rr(0.7, 1.1))) * cs / 1.3, bez = new T.QuadraticBezierCurve3(p1, above(V((p1.x + p2.x) / 2, 0, (p1.z + p2.z) / 2), lift * 2), p2), pts = [];
+              for (var s = 0; s <= 12; s++) pts.push(bez.getPoint(s / 12));
+              vx.ribbon({ mode: 'static', sweep: true, pts: pts, w: 0.34 * cs, color: 0xff8a2b, core: 0, alpha: 0.7, life: 0.42 });
+              vx.ribbon({ mode: 'static', sweep: true, pts: pts, w: 0.14 * cs, color: 0xffd860, core: 1.3, life: 0.42 });
             }
           }
           if (Math.random() < dt * 16) scorch(V(G.x + Math.cos(rr(0, 6.28)) * r, 0, G.z + Math.sin(rr(0, 6.28)) * r), 0.8, 1.6);
-          return r > 10.5;
+          return r > END;
         });
-        ringHits(c, G, RING_V / c.sp, 10.5, function (m) { wallBurn(c, m); sc.shake(0.05); c.hit(m, 1, 1.4); });
-      });
+        // every monster the ring runs over flashes gold as it burns (not white: white on every monster at once went to a
+        // white field, see wallBurn)
+        ringHits(c, G, RING_V / c.sp, END, function (m) {
+          var q = mp(m); wallBurn(c, m); flare(q, 0xffd870, 1.1 * cs, 0.12); sparks(q, GOLD, N(4, c), 4.5, { size: 0.16, up: 1.5 });
+          sc.shake(0.05); c.hit(m, 1, 1.4);
+        });
+      }
     };
 
     // =================================================================== 8차: 공허
