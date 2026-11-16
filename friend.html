@@ -1370,6 +1370,7 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 @keyframes chestShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-3deg) translateY(-3px)}75%{transform:rotate(3deg) translateY(-3px)}}
 @keyframes chestPop{0%{transform:scale(1)}45%{transform:scale(1.1)}100%{transform:scale(1.02)}}
 .gcard{position:relative;animation-delay:var(--d,0s)}
+.gcard .gcnt{position:absolute;right:5px;top:4px;min-width:24px;padding:2px 6px;border-radius:999px;background:rgba(20,14,40,.78);box-shadow:0 0 0 1.5px var(--gc);color:#fff;font:800 12px/1.1 var(--body);text-align:center}
 .gcard .gface{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:100%;height:100%;transform:scaleX(0);animation:cardFace .16s calc(var(--d,0s) + .5s) forwards}
 .gcard .gbackc{position:absolute;inset:0;border-radius:inherit;background:center/cover no-repeat;animation:cardBack .16s calc(var(--d,0s) + .34s) forwards}
 @keyframes cardBack{to{transform:scaleX(0)}}
@@ -2258,6 +2259,13 @@ body{font-family:'Noto Sans KR',"Malgun Gothic","Apple SD Gothic Neo",system-ui,
 #sheet.opal#sheet.opal :is(.subtabs,.kindtabs) button:active{transform:scale(.9)}
 @keyframes subpick{0%{transform:scale(.86)}55%{transform:scale(1.12)}100%{transform:none}}
 @media (prefers-reduced-motion:reduce){#sheet.opal :is(.subtabs,.kindtabs) button{animation:none!important}}
+/* 전투 화면 아래 스킬 칸 (사용자 2026-11-16 「크림색으로 안에 테두리가 있는데 반투명으로」): 크림 바탕·안쪽 색 테두리·아래 황토 그림자 → 속이 비치는 유리 칸 */
+#slots .sk,#slots .sk.empty{background:linear-gradient(180deg,rgba(255,255,255,.30),rgba(255,255,255,.10))!important;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);box-shadow:0 0 0 1px rgba(255,255,255,.65),inset 0 1px 0 rgba(255,255,255,.55),0 3px 8px rgba(20,14,40,.22)!important}
+#slots .sk.now{box-shadow:0 0 0 1.5px rgba(255,255,255,.95),inset 0 1px 0 rgba(255,255,255,.6),0 0 18px var(--c)!important}
+/* 아이콘이 칸보다 작아 보이던 것 (사용자 2026-11-16 「스킬 아이콘을 저 네모 박스에 채워 보자」): 안쪽 여백을 거의 없애고 그림을 칸에 꽉 */
+#slots .sk{padding:2px!important}
+#slots .sk>img.isk,#slots .sk>.ico{width:100%!important;height:100%!important;max-width:none!important;object-fit:contain;border-radius:15px}
+#slots .sk b{background:rgba(255,255,255,.5)!important;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);color:#2c2f48!important;box-shadow:0 0 0 1px rgba(255,255,255,.8)!important}
 </style>
 
 <!-- 업데이트 화면 (2026-11-15, the user's design art-src/update-20261115; js/update-screen.js): shown first, "모험 시작" goes into the game -->

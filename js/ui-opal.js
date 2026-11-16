@@ -707,6 +707,8 @@
     '#sheet.opal{--display:"Noto Sans KR","Malgun Gothic",sans-serif;--body:"Noto Sans KR","Malgun Gothic",sans-serif;font-family:var(--body);font-weight:500}',
     '#sheet.opal *{font-family:"Noto Sans KR","Malgun Gothic",sans-serif}',
     '#sheet.opal .sheet-head b{font-weight:900!important;font-size:25px!important;letter-spacing:1px}',
+    // 긴 제목(ui.js fitTitle): 양옆 장식 선을 짧게, 닫기 버튼에 안 닿게 — 글씨는 fitTitle 이 한 줄 될 때까지 줄임
+    '#sheet.opal .sheet-head b.tlong{letter-spacing:0;gap:6px;white-space:nowrap;max-width:calc(100% - 150px)}#sheet.opal .sheet-head b.tlong::before{padding-left:22px!important;background-size:18px 1.2px!important}#sheet.opal .sheet-head b.tlong::after{padding-right:22px!important;background-size:18px 1.2px!important}',
     // 굵기는 앞의 font: 400 … !important 규칙보다 세게 (id 두 번)
     '#sheet.opal#sheet.opal :is(.bname b,.cs-name b,.nm,.pname,.rl-info>b,.dvstand b,.rk-name b,.ocname b,.dname,.rk-next b,.sktier span){font-weight:800!important}',
     '#sheet.opal#sheet.opal :is(button,.buy,.btn,.pull b,.blab,.obig,.ophold){font-weight:800!important}',
@@ -1002,6 +1004,17 @@
     // 카드 상자는 물약을 실제로 만들어 효과가 켜진 카드에만 (사용자 2026-11-16 아이폰: 상자 그림이 손 닿은 카드에만 그려져 「분노의 물약」만 상자로 잡혀 보였음)
     '#sheet.opal#sheet.opal .pcard.anw:not(.on){border-image-source:none!important}',
     '#sheet.opal#sheet.opal .pcard.anw .pcheck{display:none!important}',   // 켜진 카드 귀퉁이 체크 표시는 뺌 (사용자 2026-11-16)
+    // 가운데 정리 (사용자 2026-11-16 「연금술 만들기 가운데 정렬해서 이쁘게」): 효과 알약·시간 알약은 아이콘+글을 한 덩어리로 가운데,
+    // 남는 세로 공간은 위아래로 똑같이 나눠 화면 가운데에 (넘치면 auto 여백이 0 이 되어 예전처럼 위부터)
+    '#sheet.opal#sheet.opal .pcard.anw .peff{justify-content:center!important;padding:0 8px 1px!important;gap:4px!important}#sheet.opal#sheet.opal .pcard.anw .peff b{margin-left:2px!important}',
+    '#sheet.opal#sheet.opal .pcard.anw .ptime{justify-content:center!important;gap:5px!important;padding:0 8px 1px!important}#sheet.opal#sheet.opal .pcard.anw .ptime i{position:static!important;margin:0!important;flex:none}',
+    '#sheet.opal#sheet.opal .pcard.anw .pname{text-align:center;left:50%}',
+    '#sheet.opal#sheet.opal #panel>.alchhead.anw{margin-top:auto!important}#sheet.opal#sheet.opal #panel>.pgrid.anw{margin-bottom:auto!important}',
+    // 최대 레벨 버튼 (사용자 2026-11-16 「최대하면 회색으로 변하잖아, 가운데 색 빼고 반투명으로」): 장비 「최대 레벨」·성장 줄 「최대」 —
+    // 회색으로 채운 그림 대신 속이 비친 유리 테두리만 (돈이 모자라 꺼진 버튼은 그대로 회색)
+    '#sheet.opal#sheet.opal#sheet.opal .bagbtns .buy.max,#sheet.opal#sheet.opal#sheet.opal .row.grow>.buy.max{border-image:none!important;border:1.5px solid rgba(255,255,255,.85)!important;background:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,.12))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 0 0 1px rgba(140,150,190,.28),0 2px 6px rgba(80,70,140,.10)!important;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);color:rgba(48,54,77,.55)!important;text-shadow:0 1px 0 rgba(255,255,255,.7)!important;animation:none!important;filter:none!important}',
+    '#sheet.opal#sheet.opal#sheet.opal .bagbtns .buy.max{border-radius:999px!important}#sheet.opal#sheet.opal#sheet.opal .row.grow>.buy.max{border-radius:14px!important}',
+    '#sheet.opal#sheet.opal .skr .b.up.max{background:rgba(255,255,255,.25)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.8)!important;color:rgba(48,54,77,.5)!important}',
     '#sheet.opal #panel{overflow-x:hidden!important;overscroll-behavior-x:none}',
     '#sheet.opal #panel.opz>*{zoom:var(--opz,1)}',   // 좁은 폰: 스킬·마나서클 화면을 패널 폭에 맞게 통째로 줄임 (ui.js fitNarrow)   // 그림이 조금 넘쳐도 화면이 옆으로 밀리지 않게 (사용자 2026-11-16)
     // ---- 승급 = 사용자 승급 부품 + 시안 실측 (2026-11-16, 시안 패널 948px = 화면 391px) ----
@@ -1234,9 +1247,16 @@
     '#sheet.opal#sheet.opal .skc .ic img.si{width:48px!important;height:48px!important;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(60,40,120,.3));animation:opFloat 3.2s ease-in-out infinite}',
     '#sheet.opal#sheet.opal .skc .ic .si.old{width:38px;height:38px;display:grid;place-items:center;border-radius:9px;overflow:hidden}#sheet.opal#sheet.opal .skc .ic .si.old>*{width:38px!important;height:38px!important}',
     '#sheet.opal#sheet.opal .skc .ic .plus{width:24px;height:24px;background:url(art/sk-plus.webp) 50% 50%/contain no-repeat;opacity:.7}',
-    '#sheet.opal#sheet.opal .skc .nm{left:3px;right:3px;top:60px;text-align:center;font:800 13px/1.15 var(--body);white-space:nowrap;overflow:hidden;color:var(--navy)}',
+    '#sheet.opal#sheet.opal .skc .nm{left:3px;right:3px;top:60px;height:15px;text-align:center;font:800 13px/15px var(--body);white-space:nowrap;overflow:hidden;color:var(--navy)}',
     '#sheet.opal#sheet.opal .skc .lv{left:6px;right:6px;top:75px;height:15px;display:grid;place-items:center;border-radius:8px;background:rgba(232,228,246,.9);box-shadow:inset 0 1px 1px rgba(120,110,170,.15);font:700 12.5px/1 var(--body);font-style:normal;color:var(--navy)}',
     '#sheet.opal#sheet.opal .skc.empty .nm,#sheet.opal#sheet.opal .skc.empty .lv{color:#9aa0b8}',
+    // 슬롯 카드 귀퉁이 빼기(×)·「모두 빼기」 (사용자 2026-11-16): 보이는 원 20px, 누르는 칸은 ::before 로 36px
+    '#sheet.opal#sheet.opal .skx{position:absolute;top:-6px;z-index:3;width:22px;height:22px;min-width:0!important;min-height:0!important;padding:0!important;margin:0!important;border-radius:50%;border:1.5px solid rgba(255,255,255,.95)!important;background:linear-gradient(180deg,#9a8fe0,#6f66c4)!important;box-shadow:0 2px 4px rgba(60,50,130,.35)!important;-webkit-tap-highlight-color:transparent}',
+    '#sheet.opal#sheet.opal .skx::before{content:"";position:absolute;inset:-8px}#sheet.opal#sheet.opal .skx::after{content:"";position:absolute;left:50%;top:50%;width:10px;height:10px;transform:translate(-50%,-50%);background:linear-gradient(45deg,transparent 42%,#fff 42%,#fff 58%,transparent 58%),linear-gradient(-45deg,transparent 42%,#fff 42%,#fff 58%,transparent 58%)}',
+    '#sheet.opal#sheet.opal .skx:active{transform:scale(.92)}',
+    '#sheet.opal#sheet.opal .skx.x1{left:66px}#sheet.opal#sheet.opal .skx.x2{left:158.7px}#sheet.opal#sheet.opal .skx.x3{left:251.3px}#sheet.opal#sheet.opal .skx.x4{left:344px}',
+    '#sheet.opal#sheet.opal .skallout{position:absolute;right:4px;top:100px;z-index:3;height:26px;min-height:0!important;padding:0 11px!important;margin:0!important;border-radius:999px;border:1.5px solid rgba(255,255,255,.9)!important;background:rgba(255,255,255,.34)!important;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);box-shadow:0 2px 6px rgba(60,50,130,.18)!important;font:800 12px/1 var(--body)!important;color:var(--navy)!important;white-space:nowrap;-webkit-tap-highlight-color:transparent}',
+    '#sheet.opal#sheet.opal .skallout::before{content:"";position:absolute;inset:-9px -4px}#sheet.opal#sheet.opal .skallout:active{transform:scale(.96)}',
     '#sheet.opal#sheet.opal .skc:active{transform:scale(.97)}',
     '#sheet.opal#sheet.opal .skar{position:absolute;top:38px;width:11px;height:17px;margin-left:-5.5px;background:none;border:0}',
     '#sheet.opal#sheet.opal .skar::before{content:"";position:absolute;left:0;top:3.5px;width:8px;height:8px;border-right:2.6px solid #8a8eab;border-bottom:2.6px solid #8a8eab;transform:rotate(-45deg);border-radius:1px}',
@@ -1282,6 +1302,8 @@
     '#sheet.opal#sheet.opal .skr .b.see{left:0;width:48px!important}#sheet.opal#sheet.opal .skr .b.put,#sheet.opal#sheet.opal .skr .b.out{left:51px;width:47px!important}#sheet.opal#sheet.opal .skr .b.up{left:103px;width:49px!important}',
     '#sheet.opal#sheet.opal .skr .b.put{border-image-source:url(art/sk-btn.webp)!important;border-image-slice:57 fill!important;color:#fff!important;text-shadow:0 1px 2px rgba(10,60,60,.5)}',
     '#sheet.opal#sheet.opal .skr .b.put.long,#sheet.opal#sheet.opal .skr .b.out{font-size:10.5px!important;letter-spacing:-.3px}',
+    // 「3번에 넣기」·「1번 빼기」가 47px 칸에 꽉 끼던 것 (사용자 2026-11-16 「너무 타이트해서 터질라고」): 가운데 칸을 60px 로, 보기·강화는 조금 좁게
+    '#sheet.opal#sheet.opal .skr .b.see{width:43px!important}#sheet.opal#sheet.opal .skr .b.put,#sheet.opal#sheet.opal .skr .b.out{left:46px;width:61px!important}#sheet.opal#sheet.opal .skr .b.up{left:110px;width:42px!important}#sheet.opal#sheet.opal .skr .b.put.long,#sheet.opal#sheet.opal .skr .b.out{font-size:11px!important;letter-spacing:-.2px}',
     '#sheet.opal#sheet.opal .skr .b.off{color:#9aa0b8!important}',
     '#sheet.opal#sheet.opal .skr .b:active{filter:brightness(.95);transform:scale(.97)}#sheet.opal#sheet.opal .skr .b.put:active{border-image-source:url(art/sk-btn-press.webp)!important}',
     '#sheet.opal#sheet.opal .skr .lk{left:0;top:0;width:152px;height:20px;display:flex;align-items:center;justify-content:center;gap:4px;font:700 12px/1 var(--body);color:#8a90a8}#sheet.opal#sheet.opal .skr .lk>i{width:12px;height:13px;background:url(art/sk-lock.webp) 50% 50%/contain no-repeat}',

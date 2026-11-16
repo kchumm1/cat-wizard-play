@@ -57,7 +57,7 @@
   // ---------- free slots: any unlocked skill in any slot, slots may be empty (never all of them) ----------
   function unequipSkill(state, slot) {
     if (!state.slots[slot]) return false;
-    var filled = state.slots.filter(Boolean).length; if (filled <= 1) return false;
+    // 마지막 하나도 뺄 수 있음 (사용자 2026-11-16: 「1개 남겨야 한대」 불편 → 전부 뺐다 넣었다). 다 비면 전투는 스킬 없이 기다림 (main.js castNext)
     state.slots[slot] = null; return true;
   }
   // returns the slot used, or -1 when the skill is locked
@@ -95,7 +95,7 @@
     var saved = state.presets[i], n = state.slots.length;
     if (saved) {
       var next = []; for (var k = 0; k < n; k++) { var s = saved[k] && byId(saved[k]); next.push(s && s.tier <= state.tier && next.indexOf(s.id) < 0 ? s.id : null); }
-      if (next.some(Boolean)) state.slots = next;
+      state.slots = next;   // 다 빈 프리셋도 그대로 (사용자 2026-11-16: 스킬을 전부 뺐다 넣었다 자유롭게)
     }
     state.preset = i; state.presets[i] = state.slots.slice();
     return true;

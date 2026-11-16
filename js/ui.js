@@ -67,7 +67,7 @@
         '<div class="bdetail"><p class="ef"><i>✦</i><span>장착 효과</span><b>' + statLine(stat, CW.mainValue(p.kind, p.t, lv, star)) + '</b></p><p class="ef"><i>✦</i><span>보유 효과</span><b>' + statLine(stat, CW.ownedValue(p.kind, p.t, lv, star)) + '</b></p></div>' +
         '<div class="gpot"><p class="pthead"><i>✦</i>잠재력<small>장착 중에만 · 잠근 줄 유지</small></p><div class="plist">' + pot + '</div></div></div>' +
         // 승인 시안: 청록 「레벨업」 + 낱말 행동 장착 | 합성 | 초월 | 잠재력 한 줄. 각 행동의 실제 조건·비용은 그 아래 한 줄로 모음
-        '<div class="bagbtns"><button class="buy' + (!e || lv >= max || s.gold < cost ? ' off' : '') + '" data-blv="' + k + '">' + (lv >= max ? '최대 레벨' : '<small>레벨업</small><span><i class="coin"></i>' + gh(cost) + '</span>') + '</button>' +
+        '<div class="bagbtns"><button class="buy' + (!e || lv >= max || s.gold < cost ? ' off' : '') + (e && lv >= max ? ' max' : '') + '" data-blv="' + k + '">' + (lv >= max ? '최대 레벨' : '<small>레벨업</small><span><i class="coin"></i>' + gh(cost) + '</span>') + '</button>' +
         '<button class="btn' + (worn ? ' on' : '') + (e ? '' : ' off') + '" data-bequip="' + k + '">' + (worn ? '장착 중' : '장착') + '</button>' +
         '<button class="btn' + (e && e.n >= DATA.bagConf.mergeCount && p.t < T - 1 ? '' : ' off') + '" data-bmerge="' + k + '" title="합성 ' + (e ? e.n : 0) + '/' + DATA.bagConf.mergeCount + '">합성</button>' +
         '<button class="btn tr' + (trOk ? '' : ' off') + '" data-btr="' + k + '" title="' + (star >= BG.starMax ? '초월 완료 ★' + star : '초월 ★' + star + '→' + (star + 1) + ' · 최대 레벨 + 같은 장비 ' + trc.copies + '개 + 골드 ' + fmtG(trc.gold)) + '">초월</button>' +
@@ -762,12 +762,15 @@
         var sk = id && CW.skillById(id), on = i === selSlot;
         return '<button class="skc' + (on ? ' on' : '') + (sk ? '' : ' empty') + '" data-sel="' + i + '" aria-label="' + (i + 1) + '번 슬롯' + (sk ? ' ' + sk.name : ' 비어 있음') + '"><b class="n">' + (i + 1) + '</b>' +
           (sk ? '<span class="ic">' + skIco(sk, 'si') + '</span><span class="nm">' + sk.name + '</span><em class="lv">+' + CW.skillLevel(s, sk.id) + '</em>' : '<span class="ic"><i class="plus"></i></span><span class="nm">빈 칸</span><em class="lv">-</em>') + '</button>';
-      }).join('') + '<i class="skar a1"></i><i class="skar a2"></i><i class="skar a3"></i></div>';
+      }).join('') + '<i class="skar a1"></i><i class="skar a2"></i><i class="skar a3"></i>' +
+        // 슬롯 카드에서 바로 빼기 (사용자 2026-11-16 「스킬 창에 스킬 빼기가 없다」): 찬 칸 귀퉁이 ×. 카드 버튼 안에 넣으면 카드 고르기로 눌려서 형제 버튼으로 둠
+        s.slots.map(function (id, i) { return id ? '<button class="skx x' + (i + 1) + '" data-unslot="' + i + '" aria-label="' + (i + 1) + '번 슬롯 빼기"></button>' : ''; }).join('') + '</div>';
+      var allOut = s.slots.some(Boolean) ? '<button class="skallout" data-act="unslotall">모두 빼기</button>' : '';
       var ret = '<div class="skret"><i></i><span>다시 1번</span></div>';
       var pre = '<div class="skpre"><div class="pp"><span>프리셋</span>' + [0, 1, 2].map(function (i) { return '<button class="pb' + ((s.preset || 0) === i ? ' on' : '') + '" data-preset="' + i + '" aria-pressed="' + ((s.preset || 0) === i) + '">' + (i + 1) + '</button>'; }).join('') + '</div><i class="sep"></i>' +
         '<button class="auto" data-act="autoskill"><i></i>자동 배치<i></i></button><button class="bulk" data-act="skillall">일괄 강화</button></div>';
       var own = '<div class="skown"><i></i><span>보유 효과</span><em>·</em><span>모든 스킬 피해</span><b data-opv="skown">+' + pct(CW.skillOwnedStats(s).skillDmg) + '</b></div>';
-      var top = '<div class="skw">' + stage + slots + ret + pre + own + '</div>';
+      var top = '<div class="skw">' + stage + slots + allOut + ret + pre + own + '</div>';
       var row = function (sk) {
         var locked = sk.tier > s.tier, at = s.slots.indexOf(sk.id), lv = CW.skillLevel(s, sk.id), max = lv >= DATA.balance.skillMaxLv, cost = CW.skillUpCost(sk, lv, s);
         var E = DATA.elements[sk.el] || { name: sk.el };
@@ -775,7 +778,7 @@
         var btns = locked ? '<span class="lk"><i></i>' + sk.tier + '차 전직 후</span>'
           : '<button class="b see" data-skd="' + sk.id + '">보기</button>' +
             (at >= 0 ? '<button class="b out" data-unslot="' + at + '">' + (at + 1) + '번 빼기</button>' : '<button class="b put' + (selSlot >= 0 ? ' long' : '') + '" data-eq="' + sk.id + '">' + (selSlot >= 0 ? (selSlot + 1) + '번에 넣기' : '넣기') + '</button>') +
-            '<button class="b up' + (max || s.gold < cost ? ' off' : '') + '" data-sup="' + sk.id + '" title="' + (max ? '최대 강화' : '강화 · 골드 ' + fmtG(cost)) + '">' + (max ? '최대' : '강화') + '</button>';
+            '<button class="b up' + (max || s.gold < cost ? ' off' : '') + (max ? ' max' : '') + '" data-sup="' + sk.id + '" title="' + (max ? '최대 강화' : '강화 · 골드 ' + fmtG(cost)) + '">' + (max ? '최대' : '강화') + '</button>';
         return '<div class="skr' + (locked ? ' lock' : '') + (at >= 0 ? ' eq' : '') + '"><span class="tile' + (CW.ICO.skillArt && CW.ICO.skillArt(sk.id) ? '' : ' oldt') + '" data-opfx="sk:' + sk.id + '" data-opdur=".3">' + skIco(sk, 'ti') + (CW.isWeak(sk, CW.regionOf(s)) ? '<em class="wk" title="지금 지역에서 약점 피해 ×' + weakX(s) + '">약점</em>' : '') + '</span>' +
           '<span class="nm">' + sk.name + ' <b data-opv="sk:' + sk.id + '">' + (locked ? '' : '+' + lv) + '</b></span>' + chip + '<span class="how">' + (sk.how || '') + '</span><i class="dv"></i><span class="bs">' + btns + '</span></div>';
       };
@@ -1120,8 +1123,9 @@
     }
     // 스킬 줄: 설명·이름이 칸보다 길면 글자만 줄임 (설명 10px, 이름 12px 까지)
     function fitSkillRows() {
-      panel.querySelectorAll('.skr .how, .skr .nm').forEach(function (el) {
-        var min = el.classList.contains('how') ? 10 : 12, g = 0;
+      // 위 슬롯 카드 이름(.skc .nm, 폭 71px)도 — 「원소 합체 궁극기」처럼 긴 이름이 잘리던 것 (사용자 2026-11-16): 다 보이게 글씨만 줄임
+      panel.querySelectorAll('.skr .how, .skr .nm, .skc .nm').forEach(function (el) {
+        var min = el.classList.contains('how') ? 10 : el.closest('.skc') ? 9 : 12, g = 0;
         if (el.classList.contains('nm')) el.style.maxWidth = '134px';
         while (el.scrollWidth > el.clientWidth + 0.5 && g++ < 16) { var f = parseFloat(getComputedStyle(el).fontSize); if (f <= min) break; el.style.setProperty('font-size', Math.max(min, f * 0.95).toFixed(2) + 'px', 'important'); var b = el.querySelector('b'); if (b) b.style.setProperty('font-size', 'inherit', 'important'); }
       });
@@ -1227,6 +1231,15 @@
       [tef, ohd && ohd.querySelector('.tinote')].forEach(function (el) { if (!el) return; el.style.fontSize = ''; var full = el.scrollWidth, room = el.clientWidth; if (full > room + 0.5) el.style.fontSize = Math.max(9, parseFloat(getComputedStyle(el).fontSize) * (room - 1) / full).toFixed(2) + 'px'; });   // 한 줄 그대로, 글자만 줄임
       if (stb) { var stSel = stb.querySelector('[aria-selected="true"]'); if (stSel) $('sheetTitle').textContent = stSel.textContent; }
       if (tab === 'skill' && $('sheet').classList.contains('opal')) { var skd = skDetail && CW.skillById(skDetail); $('sheetTitle').textContent = skd ? skd.name : TITLES.skill; }   // 승인 시안: 제목 = 지금 화면 이름 (장비 / 코스튬 …)
+      // 제목이 길면(스킬 상세 「원소 합체 궁극기」 등) 「원소 합체 궁극 / 기」로 끊기던 것 (사용자 2026-11-16): 양옆 장식 선을 줄이고, 그래도 두 줄이면 글씨만 줄여 한 줄로
+      (function fitTitle() {
+        var t = $('sheetTitle'); if (!t) return;
+        t.classList.remove('tlong'); t.style.removeProperty('font-size');
+        if (t.getBoundingClientRect().height < parseFloat(getComputedStyle(t).fontSize) * 1.9) return;   // 이미 한 줄
+        t.classList.add('tlong');   // 한 줄로 두고(nowrap) 칸보다 넓으면 글씨를 줄임
+        var one = function () { return t.scrollWidth <= t.clientWidth + 0.5; };
+        for (var g = 0; g < 14 && !one(); g++) t.style.setProperty('font-size', Math.max(16, parseFloat(getComputedStyle(t).fontSize) * 0.94).toFixed(2) + 'px', 'important');
+      })();
       // the selected 신성력/룬 sits at the bottom of the sheet, always in sight (2026-11-15); it slides up when it opens
       var was = !dock.hidden;
       if (soft && dh && was && dock.firstChild) { var dt = document.createElement('div'); dt.innerHTML = dh; morphKids(dock, dt); } else dock.innerHTML = dh;
@@ -1301,7 +1314,8 @@
       if (d.prev) { G.previewSkill(d.prev); }
       else if (d.sel !== undefined) { selSlot = selSlot === +d.sel ? -1 : +d.sel; renderPanel(true); }
       else if (d.eq) { var at = G.placeSkill(d.eq, selSlot); if (at >= 0) toast(CW.skillById(d.eq).name + ' · ' + (at + 1) + '번 슬롯에 배치했어요.'); selSlot = -1; renderPanel(true); slots(); }
-      else if (d.out !== undefined || d.unslot !== undefined) { if (!G.unequipSkill(+(d.out !== undefined ? d.out : d.unslot))) toast('스킬은 최소 1개 장착해야 해요.'); renderPanel(true); slots(); }
+      else if (d.out !== undefined || d.unslot !== undefined) { G.unequipSkill(+(d.out !== undefined ? d.out : d.unslot)); if (selSlot === +(d.out !== undefined ? d.out : d.unslot)) selSlot = -1; renderPanel(true); slots(); }
+      else if (d.act === 'unslotall') { G.state.slots.forEach(function (id, i) { if (id) G.unequipSkill(i); }); selSlot = 0; toast('스킬을 모두 뺐어요. 넣을 스킬의 「1번에 넣기」를 눌러 주세요.'); renderPanel(true); slots(); }
       else if (d.mul) { upMul = +d.mul; renderPanel(true); }
       else if (d.tsub) { trainSub = d.tsub; panel.scrollTop = 0; renderPanel(true); }
       else if (d.tal) { selTalent = d.tal; renderPanel(true); }
@@ -1552,8 +1566,15 @@
         if (done) return; done = true; clearTimeout(openT);
         if (best >= 4) { $('flashbg').classList.remove('go'); void $('flashbg').offsetWidth; $('flashbg').classList.add('go'); G.sound('legend'); }
         var shown = items.slice().sort(function (a, b) { return b.grade - a.grade; });
+        // 500회 뽑기가 버벅이던 것 (사용자 2026-11-16): 카드 500장(요소 약 5천 개)에 빛·뒤집기 움직임이 한꺼번에 돌았음 →
+        // 30장이 넘으면 같은 장비·같은 등급은 카드 한 장에 「×개수」로 묶음 (얻는 장비는 그대로, 보여 주기만 묶음)
+        if (shown.length > 30) {
+          var byKey = {}, grouped = [];
+          shown.forEach(function (it) { var k = it.kind + ':' + it.grade + ':' + (it.sub || 0); if (byKey[k]) byKey[k].n++; else { byKey[k] = { kind: it.kind, grade: it.grade, sub: it.sub, n: 1 }; grouped.push(byKey[k]); } });
+          shown = grouped;
+        }
         var hero = best >= 4 ? '<div class="reveal" style="color:' + gc(best) + '">' + DATA.grades[best].name + '!</div>' : '';
-        fx.innerHTML = hero + '<div class="cards">' + shown.map(function (it, i) { return '<div class="gcard" style="--gc:' + gc(it.grade) + ';--d:' + Math.min(i * 0.04, 1.2) + 's"><div class="gface">' + gearArt(it.kind, it.grade, it.sub) + '<small>' + DATA.grades[it.grade].name + ' ' + CW.roman(it.sub || 0) + '</small></div><div class="gbackc" style="background-image:url(' + (CW.ART_BASE || 'art/') + 'ui-card-back.webp)"></div></div>'; }).join('') + '</div><div class="btns" style="width:min(420px,100%)"><button class="btn" id="gClose">닫기</button><button class="btn pri" id="gAgain">한 번 더 (' + items.length + '회)</button></div>';
+        fx.innerHTML = hero + '<div class="cards">' + shown.map(function (it, i) { return '<div class="gcard" style="--gc:' + gc(it.grade) + ';--d:' + Math.min(i * 0.04, 1.2) + 's"><div class="gface">' + gearArt(it.kind, it.grade, it.sub) + '<small>' + DATA.grades[it.grade].name + ' ' + CW.roman(it.sub || 0) + '</small>' + (it.n > 1 ? '<b class="gcnt">×' + it.n + '</b>' : '') + '</div><div class="gbackc" style="background-image:url(' + (CW.ART_BASE || 'art/') + 'ui-card-back.webp)"></div></div>'; }).join('') + '</div><div class="btns" style="width:min(420px,100%)"><button class="btn" id="gClose">닫기</button><button class="btn pri" id="gAgain">한 번 더 (' + items.length + '회)</button></div>';
         $('gClose').onclick = function () { fx.hidden = true; };
         $('gAgain').onclick = function () { var more = G.pull(items.length); if (!more) { toast('다이아가 부족해요.'); return; } showGacha(more); renderPanel(true); hud(); };
       }
