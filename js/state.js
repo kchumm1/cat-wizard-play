@@ -42,13 +42,27 @@
     Object.keys(bag).forEach(function (k) { (bag[k] && bag[k].pot || []).forEach(function (p) { if (p.stat === 'chain2') { p.stat = 'weakDmg'; p.val = (p.val || 0) * 10; } }); });
     return s;
   }
+  // the 10th job became 나무 냥법사 (2026-11-16): the phoenix skills' slots, presets and levels move to the wood skill that
+  // took each one's place (the higher level when a save somehow has both)
+  var WOOD = { phoenixWings: 'rootSpikes', featherRain: 'leafBlades', rebirthFlame: 'flytrap', phoenixDive: 'worldTree' };
+  function migrateWood(s) {
+    var to = function (id) { return WOOD[id] || id; };
+    if (Array.isArray(s.slots)) s.slots = s.slots.map(to);
+    if (Array.isArray(s.presets)) s.presets = s.presets.map(function (p) { return Array.isArray(p) ? p.map(to) : p; });
+    var lv = s.skillLv;
+    if (lv && typeof lv === 'object') Object.keys(WOOD).forEach(function (old) {
+      if (!(old in lv)) return;
+      lv[WOOD[old]] = Math.max(lv[WOOD[old]] || 0, lv[old] || 0); delete lv[old];
+    });
+    return s;
+  }
   function load(storage) {
     try {
       if (!storage) return null;
       var raw = storage.getItem(KEY); if (!raw) return null;
       var obj = JSON.parse(raw);
       if (!obj || typeof obj !== 'object' || typeof obj.stage !== 'number') return null;
-      return migrateChain(fill(newState(), obj));
+      return migrateWood(migrateChain(fill(newState(), obj)));
     } catch (e) { return null; }
   }
   // save code: the whole progress as one copy-and-paste text, to move it between phones without a server

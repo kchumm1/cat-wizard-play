@@ -376,6 +376,9 @@
     'vec4 wp=modelMatrix*lp;vec3 wn=normalize(mat3(modelMatrix)*ln);wp.xyz+=wn*iX.w;vP=wp.xyz;vN=wn;vWN=wn;vV=vec3(0.0,0.0,1.0);gl_Position=projectionMatrix*viewMatrix*wp;}';
   var LIT = 'vec3 N=normalize(vWN);float lam=max(dot(N,normalize(vec3(0.45,0.85,0.3))),0.0);' +
     'float glint=pow(max(dot(reflect(-normalize(vV),normalize(vN)),normalize(vec3(0.25,0.55,0.8))),0.0),18.0);';
+  // wood grows: bark (uv.x 0) is there up to k, leaves (uv.x 1) and thorns (uv.x 3) from their foot up to k - 1, earth
+  // (uv.x 2) always
+  var WOOD_CUT = 'float k=vX.y,y=vUv.y,kind=vUv.x;if(kind<0.5){if(y>k)discard;}else if(kind<1.5||kind>2.5){if(y>k-1.0)discard;}';
   var FS_BM = {
     line: 'varying vec4 vX;uniform vec3 uLine;void main(){gl_FragColor=vec4(uLine,vX.x);}',
     // the crescent blade: moon steel, darker toward its thick back, its thin edge burning white-violet; a gleam runs
@@ -442,8 +445,56 @@
       'float frost=smoothstep(0.8,1.0,vUv.y)*0.45+smoothstep(0.12,0.0,vUv.y)*0.5;' +
       'vec3 c=mix(vec3(0.34,0.64,0.92),vec3(0.86,0.96,1.0),clamp(facet*0.6+rim*0.5,0.0,1.0));' +
       'c=mix(c,vec3(1.0),clamp(glint*1.2+cr*0.6+frost,0.0,1.0))*vIC;' +
-      'float a=vX.x*clamp(0.36+0.25*facet+rim*0.55+cr*0.4+glint+frost*0.5+uBright*0.15,0.0,1.0);gl_FragColor=vec4(c,a);}'
+      'float a=vX.x*clamp(0.36+0.25*facet+rim*0.55+cr*0.4+glint+frost*0.5+uBright*0.15,0.0,1.0);gl_FragColor=vec4(c,a);}',
+    // the 10th-tier wood (js/mesh-wood.js, tools/blender/wood_meshes.py, 2026-11-16): toon bark in three steps of light
+    // with its grain running along it (the copy's colour is the bark's), new pale wood at the front as it grows and a
+    // lime-gold point; uv.x 1 = small leaves (sprouting once k passes 1), 2 = heaved earth (the copy's colour is the
+    // place's ground). k (0 → 1): how far it has grown — the part past it is not there yet (uv.y: foot 0 → tip 1)
+    wood: 'varying vec4 vX;void main(){' + WOOD_CUT + F +
+      'vec3 N=normalize(vWN);float lam=max(dot(N,normalize(vec3(0.45,0.85,0.3))),0.0);' +
+      'float band=lam>0.6?1.0:lam>0.25?0.8:0.62;vec3 c;' +
+      'if(kind<0.5){float g=fbm(vP*vec3(10.0,2.4,10.0)+vec3(vX.z));' +
+      'float groove=smoothstep(0.4,0.5,g)*(1.0-smoothstep(0.5,0.6,g));' +
+      'c=vIC*(0.82+0.36*g)*(1.0-0.35*groove)*band;' +
+      // a warm rim so the wood stands out on dark ground (the galaxy, the castle)
+      'c+=vec3(0.5,0.36,0.18)*smoothstep(0.55,0.95,1.0-f)*(1.0-0.6*uBright);' +
+      'c=mix(c,vec3(0.88,0.72,0.44)*band,smoothstep(0.1,0.0,k-y)*step(k,0.999)*0.85);' +
+      'c=mix(c,vec3(0.66,0.86,0.3)*band,smoothstep(0.8,1.0,y)*0.6);}' +
+      'else if(kind<1.5){c=mix(vec3(0.09,0.3,0.07),vec3(0.36,0.68,0.16),band);c=mix(c,vec3(0.8,0.88,0.32),smoothstep(0.65,1.0,y)*0.4);}' +
+      'else if(kind<2.5){float g=fbm(vP*6.0+vec3(vX.z));c=vIC*band*(0.8+0.32*g);}' +
+      // a thorn: the vine's colour at its foot, hard pale bone toward its point
+      'else if(kind<3.5){c=mix(vIC*0.6,vec3(0.94,0.86,0.6),smoothstep(0.25,0.9,y))*band;}' +
+      // a blade leaf (uv.x 4 + 0.4 × out from the midrib): deep green in the copy's shade, its edge and point gilded
+      // like a whetted blade, a gleam running along it as it turns
+      'else if(kind<4.5){float e=clamp((kind-4.0)*2.5,0.0,1.0);c=mix(vIC*0.42,vIC*1.05,band);' +
+      'c=mix(c,vec3(1.0,0.86,0.36),smoothstep(0.55,1.0,e)*0.85+smoothstep(0.88,1.0,y)*0.5);' +
+      'c+=vec3(1.0,0.92,0.55)*pow(1.0-f,3.0)*0.45*(1.0-0.5*uBright);}' +
+      // The flytrap, drawn rather than rendered (2026-11-16 3rd, the user: "too 3D, no bones"): two flat tones of light, no
+      // gloss, and dark lines for its frame — a midrib and two ribs either side running from the hinge to the lip.
+      // flesh (uv.x 5 + 0.4 × out from the middle: the mouth; 5.45 the petals, no ribs): the copy's colour
+      'else if(kind<5.5){float e=clamp((kind-5.0)*2.5,0.0,1.0),v=sqrt(e);' +
+      'float rib=max(smoothstep(0.06,0.0,v),max(smoothstep(0.035,0.0,abs(v-0.36)),smoothstep(0.035,0.0,abs(v-0.7))))*step(e,0.98);' +
+      'c=vIC*(lam>0.42?1.0:0.64)*(1.0-0.5*rib);}' +
+      // the skin (uv.x 6 + 0.4 × out toward its lip): green with red speckles, a yellow band and a red lip (6.4), ribs
+      'else{float e=clamp((kind-6.0)*2.5,0.0,1.0),v=sqrt(e),sh=lam>0.42?1.0:0.64;' +
+      'float rib=max(smoothstep(0.07,0.0,v),max(smoothstep(0.04,0.0,abs(v-0.36)),smoothstep(0.04,0.0,abs(v-0.7))))*step(e,0.8);' +
+      'float spot=step(0.7,fbm(vP*24.0+vec3(3.1,vX.z,1.7)))*step(e,0.6);' +
+      'c=mix(vec3(0.3,0.58,0.13),vec3(0.62,0.08,0.1),spot)*sh;' +
+      'c=e>0.92?vec3(0.85,0.1,0.12)*sh:(e>0.7?vec3(0.95,0.7,0.15)*sh:c);c*=1.0-0.62*rib;}' +
+      'gl_FragColor=vec4(c,vX.x);}',
+    // its outline follows the same growth
+    woodLine: 'varying vec4 vX;uniform vec3 uLine;void main(){' + WOOD_CUT + 'gl_FragColor=vec4(uLine,vX.x);}'
   };
+  // The flytrap wearing painted skins (2026-11-16, the user's 나 방식: "pictures over the 3D frame", like the phoenix's
+  // painting): the wood shader, but where the shape has picture coordinates (vT, from js/mesh-wood.js t) the colour is
+  // taken from the 3 × 2 sheet of paintings (uMap; cell = floor(vT.x), 0 the top-left; across = the rest of vT.x, along
+  // = vT.y, repeating past 1) and only shaded in two steps, so the painting shows. Until the sheet has loaded (uPaint
+  // 0) or where there is no picture (vT.x -1: teeth, thorns) it is drawn as before.
+  FS_BM.woodPaint = FS_BM.wood.replace('varying vec4 vX;void main(){', 'varying vec4 vX;varying vec2 vT;uniform sampler2D uMap;uniform float uPaint;void main(){')
+    .replace(/gl_FragColor=vec4\(c,vX\.x\);\}$/, 'if(uPaint>0.5&&vT.x>-0.5){float cell=floor(vT.x),lu=clamp((vT.x-cell-0.01)/0.98,0.0,1.0),lv=vT.y<=1.0?vT.y:fract(vT.y);' +
+      'vec2 at=vec2((mod(cell,3.0)+0.015+0.97*lu)/3.0,(1.0-floor(cell/3.0)+0.015+0.97*lv)*0.5);' +
+      'c=texture2D(uMap,at).rgb*(lam>0.42?1.0:0.72);}gl_FragColor=vec4(c,vX.x);}');
+  var VS_BMT = VS.replace('void main(){', 'attribute vec4 iX;attribute vec2 uvT;varying vec4 vX;varying vec2 vT;void main(){vX=iX;vT=uvT;');
 
   // smooth value noise for shaping rocks once, on the CPU
   function hash(x, y, z) { var h = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453; return h - Math.floor(h); }
@@ -1186,6 +1237,9 @@
     // In the first instant a white-hot flash; then a crown of dirt thrown up and out round the hit, a ball of fire that
     // rises and burns away, a ring rolling over the ground, a puff ring of dust and a column of smoke that rise after it,
     // rocks thrown out (some trailing smoke), and a scorched hollow with molten cracks that cool for a while.
+    // o.paint (2026-11-16, the world tree's fruit bombs): drawn the way a bright place draws it (painted colours, no added
+    // light) wherever it lands, so many landing together do not wash the screen white
+    function impactP(pos, o) { if (!(o && o.paint) || bright) return impact(pos, o); bright = true; try { return impact(pos, o); } finally { bright = false; } }
     function impact(pos, o) {
       if (CW.fxOff && CW.fxOff.ground) return;
       var OFF = CW.fxOff || {};   // (impFlash, impDome, impCurtain, impMarks, impSmoke: parts of it, for measuring on a phone)
@@ -1575,27 +1629,57 @@
       iceSpike2: { fs: 'ice', cap: 720, line: 0x3d8cc8, lineW: 0.012, order: 6.6 },
       iceShard2: { fs: 'ice', cap: 220, line: 0x3d8cc8, lineW: 0.011, order: 6.6 },
       // 태양의 창: its own sharp spear (js/mesh-ice.js sunSpear), as sunlight
-      sunLance: { fs: 'sunspear', mesh: 'sunSpear', cap: 4, line: 0x9a4a06, lineW: 0.012, order: 6.64 }
+      sunLance: { fs: 'sunspear', mesh: 'sunSpear', cap: 4, line: 0x9a4a06, lineW: 0.012, order: 6.64 },
+      // the 10th-tier wood (js/mesh-wood.js): grown by k, so their outline is cut by k too (lineFs)
+      woodRoot: { fs: 'wood', lineFs: 'woodLine', cap: 160, line: 0x2a160a, lineW: 0.014, order: 6.6 },
+      woodRoots: { fs: 'wood', lineFs: 'woodLine', cap: 64, line: 0x2a160a, lineW: 0.016, order: 6.6 },
+      woodChip: { fs: 'wood', lineFs: 'woodLine', cap: 160, line: 0x2a160a, lineW: 0.008, order: 6.6 },
+      woodMound: { fs: 'wood', lineFs: 'woodLine', cap: 240, line: 0x2a1a0e, lineW: 0.01, order: 6.55 },
+      trapStem: { fs: 'woodPaint', map: 'trap-skin', lineFs: 'woodLine', cap: 16, line: 0x10180a, lineW: 0.03, order: 6.6 },
+      trapJaw: { fs: 'woodPaint', map: 'trap-skin', lineFs: 'woodLine', cap: 32, line: 0x1a0608, lineW: 0.028, order: 6.64 },
+      trapPetal: { fs: 'woodPaint', map: 'trap-skin', lineFs: 'woodLine', cap: 96, line: 0x2a0612, lineW: 0.02, order: 6.6 },
+      // the world tree (세계수 열매 폭탄), painted (art/tree-skin.webp)
+      treeTrunk: { fs: 'woodPaint', map: 'tree-skin', lineFs: 'woodLine', cap: 4, line: 0x1a0e06, lineW: 0.034, order: 6.58 },
+      treeClump: { fs: 'woodPaint', map: 'tree-skin', lineFs: 'woodLine', cap: 96, line: 0x0c2208, lineW: 0.008, order: 6.6 },   // (a spray of leaves: a fine line)
+      treeFruit: { fs: 'woodPaint', map: 'tree-skin', lineFs: 'woodLine', cap: 48, line: 0x3a1a04, lineW: 0.02, order: 6.64 },
+      woodLeaf: { fs: 'wood', lineFs: 'woodLine', cap: 320, line: 0x10240a, lineW: 0.006, order: 6.6 },
+      leafBlade: { fs: 'wood', lineFs: 'woodLine', cap: 700, line: 0x0c2208, lineW: 0.005, order: 6.62 }
     };
     var bmLayers = {}, BMV = new T.Vector3(), BMS = new T.Vector3(), BMM = new T.Matrix4(), BMQ = new T.Quaternion();
     function b64(s, Type) { var bin = atob(s), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new Type(u.buffer); }
     function bmGeo(kind) {
-      var mk = (BM_KIND[kind] && BM_KIND[kind].mesh) || kind, d = (CW.MESH6 && CW.MESH6[mk]) || (CW.MESHICE && CW.MESHICE[mk]); if (!d) return null;
+      var mk = (BM_KIND[kind] && BM_KIND[kind].mesh) || kind, d = (CW.MESH6 && CW.MESH6[mk]) || (CW.MESHICE && CW.MESHICE[mk]) || (CW.MESHWOOD && CW.MESHWOOD[mk]); if (!d) return null;
       var g = new T.BufferGeometry(), n8 = b64(d.n, Int8Array), n = new Float32Array(n8.length);
       for (var i = 0; i < n8.length; i++) n[i] = n8[i] / 127;
       g.setAttribute('position', new T.BufferAttribute(b64(d.p, Float32Array), 3));
       g.setAttribute('normal', new T.BufferAttribute(n, 3));
       g.setAttribute('uv', new T.BufferAttribute(b64(d.u, Float32Array), 2));
       g.setIndex(new T.BufferAttribute(b64(d.i, Uint16Array), 1));
+      if (d.t) g.setAttribute('uvT', new T.BufferAttribute(b64(d.t, Float32Array), 2));   // a painted skin's picture coordinates
       return g;
+    }
+    // the painted skins' sheet (BM_KIND map): loaded once; the layers wearing it switch to it when it has come
+    var skins = {};
+    function skin(name) {
+      var S = skins[name]; if (S) return S;
+      S = skins[name] = { tex: new T.DataTexture(new Uint8Array([128, 128, 128, 255]), 1, 1), ready: false, users: [] };
+      S.tex.needsUpdate = true;
+      if (T.TextureLoader) new T.TextureLoader().load((root.CW && root.CW.ART_BASE || 'art/') + name + '.webp', function (t) {
+        t.anisotropy = 4; t.generateMipmaps = false; t.minFilter = T.LinearFilter; S.tex = t; S.ready = true;
+        S.users.forEach(function (u) { u.uMap.value = t; u.uPaint.value = 1; });
+      }, undefined, function () { });
+      return S;
     }
     function bmLayer(kind) {
       var L = bmLayers[kind]; if (L) return L;
       var K = BM_KIND[kind], g = bmGeo(kind); if (!K || !g) return null;
       var cap = K.cap, ix = new T.InstancedBufferAttribute(new Float32Array(cap * 4), 4); ix.setUsage(T.DynamicDrawUsage); g.setAttribute('iX', ix);
-      var body = new T.InstancedMesh(g, mat(FS_BM[K.fs], { uCol: { value: C(0xffffff) }, uDeep: { value: C(0x2a6cff) } }, { normal: true, depthWrite: kind !== 'rift' && kind !== 'gravRing' && kind !== 'crater', depthTest: kind !== 'crater', side: K.side }, VS_BM), cap);
+      var uni = { uCol: { value: C(0xffffff) }, uDeep: { value: C(0x2a6cff) } }, SK = K.map ? skin(K.map) : null;
+      if (SK) { uni.uMap = { value: SK.tex }; uni.uPaint = { value: SK.ready ? 1 : 0 }; }
+      var body = new T.InstancedMesh(g, mat(FS_BM[K.fs], uni, { normal: true, depthWrite: kind !== 'rift' && kind !== 'gravRing' && kind !== 'crater', depthTest: kind !== 'crater', side: K.side }, SK ? VS_BMT : VS_BM), cap);
+      if (SK) SK.users.push(body.material.uniforms);
       body.instanceColor = new T.InstancedBufferAttribute(new Float32Array(cap * 3), 3);
-      var line = K.line === null ? null : new T.InstancedMesh(g, mat(FS_BM.line, { uLine: { value: C(K.line) } }, { normal: true, side: T.BackSide }, VS_BML), cap);
+      var line = K.line === null ? null : new T.InstancedMesh(g, mat(FS_BM[K.lineFs || 'line'], { uLine: { value: C(K.line) } }, { normal: true, side: T.BackSide }, VS_BML), cap);
       [body, line].forEach(function (m, i) { if (!m) return; m.renderOrder = K.order - (i ? 0.02 : 0); m.frustumCulled = false; m.count = 0; m.visible = false; m.name = 'bm3d ' + kind; group.add(m); });
       L = bmLayers[kind] = { kind: kind, body: body, line: line, ix: ix, list: [], cap: cap, K: K };
       return L;
@@ -1668,7 +1752,7 @@
       bmWarm.forEach(function (h) { h.kill(); }); drawBM();
       if (sc.warmLens) sc.warmLens();
     }
-    return { beam: beam, orb: orb, moon: moon, rock: rock, fireball: fireball, column: column, twister: twister, toonFire: toonFire, ringWall: ringWall, fireWave: fireWave, picWave: picWave, waveShards: waveShards, seqWave: seqWave, iceSpear: iceSpear, iceSpikes: iceSpikes, iceSpike: iceSpike, mark: mark, impact: impact, puff: puff, blast: blast, chip: chip, hole: hole, emblem: emblem, glassOrb: glassOrb, elemRing: elemRing, crystal: crystal, fluffBall: fluffBall, yarnBall: yarnBall, bm: bm, update: update,
+    return { beam: beam, orb: orb, moon: moon, rock: rock, fireball: fireball, column: column, twister: twister, toonFire: toonFire, ringWall: ringWall, fireWave: fireWave, picWave: picWave, waveShards: waveShards, seqWave: seqWave, iceSpear: iceSpear, iceSpikes: iceSpikes, iceSpike: iceSpike, mark: mark, impact: impactP, puff: puff, blast: blast, chip: chip, hole: hole, emblem: emblem, glassOrb: glassOrb, elemRing: elemRing, crystal: crystal, fluffBall: fluffBall, yarnBall: yarnBall, bm: bm, update: update,
       // for checks: the live copies of a Blender mesh kind ({ p, q, s, a })
       bmList: function (kind) { var L = bmLayers[kind]; return L ? L.list.filter(function (h) { return !h.dead && h.a > 0.002; }) : []; }, clear: clear, warm: warm, setBright: function (v) { bright = !!v; }, setBatchSmoke: function (v) { batchSmoke = !!v; }, setBatchChips: function (v) { batchChips = !!v; },
       count: function () { return bmCount() + parts.length + xs.length + spikes.length + chips[0].length + chips[1].length + chips[2].length; }, spikeTops: spikeTops,

@@ -7,7 +7,16 @@
   try { storage = root.localStorage; storage.setItem('cw-probe', '1'); storage.removeItem('cw-probe'); } catch (e) { storage = null; }
   var state = CW.migrateBag(CW.load(storage) || CW.newState());
   // 체험판 (js/friend.js): a save brought in from a full game keeps at most the 9th job
-  function friendCap(s) { if (CW.FRIEND && s && s.tier > CW.FRIEND_MAX_TIER) s.tier = CW.FRIEND_MAX_TIER; return s; }
+  // 체험판: 10차 이상은 없음 — 차수만 9로 내리고, 슬롯·프리셋에 남은 10차 이상 스킬도 9차까지의 스킬로 바꿈 (2026-11-16, 나무 10차가 새어 나오지 않게)
+  function friendCap(s) {
+    if (!CW.FRIEND || !s) return s;
+    if (s.tier > CW.FRIEND_MAX_TIER) s.tier = CW.FRIEND_MAX_TIER;
+    var ok = function (id) { var k = id && CW.skillById(id); return !!(k && k.tier <= CW.FRIEND_MAX_TIER); };
+    var spare = DATA.skills.filter(function (k) { return k.tier <= s.tier; }).map(function (k) { return k.id; });
+    var fix = function (arr) { if (!Array.isArray(arr)) return arr; var out = arr.map(function (id) { return id === null || ok(id) ? id : null; }); out.forEach(function (id, i) { if (id === null && arr[i] !== null) { var f = spare.filter(function (x) { return out.indexOf(x) < 0; })[0]; out[i] = f || null; } }); return out; };
+    s.slots = fix(s.slots); if (Array.isArray(s.presets)) s.presets = s.presets.map(function (p) { return Array.isArray(p) ? fix(p) : p; });
+    return s;
+  }
   friendCap(state);
   // monster codex (2026-11-15): an old save gets its codex filled once from how far it went
   if (CW.dexBackfill) CW.dexBackfill(state);

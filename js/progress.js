@@ -32,7 +32,7 @@
     if (stageInfo(state.stage).isBoss) { state.bossTry = true; return 'boss'; }
     return 'next';
   }
-  // the job a region boss leads to: regions 1-8 -> jobs 2-9 on any difficulty; the 10th job (the phoenix) is the
+  // the job a region boss leads to: regions 1-8 -> jobs 2-9 on any difficulty; the 10th job (wood since 2026-11-16) is the
   // boss of 5-31 on 루나틱 (difficulty 2, 2026-11-14); 9-31 and the last boss lead to none (yet)
   var TIER10 = { diff: 2, region: 4 };
   function trialTier(i, diff) {

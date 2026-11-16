@@ -6,14 +6,14 @@
     regions: [
       { name: '꽃밭', bg: 'bg-flower', sky: 0xbfe8ff, ground: 0x8fd16a, accent: 0xff9fc8, monsters: ['c01', 'c02', 'f01', 'f02', 'f03', 'f04', 'f05', 'f06', 'f07', 'f08', 'f09', 'f10', 'm104', 'm105', 'm107', 'm108'], minis: ['b22', 'b41', 'b44', 'b43', 'b67', 'b54', 'b77'], weak: ['paw', 'fire'], boss: { art: 'b01', name: '사나운 불독' } },
       { name: '버섯 숲', bg: 'bg-mushroom', sky: 0xa8dcc8, ground: 0x5f9f62, accent: 0xff6b5b, monsters: ['c03', 'c04', 'v01', 'v02', 'v03', 'v04', 'v05', 'v06', 'v07', 'v08', 'v09', 'v10', 'k02', 'm106', 'm109', 'm138', 'm140'], minis: ['b42', 'b23', 'b21', 'b28', 'b66', 'b63', 'b52'], weak: ['fire', 'star'], boss: { art: 'b02', name: '박쥐 백작' } },
-      { name: '사막', bg: 'bg-desert', sky: 0xffe2b0, ground: 0xe8c27a, accent: 0xffb347, monsters: ['c05', 'c06', 'd01', 'd02', 'd03', 'd04', 'd08', 'd10', 'm103', 'm112', 'm113', 'm114'], minis: ['b49', 'b14', 'b13', 'b48', 'b57', 'b76', 'b79'], weak: ['bolt', 'ice'], boss: { art: 'b03', name: '거대 독수리' } },
+      { name: '사막', bg: 'bg-desert', sky: 0xffe2b0, ground: 0xe8c27a, accent: 0xffb347, monsters: ['c05', 'c06', 'd01', 'd02', 'd03', 'd04', 'd08', 'd10', 'm103', 'm112', 'm113', 'm114'], minis: ['b49', 'b14', 'b13', 'b48', 'b57', 'b76', 'b79'], weak: ['bolt', 'ice', 'wood'], boss: { art: 'b03', name: '거대 독수리' } },
       { name: '얼음 동굴', bg: 'bg-ice', sky: 0xcfe6ff, ground: 0xeef6ff, accent: 0x7fd3ff, monsters: ['c07', 'c08', 'i01', 'i02', 'i03', 'i04', 'i05', 'k01', 'k04', 'k06', 'k08', 'm117', 'm124', 'm127', 'm128'], minis: ['b25', 'b47', 'b32', 'b20', 'b59', 'b71', 'b62'], weak: ['fire', 'sun'], boss: { art: 'b04', name: '설원 늑대' } },
       { name: '화산', bg: 'bg-volcano', sky: 0x4a1e1e, ground: 0x5a2a20, accent: 0xff6a2b, monsters: ['c09', 'c10', 'd05', 'd06', 'd07', 'd09', 'g03', 'm115', 'm133', 'm136', 'm139'], minis: ['b27', 'b18', 'b31', 'b50', 'b69', 'b68', 'b58'], weak: ['ice', 'moon'], boss: { art: 'b05', name: '불꽃 도마뱀' } },
       { name: '별빛 호수', bg: 'bg-lake', sky: 0x1d2550, ground: 0x34407a, accent: 0x9fd8ff, monsters: ['c11', 'c12', 'l06', 'l07', 'l08', 'k10', 'o03', 'o04', 'o05', 'o07', 'o08', 'o09', 'o10', 'm102', 'm110', 'm116', 'm125'], minis: ['b17', 'b26', 'b16', 'b35', 'b34', 'b53', 'b60', 'b72'], weak: ['bolt', 'moon'], boss: { art: 'b06', name: '호수 악어' } },
       { name: '달의 정원', bg: 'bg-moon', sky: 0x2c2448, ground: 0x4a6a5a, accent: 0xe6e6ff, monsters: ['c13', 'c14', 'l09', 'l10', 'g04', 'o01', 'o02', 'o06', 'm101', 'm122', 'm123', 'm134'], minis: ['b15', 'b30', 'b29', 'b36', 'b56', 'b65', 'b73'], weak: ['sun', 'star'], boss: { art: 'b07', name: '공포의 부엉이' } },
-      { name: '태양 신전', bg: 'bg-temple', sky: 0xfff1c9, ground: 0xe8c27a, accent: 0xffd84a, monsters: ['c15', 'c16', 'g05', 's01', 's02', 's03', 's04', 's05', 's06', 'm111', 'm118', 'm120', 'm130'], minis: ['b12', 'b46', 'b24', 'b37', 'b51', 'b61', 'b70'], weak: ['moon', 'void'], boss: { art: 'b08', name: '황금 하이에나' } },
+      { name: '태양 신전', bg: 'bg-temple', sky: 0xfff1c9, ground: 0xe8c27a, accent: 0xffd84a, monsters: ['c15', 'c16', 'g05', 's01', 's02', 's03', 's04', 's05', 's06', 'm111', 'm118', 'm120', 'm130'], minis: ['b12', 'b46', 'b24', 'b37', 'b51', 'b61', 'b70'], weak: ['moon', 'void', 'wood'], boss: { art: 'b08', name: '황금 하이에나' } },
       { name: '은하', bg: 'bg-galaxy', sky: 0x120f2a, ground: 0x2a2650, accent: 0xb58cff, monsters: ['c17', 'c18', 'g01', 'g02', 's07', 's08', 's09', 'm119', 'm121', 'm129', 'm135'], minis: ['b19', 'b45', 'b33', 'b38', 'b74', 'b78', 'b64'], weak: ['sun', 'void'], boss: { art: 'b09', name: '우주 뱀' } },
-      { name: '마왕성', bg: 'bg-castle', sky: 0x1e1530, ground: 0x3a2a50, accent: 0xff3b5c, monsters: ['c19', 'c20', 'k03', 'k05', 'k07', 'k09', 'g06', 'g07', 'g08', 'g09', 'g10', 's10', 'm126', 'm131', 'm132', 'm137'], minis: ['b11', 'b39', 'b40', 'b55', 'b75', 'b80'], weak: ['sun', 'star'], boss: { art: 'b10', name: '늑대 왕' } }
+      { name: '마왕성', bg: 'bg-castle', sky: 0x1e1530, ground: 0x3a2a50, accent: 0xff3b5c, monsters: ['c19', 'c20', 'k03', 'k05', 'k07', 'k09', 'g06', 'g07', 'g08', 'g09', 'g10', 's10', 'm126', 'm131', 'm132', 'm137'], minis: ['b11', 'b39', 'b40', 'b55', 'b75', 'b80'], weak: ['sun', 'star', 'wood'], boss: { art: 'b10', name: '늑대 왕' } }
     ],
     // monster codex (2026-11-15, js/dex.js): a region whose every entry is found adds this, for good
     dexConf: { regionBonus: { atkPct: 0.02, goldMul: 0.02 } },
@@ -43,14 +43,16 @@
       { name: '태양 냥법사', skill: 'solarBurst', aura: 3 },
       { name: '은하 냥법사', skill: 'blackHole', aura: 3 },
       { name: '전설의 대마법냥', skill: 'elementNova', aura: 4 },
-      // 10th job and on: legendary beasts (10 phoenix; dragon, sky whale and white tiger to come), in elemental spirit style
-      { name: '불사조 냥법사', skill: 'phoenixDive', aura: 4 }
+      // 10th job and on: a second round of elements, nature's (2026-11-16, the user: 10차부터 나무 물 바람 태풍) — 10 wood,
+      // then water, wind and the typhoon. The legendary beasts (phoenix, dragon, sky whale, white tiger) wait for later:
+      // the phoenix job and its skills are on branch phoenix (commit 97ca114), js/fx-beasts.js is kept but not loaded.
+      { name: '나무 냥법사', skill: 'rootSpikes', aura: 4 }
     ],
     // the next jobs, not in the game yet (shown as "준비 중" in the job list): the boss of 10-31 on that difficulty
     tierSoon: [
-      { n: 11, name: '용 냥법사', diff: 2 },
-      { n: 12, name: '하늘 고래 냥법사', diff: 3 },
-      { n: 13, name: '백호 냥법사', diff: 4 }
+      { n: 11, name: '물 냥법사', diff: 2 },
+      { n: 12, name: '바람 냥법사', diff: 3 },
+      { n: 13, name: '태풍 냥법사', diff: 4 }
     ],
     // Every job tier brings four skills of its own kind (the first job has its four starters plus three).
     // mult = the whole damage one monster takes from one cast, however many hits it arrives in.
@@ -104,11 +106,13 @@
       { id: 'elementStorm', name: '원소 폭풍', tier: 9, el: 'all', dur: 0.9, mult: 6.3, targets: 99, shape: 'elemStorm', status: null, color: 0xffe0f0, how: '다섯 원소가 번갈아 쏟아져요' },
       { id: 'prismBeam', name: '오색 광선', tier: 9, el: 'all', dur: 0.9, mult: 9.5, targets: 1, shape: 'prism', status: null, color: 0xfff0ff, how: '다섯 빛줄기를 한 곳에 모아 터뜨려요' },
       { id: 'elementWheel', name: '원소의 수레바퀴', tier: 9, el: 'all', dur: 0.8, mult: 6.0, targets: 99, shape: 'wheel', status: null, color: 0xe8f0ff, how: '원소 구슬이 돌며 화면 끝까지 퍼져요' },
-      // 10차 불사조: the user's painted phoenix flies in each of them (js/fx-beasts.js)
-      { id: 'phoenixDive', name: '불사조 강림', tier: 10, el: 'fire', dur: 1.0, mult: 8.4, targets: 99, shape: 'phoenixDive', status: null, color: 0xff7a2a, how: '불사조가 날아와 무리를 쓸고 불타올라요' },
-      { id: 'featherRain', name: '불꽃 깃털비', tier: 10, el: 'fire', dur: 0.95, mult: 7.6, targets: 99, shape: 'featherRain', status: null, color: 0xffa040, how: '날갯짓 한 번에 불타는 깃털이 쏟아져요' },
-      { id: 'rebirthFlame', name: '재탄생의 불꽃', tier: 10, el: 'fire', dur: 0.95, mult: 12.5, targets: 1, splash: 0.3, shape: 'rebirth', status: null, color: 0xff5a1a, how: '불기둥 속에서 불사조가 다시 태어나 터뜨려요' },
-      { id: 'phoenixWings', name: '불사조 날개', tier: 10, el: 'fire', dur: 0.9, mult: 7.9, targets: 99, shape: 'phoenixWings', status: null, color: 0xff8a3a, how: '등에 돋은 불사조 날개로 불바람을 두 번 보내요' }
+      // 10차 나무 (2026-11-16): the phoenix skills' places with their numbers (rootSpikes ← 불사조 날개, leafBlades ← 불꽃
+      // 깃털비, flytrap ← 재탄생의 불꽃 (덩굴 조이기 until the user turned it down twice), worldTree ← 불사조 강림; old saves move over in js/state.js). Real 3D: shapes made
+      // in Blender (js/mesh-wood.js), the scenes in js/fx-wood.js (docs/superpowers/specs/2026-11-16-tier10-wood-scenes.md)
+      { id: 'rootSpikes', name: '뿌리 가시', tier: 10, el: 'wood', dur: 0.9, mult: 7.9, targets: 99, shape: 'rootSpikes', status: null, color: 0x7a5230, how: '땅속을 기어간 뿌리가 몬스터마다 가시로 솟아요' },
+      { id: 'flytrap', name: '식인 꽃', tier: 10, el: 'wood', dur: 0.95, mult: 12.5, targets: 1, splash: 0.3, shape: 'flytrap', status: null, color: 0xd8283a, how: '거대한 파리지옥이 솟아 덥석 물고 씹다가 뱉어요' },
+      { id: 'leafBlades', name: '나뭇잎 칼날 폭풍', tier: 10, el: 'wood', dur: 0.95, mult: 7.6, targets: 99, shape: 'leafBlades', status: null, color: 0x3fa83a, how: '칼날 같은 잎이 소용돌이치다 쏟아져 베어요' },
+      { id: 'worldTree', name: '세계수 열매 폭탄', tier: 10, el: 'wood', dur: 1.0, mult: 8.4, targets: 99, shape: 'worldTree', status: null, color: 0x6fbf3a, how: '세계수가 솟아 금빛 열매를 떨어뜨려요' }
     ],
     // relics: each copy raises the level; per = bonus per level (fractions, 0.05 = +5%)
     relics: [
@@ -205,7 +209,7 @@
       { id: 'gear100', cat: 'gear', name: '장비 뽑기 100번', won: 27000, icon: '🎰', give: { pulls: 100, gems: 10300 } },
       { id: 'tier5', cat: 'tier', name: '5차 전직 축하', won: 9900, icon: '🎉', need: { tier: 5 }, limit: 1, give: { gems: 3500, runeStone: 3000 } },
       { id: 'tier8', cat: 'tier', name: '8차 전직 축하', won: 19900, icon: '🎉', need: { tier: 8 }, limit: 1, give: { gems: 7400, sigils: [{ grade: 4, n: 2 }], sigilStone: 5000 } },
-      { id: 'tier10', cat: 'tier', name: '불사조 전직 축하', won: 29900, icon: '🔥', need: { tier: 10 }, limit: 1, give: { gems: 11500, runeStone: 10000, sigils: [{ grade: 6, n: 1 }] } },
+      { id: 'tier10', cat: 'tier', name: '나무 전직 축하', won: 29900, icon: '🌳', need: { tier: 10 }, limit: 1, give: { gems: 11500, runeStone: 10000, sigils: [{ grade: 6, n: 1 }] } },
       { id: 'runeS', cat: 'rune', name: '룬석 꾸러미', won: 5900, icon: '🔮', give: { runeStone: 1500, gems: 2000 } },
       { id: 'runeL', cat: 'rune', name: '룬 승급 상자', won: 33000, icon: '🔮', give: { runeStone: 12000, gems: 13000 } },
       { id: 'sigilA', cat: 'rune', name: '신성력 전설 패키지', won: 12000, icon: '💠', give: { sigils: [{ grade: 3, n: 3 }], sigilStone: 2000, gems: 4500 } },
@@ -267,7 +271,7 @@
     // element weakness: a skill whose element the region is weak to hits ×weak (×(1 + 약점 피해) on top)
     // mana surge: every cast fills the gauge by 1 (×(1 + 충전 속도)); when it reaches charge the next cast hits ×mul (×(1 + 폭주 피해))
     elements: { paw: { name: '냥냥', color: '#ff8fd8' }, fire: { name: '불', color: '#ff6a2b' }, bolt: { name: '번개', color: '#7fc8ff' }, ice: { name: '얼음', color: '#9fe8ff' },
-      star: { name: '별', color: '#ffe14a' }, moon: { name: '달', color: '#c8c0ff' }, sun: { name: '태양', color: '#ffb02e' }, void: { name: '어둠', color: '#b04bff' }, all: { name: '모든 원소', color: '#ffffff' } },
+      star: { name: '별', color: '#ffe14a' }, moon: { name: '달', color: '#c8c0ff' }, sun: { name: '태양', color: '#ffb02e' }, void: { name: '어둠', color: '#b04bff' }, wood: { name: '나무', color: '#5cbf3a' }, all: { name: '모든 원소', color: '#ffffff' } },
     weakConf: { mul: 1.6 },
     surgeConf: { charge: 10, mul: 4 },
     potConf: { cost: 40, lines: 3, gradeMul: 0.6, stats: [

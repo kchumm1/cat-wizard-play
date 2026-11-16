@@ -58,7 +58,7 @@
     // the play field as the camera sees it: spells may now spread over all of it
     var FC = V(0, 0, -0.4);
     // skills drawn without any rune ring (the 'circle' picture): the user found the magic circles in element storm tacky
-    var NO_CIRCLE = { sunSpear: 1, starShot: 1, magicClaw: 1, furBomb: 1, sparkRing: 1, pawStamp: 1, yarnBall: 1, starDust: 1, elementNova: 1, elementStorm: 1, prismBeam: 1, elementWheel: 1, phoenixDive: 1, featherRain: 1, rebirthFlame: 1, phoenixWings: 1 };
+    var NO_CIRCLE = { sunSpear: 1, starShot: 1, magicClaw: 1, furBomb: 1, sparkRing: 1, pawStamp: 1, yarnBall: 1, starDust: 1, elementNova: 1, elementStorm: 1, prismBeam: 1, elementWheel: 1, phoenixDive: 1, featherRain: 1, rebirthFlame: 1, phoenixWings: 1, rootSpikes: 1, vineBind: 1, flytrap: 1, leafBlades: 1, worldTree: 1 };
     function fieldPt(y) { var z = rr(-4.3, 3.4); return V(rr(-1, 1) * (1.9 + (3.8 - z) * 0.15), y || 0, z); }
     // n spots scattered over the whole field, one after another
     function fieldPops(c, n, t0, gap, fn) { for (var i = 0; i < n; i++) (function (i) { after(c.D(t0 + i * gap + rr(0, gap)), function () { fn(fieldPt(0), i); }); })(i); }
@@ -1259,6 +1259,7 @@
       P3: P3, liveMobs: liveMobs, gp: gp, near: near, share: share, volley: volley, ringHits: ringHits, passHits: passHits, skyBolt: skyBolt, zapHit: zapHit, beamOf: beamOf, picHead: picHead, picAt: picAt, picFall: picFall,
       dustCol: function () { return dustCol; } };
     if (CW.fxMore) CW.fxMore(KIT, S);
+    if (CW.fxWood) CW.fxWood(KIT, S);   // 10차 나무 (js/fx-wood.js)
     // 1차 스킬 7개는 3D 몸으로 (js/fx-tier1.js)
     if (CW.fxTier1) CW.fxTier1(KIT, S);
     // the legendary beasts (js/fx-beasts.js): their own flights, updated and cleared with the rest

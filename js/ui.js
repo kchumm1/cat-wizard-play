@@ -752,7 +752,7 @@
       skDetail = null;
       // 스킬 부품 (사용자 2026-11-16, tools/import-skill-parts.py) + 시안(10-skills) 실측: 성운 아치 창 + 시안 정면 고양이(preview-cat, 사용자 2026-11-16 「시안처럼 그 그림으로」) + 받침대,
       // 슬롯 카드 4장(1 › 2 › 3 › 4, 다시 1번), 프리셋·자동 배치·일괄 강화, 보유 효과, 스킬 줄(아이콘·이름·속성·설명 | 보기·넣기·강화).
-      // 슬롯 고르기·넣기·빼기·프리셋·자동 배치·일괄 강화·길게 누르기 강화는 기존 함수 그대로. 10차(불사조)는 나무로 바뀔 예정이라 형꺼·친구꺼 둘 다 뺌
+      // 슬롯 고르기·넣기·빼기·프리셋·자동 배치·일괄 강화·길게 누르기 강화는 기존 함수 그대로. 10차는 나무(형꺼만)
       var skIco = function (sk, cls) { var a = CW.ICO.skillArt && CW.ICO.skillArt(sk.id); return a ? '<img class="' + cls + ' nw" src="' + a + '" alt="">' : '<span class="' + cls + ' old">' + CW.ICO.skill(sk.id) + '</span>'; };
       var cst = '<svg class="mcv-cst skv-cst" viewBox="0 0 359 128"><defs><radialGradient id="mcCstGlow"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".28" stop-color="#ffe4f4" stop-opacity=".6"/><stop offset=".62" stop-color="#e3d2ff" stop-opacity=".2"/><stop offset="1" stop-color="#e3d2ff" stop-opacity="0"/></radialGradient></defs>' +
         '<g class="ln"><polyline points="58.5,55.5 66.5,34 101,14"/><polyline points="295,35 265.5,57"/></g><g class="st">' + opStar(58.5, 55.5, 4.5) + opStar(66.5, 34, 3.6) + opStar(101, 14, 5.5, 1) + opStar(295, 35, 6, 1) + opStar(265.5, 57, 4.2) + '</g></svg>';
@@ -779,12 +779,11 @@
         return '<div class="skr' + (locked ? ' lock' : '') + (at >= 0 ? ' eq' : '') + '"><span class="tile' + (CW.ICO.skillArt && CW.ICO.skillArt(sk.id) ? '' : ' oldt') + '" data-opfx="sk:' + sk.id + '" data-opdur=".3">' + skIco(sk, 'ti') + (CW.isWeak(sk, CW.regionOf(s)) ? '<em class="wk" title="지금 지역에서 약점 피해 ×' + weakX(s) + '">약점</em>' : '') + '</span>' +
           '<span class="nm">' + sk.name + ' <b data-opv="sk:' + sk.id + '">' + (locked ? '' : '+' + lv) + '</b></span>' + chip + '<span class="how">' + (sk.how || '') + '</span><i class="dv"></i><span class="bs">' + btns + '</span></div>';
       };
-      // 차수마다 작은 이름 줄 + 그 차수 스킬 (10차 이상은 뺌)
+      // 차수마다 작은 이름 줄 + 그 차수 스킬. 10차는 나무로 바뀌어 형꺼에만 (2026-11-16, the user: 10차 나무로, 친구꺼는 10차 올리지 말고)
       var list = DATA.tiers.map(function (t, i) {
         var n = i + 1, open = n <= s.tier;
-        if (n >= 10) return '';
         if (CW.FRIEND && n > CW.FRIEND_MAX_TIER) return '';
-        return '<div class="sktier2' + (open ? '' : ' lock') + '"><i></i><b>' + n + '차</b><span>' + t.name + '</span>' + (open ? '' : '<small>' + (n - 1) + '-31 보스 처치 시 해금</small>') + '<i></i></div>' + DATA.skills.filter(function (sk) { return sk.tier === n; }).map(row).join('');
+        return '<div class="sktier2' + (open ? '' : ' lock') + '"><i></i><b>' + n + '차</b><span>' + t.name + '</span>' + (open ? '' : '<small>' + (n >= 10 ? CW.tierGoal(n).replace(' 깨기', ' 처치') : (n - 1) + '-31 보스 처치') + ' 시 해금</small>') + '<i></i></div>' + DATA.skills.filter(function (sk) { return sk.tier === n; }).map(row).join('');
       }).join('');
       return top + '<div class="skl">' + list + '</div>';
     }
