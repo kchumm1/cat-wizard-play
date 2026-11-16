@@ -2249,6 +2249,14 @@ body{font-family:'Noto Sans KR',"Malgun Gothic","Apple SD Gothic Neo",system-ui,
 #sheet.cream.neb #panel .tjn{box-shadow:0 0 0 2px rgba(255,255,255,.7)}
 /* 성운 메뉴의 전직·패키지·설정 막대는 따라 내려오지 않고 내용과 같이 올라감 (2026-11-16, the user: 스크롤하면 저게 따라 내려와서 가려 버린다) */
 #sheet.cream.neb #panel .jump{position:static;background:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+/* 오팔 메뉴(훈련·장비·스킬) 고른 탭 밑 청록 막대+마름모 뺌 (2026-11-16, the user: 요거 막대 없애 버리자) */
+#sheet.opal#sheet.opal .subtabs button[aria-selected="true"]::after,#sheet.opal#sheet.opal .kindtabs button[aria-selected="true"]::after,#sheet.opal#sheet.opal .subtabs button[aria-selected="true"]::before,#sheet.opal#sheet.opal .kindtabs button[aria-selected="true"]::before,#sheet.opal#sheet.opal .ophead .mulpick .btn.on::after{content:none!important;display:none!important}
+/* 막대 대신: 고른 탭은 둥근 빛 칸, 누르면 톡 튀며 빛남 (2026-11-16, the user: 그냥 손으로 클릭해도 움직이게) */
+#sheet.opal#sheet.opal :is(.subtabs,.kindtabs) button[aria-selected="true"]{background:radial-gradient(70% 90% at 50% 50%,rgba(143,216,200,.38),rgba(156,196,240,.18) 60%,transparent 80%)!important;border-radius:12px;animation:subpick .42s cubic-bezier(.3,1.6,.5,1)}
+#sheet.opal#sheet.opal :is(.subtabs,.kindtabs) button{-webkit-tap-highlight-color:transparent;transition:transform .12s}
+#sheet.opal#sheet.opal :is(.subtabs,.kindtabs) button:active{transform:scale(.9)}
+@keyframes subpick{0%{transform:scale(.86)}55%{transform:scale(1.12)}100%{transform:none}}
+@media (prefers-reduced-motion:reduce){#sheet.opal :is(.subtabs,.kindtabs) button{animation:none!important}}
 </style>
 
 <!-- 업데이트 화면 (2026-11-15, the user's design art-src/update-20261115; js/update-screen.js): shown first, "모험 시작" goes into the game -->
