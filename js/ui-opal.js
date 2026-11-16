@@ -977,7 +977,7 @@
     '#sheet.opal#sheet.opal .opflow.anw span{font:800 12.5px/1 var(--body)!important;color:var(--navy)!important;background:none!important;box-shadow:none!important;padding:0!important;white-space:nowrap}',
     '#sheet.opal#sheet.opal .opflow.anw i{width:18px;height:13px;font-size:0;background:url(art/al-arrow.webp) 50% 50%/contain no-repeat}',
     // 물약 카드 3장 (보이는 119×256, 사이 6.6): 물약 그림 → 이름 → 효과 알약 → 시간 알약 → 「만들기 🪙 비용」
-    '#sheet.opal#sheet.opal .pgrid.anw{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:6.6px!important;margin:3px -4.3px 0!important}',
+    '#sheet.opal#sheet.opal .pgrid.anw{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:6.6px!important;margin:3px -4.3px 0!important;position:relative;left:clamp(0px,calc((100vw - 355px) / 5),7px)}',   // 사용자 2026-11-17 「물약 만들기 오른쪽으로 살짝」→「조금 더 오른쪽」: 카드 줄 통째로 7px 오른쪽 (폭 390 이상). 좁은 폰은 오른쪽 카드가 패널 끝에 잘려서 덜 (375 → 4px, 360 → 1px)
     '#sheet.opal#sheet.opal .pcard.anw{position:relative;display:block!important;height:256px;margin:0!important;padding:0!important;background:none!important;box-shadow:none!important;border:0 solid transparent!important;border-radius:0!important;border-image:url(art/al-card.webp) 63 fill / 22.3px / 3.9px 3.5px 5.6px 3.5px stretch!important;overflow:visible!important}',
     '#sheet.opal#sheet.opal .pcard.anw>*{position:absolute;left:50%;transform:translateX(-50%);margin:0!important}',
     '#sheet.opal#sheet.opal .pcard.anw .pbot{top:1.5px;width:132px;height:124px;display:block!important;background:none!important;box-shadow:none!important;border:0!important;border-radius:0!important;padding:0!important}',
