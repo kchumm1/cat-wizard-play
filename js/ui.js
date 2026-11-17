@@ -92,9 +92,33 @@
     var skDetail = null, skRegOpen = false;   // 스킬 상세 (보기) · 유리한 지역 펼침
     var selDiff = -1, selRegion = -1, gearSub = 'gear', upMul = 1, trainSub = 'grow', selTalent = null, selRune = null, fxRune = null, rnFilter = 'all', rnGroup = 'all', selSigil = null, sgFilter = -1, moreSub = 0, tierAnim = false;
     function mmss(sec) { sec = Math.ceil(sec); return Math.floor(sec / 60) + ':' + ('0' + sec % 60).slice(-2); }
+    // 잠긴 메뉴 카드 (사용자 시안 2026-11-17, art/locked-*.webp · tools/cut-locked*.py): 크림 카드에 고양이·강아지가 움직이고,
+    // 설명 줄에 해금 조건, 막대는 보통 난이도에서 그 보스까지 온 만큼, 버튼은 지금 갈 수 있는 맨 앞 스테이지로.
+    // 고양이·강아지는 바탕(-bg)과 따로 떼어 낸 그림(-cat/-dog)을 겹쳐 놓고 CSS로만 움직인다.
+    var LOCKED = {
+      alch: { name: '연금술', sub: '곧 연금술이 열려요', label: '해금까지 한 걸음 더', num: true, tail: '해금돼요' },
+      dung: { name: '던전', sub: '곧 던전이 열려요', label: '새로운 모험을 준비 중이에요', tail: '입장할 수 있어요' },
+      sigil: { name: '신성력', sub: '곧 신성력이 깨어나요', label: '작은 빛이 모이고 있어요', tail: '깨울 수 있어요' }
+    };
+    function lockedCard(kind, tier) {
+      var L = LOCKED[kind], s = G.state, goal = (tier - 1) * 31 - 1;   // n차 전직 = (n-1)-31 보스
+      var b0 = (s.diff || 0) ? (((s.diffBest || {})[0] || { best: -1 }).best) : s.best, front = Math.max(0, Math.min(goal, b0 + 1));
+      var pct = Math.round((front + 1) / (goal + 1) * 100);
+      var lay = function (p) { return '<img class="lk' + p + '" src="art/locked-' + kind + '-' + p + '.webp" alt="" draggable="false">'; };
+      return '<div class="lkc lk-' + kind + '"><div class="lkin">' +
+        '<div class="lkhd"><b>' + L.name + '</b><span class="lkpill">오픈 준비 중</span></div>' +
+        '<div class="lkart">' + lay('bg') + lay('cat') + lay('dog') + (kind === 'alch' ? lay('star') : kind === 'sigil' ? '<i class="lkglow"></i>' : '') + '</div>' +
+        '<div class="lkt" role="heading" aria-level="3">조금만 기다려요<img src="art/locked-spark.webp" alt="" draggable="false"></div>' +
+        '<p class="lks">' + L.sub + '</p>' +
+        '<p class="lkb">' + CW.stageLabel(goal) + ' 보스 처치 후 ' + tier + '차 전직하면 ' + L.tail + '</p>' +
+        '<div class="lkpr"><b>' + L.label + '</b><span>' + (L.num ? CW.stageLabel(front) + ' / ' + CW.stageLabel(goal) : '잠금 중') + '</span></div>' +
+        '<div class="lkbar"><i style="width:' + pct + '%"></i></div>' +
+        '<button class="lkgo" data-lkgo="' + front + '">보스 도전하러 가기<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 5.5 19.5 12 13 18.5"/></svg></button>' +
+        '</div></div>';
+    }
     function alchPanel() {
       var s = G.state, AC = DATA.alchConf, now = Date.now();
-      if (!CW.alchemyOpen(s)) return '<div class="notice">' + '연금술은 ' + AC.unlockTier + '차 전직 후 열려요.<br><small>1-31 보스 처치 → 2차 전직</small></div>';
+      if (!CW.alchemyOpen(s)) return lockedCard('alch', AC.unlockTier);
       var lv = CW.alchLevel(s), cost = CW.potionCost(s), brews = (s.alch && s.alch.brews) || 0, toNext = AC.brewsPerLv - brews % AC.brewsPerLv;
       // 연금술 부품 (사용자, 2026-11-16, tools/import-alchemy-parts.py): 성운 → 받침대 → 유리 가마솥 → 기포·연기 | 레벨 칸,
       // 그 아래 「제작 → 효과 즉시 적용 → 남은 시간」, 물약 카드 3장. 만들면 바로 효과(대기·재료·보관함 없음), 다시 만들면 시간이 늘어남.
@@ -272,7 +296,7 @@
     }
     function dungeonPanel() {
       var s = G.state, now = Date.now();
-      if (!CW.dungeonOpen(s)) return '<div class="notice">' + '던전은 ' + DATA.dungeonConf.unlockTier + '차 전직 후 열려요.<br><small>1-31 보스 처치 → 2차 전직</small></div>';
+      if (!CW.dungeonOpen(s)) return lockedCard('dung', DATA.dungeonConf.unlockTier);
       var run = G.dunState();
       return (run ? '<div class="notice">' + run.name + ' 진행 중</div>' : '') + guideRow('dungeon', '던전별 하루 입장권 ' + DATA.dungeonConf.tickets + '장 · 클리어하면 소탕 가능') + '<div class="dlist">' +
         DATA.dungeons.map(function (d) {
@@ -698,7 +722,7 @@
     }
     function sigilPanel() {
       var s = G.state, C = DATA.sigilConf;
-      if (!CW.sigilOpen(s)) return '<div class="notice">' + '신성력은 ' + C.unlockTier + '차 전직 후 열려요.<br><small>보스 처치나 다이아 소환으로 획득해요.</small></div>';
+      if (!CW.sigilOpen(s)) return lockedCard('sigil', C.unlockTier);
       var b = s.sigil, eq = CW.equipped(s), slots = CW.sigilSlots(s);
       if (selSigil && !CW.sigilById(s, selSigil)) selSigil = null;
       var sum = {}; eq.concat(CW.sigilAwakened(s)).forEach(function (id) { var it = CW.sigilById(s, id); sum[it.stat] = (sum[it.stat] || 0) + CW.sigilValue(it); });
@@ -1671,6 +1695,12 @@
       else if (d.dsel !== undefined) { var nd = ((selDiff < 0 ? (G.state.diff || 0) : selDiff) + +d.dsel + DATA.difficulties.length) % DATA.difficulties.length; selDiff = nd; selRegion = 0; renderPanel(true); }
       else if (d.rsel !== undefined) { selRegion = +d.rsel; renderPanel(true); }
       else if (d.wlock !== undefined) { toast(+d.wlock < 1 ? '이 난이도는 아직 잠겨 있어요.' : CW.regionAt(selDiff < 0 ? (G.state.diff || 0) : selDiff, +d.wlock - 1).name + ' 보스 처치 시 해금'); }
+      else if (d.lkgo !== undefined) {   // 잠긴 메뉴 카드: 보통 난이도의 맨 앞 스테이지로 (그 자리가 보스면 바로 도전)
+        var lf = +d.lkgo, st0 = G.state;
+        if (G.dunState()) toast('던전이 끝나면 이동할 수 있어요.');
+        else if (!(st0.diff || 0) && st0.stage === lf && !st0.farming) openTab('battle');
+        else if (G.goStageIn(0, lf)) { toast(CW.stageLabel(lf) + ' 이동 완료'); openTab('battle'); }
+      }
       else if (d.sgo !== undefined) { if (G.goStageIn(+d.sd, +d.sgo)) { toast(CW.stageLabel(+d.sgo) + ' 이동 완료'); selDiff = selRegion = -1; openTab('battle'); } }
       else if (d.diff !== undefined) { var dd = +d.diff; if (dd > G.state.diffUnlocked) toast(diffLockText(dd)); else confirmBox('난이도를 변경할까요?', '<b>' + DATA.difficulties[dd].name + '</b>의 진행으로 이동해요. 다른 난이도의 진행은 유지돼요.', '난이도 변경', function () { G.setDifficulty(dd); renderPanel(true); hud(); }); }
       else if (d.bkind) { bagKind = d.bkind; selKey = null; renderPanel(true); }

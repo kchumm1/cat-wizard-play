@@ -2836,6 +2836,52 @@ body{font-family:'Noto Sans KR',"Malgun Gothic","Apple SD Gothic Neo",system-ui,
   #panel:has(> .gchest) .gh2 .ghchips b{font-size:11.5px!important}
   #sheet#sheet #panel:has(> .gchest) > .pulls .pull small{font-size:10.5px!important;letter-spacing:-.03em}
 }
+/* 잠긴 메뉴 카드 (사용자 시안 2026-11-17, js/ui.js lockedCard): 시안 900px 폭을 그대로 --u 단위로 옮김 (1u = 카드 폭/900) */
+#panel .lkc{container-type:inline-size;margin:2px auto 12px;width:100%;max-width:380px;box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#panel .lkin{--u:calc(100cqw/900);--lk-bg:#F9F4EC;--lk-ink:#2A3E49;--lk-pill:#D0DDEB;--lk-pillink:#3B596F;--lk-track:#C0D5E5;--lk-btn:#7399B7;--lk-fill:#F7B06D;
+  position:relative;background:var(--lk-bg);border-radius:calc(var(--u)*48);box-shadow:0 calc(var(--u)*12) calc(var(--u)*30) calc(var(--u)*-8) rgba(60,40,30,.28),0 2px 6px rgba(60,40,30,.12);
+  padding:calc(var(--u)*46) 0 calc(var(--u)*56);color:var(--lk-ink);font-family:'Noto Sans KR',system-ui,sans-serif;text-align:left;overflow:hidden}
+#panel .lk-sigil .lkin{--lk-bg:#FAF2EB;--lk-ink:#21384A;--lk-pill:#D5D8D0;--lk-pillink:#444F3B;--lk-track:#B8CBC7;--lk-btn:#799798}
+#panel .lkhd{display:flex;align-items:center;justify-content:space-between;padding:0 calc(var(--u)*40) 0 calc(var(--u)*54);height:calc(var(--u)*56)}
+#panel .lkhd b{font:800 calc(var(--u)*49)/1 'Noto Sans KR',sans-serif;letter-spacing:-.01em}
+#panel .lkpill{height:calc(var(--u)*64);padding:0 calc(var(--u)*29);margin-top:calc(var(--u)*-6);border-radius:999px;background:var(--lk-pill);color:var(--lk-pillink);font:500 calc(var(--u)*30)/calc(var(--u)*64) 'Noto Sans KR',sans-serif;letter-spacing:.02em}
+#panel .lkart{position:relative;margin:calc(var(--u)*7) 0 0 calc(var(--u)*17);width:calc(var(--u)*866);aspect-ratio:866/552}
+#panel .lkart img{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;-webkit-user-drag:none}
+/* 제목만 흰 주아 글씨 + 남보라 그림자 (사용자 2026-11-17: 시안의 남색 대신 「흰 글씨+그림자」) */
+#panel .lkt{position:relative;display:inline-block;margin:calc(var(--u)*74) 0 0 calc(var(--u)*80);font:800 calc(var(--u)*86)/1 var(--display);color:#fff;text-shadow:0 1px 3px rgba(20,10,60,.7);letter-spacing:-.005em}
+#panel .lkt img{position:absolute;left:100%;top:calc(var(--u)*-44);margin-left:calc(var(--u)*-6);width:calc(var(--u)*64);height:calc(var(--u)*78)}
+#panel .lks{margin:calc(var(--u)*17) 0 0 calc(var(--u)*80);font:700 calc(var(--u)*67)/1 'Noto Sans KR',sans-serif;letter-spacing:-.005em}
+#panel .lkb{margin:calc(var(--u)*35) calc(var(--u)*40) 0 calc(var(--u)*81);font:500 calc(var(--u)*37)/1.25 'Noto Sans KR',sans-serif;opacity:.95;word-break:keep-all}
+#panel .lkpr{display:flex;justify-content:space-between;align-items:baseline;margin:calc(var(--u)*60) calc(var(--u)*62) 0 calc(var(--u)*60);font:700 calc(var(--u)*35)/1 'Noto Sans KR',sans-serif}
+#panel .lkpr span{font-weight:500}
+#panel .lkbar{margin:calc(var(--u)*26) calc(var(--u)*56) 0 calc(var(--u)*57);height:calc(var(--u)*24);border-radius:999px;background:var(--lk-track);overflow:hidden}
+#panel .lkbar i{display:block;height:100%;border-radius:999px;background:var(--lk-fill)}
+#panel .lkgo{display:flex;align-items:center;justify-content:center;gap:calc(var(--u)*26);margin:calc(var(--u)*70) calc(var(--u)*48) 0 calc(var(--u)*49);width:calc(var(--u)*803);height:calc(var(--u)*118);min-height:44px;border:0;border-radius:calc(var(--u)*34);
+  background:var(--lk-btn);color:#fff;font:700 calc(var(--u)*47)/1 'Noto Sans KR',sans-serif;box-shadow:none;text-shadow:none;-webkit-tap-highlight-color:transparent;transition:transform .12s,filter .12s;padding:0}
+#panel .lkgo:active{transform:scale(.97);filter:brightness(.94)}
+#panel .lkgo svg{width:calc(var(--u)*50);height:calc(var(--u)*50);fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+/* 움직임: 바탕은 그대로, 고양이·강아지만 (transform만 써서 폰에서도 가볍게). 발목 아래는 바탕 그림에 남아 있으므로
+   축(transform-origin)은 그 발목 선 위(tools/cut-locked-layers.py CUT)에 두고 기울기(skewX)·늘이기(scale)만 쓴다 → 발목 선이 안 움직여 이음매가 안 보임 */
+#panel .lkcat,#panel .lkdog,#panel .lkstar{will-change:transform;animation:var(--an) var(--dur,2.4s) ease-in-out infinite;animation-delay:var(--dl,0s)}
+#panel .lk-alch .lkcat{--an:lkBumpL;transform-origin:30.9% 73.4%}
+#panel .lk-alch .lkdog{--an:lkBumpR;transform-origin:71.1% 73.4%}
+#panel .lk-alch .lkstar{--an:lkTwinkle;transform-origin:52.7% 47.3%}
+#panel .lk-dung .lkcat{--an:lkHop;transform-origin:28.1% 72.5%}
+#panel .lk-dung .lkdog{--an:lkHop;transform-origin:75.2% 72.5%;--dl:-.55s}
+#panel .lk-sigil .lkcat{--an:lkBreathe;--dur:3.2s;transform-origin:32.3% 74.3%}
+#panel .lk-sigil .lkdog{--an:lkSway;--dur:3.2s;transform-origin:71.9% 74.3%}
+#panel .lkglow{position:absolute;left:46.2%;top:49.5%;width:13%;aspect-ratio:1;margin:-6.5% 0 0 -6.5%;border-radius:50%;background:radial-gradient(closest-side,rgba(255,240,180,.9),rgba(255,214,120,.35) 55%,transparent);mix-blend-mode:screen;animation:lkGlow 3.2s ease-in-out infinite;pointer-events:none}
+/* 연금술: 둘이 서로 쪽으로 몸을 기울여 주먹을 맞대고, 닿는 순간 가운데 별이 반짝 */
+@keyframes lkBumpL{0%,100%{transform:none}38%{transform:skewX(-4.5deg) scaleY(1.012)}50%{transform:skewX(-3deg)}64%{transform:skewX(-.6deg)}}
+@keyframes lkBumpR{0%,100%{transform:none}38%{transform:skewX(4.5deg) scaleY(1.012)}50%{transform:skewX(3deg)}64%{transform:skewX(.6deg)}}
+@keyframes lkTwinkle{0%,30%,100%{transform:scale(1) rotate(0)}40%{transform:scale(1.55) rotate(45deg)}58%{transform:scale(1.05) rotate(70deg)}78%{transform:scale(1) rotate(90deg)}}
+/* 던전: 통통 뛰기 전 웅크렸다 쭉 펴기 (둘이 박자 엇갈려) */
+@keyframes lkHop{0%,100%{transform:none}22%{transform:scaleY(.955) scaleX(1.02)}40%{transform:scaleY(1.05) scaleX(.985)}56%{transform:scaleY(.985) scaleX(1.006)}70%{transform:none}}
+/* 신성력: 고양이는 숨쉬듯, 강아지는 갸웃갸웃, 별빛이 고양이 손에서 일렁 */
+@keyframes lkBreathe{0%,100%{transform:none}50%{transform:scaleY(1.022) scaleX(1.006)}}
+@keyframes lkSway{0%,100%{transform:none}30%{transform:skewX(4deg)}62%{transform:skewX(-2.5deg)}}
+@keyframes lkGlow{0%,100%{opacity:.5;transform:scale(.8)}50%{opacity:1;transform:scale(1.18)}}
+@media (prefers-reduced-motion:reduce){#panel .lkcat,#panel .lkdog,#panel .lkstar,#panel .lkglow{animation:none}}
 </style>
 
 <!-- 업데이트 화면 (2026-11-15, the user's design art-src/update-20261115; js/update-screen.js): shown first, "모험 시작" goes into the game -->
