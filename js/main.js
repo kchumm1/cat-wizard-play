@@ -196,11 +196,38 @@
 
   // ---------- combat ----------
   var CRIT_FLASH = { 4: 'rgba(160,250,255,0.25)', 5: 'rgba(255,90,170,0.28)', 6: 'rgba(255,255,255,0.32)', 7: 'rgba(130,255,110,0.32)' };
-  function onHit(skill, mul) {
+  // Damage on its way (2026-11-17, user: '어떤 스킬은 빠르고 어떤 스킬은 시간 걸려서 스킬이 씹혀'): a slow spell (식인 꽃,
+  // 대혜성…) lands late, and a quick one cast after it used to finish its monster first, so the slow one's blow had no one
+  // left. Now each cast books the damage it will deal on the monsters it aims at (m.book), the next cast passes over a
+  // monster whose booked damage already covers its health, and a booking is let go as its hits land (or after BOOK_T).
+  // A blow that still finds no one is moved on in fx.js (c.hit: the nearest one standing, or the next one to come).
+  // (Holding the next cast until fresh monsters came was tried and dropped: it slowed the whole rotation, 12% fewer kills.)
+  var clockT = 0, BOOK_T = 3;
+  function bookedOn(m) {
+    if (!m.book) return 0;
+    var n = 0;
+    m.book = m.book.filter(function (b) { return b.left > 0 && b.until > clockT; });
+    m.book.forEach(function (b) { n += b.left; });
+    return n;
+  }
+  function doomed(m) { return !m.boss && m.hp - bookedOn(m) <= 0; }
+  function bookCast(skill, mul, targets) {
+    var list = [];
+    // a wide spell lands on everyone on the field: it books its blow on each monster standing there now
+    if (skill.targets >= 99) targets = aliveMobs().filter(function (m) { return m.arrived; });
+    targets.forEach(function (m) {
+      if (m.boss) return;
+      var b = { mob: m, left: CW.hitDamage(st, skill, { boss: false, critTier: 0, even: true }) * mul, until: clockT + BOOK_T };
+      (m.book || (m.book = [])).push(b); list.push(b);
+    });
+    return list;
+  }
+  function onHit(skill, mul, book) {
     return function (mob, frac, power) {
       if (!mob || !mob.alive) return;
       var ct = CW.rollCrit(st), crit = ct > 0;
       var dmg = CW.hitDamage(st, skill, { boss: mob.boss, critTier: ct, even: true, frozen: mob.frozen > 0, shocked: mob.shocked > 0 }) * (frac === undefined ? 1 : frac) * (mul || 1);
+      if (book) book.forEach(function (b) { if (b.mob === mob) b.left -= dmg; });
       if (dun && mob === dun.golem) dun.dmg += dmg; else mob.hp -= dmg;
       mob.lastCol = skill.color;
       // a boss freezes now and then, not under every ice spell (it would stand frozen the whole fight)
@@ -318,7 +345,9 @@
   function pickTargets(skill) {
     // nearest first, leaning toward the ones the wizard already faces so it does not keep turning round
     var H = sc.heroState(), dist = function (m) { var dx = m.x - H.x, dz = m.z - H.z, sx = sc.scrX ? sc.scrX(dx, dz) : dx; return (dx * dx + dz * dz) * (sx * H.faceT < -0.3 ? 1.8 : 1); };
-    var list = aliveMobs().filter(function (m) { return m.arrived; }).sort(function (a, b) { return dist(a) - dist(b); });
+    // monsters already covered by damage on its way go last: they are only aimed at when no one else is left
+    var list = aliveMobs().filter(function (m) { return m.arrived; }).map(function (m) { return { m: m, d: dist(m), gone: doomed(m) }; })
+      .sort(function (a, b) { return (a.gone - b.gone) || (a.d - b.d); }).map(function (o) { return o.m; });
     return list.slice(0, CW.targetCount(skill, !!dun));
   }
   function castNext() {
@@ -330,7 +359,8 @@
     // mana surge: when the gauge is full this cast hits far harder and is drawn bigger
     var surge = CW.surgeTick(state, st), weak = CW.isWeak(s, CW.regionOf(state), state.diff);
     if (surge) { sc.shake(0.3); sc.flash('rgba(190,140,255,0.32)', 0.22); }
-    fx.cast(s, state.tier, tg, onHit(s, (surge ? st.surgeMul : 1) * (weak ? st.weakMul : 1)), st.speedMul, CW.skillLevel(state, s.id) + (surge ? 30 : 0));
+    var mul = (surge ? st.surgeMul : 1) * (weak ? st.weakMul : 1), bk = bookCast(s, mul, tg);
+    fx.cast(s, state.tier, tg, onHit(s, mul, bk), st.speedMul, CW.skillLevel(state, s.id) + (surge ? 30 : 0));
     ui.surgeGauge(state.surge || 0, DATA.surgeConf.charge);
     snd.play('cast');
     castT = CW.castTime(s, st.speedMul);
@@ -700,6 +730,7 @@
   // potions run on the clock: refresh the numbers when one starts or ends
   var buffKey = '', buffT = 0;
   function tick(dt) {
+    clockT += dt;
     buffT -= dt; if (buffT <= 0) { buffT = 1; var bk = CW.buffKey(state); if (bk !== buffKey) { buffKey = bk; refreshStats(); } }
     var mEl = $('modal'), calm = !mEl || mEl.hidden;
     if (begun && calm && state.tierShow && !pendingTier.length) pendingTier.push({ tier: state.tierShow, at: 1.0 });

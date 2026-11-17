@@ -435,7 +435,9 @@
       var first = c.pool()[0]; if (!first) return;
       c.plain = true;
       sc.heroPose('slam', c.D(0.12), c.col);
-      after(c.D(0.12), function () { var mob = first.alive ? first : c.pool()[0]; if (!mob) return; if (wpLoad('wt-trap-upper') && wpLoad('wt-trap-lower')) flytrapLight(c, mob); else flytrap(c, mob); });   // (the painted one once its pictures have loaded)
+      // with no one left it still opens where its monster fell: the bite goes on to the next one to come (fx.js c.hit)
+      // (2026-11-17, user: '스킬이 씹혀' — it used to give up there and the whole cast was lost)
+      after(c.D(0.12), function () { var mob = first.alive ? first : c.pool()[0] || first; if (wpLoad('wt-trap-upper') && wpLoad('wt-trap-lower')) flytrapLight(c, mob); else flytrap(c, mob); });   // (the painted one once its pictures have loaded)
     };
 
     // ---- 나뭇잎 칼날 폭풍 (scene 3; the standard from the user: impact first — a big release, shake, a jolt at the

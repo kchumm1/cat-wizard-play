@@ -1301,7 +1301,7 @@
     // the legendary beasts (js/fx-beasts.js): their own flights, updated and cleared with the rest
     var BEASTS = CW.fxBeasts ? CW.fxBeasts(KIT) : null;
     if (BEASTS) for (var bk in BEASTS.shapes) S[bk] = BEASTS.shapes[bk];
-    var epoch = 0;
+    var epoch = 0, carry = [], CARRY_T = 2;
     function tint(base, tier) { var col = new T.Color(base); if (tier >= 5) col.lerp(new T.Color(0xffffff), 0.12); return col.getHex(); }
     function cast(skill, tier, targets, hit, speedMul, lv) {
       // Every skill plays at its own length whatever the attack speed (2026-11-16, user: "every skill must show properly
@@ -1329,11 +1329,22 @@
         var x = mob.x, z = mob.z;
         liveMobs().forEach(function (m) { if (m !== mob && (m.x - x) * (m.x - x) + (m.z - z) * (m.z - z) < radius * radius) c.hit(m, skill.splash * (part || 1), power || 0.8); });
       };
-      var hitFn = c.hit, decorated = [], released = false;
+      var hitFn = c.hit, decorated = [], released = false, carried = 0;
       c.hit = function (mob, frac, power) {
         if (c.epoch !== epoch) return;   // the field was cleared in the meantime (a boss arrived, the stage changed)
-        // a shot whose monster has already fallen lands on the nearest one still standing instead of being wasted
-        if (!mob || !mob.alive) { mob = mob ? standIn(mob) : near(liveMobs(), c.center.x, c.center.z, 2.6); if (!mob) return; }
+        // a shot whose monster has already fallen lands on the nearest one still standing instead of being wasted;
+        // (2026-11-17, user: '스킬이 씹혀') with no one within reach it still goes to the nearest one on the field, and
+        // with the field empty (a wide spell swept it just before a slow one came down) the blow waits for the next
+        // monster to come (CARRY_T) — at most one whole blow per cast, so twelve meteors do not pile onto one newcomer
+        if (!mob || !mob.alive) {
+          var f0 = mob ? (mob.fellAt || mob) : c.center;
+          mob = (mob && standIn(mob)) || near(liveMobs(), f0.x, f0.z);
+          if (!mob) {
+            var f = Math.min(frac === undefined ? 1 : frac, 1 - carried);
+            if (f > 1e-6) { carried += f; carry.push({ hit: c.hit, frac: f, power: power, at: f0 || V(0, 0, 0), until: time + CARRY_T }); }
+            return;
+          }
+        }
         // Decorate at the existing contact time; retain every damage fraction and argument.
         if (!c.plain && decorated.indexOf(mob) < 0 && decorated.length < 3) {
           // wide spells get one big picture over the crowd; the others get one on each monster they land on
@@ -1541,6 +1552,12 @@
     function update(dt) {
       time += dt;
       costumeTick(dt); picTick(dt);
+      // blows that came down on an empty field go to the first monster that steps in (c.hit above)
+      if (carry.length) {
+        carry = carry.filter(function (k) { return k.until > time; });
+        var cm = carry.length && liveMobs();
+        if (cm && cm.length) { var wait = carry; carry = []; wait.forEach(function (k) { var m = near(cm, k.at.x, k.at.z); if (m) k.hit(m, k.frac, k.power); }); }
+      }
       // One that throws is dropped and the rest go on; the first error is thrown again at the end so the game keeps it
       // (main.js noteError → 설정 "최근 오류"). A meteor rain whose monsters had all fallen left a part that threw every
       // frame: every part after it in the list and every effect stopped where it stood and piled up (about 550 3D parts a
@@ -1565,7 +1582,7 @@
     function setLoad(k) { vx.setLoad(k); }
     function setBright(v) { vx.setBright(v); P3.setBright(v); }
     function setRegion(regionData) { dustCol = new T.Color(regionData.ground).lerp(new T.Color(0xffffff), 0.45).getHex(); P3.warm(); warmPics(); }
-    function clear() { epoch++; timers.length = 0; ticks.length = 0; meteorLive = 0; scorchAt.length = 0; vx.clear(); P3.clear(); picClear(); if (BEASTS) BEASTS.clear(); sc.mobs().forEach(function (m) { m.pull = undefined; m.pullZ = undefined; m.lift = undefined; }); }
+    function clear() { epoch++; carry = []; timers.length = 0; ticks.length = 0; meteorLive = 0; scorchAt.length = 0; vx.clear(); P3.clear(); picClear(); if (BEASTS) BEASTS.clear(); sc.mobs().forEach(function (m) { m.pull = undefined; m.pullZ = undefined; m.lift = undefined; }); }
     return { setStaffColor: function (c) { staffCol = c; }, setCostume: function (f) { cosFx = f; cosAcc = 0; }, cast: cast, update: update, setQuality: setQuality, setLoad: setLoad, load: function () { return vx.load(); }, setBright: setBright, setRegion: setRegion, clear: clear, count: vx.count, minionBurst: minionBurst,
       impact: impact, levelUp: levelUp, bossEnter: bossEnter, coinPop: coinPop, burst: function (pos, col) { impact(pos, col, 0.8); }, vfx: vx,
       // for checks: 3D parts alive, and painted heads alive (only those of the given pictures when names are given)
