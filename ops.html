@@ -9,12 +9,11 @@
 <script>try{var t=localStorage.getItem('cw-ops-theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <style>
 /* 냥법사 운영실 (2026-11-18): 별밤 성운 색, PC는 왼쪽 메뉴 + 요약 + 두 칸 관리 화면, 폰(아이폰 17 Pro 402x874 기준)은 한 칸 */
-:root{--bg:#0c0919;--side:#110d24;--card:#171230;--sunk:#0f0b21;--ink:#f8f4ff;--ink2:#dad1ef;--soft:#aa9fca;--line:#2b2452;--line2:#40387a;--gold:#ffcf5c;--accent:#6f58f5;--accent3:#b45be0;--accent2:#bcaeff;--accent-soft:#251d52;--accent-ink:#fff;--bad:#ff8f8f;--bad-soft:#3a1626;--ok:#62e3a3;--ok-soft:#10301f;--warn:#ffcf5c;--glow1:rgba(111,88,245,.28);--glow2:rgba(180,91,224,.16);--shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.28)}
-:root[data-theme=light]{--bg:#eceaf8;--side:#fbfaff;--card:#fff;--sunk:#f4f2fc;--ink:#191232;--ink2:#3a3260;--soft:#5f5688;--line:#dbd6ee;--line2:#c3bbe2;--gold:#8f5a00;--accent:#5a44d8;--accent3:#9b3fc7;--accent2:#4a35c0;--accent-soft:#e9e5fb;--accent-ink:#fff;--bad:#b3261e;--bad-soft:#fde9e7;--ok:#13703c;--ok-soft:#e1f5ea;--warn:#8f5a00;--glow1:rgba(90,68,216,.10);--glow2:rgba(155,63,199,.06);--shadow:0 1px 2px rgba(40,30,90,.08),0 8px 24px rgba(40,30,90,.07)}
+:root{--bg:#0c0919;--side:#110d24;--card:#171230;--sunk:#0f0b21;--ink:#f8f4ff;--ink2:#dad1ef;--soft:#aa9fca;--line:#2b2452;--line2:#40387a;--gold:#ffcf5c;--accent:#6f58f5;--accent3:#b45be0;--accent2:#bcaeff;--accent-soft:#251d52;--accent-ink:#fff;--bad:#ff8f8f;--bad-soft:#3a1626;--ok:#62e3a3;--ok-soft:#10301f;--warn:#ffcf5c;--glow1:rgba(111,88,245,.28);--glow2:rgba(180,91,224,.16);--shadow:0 2px 6px rgba(0,0,0,.35)}
+:root[data-theme=light]{--bg:#eceaf8;--side:#fbfaff;--card:#fff;--sunk:#f4f2fc;--ink:#191232;--ink2:#3a3260;--soft:#5f5688;--line:#dbd6ee;--line2:#c3bbe2;--gold:#8f5a00;--accent:#5a44d8;--accent3:#9b3fc7;--accent2:#4a35c0;--accent-soft:#e9e5fb;--accent-ink:#fff;--bad:#b3261e;--bad-soft:#fde9e7;--ok:#13703c;--ok-soft:#e1f5ea;--warn:#8f5a00;--glow1:rgba(90,68,216,.10);--glow2:rgba(155,63,199,.06);--shadow:0 1px 4px rgba(40,30,90,.12)}
 *{box-sizing:border-box}
-html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-body{margin:0;background-color:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;padding-bottom:calc(36px + env(safe-area-inset-bottom))}
-body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(900px 520px at 90% -8%,var(--glow1),transparent 62%),radial-gradient(760px 520px at -8% 38%,var(--glow2),transparent 62%);transform:translateZ(0)}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;background-color:var(--bg);background-image:radial-gradient(900px 520px at 90% 0,var(--glow1),transparent 62%),radial-gradient(760px 520px at 0 38%,var(--glow2),transparent 62%);background-repeat:no-repeat}
+body{margin:0;background:transparent;color:var(--ink);font:16px/1.6 -apple-system,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;padding-bottom:calc(36px + env(safe-area-inset-bottom))}
 button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 :focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
 
@@ -118,7 +117,7 @@ input[type=date]::-webkit-date-and-time-value{text-align:center;margin:0}
 @media (min-width:600px){#presetBar,#nzPresets{grid-template-columns:repeat(4,minmax(0,1fr))}}
 
 /* 버튼 */
-.btn{display:block;width:100%;border:0;border-radius:14px;font:inherit;font-weight:800;font-size:17px;padding:13px;min-height:54px;margin-top:16px;background:linear-gradient(135deg,var(--accent),var(--accent3));color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(111,88,245,.35);transition:filter .15s,transform .05s}
+.btn{display:block;width:100%;border:0;border-radius:14px;font:inherit;font-weight:800;font-size:17px;padding:13px;min-height:54px;margin-top:16px;background:linear-gradient(135deg,var(--accent),var(--accent3));color:#fff;cursor:pointer;box-shadow:none;transition:filter .15s,transform .05s}
 .btn:hover{filter:brightness(1.1)}.btn:active{transform:translateY(1px)}
 .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line2);font-weight:700;font-size:16px;min-height:50px;margin-top:10px;box-shadow:none}
 .btn.ghost:hover{background:var(--accent-soft);filter:none}
@@ -529,9 +528,11 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
   var TABKEY = 'cw-ops-tab';
   function setTab(t) {
     [].forEach.call(document.querySelectorAll('#tabs button'), function (b) { b.classList.toggle('on', b.dataset.tab === t); });
+    var pg = document.querySelector('main.page'); pg.style.visibility = 'hidden';
     ['home', 'gift', 'board', 'key'].forEach(function (n) { $('p-' + n).classList.toggle('on', n === t); });
     try { localStorage.setItem(TABKEY, t); } catch (e) {}
     document.documentElement.style.scrollBehavior = 'auto'; window.scrollTo(0, 0); document.documentElement.style.scrollBehavior = '';
+    void pg.offsetHeight; requestAnimationFrame(function () { pg.style.visibility = ''; }); setTimeout(function () { pg.style.visibility = ''; }, 80);
   }
   $('tabs').onclick = function (e) { var b = e.target.closest('button'); if (b) setTab(b.dataset.tab); };
   $('keyChip').onclick = function () { setTab('key'); };
