@@ -42,18 +42,28 @@
     var gl = CW.giftLines ? CW.giftLines(l) : [];
     if (a.length + gl.length >= 2 || gl.length) {
       var first = +l.gems > 0 ? '<img src="art/mail-ico-gem.webp" alt="">다이아' : CW.mailGold(l) > 0 ? '<img src="art/mail-ico-gold.webp" alt="">골드'
-        : '<i class="mbgi">' + esc(gl[0].icon) + '</i>' + esc(gl[0].name);
+        : mark(gl[0], 'mbgi') + esc(gl[0].name);
       var more = (+l.gems > 0) + (CW.mailGold(l) > 0) + gl.length - 1;
       return '<span class="one">' + first + (more ? ' 외 ' + more + '종' : '') + '</span>';
     }
     return a.join('');
+  }
+  // the game's own picture for a gift line (the same marks as the packages, js/notice-pages.js giveIco), else its emoji
+  function mark(x, cls) {
+    var m = x.mark || {}, I = CW.ICO || {}, h = '';
+    if (CW.giveIco && ['mana', 'runeStone', 'sigilStone', 'rune', 'sigil'].indexOf(m.k) >= 0) h = CW.giveIco(m.k, m.grade);
+    else if (m.k === 'potion' && I.misc) h = I.misc('potion', m.id);
+    else if (m.k === 'ticket' && I.misc) h = I.misc('dungeon', m.id);
+    else if (m.k === 'relic' && I.misc) h = I.misc('relic', m.id);
+    else if (m.k === 'gear' && CW.GEAR_IMG && CW.GEAR_IMG[m.id]) h = '<img src="' + CW.GEAR_IMG[m.id] + '" alt="" draggable="false">';
+    return h ? '<i class="mlmk' + (cls ? ' ' + cls : '') + '">' + h + '</i>' : '<i' + (cls ? ' class="' + cls + '"' : '') + '>' + esc(x.icon) + '</i>';
   }
   // any item on a letter (2026-11-16): small chips, each with its picture, in the reward box (it slides when full)
   function manyReward(l) {
     var a = [];
     if (+l.gems > 0) a.push('<span class="mlchip"><img src="art/mail-ico-gem.webp" alt="">다이아 ' + ko(l.gems) + '</span>');
     if (CW.mailGold(l) > 0) a.push('<span class="mlchip"><img src="art/mail-ico-gold.webp" alt="">골드 ' + CW.mailGoldText(l) + '</span>');
-    (CW.giftLines ? CW.giftLines(l) : []).forEach(function (x) { a.push('<span class="mlchip"><i>' + esc(x.icon) + '</i>' + esc(x.text) + '</span>'); });
+    (CW.giftLines ? CW.giftLines(l) : []).forEach(function (x) { a.push('<span class="mlchip">' + mark(x, '') + esc(x.text) + '</span>'); });
     return a.join('');
   }
   // two rewards on a letter: the pill halved, each with its picture, a line between

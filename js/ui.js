@@ -1680,6 +1680,15 @@
     // 공지에서 바로 가기 (2026-11-17, js/notice-pages.js): 더보기 → 패키지, 뽑기
     CW.openPacks = function () { moreSub = 1; openTab('more'); };
     CW.openGachaTab = function () { openTab('gacha'); };
+    // 확률표 → 그 뽑기 칸으로 (2026-11-17, 사용자: 장비면 장비 뽑기, 룬이면 룬, 신성력이면 신성력, 유물이면 유물로): 룬·신성력·유물 소환은
+    // 장비 탭 안 각 화면 아래의 소환 카드 — 그 화면(보관함 말고 본 화면)을 열고 카드까지 내려서 잠깐 반짝이게
+    CW.openSummon = function (k) {
+      if (k !== 'rune' && k !== 'sigil' && k !== 'relic') { openTab('gacha'); return; }
+      gearSub = k; selSigil = selRune = null; rnBag = sgBag = false; openTab('gear');
+      var c = panel.querySelector(k === 'rune' ? '.rnsum' : k === 'sigil' ? '.sgsum' : '.rsum'); if (!c) return;
+      panel.scrollTop = Math.max(0, c.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop - 12);
+      c.classList.remove('sumflash'); void c.offsetWidth; c.classList.add('sumflash'); setTimeout(function () { c.classList.remove('sumflash'); }, 1600);
+    };
     function openTab(name) {
       if (name === 'gacha') ghdSeen = null;
       if (name === 'more' && tab !== 'more') tierAnim = true;   // 전직 cards slide in when 더보기 opens

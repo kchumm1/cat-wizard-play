@@ -26,15 +26,15 @@
   function rows(list, top) {
     var max = top || Math.max.apply(null, list.map(function (r) { return r.v; }).concat([0.0001]));
     return list.map(function (r, i) {
-      return '<div class="rt2row" style="--c:' + r.c + ';--k:' + i + '"><span class="rt2st">' + r.ico + '</span><b>' + esc(r.name) + '</b>' +
-        '<span class="rt2bar"><i style="width:' + Math.max(2.2, r.v / max * 100) + '%"></i></span><em>' + pct(r.v) + '</em></div>';
+      return '<div class="rt2row' + (r.v ? '' : ' zero') + '" style="--c:' + r.c + ';--k:' + i + '"><span class="rt2st">' + r.ico + '</span><b>' + esc(r.name) + '</b>' +
+        '<span class="rt2bar"><i style="width:' + (r.v ? Math.max(2.2, r.v / max * 100) : 0) + '%"></i></span><em>' + (r.v ? pct(r.v) : '합성') + '</em></div>';
     }).join('');
   }
   function gradeRows(row, grades) {
     return grades.map(function (g, i) {
       var L = GRADE_LOOK[g.name] || [0, g.color];
       return { v: row[i] || 0, name: g.name, c: L[1], ico: '<img src="' + A() + 'rt-st-' + L[0] + '.webp" alt="" draggable="false"' + (L[2] ? ' style="filter:' + L[2] + '"' : '') + '>' };
-    }).filter(function (r) { return r.v > 0; });   // only the grades that can come
+    });   // every grade up to 멸망 (2026-11-17, the user: 룬·신성력 태초까지만 있는 게 아니잖아): one that the summon does not give is 「합성」
   }
   var RT = [['gear', '장비'], ['rune', '룬'], ['sigil', '신성력'], ['relic', '유물']];
   var FOOT = { gear: '선택한 레벨 기준 확률이에요', rune: '언제나 같은 확률이에요', sigil: '언제나 같은 확률이에요', relic: '묶음 안에서는 같은 확률이에요' };
@@ -55,6 +55,7 @@
         '<h5>일반 유물 · ' + pct((1 - C.divineRate) * 100) + '</h5>' + rel(D0.relics.filter(function (r) { return !r.divine; }), (1 - C.divineRate) * 100);
     } else {
       var row = tab === 'gear' ? D0.gacha.table[lv - 1] : (tab === 'rune' ? D0.runeConf : D0.sigilConf).summonTable;
+      // 합성 확률은 아직 안 씀 (2026-11-17, the user: 혼돈으로 멸망이 100%면 안 돼 → 합성 확률은 나중에 정함)
       body = '<h5>등급별 등장 확률</h5>' + rows(gradeRows(row, tab === 'gear' ? D0.grades : D0.hiGrades));
     }
     return '<div class="rt2card' + (tab === 'relic' ? ' relic' : '') + '">' + body + '</div>';
@@ -66,10 +67,10 @@
       '<div class="rt2tabs" role="tablist">' + RT.map(function (t, i) { return '<button role="tab" data-rttab="' + t[0] + '" aria-selected="' + !i + '"><span>' + t[1] + '</span></button>'; }).join('') + '</div>' +
       '<div class="rt2lvslot">' + lvRow(lv) + '</div>' +
       '<div class="rt2scroll">' + cardHtml(tab, lv) + '</div>' +
-      '<div class="rt2foot"><img src="' + A() + 'rt-foot.webp" alt="" draggable="false"><button data-nzjump="gacha"><span>뽑기 하러 가기</span></button><p>' + FOOT.gear + '</p></div></div>';
+      '<div class="rt2foot"><img src="' + A() + 'rt-foot.webp" alt="" draggable="false"><button data-nzjump="sum-gear"><span>뽑기 하러 가기</span></button><p>' + FOOT.gear + '</p></div></div>';
     return { html: html, cls: 'nzrates2', bare: true, init: function (el) {
       var sc = el.querySelector('.rt2scroll'), slot = el.querySelector('.rt2lvslot'), foot = el.querySelector('.rt2foot p');
-      function draw() { sc.innerHTML = cardHtml(tab, lv); slot.innerHTML = tab === 'gear' ? lvRow(lv) : ''; slot.classList.toggle('off', tab !== 'gear'); foot.textContent = FOOT[tab]; }
+      function draw() { sc.innerHTML = cardHtml(tab, lv); slot.innerHTML = tab === 'gear' ? lvRow(lv) : ''; slot.classList.toggle('off', tab !== 'gear'); foot.textContent = FOOT[tab]; el.querySelector('.rt2foot button').dataset.nzjump = 'sum-' + tab; }
       el.addEventListener('click', function (e) {
         var t = e.target.closest('[data-rttab]'), st = e.target.closest('[data-rtstep]');
         if (t && t.dataset.rttab !== tab) { tab = t.dataset.rttab; sound(); el.querySelectorAll('[data-rttab]').forEach(function (b) { b.setAttribute('aria-selected', b === t); }); draw(); sc.scrollTop = 0; }

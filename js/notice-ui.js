@@ -89,7 +89,7 @@
       if (t.closest('.nzpop')) { page.classList.remove('pop'); return; }
       var op = t.closest('[data-nzopen]'); if (op) { g.G.sound('click'); open = op.dataset.nzopen; view = 'one'; render(); page.querySelector('.nzw').classList.add('turn'); return; }
       var jp = t.closest('[data-nzjump]');   // 공지 → 뽑기 / 더보기 패키지 (js/ui.js)
-      if (jp) { g.G.sound('click'); close(); if (jp.dataset.nzjump === 'packs' && CW.openPacks) CW.openPacks(); else if (jp.dataset.nzjump === 'gacha' && CW.openGachaTab) CW.openGachaTab(); return; }
+      if (jp) { g.G.sound('click'); close(); if (jp.dataset.nzjump === 'packs' && CW.openPacks) CW.openPacks(); else if (jp.dataset.nzjump === 'gacha' && CW.openGachaTab) CW.openGachaTab(); else if (jp.dataset.nzjump.indexOf('sum-') === 0 && CW.openSummon) CW.openSummon(jp.dataset.nzjump.slice(4)); return; }
       if (t.closest('[data-nzback]')) { g.G.sound('click'); view = 'list'; render(); return; }
     });
   }

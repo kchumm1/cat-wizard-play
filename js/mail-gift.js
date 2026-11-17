@@ -71,17 +71,18 @@
   }
   function giftHas(l) { return Object.keys(giftOf(l)).length > 0; }
 
-  // every part of the gift as one short line with its picture: [{ icon, text, name }] — name is the thing alone, no
+  // every part of the gift as one short line with its picture: [{ icon, mark, text, name }] — mark says which game
+  // picture js/mail-ui.js draws (2026-11-17, the user: 선물도 룬·신성석·룬석은 실제 마크로); icon is the emoji kept for ops.html — name is the thing alone, no
   // amount, for the small pill on the mailbox list (「다이아 외 6종」, 2026-11-16)
   function giftLines(l) {
     var g = giftOf(l), out = [];
-    CUR.forEach(function (c) { if (g[c.key]) out.push({ icon: c.icon, text: c.name + ' ' + ko(g[c.key]), name: c.name }); });
-    (DATA.potions || []).forEach(function (pt) { var m = g.potions && g.potions[pt.id]; if (m) out.push({ icon: pt.icon, text: pt.name + ' ' + ko(m) + '분', name: pt.name }); });
-    (DATA.dungeons || []).forEach(function (d) { var n = g.tickets && g.tickets[d.id]; if (n) out.push({ icon: '🎟️', text: d.name + ' 입장권 ' + n + '장', name: d.name + ' 입장권' }); });
-    (g.gear || []).forEach(function (x) { out.push({ icon: '🎒', text: DATA.grades[x.grade].name + ' ' + ROMAN(x.sub) + ' ' + DATA.kindName[x.kind] + (x.n > 1 ? ' ×' + x.n : '') + (x.pot ? ' (최상급 잠재: ' + x.pot.map(sigilStatName).join(' · ') + ')' : ''), name: DATA.kindName[x.kind] }); });
-    (g.runes || []).forEach(function (x) { var r = byId(DATA.runes, x.kind); out.push({ icon: r.icon, text: DATA.hiGrades[x.grade].name + ' ' + r.name + (x.n > 1 ? ' ×' + x.n : ''), name: r.name }); });
-    (g.sigils || []).forEach(function (x) { out.push({ icon: '💠', text: DATA.hiGrades[x.grade].name + ' 신성력' + (x.stat ? '(' + sigilStatName(x.stat) + ')' : '') + ' 최상급' + (x.n > 1 ? ' ×' + x.n : ''), name: '신성력' }); });
-    (g.relics || []).forEach(function (x) { var r = byId(DATA.relics, x.id); out.push({ icon: r.icon, text: '유물 ' + r.name + (x.n > 1 ? ' ×' + x.n : ''), name: r.name }); });
+    CUR.forEach(function (c) { if (g[c.key]) out.push({ icon: c.icon, mark: { k: c.key }, text: c.name + ' ' + ko(g[c.key]), name: c.name }); });
+    (DATA.potions || []).forEach(function (pt) { var m = g.potions && g.potions[pt.id]; if (m) out.push({ icon: pt.icon, mark: { k: 'potion', id: pt.id }, text: pt.name + ' ' + ko(m) + '분', name: pt.name }); });
+    (DATA.dungeons || []).forEach(function (d) { var n = g.tickets && g.tickets[d.id]; if (n) out.push({ icon: '🎟️', mark: { k: 'ticket', id: d.id }, text: d.name + ' 입장권 ' + n + '장', name: d.name + ' 입장권' }); });
+    (g.gear || []).forEach(function (x) { out.push({ icon: '🎒', mark: { k: 'gear', id: x.kind }, text: DATA.grades[x.grade].name + ' ' + ROMAN(x.sub) + ' ' + DATA.kindName[x.kind] + (x.n > 1 ? ' ×' + x.n : '') + (x.pot ? ' (최상급 잠재: ' + x.pot.map(sigilStatName).join(' · ') + ')' : ''), name: DATA.kindName[x.kind] }); });
+    (g.runes || []).forEach(function (x) { var r = byId(DATA.runes, x.kind); out.push({ icon: r.icon, mark: { k: 'rune', grade: x.grade }, text: DATA.hiGrades[x.grade].name + ' ' + r.name + (x.n > 1 ? ' ×' + x.n : ''), name: r.name }); });
+    (g.sigils || []).forEach(function (x) { out.push({ icon: '💠', mark: { k: 'sigil', grade: x.grade }, text: DATA.hiGrades[x.grade].name + ' 신성력' + (x.stat ? '(' + sigilStatName(x.stat) + ')' : '') + ' 최상급' + (x.n > 1 ? ' ×' + x.n : ''), name: '신성력' }); });
+    (g.relics || []).forEach(function (x) { var r = byId(DATA.relics, x.id); out.push({ icon: r.icon, mark: { k: 'relic', id: x.id }, text: '유물 ' + r.name + (x.n > 1 ? ' ×' + x.n : ''), name: r.name }); });
     (g.costumes || []).forEach(function (x) { var c = byId(DATA.costumes, x.id); out.push({ icon: '👘', text: '코스튬 ' + c.name, name: c.name }); });
     return out;
   }

@@ -1610,6 +1610,11 @@ html.fullh #mailbox{position:absolute;bottom:auto;height:var(--apph)}
 #mailbox .mlrew.many .mlchip i,#mailbox .mbcr .mbgi{font-style:normal;font-size:1.15em;line-height:1}
 #mailbox .mbcr span.one{font-size:2.5cqw}
 #mailbox .mbcr .mbgi{flex:none;width:3.6cqw;text-align:center}
+/* gift lines with the game's own marks (2026-11-17, js/mail-ui.js mark) */
+#mailbox .mlmk{display:inline-grid;place-items:center;flex:none;width:3.2cqw;height:3.2cqw;font-style:normal}
+#mailbox .mbcr .mlmk{width:3.6cqw;height:3.6cqw}
+#mailbox .mlmk>*{display:block;width:100%!important;height:100%!important;margin:0!important;max-width:none}
+#mailbox .mlmk img,#mailbox .mlmk svg{object-fit:contain}
 #mailbox .mlrew.one{flex-direction:row;justify-content:flex-start;gap:0}
 #mailbox .mlrew.one .mlri{flex:none;width:39%;display:flex;align-items:center;justify-content:center}
 #mailbox .mlrew.one .mlri img.gem{width:14.5cqw;height:auto}#mailbox .mlrew.one .mlri img.gold{width:7.4cqw;height:auto}
@@ -1773,8 +1778,13 @@ html.fullh #idlebox{position:absolute;bottom:auto;height:var(--apph)}
 #noticebox .rt2card h5::before,#noticebox .rt2card h5::after{content:'';width:max(16px,3.6cqw);height:max(16px,3.6cqw);background:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><g stroke='%238fb57a' stroke-width='2.4' stroke-linecap='round'><path d='M4 3l4 6'/><path d='M1 12h7'/><path d='M4 21l4-6'/></g></svg>") 0 0/100% 100% no-repeat}
 #noticebox .rt2card h5::after{transform:scaleX(-1)}
 #noticebox .rt2card.relic h5{margin-top:2cqw}
-#noticebox .rt2row{display:grid;grid-template-columns:max(28px,7.3cqw) max(42px,9.6cqw) 1fr max(54px,10.6cqw);align-items:center;gap:2.4cqw;height:max(31px,6cqw);border-bottom:1.5px dashed #e3d3be}
+#noticebox .rt2row{display:grid;grid-template-columns:max(28px,7.3cqw) max(42px,9.6cqw) 1fr max(70px,14cqw);align-items:center;gap:2.4cqw;height:max(31px,6cqw);border-bottom:1.5px dashed #e3d3be}
 #noticebox .rt2row:last-child{border-bottom:0}
+#noticebox .rt2row.zero .rt2st,#noticebox .rt2row.zero>b{opacity:.55}
+#noticebox .rt2row.zero>em{font-size:max(12.5px,2.7cqw);color:#8a6a52;white-space:nowrap}
+/* 확률표 → 소환 카드로 왔을 때 잠깐 반짝 (js/ui.js CW.openSummon) */
+.sumflash{animation:sumflash 1.5s ease-out}
+@keyframes sumflash{0%,40%{box-shadow:0 0 0 3px #ffd36b,0 0 22px rgba(255,211,107,.85)}100%{box-shadow:0 0 0 0 rgba(255,211,107,0)}}
 #noticebox .rt2st{display:grid;place-items:center;height:100%}
 #noticebox .rt2st img,#noticebox .rt2st svg{width:100%;height:auto;max-height:95%;object-fit:contain;-webkit-user-drag:none}
 #noticebox .rt2row>b{font:400 max(14px,3.2cqw)/1 var(--display);color:#6b4630;white-space:nowrap}
