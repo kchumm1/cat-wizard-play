@@ -712,7 +712,9 @@
       var M = list.length, k = Math.max(2, Math.ceil(6 / M)), frac = 1 / k, cnt = list.map(function () { return 0; });
       // a little smaller, mostly at high upgrade (2026-11-17 user: '연쇄번개 크기 사알짝만 줄이자' → '레벨 50기준이야'):
       // x0.95 at +0, x0.82 at +50 (the bolts grow with the upgrade through c.s; the picture is already capped)
-      var cs = c.s * (0.95 - 0.0026 * Math.min(50, c.lv));
+      // capped like the 3D skills (2026-11-17, user's phone at tier 9+ +50: '많이 큰데' — c.s reached 3.5, 4.5 in a surge;
+      // tried 1.5 / 2.0 / 2.2 / 2.5 at tier 11 +50, the user chose 2.5); c.s itself is lowered so the hit flash, ring and picture shrink too
+      var cs = Math.min(2.5, c.s * (0.95 - 0.0026 * Math.min(50, c.lv))); c.s = cs;
       var prev = function () { return sc.heroPaw(); };
       list.forEach(function (mob, i) {
         var from = prev, to = function () { return sc.mobPos(mob); };
@@ -1269,7 +1271,7 @@
     // the picture for a spell that has no flying part: plays where it lands, with a matching jolt
     function picture(c, at, big) {
       var id = c.sk.id, move = PIC_MOVE[id]; if (!move) return;
-      var h = (big ? 2.7 : 1.75) * Math.min(1.3, c.s) * (move === 'strike' ? 1.5 : 1);   // strike = chain lightning (1.7 → 1.5, 2026-11-17 user: '사알짝만 줄이자')
+      var h = (big ? 2.7 : 1.75) * Math.min(1.3, c.s) * (move === 'strike' ? 1.25 : 1);   // strike = chain lightning (1.7 → 1.5 → 1.25, 2026-11-17 user: '사알짝만 줄이자' → '많이 큰데')
       picAt(id, at, h, move);
       if (move === 'burst') heavy(big ? 1 : 0.5); else if (move === 'slash') { sc.hitStop(0.03); sc.shake(0.05); } else if (move === 'strike') sc.shake(0.06);
     }
