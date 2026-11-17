@@ -710,13 +710,16 @@
       // Every bolt is a real hit. The chain jumps through the monsters once; then bolts keep dropping out of the sky on
       // those same monsters until each has taken the skill's whole damage (a lone boss takes all six).
       var M = list.length, k = Math.max(2, Math.ceil(6 / M)), frac = 1 / k, cnt = list.map(function () { return 0; });
+      // a little smaller, mostly at high upgrade (2026-11-17 user: '연쇄번개 크기 사알짝만 줄이자' → '레벨 50기준이야'):
+      // x0.95 at +0, x0.82 at +50 (the bolts grow with the upgrade through c.s; the picture is already capped)
+      var cs = c.s * (0.95 - 0.0026 * Math.min(50, c.lv));
       var prev = function () { return sc.heroPaw(); };
       list.forEach(function (mob, i) {
         var from = prev, to = function () { return sc.mobPos(mob); };
         after(c.D(0.13 + i * 0.075), function () {
-          vx.lightning(from, to, { w: 0.34 * c.s, color: c.col, core: 0, alpha: 0.5, life: c.D(0.3), branches: 0, segs: 14, amp: 0.12 });
-          vx.lightning(from, to, { solid: true, w: 0.11 * c.s, color: 0x3d8cff, core: 0.9, life: c.D(0.34), branches: c.tier >= 6 ? 3 : 2, segs: 14, amp: 0.12 });
-          vx.lightning(from, to, { w: 0.05 * c.s, color: 0xffffff, life: c.D(0.26), branches: 0, segs: 14, amp: 0.12 });
+          vx.lightning(from, to, { w: 0.34 * cs, color: c.col, core: 0, alpha: 0.5, life: c.D(0.3), branches: 0, segs: 14, amp: 0.12 });
+          vx.lightning(from, to, { solid: true, w: 0.11 * cs, color: 0x3d8cff, core: 0.9, life: c.D(0.34), branches: c.tier >= 6 ? 3 : 2, segs: 14, amp: 0.12 });
+          vx.lightning(from, to, { w: 0.05 * cs, color: 0xffffff, life: c.D(0.26), branches: 0, segs: 14, amp: 0.12 });
           zapHit(c, mob, i === 0);
           if (i === 0) { sc.flash('rgba(200,235,255,0.55)', 0.22); sc.hitStop(0.04); fieldWave(to(), c.col, 0.55, 0xffffff); }
           sc.shake(0.08); cnt[i]++; c.hit(mob, frac, 1.0);
@@ -729,7 +732,7 @@
           var best = -1; list.forEach(function (m, bi) { if (m.alive && (best < 0 || cnt[bi] < cnt[best])) best = bi; });
           var mob = best >= 0 ? list[best] : near(liveMobs(), c.center.x, c.center.z);
           if (!mob) return; if (best >= 0) cnt[best]++;
-          skyBolt(c, function () { return sc.mobPos(mob); }, c.s);
+          skyBolt(c, function () { return sc.mobPos(mob); }, cs);
           zapHit(c, mob, false); sc.flash('rgba(200,235,255,0.2)', 0.1); sc.shake(0.05);
           c.hit(mob, frac, 0.8);
         });
@@ -1266,7 +1269,7 @@
     // the picture for a spell that has no flying part: plays where it lands, with a matching jolt
     function picture(c, at, big) {
       var id = c.sk.id, move = PIC_MOVE[id]; if (!move) return;
-      var h = (big ? 2.7 : 1.75) * Math.min(1.3, c.s) * (move === 'strike' ? 1.7 : 1);
+      var h = (big ? 2.7 : 1.75) * Math.min(1.3, c.s) * (move === 'strike' ? 1.5 : 1);   // strike = chain lightning (1.7 → 1.5, 2026-11-17 user: '사알짝만 줄이자')
       picAt(id, at, h, move);
       if (move === 'burst') heavy(big ? 1 : 0.5); else if (move === 'slash') { sc.hitStop(0.03); sc.shake(0.05); } else if (move === 'strike') sc.shake(0.06);
     }
