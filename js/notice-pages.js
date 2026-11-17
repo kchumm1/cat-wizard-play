@@ -108,6 +108,7 @@
     if (g.sigilStone) out.push([giveIco('sigilStone'), '신성석 ' + n(g.sigilStone)]);
     return out.map(function (x, i) { return '<li style="--k:' + i + '"><i class="wpi">' + x[0] + '</i><span>' + x[1] + '</span></li>'; }).join('');
   }
+  CW.giveList = giveList;   // 가방 (js/ui.js openChest): 연 상자 구성품을 같은 마크로
   function pack() {
     var list = D().packs.filter(function (p) { return p.cat === 'winter'; }), s = S();
     var until = list[0] && list[0].until, m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(until || '');

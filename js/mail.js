@@ -44,13 +44,21 @@
   function mailClaim(state, l, goldScale, now) {
     var m = box(state); if (!l || !l.id || m.got[l.id]) return false;
     if (mailClaimBlock(state, l)) return false;   // nothing is given until everything fits
-    var g = mailGold(l), d = +l.gems || 0, G = gift();
-    if (g > 0) state.gold = (state.gold || 0) + g * (goldScale > 0 ? goldScale : 1);
-    if (d > 0) state.gems = (state.gems || 0) + Math.floor(d);
-    if (G && G.giftHas(l)) G.giftApply(state, l, null, now);
+    mailGive(state, l, goldScale, null, now);
     m.got[l.id] = now || Date.now();
     return true;
   }
+  // what a letter carries, given now (the bag, js/chest.js, opens a taken letter's box with this; room checked before)
+  // spill: see js/mail-gift.js giftApply (가방: a rune or sigil whose bag is full). Returns the gold given
+  function mailGive(state, l, goldScale, rng, now, spill) {
+    var g = mailGold(l), d = +l.gems || 0, G = gift(), gold = g > 0 ? g * (goldScale > 0 ? goldScale : 1) : 0;
+    if (gold) state.gold = (state.gold || 0) + gold;
+    if (d > 0) state.gems = (state.gems || 0) + Math.floor(d);
+    if (G && G.giftHas(l)) G.giftApply(state, l, rng, now, spill);
+    return gold;
+  }
+  // the letter counts as taken (its reward went into the bag, js/chest.js)
+  function mailMarkGot(state, l, now) { box(state).got[l.id] = now || Date.now(); }
   // the letter's gold as the screen shows it, a whole number (goldJo may be a part of 조: 0.5 = 5000억, 1e-12 = 1)
   function mailGold(l) { return Math.round((+(l && l.goldJo) || 0) * 1e12); }
   // 1500000000300 → 1조 5000억 300 (2026-11-15, the user: 1원부터 9999조까지)
@@ -78,5 +86,5 @@
     if (G && G.giftHas(l)) a.push(G.giftText(l));
     return a.join(' · ');
   }
-  return { mailClaimBlock: mailClaimBlock, mailAll: mailAll, mailGot: mailGot, mailHasReward: mailHasReward, mailWhen: mailWhen, mailPid: mailPid, mailWaiting: mailWaiting, mailClaim: mailClaim, mailRewardText: mailRewardText, mailGold: mailGold, mailGoldText: mailGoldText, goldWords: goldWords, goldShort: goldShort };
+  return { mailGive: mailGive, mailMarkGot: mailMarkGot, mailClaimBlock: mailClaimBlock, mailAll: mailAll, mailGot: mailGot, mailHasReward: mailHasReward, mailWhen: mailWhen, mailPid: mailPid, mailWaiting: mailWaiting, mailClaim: mailClaim, mailRewardText: mailRewardText, mailGold: mailGold, mailGoldText: mailGoldText, goldWords: goldWords, goldShort: goldShort };
 });

@@ -9,7 +9,7 @@
     return {
       version: 1, nick: '', stage: 0, best: -1, kills: 0, tier: 1, farming: false, bossTry: false, diff: 0, diffUnlocked: 0, diffBest: {}, level: 1, xp: 0,
       gold: 0, gems: DATA.balance.startGems,
-      up: { atk: 0, speed: 0, crit: 0, critDmg: 0, gold: 0, mastery: 0, superCrit: 0, ultraCrit: 0, hyperCrit: 0, megaCrit: 0, megaDmg: 0, ultimateCrit: 0, ultimateDmg: 0, alphaCrit: 0, alphaDmg: 0,
+      up: { atk: 0, speed: 0, crit: 0, critDmg: 0, gold: 0, mastery: 0, criticalCrit: 0, criticalDmg: 0, superCrit: 0, ultraCrit: 0, hyperCrit: 0, megaCrit: 0, megaDmg: 0, ultimateCrit: 0, ultimateDmg: 0, alphaCrit: 0, alphaDmg: 0,
         superDmg: 0, ultraDmg: 0, hyperDmg: 0, omegaCrit: 0, omegaDmg: 0, eternalCrit: 0, eternalDmg: 0, genesisCrit: 0, genesisDmg: 0,
         catEye: 0, manaBurst: 0, resonance: 0, rift: 0, arcane: 0, judge: 0, origin: 0, haste: 0, doomClaw: 0, elemRule: 0 },
       slots: ['starShot', 'magicClaw', 'furBomb', 'sparkRing'], skillLv: {}, relics: {}, preset: 0, presets: [null, null, null],

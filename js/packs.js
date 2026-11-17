@@ -14,6 +14,8 @@
     if (p.need && p.need.tier && (state.tier || 1) < p.need.tier) return 'tier';
     if (p.limit && ((state.packs || {})[id] || 0) >= p.limit) return 'limit';
     if (p.give.daily && daily(state).left > 0) return 'daily';
+    // 가방 (js/chest.js): a daily-gems box still waiting in the bag counts as the days still running
+    if (p.give.daily && state.chest && Array.isArray(state.chest.items) && state.chest.items.some(function (b) { var q = b.src === 'pack' && packById(b.pack); return q && q.give.daily; })) return 'daily';
     return 'ok';
   }
   // returns the list of sigils given (empty when none; gear pulled is on it as .gear), or false when the package cannot
@@ -22,9 +24,18 @@
     if (packOpen(state, id) !== 'ok') return false;
     var p = packById(id), S = mod('./sigil.js'), need = packSigils(p);
     if (need) { S.sigilById(state, ''); if (state.sigil.items.length + need > DATA.sigilConf.cap) return false; }
+    var got = packGive(state, id, rng, now);
+    state.packs = state.packs || {}; state.packs[id] = (state.packs[id] || 0) + 1;
+    return got;
+  }
+  // what a package holds, given now. spill(kind, item) (가방, js/chest.js): a rune or sigil whose bag is full goes there
+  // instead (without it a full rune bag gives rune stones as before). got.gold = the gold given
+  function packGive(state, id, rng, now, spill) {
+    var p = packById(id), S = mod('./sigil.js'); if (!p) return [];
+    S.sigilById(state, '');
     var g = p.give, got = [];
     if (g.gems) state.gems += g.gems;
-    if (g.goldMin) state.gold += mod('./economy.js').goldPerSecond(state) * 60 * g.goldMin;
+    if (g.goldMin) { got.gold = mod('./economy.js').goldPerSecond(state) * 60 * g.goldMin; state.gold += got.gold; }
     if (g.potionMin) {
       now = now || Date.now(); if (!state.alch) state.alch = { brews: 0, until: {} }; if (!state.alch.until) state.alch.until = {};
       DATA.potions.forEach(function (pt) { state.alch.until[pt.id] = Math.max(now, state.alch.until[pt.id] || 0) + g.potionMin * 60000; });
@@ -36,13 +47,14 @@
     (g.runes || []).forEach(function (x) { for (var i = 0; i < x.n; i++) {
       var R = mod('./runes.js'), pool = R.runePool(state); if (!pool.length) pool = DATA.runes.filter(function (k) { return !k.awaken && k.crit === undefined; });
       var k = pool[Math.min(pool.length - 1, Math.floor((rng || Math.random)() * pool.length))], it = R.runeAdd(state, k.id, x.grade);
-      if (it) (got.runes = got.runes || []).push(it); else state.runeStone = (state.runeStone || 0) + DATA.runeConf.dismantleBase[x.grade];
+      if (it) (got.runes = got.runes || []).push(it);
+      else if (spill) spill('rune', { kind: k.id, grade: x.grade });
+      else state.runeStone = (state.runeStone || 0) + DATA.runeConf.dismantleBase[x.grade];
     } });
     if (g.runeStone) state.runeStone = (state.runeStone || 0) + g.runeStone;
     if (g.mana) state.mana = (state.mana || 0) + g.mana;   // 마력석 packages (2026-11-15)
-    (g.sigils || []).forEach(function (x) { for (var i = 0; i < x.n; i++) got.push(S.addSigil(state, x.grade, rng)); });
+    (g.sigils || []).forEach(function (x) { for (var i = 0; i < x.n; i++) { var it = S.addSigil(state, x.grade, rng); if (it) got.push(it); else if (spill) spill('sigil', { grade: x.grade }); } });
     if (g.sigilStone) state.sigil.stone += g.sigilStone;
-    state.packs = state.packs || {}; state.packs[id] = (state.packs[id] || 0) + 1;
     return got;
   }
   // today's daily gems: the number given, or 0 (none bought, all days used, or already taken today). dayKey: 'YYYY-MM-DD'
@@ -58,5 +70,5 @@
     return { total: total, taken: Math.max(0, total - left), left: left, today: left > 0 && d.last !== dayKey, hidden: d.hide === dayKey, gems: d.gems || 0 };
   }
   function hideDaily(state, dayKey, on) { daily(state).hide = on ? dayKey : ''; }
-  return { dailyView: dailyView, hideDaily: hideDaily, packById: packById, packSigils: packSigils, packOpen: packOpen, buyPack: buyPack, claimDaily: claimDaily };
+  return { dailyView: dailyView, hideDaily: hideDaily, packById: packById, packSigils: packSigils, packOpen: packOpen, buyPack: buyPack, packGive: packGive, claimDaily: claimDaily };
 });

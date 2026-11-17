@@ -35,9 +35,9 @@
   function sigilStatName(stat) {
     if (stat === AW) return '무작위 각성';
     if (stat === 'critRate') return '치명타 확률';
-    var names = { superRate: '슈퍼 크리 확률', ultraRate: '울트라 크리 확률', hyperRate: '하이퍼 크리 확률', megaRate: '메가 크리 확률', critDmg: '치명타 피해',
-      superDmg: '슈퍼 크리 피해', skillDmg: '스킬 피해', bossDmg: '보스 피해', weakDmg: '약점 피해', surgeDmg: '폭주 피해', atkPct: '공격력',
-      hyperDmg: '하이퍼 크리 피해', megaDmg: '메가 크리 피해', alphaDmg: '알파 크리 피해' };
+    var names = { superRate: '테라 크리 확률', ultraRate: '루나 크리 확률', hyperRate: '솔라 크리 확률', megaRate: '노바 크리 확률', critDmg: '치명타 피해', criticalRate: '크리티컬 확률', criticalDmg: '크리티컬 피해', criticalDmgPct: '크리티컬 피해',
+      superDmg: '테라 크리 피해', skillDmg: '스킬 피해', bossDmg: '보스 피해', weakDmg: '약점 피해', surgeDmg: '폭주 피해', atkPct: '공격력',
+      hyperDmg: '솔라 크리 피해', megaDmg: '노바 크리 피해', alphaDmg: '제로 크리 피해' };
     var t = DATA.critTiers.filter(function (x) { return x.rate === stat || x.dmg === stat; })[0];
     return names[stat] || (t ? t.short + ' 크리 ' + (t.rate === stat ? '확률' : '피해') : stat);
   }
@@ -98,8 +98,9 @@
     return msg.join(', ');
   }
 
-  // give everything; call giftRoom first. rng / now for tests
-  function giftApply(state, l, rng, now) {
+  // give everything; call giftRoom first. rng / now for tests. spill(kind, item) (가방, js/chest.js): a rune or sigil whose
+  // bag is full goes there instead of being lost
+  function giftApply(state, l, rng, now, spill) {
     var g = giftOf(l); rng = rng || Math.random; now = now || Date.now();
     if (g.mana) state.mana = (state.mana || 0) + g.mana;
     if (g.runeStone) state.runeStone = (state.runeStone || 0) + g.runeStone;
@@ -117,10 +118,11 @@
     var GE = g.gear && mod('./gear.js');
     (g.gear || []).forEach(function (x) { var k = GE.addItem(state, x.kind, x.grade * 4 + x.sub, x.n); if (x.pot) GE.potBest(state, k, x.pot); });
     var RU = g.runes && mod('./runes.js');
-    (g.runes || []).forEach(function (x) { for (var i = 0; i < x.n; i++) RU.runeAdd(state, x.kind, x.grade); });
+    (g.runes || []).forEach(function (x) { for (var i = 0; i < x.n; i++) if (!RU.runeAdd(state, x.kind, x.grade) && spill) spill('rune', { kind: x.kind, grade: x.grade }); });
     var SG = g.sigils && mod('./sigil.js');
     (g.sigils || []).forEach(function (x) {
-      for (var i = 0; i < x.n; i++) { var it = SG.addSigil(state, x.grade, rng); if (!it) break;
+      for (var i = 0; i < x.n; i++) { var it = SG.addSigil(state, x.grade, rng);
+        if (!it) { if (spill) spill('sigil', { grade: x.grade, stat: x.stat || '', q: 1 }); else break; continue; }
         if (x.stat === AW) { var aw = awakenStats(); it.stat = aw[Math.min(aw.length - 1, Math.floor(rng() * aw.length))].stat; }
         else if (x.stat) it.stat = x.stat;
         it.q = 1; }

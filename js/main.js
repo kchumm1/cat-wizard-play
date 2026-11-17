@@ -251,7 +251,9 @@
           });
         }
       }
-      if (ct >= 3) { sc.shake(Math.min(0.42, 0.08 * ct)); if (ct >= 4) sc.flash(CRIT_FLASH[Math.min(ct, 7)], ct >= 5 ? 0.24 : 0.18); }
+      // 크리티컬(2026-11-17, 치명타 다음 단계)은 빼고 셈 — 흔들림·번쩍임은 예전처럼 루나(옛 울트라)부터
+      var cv = ct > 1 ? ct - 1 : ct;
+      if (cv >= 3) { sc.shake(Math.min(0.42, 0.08 * cv)); if (cv >= 4) sc.flash(CRIT_FLASH[Math.min(cv, 7)], cv >= 5 ? 0.24 : 0.18); }
       gained.dmg = Math.max(gained.dmg, dmg);
       snd.play(crit ? 'crit' : 'hit');
       if (mob.hp <= 0) onDeath(mob, skill);
@@ -518,13 +520,19 @@
     transcend: function (k) { var ok = CW.transcend(state, k); if (ok) { refreshStats(); snd.play('tier'); fx.levelUp(state.tier, 0xffd84a, true); save(); } return ok; },
     brew: function (id) { var ok = CW.brew(state, id, Date.now()); if (ok) { refreshStats(); buffKey = CW.buffKey(state); snd.play('win'); save(); } return ok; },
     runeGradeUp: function (id) { var ok = CW.runeGradeUp(state, id); if (ok) { refreshStats(); snd.play('tier'); fx.levelUp(state.tier, 0xb58cff, true); save(); } return ok; },
-    buyPack: function (id) { if (CW.FRIEND) return false; var got = CW.buyPack(state, id); if (got !== false) { refreshStats(); snd.play('win'); save(); } return got; },
+    // 가방 (2026-11-17, js/chest.js): 산 패키지는 가방에 상자로 — 열 때 지급
+    buyPack: function (id) { if (CW.FRIEND) return false; var box = CW.chestBuyPack(state, id); if (box) { snd.play('win'); save(); } return box; },
+    openChest: function (id) { var r = CW.chestOpen(state, id, CW.goldScale(state)); if (r.ok) { CW.setGoldScale(CW.capGold(state)); refreshStats(); snd.play('win'); save(); } return r; },
     // the phone's own date (the daily gems reset at its midnight)
     dayKey: function () { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); },
     dailyView: function () { return CW.dailyView(state, G.dayKey()); },
     hideDaily: function (on) { CW.hideDaily(state, G.dayKey(), on); save(); },
     // 우편함: claim one letter (js/mail.js); gold in 조 as shown goes through the gold scale, then the cap
-    claimMail: function (l) { var ok = CW.mailClaim(state, l, CW.goldScale(state)); if (ok) { CW.setGoldScale(CW.capGold(state)); refreshStats(); snd.play('win'); save(); } return ok; },   // items and relics change the stats (2026-11-16)
+    // 우편 선물도 가방으로 (2026-11-17): 받으면 편지는 받음 표시, 선물은 가방에서 열 때 들어감 (보상 없는 편지는 읽음 표시만)
+    claimMail: function (l) {
+      if (!CW.mailHasReward(l)) { var ok = CW.mailClaim(state, l, CW.goldScale(state)); if (ok) save(); return ok; }
+      var box = CW.chestTakeMail(state, l); if (box) { snd.play('win'); save(); } return !!box;
+    },   // items and relics change the stats (2026-11-16)
     // 공지: remember that this notice was opened (js/notice.js)
     readNotice: function (n) { if (CW.noticeMarkRead(state, n)) save(); },
     claimDaily: function () { var n = CW.claimDaily(state, G.dayKey()); if (n) { snd.play('win'); save(); } return n; },

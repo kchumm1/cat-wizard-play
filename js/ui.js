@@ -85,8 +85,12 @@
       }
       var tl = CW.gearTotalLevel(s);
       var ns = CW.gearStars(s);
-      return top + kinds + '<div class="bgrid opgrade' + (bagAll ? ' all' : '') + '" data-grade="' + DATA.grades[p.grade].name + '">' + rows + '</div>' + bagActs + '<div class="codexbar"><span>장비 통합 레벨 효과 (Lv.' + fmt(tl) + ')</span><b>공격력 +' + pct(tl * DATA.gearCodex.per) + '</b></div>' +
-        '<div class="codexbar"><span>장비 초월 통합 성급 (★' + ns + ')</span><b>모든 피해 +' + pct(ns * BG.starFinal) + '</b></div>';
+      return top + kinds + '<div class="bgrid opgrade' + (bagAll ? ' all' : '') + '" data-grade="' + DATA.grades[p.grade].name + '">' + rows + '</div>' + bagActs +
+        // 통합 효과 카드 (2026-11-17, 사용자: 장비 맨 밑 문구를 코스튬 맨 밑처럼 상자로): 코스튬 수집 카드와 같은 모양
+        '<div class="opcard ccol gcodex"><div class="opcard-h"><b>장비 통합 효과</b></div>' +
+        '<div class="ccol-cells"><p><small>통합 레벨 Lv.' + fmt(tl) + '</small><b>공격력 +' + pct(tl * DATA.gearCodex.per) + '</b></p>' +
+        '<p class="nx"><small>초월 통합 성급 ★' + ns + '</small><b>모든 피해 +' + pct(ns * BG.starFinal) + '</b></p></div>' +
+        '<p class="opcard-f">장비 레벨 1마다 공격력 +' + pct(DATA.gearCodex.per) + ' · 초월 ★1마다 모든 피해 +' + pct(BG.starFinal) + '</p></div>';
     }
     var ghdSeen = null, ghdPlay = false, ghdFrom = 0, ghdBar = 0;   // 뽑기 레벨 칸 움직임
     var skDetail = null, skRegOpen = false;   // 스킬 상세 (보기) · 유리한 지역 펼침
@@ -234,7 +238,7 @@
       cond += '<div class="rk-cmp2"><i></i><span class="rkc-l">모든 피해</span><span class="rkc-a">+' + pct(r * RC.rankFinal) + '</span>' + (next ? '<em></em><b>+' + pct((r + 1) * RC.rankFinal) + '</b>' : '') + '</div>';
       cond += (next ? '<button class="buy rkup' + (ready.ok ? '' : ' off') + '" data-act="rankup">승급하기</button>' : '<p class="note">최고 계급 달성</p>') + '</div>';
       var list = DATA.marks.map(function (m) {
-        var lv = mlv(m), cost = CW.markCost(lv), full = false, ov = lv - cap, rate = ({ critRate: '치명타 피해', superRate: '슈퍼 피해' })[m.stat];   // 한계 돌파 (2026-11-15)
+        var lv = mlv(m), cost = CW.markCost(lv), full = false, ov = lv - cap, rate = ({ critRate: '치명타 피해', superRate: '테라 피해' })[m.stat];   // 한계 돌파 (2026-11-15)
         var ico = '<span class="rkr-ico" data-opfx="mk:' + m.id + '" data-opdur=".26"><i class="rkv-dome"></i><img src="art/rk-' + m.id + '.webp" alt=""></span>';
         if (!CW.markOpen(s, m.id)) return '<div class="row lockrow rkrow">' + ico + '<div class="info"><div class="name">' + m.name + '</div><div class="desc need">' + RC.names[m.openRank] + ' 달성 시 해금 · ' + STAT_KO[m.stat] + '</div></div><span class="lockic"></span></div>';
         return '<div class="row rkrow' + (m.extra ? ' mkextra' : '') + '">' + ico.replace('<span class="rkr-ico"', '<span class="rkr-ico" data-mkhold="' + m.id + '"') + '<div class="info"><div class="name">' + m.name + ' <span class="lv" data-opv="mk:' + m.id + '">' + (ov > 0 ? 'Lv.' + lv : lv + '/' + cap) + '</span></div><div class="desc">' + STAT_KO[m.stat] + ' ' + CW.bonusAmount(m.stat, (rate && ov > 0 ? cap : lv) * m.per) + (rate && ov > 0 ? ' · ' + rate + ' +' + ov + '%' : '') + '</div></div>' +
@@ -316,7 +320,7 @@
       el.className = 'on';
       el.innerHTML = '<b>' + run.name + '</b><span>' + Math.max(0, run.t).toFixed(1) + '초</span><span>' + (run.kind === 'mana' ? '피해 ' + fmt(run.dmg) + ' · 골렘 Lv.' + run.level : '처치 ' + run.kills) + '</span>';
     }
-    var STAT_KO = { atk: '기본 공격력', potion: '분노의 물약', potionGold: '황금 물약', potionXp: '지혜의 물약', megaRate: '메가 크리티컬 확률', megaDmg: '메가 크리티컬 피해', ultimateRate: '얼티밋 크리티컬 확률', ultimateDmg: '얼티밋 크리티컬 피해', alphaRate: '알파 크리티컬 확률', alphaDmg: '알파 크리티컬 피해', atkPct: '공격력', critRate: '치명타 확률', critDmg: '치명타 피해', superRate: '슈퍼 크리티컬 확률', superDmg: '슈퍼 크리티컬 피해', ultraRate: '울트라 크리티컬 확률', ultraDmg: '울트라 크리티컬 피해', hyperRate: '하이퍼 크리티컬 확률', hyperDmg: '하이퍼 크리티컬 피해', bossDmg: '보스 피해', normalDmg: '일반 몬스터 피해', skillDmg: '스킬 피해', goldMul: '골드 획득', xpMul: '경험치 획득', speed: '공격 속도', weakDmg: '약점 피해', surgeDmg: '폭주 피해', surgeRate: '폭주 충전 속도', finalPct: '모든 피해' };
+    var STAT_KO = { atk: '기본 공격력', criticalRate: '크리티컬 확률', criticalDmg: '크리티컬 피해', criticalDmgPct: '크리티컬 피해', potion: '분노의 물약', potionGold: '황금 물약', potionXp: '지혜의 물약', megaRate: '노바 크리티컬 확률', megaDmg: '노바 크리티컬 피해', ultimateRate: '오라 크리티컬 확률', ultimateDmg: '오라 크리티컬 피해', alphaRate: '제로 크리티컬 확률', alphaDmg: '제로 크리티컬 피해', atkPct: '공격력', critRate: '치명타 확률', critDmg: '치명타 피해', superRate: '테라 크리티컬 확률', superDmg: '테라 크리티컬 피해', ultraRate: '루나 크리티컬 확률', ultraDmg: '루나 크리티컬 피해', hyperRate: '솔라 크리티컬 확률', hyperDmg: '솔라 크리티컬 피해', bossDmg: '보스 피해', normalDmg: '일반 몬스터 피해', skillDmg: '스킬 피해', goldMul: '골드 획득', xpMul: '경험치 획득', speed: '공격 속도', weakDmg: '약점 피해', surgeDmg: '폭주 피해', surgeRate: '폭주 충전 속도', finalPct: '모든 피해' };
     // crit tiers (2026-11-16): rate, '배' damage and '%' damage of every tier
     DATA.critTiers.forEach(function (t) { STAT_KO[t.rate] = t.name + ' 확률'; STAT_KO[t.dmg] = t.name + ' 피해'; STAT_KO[t.dmg + 'Pct'] = t.name + ' 피해'; });
     // "스킬 피해가" / "공격력이": the right particle after a Korean word (a final consonant takes 이)
@@ -353,7 +357,8 @@
       var sr = CW.relicById(selRelic), slv = own[sr.id] || 0, smax = CW.relicMax(sr);
       var show = '<div class="rlstage' + (sr.divine ? ' divine' : '') + (slv ? '' : ' none') + '">' + (CW.opalUI ? CW.opalUI.stage(mi('relic', sr), { cls: 'rstage', seed: 2 }) : '<div class="rl-fig">' + mi('relic', sr) + '<i></i></div>') + '<div class="rl-info">' +
         (sr.divine ? '<em class="cb own">신유물</em>' : '') + (slv ? '' : '<em class="cb none">미보유</em>') + '<b>' + sr.name + '</b><span class="rl-lv">Lv.<span data-opv="rl:' + sr.id + '">' + slv + '</span> / ' + smax + '</span>' +
-        '<span class="rl-eff">' + (slv ? bonusText(sr.stat, slv * sr.per) + (slv < smax ? ' <em>→</em> +' + pct((slv + 1) * sr.per) : ' · 최대') : (STAT_KO[sr.stat] || sr.stat) + ' · 레벨당 +' + pct(sr.per)) + '</span></div></div>';
+        // 효과 이름은 윗줄, 수치는 아랫줄 — 이름 길이와 상관없이 숫자가 중간에서 끊기지 않게 (2026-11-17)
+        '<span class="rl-eff">' + (STAT_KO[sr.stat] || sr.stat) + '<br><span style="white-space:nowrap">' + (slv ? '+' + pct(slv * sr.per) + (slv < smax ? ' <em>→</em> +' + pct((slv + 1) * sr.per) : ' · 최대') : '레벨당 +' + pct(sr.per)) + '</span></span></div></div>';
       var grid = sorted.map(function (r) {
         var lv = own[r.id] || 0;
         return '<button class="rlsock' + (r.divine ? ' divine' : '') + (lv ? '' : ' none') + (r.id === selRelic ? ' sel' : '') + '" data-rlsel="' + r.id + '" aria-label="' + esc(r.name) + (lv ? ' Lv.' + lv : ' 미보유') + '">' + mi('relic', r) + '<b>' + (lv ? 'Lv.' + lv : '—') + '</b></button>';
@@ -705,7 +710,7 @@
       var snm = STAT_KO[sel.stat] || sel.stat;
       return '<div class="rdh"><div class="rdpic sg" style="--gc:' + hc(sel.grade) + '" data-opfx="sg:' + sel.id + '" data-opdur=".5">' + gfImg(sel.grade, 'rd-gf') + sigilArt(sel.stat, sel.grade, 'sd-art') + '</div>' +
         '<div class="rdinfo"><p class="sdq"><i class="rsp"></i><b style="color:' + hc(sel.grade) + '">' + hn(sel.grade) + '</b><span>·</span>' + CW.qualityName(sel.q) + '<span>·</span><b class="to">' + Math.round(sel.q * 100) + '%</b></p>' +
-        '<p class="sdo"><i class="rsp"></i><span>옵션</span><em>' + snm + ' +' + pct(CW.sigilValue(sel)) + '</em></p>' + (extra || '') + '</div></div>';
+        '<p class="sdo"><i class="rsp"></i><span>옵션</span><em>' + snm + ' <span style="white-space:nowrap">+' + pct(CW.sigilValue(sel)) + '</span></em></p>' + (extra || '') + '</div></div>';
     }
     function sigilEqBtn(s, sel) {
       var on = CW.isEquipped(s, sel.id), sc = CW.sigilCompare(s, sel.id), swapTo = !on && sc && sc.full && sc.target;
@@ -793,6 +798,227 @@
         var r = CW.relicById(o.id); return '<div class="' + (r.divine ? 'divine' : '') + '"><span>' + mi('relic', r) + '</span><small>' + r.name + '</small><b>' + (o.refund ? '다이아 +' + o.refund : 'Lv.' + o.lv) + '</b></div>';
       }).join('') + '</div>' + (gems ? '<p class="note">최대 레벨 유물을 다이아 ' + gems + '개로 전환했어요.</p>' : ''), [{ label: '확인' }, { label: '다시 소환', pri: true, fn: function () { var r = G.summonRelics(list.length); if (!r) toast('다이아가 부족해요'); else { showRelics(r); renderPanel(true); hud(); } } }]);
     }
+    // ---------- 가방 (2026-11-17, js/chest.js) ----------
+    // 패키지·우편 선물이 상자로 쌓이는 곳. 열면 룬·신성력·장비가 제자리로 들어가고, 결과 창에서 그 화면으로 바로 감
+    function chestBadge() {
+      var b = document.querySelector('#quick [data-quick="chest"]'); if (!b || !G.state) return;
+      var n = CW.chestCount(G.state), d = b.querySelector('.qnum');
+      if (n && !d) { d = document.createElement('b'); d.className = 'qnum'; b.appendChild(d); }
+      if (d) { if (n) d.textContent = n > 99 ? '99+' : n; else d.remove(); }
+    }
+    CW.chestBadge = chestBadge;
+    // 가방 창 (형의 그림 art/bag-win.webp · bag-cell.webp, tools/bag-art.py): 가죽 가방 안에 100칸, 한 줄 4칸(형: 칸 넉넉하게),
+    // 위아래로 넘겨 봄. 상자 칸을 누르면 구성품과 [열기], 아래 띠에 칸 수와 [모두 열기]
+    var bagWin = null;
+    function chestCell(box) {
+      if (!box) return '<i class="bgc"></i>';
+      var p = box.src === 'pack' && CW.packById(box.pack);
+      var pic = p ? mi('pack', p) : CW.chestIsItem(box) ? ((CW.giveIco && CW.giveIco(box.src, box.grade)) || '') : '<img src="art/mail-env.webp" alt="" draggable="false">';
+      var gc = CW.chestIsItem(box) && DATA.hiGrades[box.grade] ? ' style="--gc:' + DATA.hiGrades[box.grade].color + '"' : '';
+      return '<button class="bgc on' + (CW.chestIsItem(box) ? ' item' : '') + '"' + gc + ' data-chpick="' + box.id + '"><span class="bgp">' + pic + '</span><b>' + esc(CW.chestTitle(box)) + '</b></button>';
+    }
+    function bagRender() {
+      var items = CW.chestItems(G.state), cells = '';
+      for (var i = 0; i < CW.CHEST_CAP; i++) cells += chestCell(items[i]);
+      bagWin.querySelector('.bggrid').innerHTML = cells;
+      bagWin.querySelector('.bgn').innerHTML = '<b>' + items.length + '</b> / ' + CW.CHEST_CAP;
+      bagWin.querySelector('.bgall').classList.toggle('off', !items.length);
+      // 이름은 칸 안 아래 자리에 (긴 이름은 두 줄) — 그래도 넘치면 글씨만 줄여 칸 테두리 안에 들어가게
+      bagWin.querySelectorAll('.bgc b').forEach(function (b) {
+        b.style.fontSize = ''; var f = parseFloat(getComputedStyle(b).fontSize), r = document.createRange();
+        var over = function () { r.selectNodeContents(b); var t = r.getBoundingClientRect(), k = b.getBoundingClientRect(); return t.height > k.height + 0.5 || t.width > k.width + 0.5; };
+        for (var n = 0; n < 14 && over(); n++) { f *= 0.94; b.style.fontSize = f.toFixed(2) + 'px'; }
+      });
+      chestBadge();
+    }
+    function openChest() {
+      if (!bagWin) {
+        bagWin = document.createElement('div'); bagWin.id = 'bagwin'; bagWin.setAttribute('role', 'dialog'); bagWin.setAttribute('aria-label', '가방');
+        // 열리는 모습 (형: 가방도 살짝 열리는 걸): 가방이 톡 튀어나와 뚜껑이 살짝 들리고 금빛이 새어 나온 뒤 창이 올라옴 (누르면 건너뜀)
+        bagWin.innerHTML = '<div class="bgfan" aria-hidden="true"><div class="bgbag"><i class="bgmouth"></i><img class="bgbody" src="art/bag-body.webp" alt="" draggable="false">' +
+          '<img class="bglid" src="art/bag-lid.webp" alt="" draggable="false"><i class="bgglow"></i></div></div>' +
+          '<div class="bgw"><img class="bgbg" src="art/bag-win.webp" alt="" draggable="false"><button class="bgx" aria-label="닫기"></button>' +
+          '<div class="bggrid"></div><div class="bgbar"><span class="bgn"></span><button class="bgall">모두 열기</button></div></div>';
+        document.body.appendChild(bagWin);
+        bagWin.addEventListener('click', function (e) {
+          var t = e.target;
+          if (bagWin.classList.contains('fan')) { bagFanEnd(); return; }
+          if (t === bagWin || t.closest('.bgx')) { G.sound('click'); bagWin.classList.remove('on', 'rise'); return; }
+          if (t.closest('.bgall')) { if (CW.chestCount(G.state)) { G.sound('click'); openAllChest(); } return; }
+          var c = t.closest('[data-chpick]'); if (c) { G.sound('click'); chestDetail(c.dataset.chpick); }
+        });
+      }
+      bagRender(); bagWin.querySelector('.bggrid').scrollTop = 0;
+      bagWin.classList.remove('fan', 'rise'); void bagWin.offsetWidth;
+      bagWin.classList.add('on', 'fan');
+      clearTimeout(bagWin._t); bagWin._t = setTimeout(bagFanEnd, 1150);
+    }
+    function bagFanEnd() {
+      clearTimeout(bagWin._t); if (!bagWin.classList.contains('fan')) return;
+      bagWin.classList.remove('fan'); bagWin.classList.add('rise');
+      clearTimeout(bagWin._r); bagWin._r = setTimeout(function () { bagWin.classList.remove('rise'); }, 450);
+    }
+    // 칸을 누르면: 상자는 여는 연출 창, 가득 차서 돌아온 룬·신성력은 [꺼내기]
+    function chestDetail(id) {
+      var box = CW.chestById(G.state, id); if (!box) return;
+      if (!CW.chestIsItem(box)) { chestFx([id]); return; }
+      var why = CW.chestRoom(G.state, box);
+      modal('<h2>' + esc(CW.chestTitle(box)) + '</h2><p class="guide-lead">' + (box.src === 'rune' ? '룬' : '신성력') + ' 칸이 가득 차서 가방에 보관 중이에요.' + (why ? ' 빈자리가 생기면 꺼낼 수 있어요.' : ' 지금 꺼낼 수 있어요.') + '</p>',
+        [{ label: '닫기' }, { label: '꺼내기', pri: true, fn: function () { var r = G.openChest(id); if (!r.ok) { toast(r.why + '. 빈자리를 만든 뒤 꺼내 주세요.'); return; } toast(CW.chestTitle(box) + ' · 꺼냈어요'); bagRender(); hud(); if (tab !== 'battle') renderPanel(true); } }], { variant: 'guide', close: true });
+    }
+    // ---------- 상자 여는 연출 (2026-11-17, 형 시안 dev/chest-reward-demo.html, 형: 느리게 하나씩 말고 빠르게 후르릭) ----------
+    // [상자 열기] → 상자가 흔들리고 빛나며 열림 → 보상 카드가 한꺼번에 펼쳐짐 → 동시에 날아감: 룬·신성력·장비는 아래 칸으로,
+    // 다이아·골드는 위 지갑으로, 7일 다이아·물약·마력석 같은 건 그 자리에서 바로 적용(위로 반짝 사라짐). 룬·신성력 칸이 가득
+    // 찼으면 그 칸에서 튕겨 가방 칸으로. 누르면 건너뜀. 연출 전에 G.openChest 로 이미 다 지급돼 있음 (연출은 보여 주기만)
+    var cfx = null;
+    function rewardFace(o) {
+      var I = CW.ICO || {}, gi = function (k, g) { return (CW.giveIco && CW.giveIco(k, g)) || ''; }, hn = function (g) { return DATA.hiGrades[g] ? DATA.hiGrades[g].name : ''; };
+      var min = function (m) { return m >= 60 ? (m % 60 ? (m / 60).toFixed(1) : m / 60) + '시간' : m + '분'; };
+      switch (o.k) {
+        case 'gems': return ['<i class="gem"></i>', '다이아', fmt(o.n)];
+        case 'gold': return ['<i class="coin"></i>', '골드', o.min ? '사냥 ' + min(o.min) + '치' : fmtG(o.gold)];
+        case 'pulls': return [gi('pull'), '장비 뽑기', o.n + '번'];
+        case 'daily': return ['<i class="gem"></i>', '매일 다이아', o.n + '일'];
+        case 'potion': var pt = o.id && (DATA.potions || []).filter(function (x) { return x.id === o.id; })[0]; return [(pt && I.misc && I.misc('potion', pt.id)) || gi('potion'), pt ? pt.name : '물약 3종', min(o.n)];
+        case 'mana': return [gi('mana'), '마력석', fmt(o.n)];
+        case 'runeStone': return [gi('runeStone'), '룬석', fmt(o.n)];
+        case 'sigilStone': return [gi('sigilStone'), '신성석', fmt(o.n)];
+        case 'shards': return ['<b class="cfemo">✦</b>', '신기 조각', fmt(o.n)];
+        case 'awakenShard': return ['<b class="cfemo">🔆</b>', '각성 파편', fmt(o.n)];
+        case 'rune': return [gi('rune', o.grade), hn(o.grade) + ' 룬', o.n + '개'];
+        case 'sigil': return [gi('sigil', o.grade), hn(o.grade) + ' 신성력', o.n + '개'];
+        case 'ticket': var dg = (DATA.dungeons || []).filter(function (x) { return x.id === o.id; })[0]; return [(I.misc && I.misc('dungeon', o.id)) || '', (dg ? dg.name : '던전') + ' 입장권', o.n + '장'];
+        case 'gear': return [CW.GEAR_IMG && CW.GEAR_IMG[o.id] ? '<img src="' + CW.GEAR_IMG[o.id] + '" alt="" draggable="false">' : '', DATA.grades[o.grade].name + ' ' + DATA.kindName[o.id], o.n + '개'];
+        case 'relic': var rl = CW.relicById(o.id); return [(I.misc && I.misc('relic', o.id)) || '', rl ? rl.name : '유물', o.n + '개'];
+        case 'costume': var cs = (DATA.costumes || []).filter(function (x) { return x.id === o.id; })[0]; return ['<b class="cfemo">👘</b>', cs ? cs.name : '코스튬', '코스튬'];
+      }
+      return ['', o.k, ''];
+    }
+    function cfCounts() {
+      var s = G.state; return { rune: CW.runeBag(s).items.length, sigil: (s.sigil && s.sigil.items.length) || 0, bag: CW.chestCount(s), gems: s.gems, gold: s.gold };
+    }
+    function chestFx(ids) {
+      var boxes = ids.map(function (id) { return CW.chestById(G.state, id); }).filter(Boolean);
+      if (!boxes.length) return;
+      if (!cfx) {
+        cfx = document.createElement('div'); cfx.id = 'chestfx'; cfx.setAttribute('role', 'dialog'); cfx.setAttribute('aria-label', '상자 열기');
+        document.body.appendChild(cfx);
+        cfx.addEventListener('click', function (e) {
+          var t = e.target;
+          if (cfx._run) { cfx._skip = true; return; }   // 연출 중 누르면 끝으로
+          if (t.closest('.cfgo')) { G.sound('click'); cfRun(); return; }
+          if (t.closest('.cfx') || t === cfx || t.closest('.cfok')) { G.sound('click'); cfClose(); return; }
+          var d = t.closest('[data-cfto]');
+          if (d && cfx.classList.contains('done') && ['rune', 'sigil', 'gear'].indexOf(d.dataset.cfto) >= 0) {
+            G.sound('click'); cfClose(true); if (bagWin) bagWin.classList.remove('on', 'rise');
+            gearSub = d.dataset.cfto; selSigil = selRune = null; rnBag = sgBag = false; openTab('gear');
+          }
+        });
+      }
+      cfx._ids = boxes.map(function (b) { return b.id; }); cfx._run = false; cfx._skip = false;
+      var one = boxes.length === 1, c = cfCounts(), RC = DATA.runeConf.cap, SC = DATA.sigilConf.cap;
+      var pic = one ? (boxes[0].src === 'pack' ? mi('pack', CW.packById(boxes[0].pack)) : '<img src="art/mail-env.webp" alt="" draggable="false">') : '<img src="art/ic-bag.webp" alt="" draggable="false">';
+      cfx.innerHTML = '<div class="cfw"><div class="cfhead"><button class="cfx" aria-label="닫기">×</button><span class="cfwal" data-cfto="gem"><i class="gem"></i><b data-cfn="gems">' + fmt(c.gems) + '</b></span>' +
+        '<span class="cfwal" data-cfto="gold"><i class="coin"></i><b data-cfn="gold">' + fmtG(c.gold) + '</b></span></div>' +
+        '<div class="cfhd"><span class="cfeye">' + esc(one ? CW.chestTitle(boxes[0]) : '상자 ' + boxes.length + '개') + '</span><h2 class="cft">상자 속 선물을 꺼내 볼까요?</h2><p class="cfst">' + (one ? (boxes[0].src === 'mail' ? '우편 선물' : '패키지') : '한 번에 모두 열어요') + '</p></div>' +
+        '<div class="cfstage"><i class="cfhalo"></i><div class="cfchest"><i class="cflight"></i>' + pic + '</div><div class="cfloot"></div></div>' +
+        '<div class="cfdest"><div class="cfd" data-cfto="rune"><i>' + ((CW.giveIco && CW.giveIco('rune', 3)) || '') + '</i><span>룬</span><small data-cfn="rune">' + c.rune + ' / ' + RC + '</small></div>' +
+        '<div class="cfd" data-cfto="sigil"><i>' + ((CW.giveIco && CW.giveIco('sigil', 5)) || '') + '</i><span>신성력</span><small data-cfn="sigil">' + c.sigil + ' / ' + SC + '</small></div>' +
+        '<div class="cfd" data-cfto="gear"><i>' + ((CW.giveIco && CW.giveIco('pull')) || '') + '</i><span>장비</span><small>장비함</small></div>' +
+        '<div class="cfd bag" data-cfto="bag"><i><img src="art/ic-bag.webp" alt="" draggable="false"></i><span>가방</span><small data-cfn="bag">' + c.bag + ' / ' + CW.CHEST_CAP + '</small></div></div>' +
+        '<p class="cfnote" aria-live="polite"></p><div class="cfbtns"><button class="cfgo">상자 열기</button></div></div>';
+      cfx.classList.remove('done'); cfx.classList.add('on');
+      // 상자는 화면 정가운데 (형 2026-11-17): 무대 안에서 상자·빛 자리를 화면 가운데 높이로 옮김
+      // (창이 아래에서 떠오르는 0.32초 동안은 위치가 틀어져 보이므로, 다 떠오른 뒤의 자리로 계산: 움직임 없는 offsetTop 기준)
+      var place = function () {
+        var stg = cfx.querySelector('.cfstage'), w = cfx.querySelector('.cfw'), wr = cfx.getBoundingClientRect();
+        var wTop = (wr.height - w.offsetHeight) / 2;   // 창은 화면 가운데에 놓임 (#chestfx 는 flex 가운데)
+        var y = Math.max(60, Math.min(stg.offsetHeight - 60, wr.height / 2 - wTop - stg.offsetTop));
+        cfx.querySelector('.cfchest').style.top = y + 'px'; cfx.querySelector('.cfhalo').style.top = y + 'px';
+      };
+      place();
+    }
+    function cfClose(keep) { if (!cfx) return; cfx.classList.remove('on', 'done'); var d = cfx._daily; cfx._daily = false; if (bagWin && !keep) bagRender(); if (d && !keep) showDaily(false); }
+    function cfAnim(el, fr, ms, ease) { if (cfx._skip) ms = 1; var a = el.animate(fr, { duration: ms, easing: ease || 'cubic-bezier(.2,.8,.2,1)', fill: 'forwards' }); return a.finished.catch(function () {}); }
+    function cfWait(ms) { return new Promise(function (r) { if (cfx._skip) return r(); var t0 = Date.now(), f = function () { if (cfx._skip || Date.now() - t0 >= ms) r(); else setTimeout(f, 30); }; f(); }); }
+    function cfPulse(el, bad) { el.animate([{ transform: 'scale(1)', filter: 'brightness(1)' }, { transform: bad ? 'translateX(-4px) scale(1.04)' : 'scale(1.1)', filter: 'brightness(1.5)' }, { transform: bad ? 'translateX(4px)' : 'scale(1.03)' }, { transform: 'none', filter: 'none' }], { duration: 300 }); }
+    function cfRun() {
+      var before = cfCounts(), rew = [], go = {}, daily = false, back = { rune: 0, sigil: 0 };
+      // 지급은 먼저 한꺼번에 (연출이 끊겨도 받은 건 그대로)
+      cfx._ids.forEach(function (id) {
+        var r = G.openChest(id); if (!r.ok) return;
+        (r.rewards || []).forEach(function (o) { rew.push(o); if (o.back) back[o.k] += o.back; });
+        Object.keys(r.go || {}).forEach(function (k) { go[k] = 1; });
+        if (r.box.src === 'pack') { var p = CW.packById(r.box.pack); if (p && p.give.daily) daily = true; }
+      });
+      var after = cfCounts(); cfx._daily = daily;
+      chestBadge(); hud(); if (tab !== 'battle') renderPanel(true);
+      // 같은 것끼리 묶어 카드 수를 줄임 (모두 열기)
+      var merged = [], key = function (o) { return o.k + ':' + (o.grade === undefined ? '' : o.grade) + ':' + (o.id || '') + ':' + (o.sub === undefined ? '' : o.sub); };
+      rew.forEach(function (o) { var m = merged.filter(function (x) { return key(x) === key(o); })[0]; if (m) { m.n = (m.n || 0) + (o.n || 0); m.gold = (m.gold || 0) + (o.gold || 0); m.back = (m.back || 0) + (o.back || 0); if (o.min) m.min = (m.min || 0) + o.min; } else merged.push(Object.assign({}, o)); });
+      var w = cfx.querySelector('.cfw'), stage = cfx.querySelector('.cfstage'), loot = cfx.querySelector('.cfloot'), chest = cfx.querySelector('.cfchest');
+      var btn = cfx.querySelector('.cfgo'), title = cfx.querySelector('.cft'), st = cfx.querySelector('.cfst'), note = cfx.querySelector('.cfnote');
+      var setN = function (k, v) { var el = cfx.querySelector('[data-cfn="' + k + '"]'); if (el) el.textContent = v; };
+      var pt = function (el) { var a = el.getBoundingClientRect(), b = stage.getBoundingClientRect(); return { x: a.left - b.left + a.width / 2, y: a.top - b.top + a.height / 2 }; };
+      cfx._run = true; cfx._skip = false; btn.disabled = true; btn.textContent = '보상을 꺼내고 있어요'; title.textContent = '상자를 여는 중…'; st.textContent = '';
+      (async function () {
+        await cfAnim(chest, [{ transform: 'rotate(0)' }, { transform: 'rotate(-7deg) scale(1.04)' }, { transform: 'rotate(7deg) scale(1.06)' }, { transform: 'rotate(0) scale(1)' }], 260);
+        cfAnim(cfx.querySelector('.cflight'), [{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'scale(1.2)' }, { opacity: 0, transform: 'scale(1.6)' }], 420);
+        await cfAnim(chest, [{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(1.25)', opacity: 0 }], 220);
+        title.textContent = '선물이 짜르륵!';
+        // 카드: 3칸 줄, 상자 자리에서 한꺼번에 펼쳐짐
+        var cards = merged.map(function (o, i) {
+          var f = rewardFace(o), el = document.createElement('div'), n = merged.length, cols = 3, row = Math.floor(i / cols), inRow = Math.min(cols, n - row * cols), col = i % cols;
+          el.className = 'cfi' + (o.k === 'rune' || o.k === 'sigil' ? ' rare' : '');
+          el.style.left = (50 + (col - (inRow - 1) / 2) * 33) + '%'; el.style.top = (6 + row * 31) + '%';
+          el.innerHTML = '<span class="cfic">' + f[0] + '</span><b>' + esc(f[1]) + '</b><small>' + esc(f[2]) + '</small>';
+          loot.appendChild(el); return el;
+        });
+        stage.style.setProperty('--rows', Math.max(1, Math.ceil(merged.length / 3)));
+        await Promise.all(cards.map(function (el, i) {
+          return cfWait(i * 35).then(function () { return cfAnim(el, [{ opacity: 0, transform: 'translate(-50%,60px) scale(.2) rotate(-8deg)' }, { opacity: 1, transform: 'translate(-50%,-4px) scale(1.06) rotate(2deg)' }, { opacity: 1, transform: 'translate(-50%,0) scale(1)' }], 280); });
+        }));
+        await cfWait(320);
+        title.textContent = '보관함으로 쏙!';
+        var target = function (o) { return o.to === 'gem' ? cfx.querySelector('[data-cfto="gem"]') : o.to === 'gold' ? cfx.querySelector('[data-cfto="gold"]') : o.to === 'now' ? null : cfx.querySelector('[data-cfto="' + o.to + '"]'); };
+        await Promise.all(cards.map(function (el, i) {
+          var o = merged[i], tg = target(o);
+          return cfWait(i * 45).then(function () {
+            var s0 = { x: el.offsetLeft, y: el.offsetTop + el.offsetHeight / 2 };
+            if (!tg) {   // 바로 적용: 위로 반짝 사라짐
+              el.classList.add('used');
+              return cfAnim(el, [{ opacity: 1, transform: 'translate(-50%,0) scale(1)' }, { opacity: 1, transform: 'translate(-50%,-14px) scale(1.08)', filter: 'brightness(1.6)' }, { opacity: 0, transform: 'translate(-50%,-34px) scale(.7)' }], 420);
+            }
+            var e = pt(tg), dx = e.x - s0.x, dy = e.y - s0.y;
+            return cfAnim(el, [{ transform: 'translate(-50%,0) scale(1)', opacity: 1 }, { transform: 'translate(calc(-50% + ' + dx * 0.5 + 'px),' + Math.min(dy * 0.5, -30) + 'px) scale(.8)', opacity: 1 }, { transform: 'translate(calc(-50% + ' + dx + 'px),' + dy + 'px) scale(.3)', opacity: 1 }], 420).then(function () {
+              if (o.back) {   // 칸이 가득: 튕겨서 가방으로
+                cfPulse(tg, true); note.textContent = '빈 칸이 없어 가방에 보관해요';
+                var bg = cfx.querySelector('[data-cfto="bag"]'), b = pt(bg), bx = b.x - s0.x, by = b.y - s0.y;
+                return cfAnim(el, [{ transform: 'translate(calc(-50% + ' + dx + 'px),' + dy + 'px) scale(.3)' }, { transform: 'translate(calc(-50% + ' + (dx + bx) / 2 + 'px),' + (Math.min(dy, by) - 50) + 'px) scale(.45)' }, { transform: 'translate(calc(-50% + ' + bx + 'px),' + by + 'px) scale(.2)', opacity: 0 }], 360).then(function () { cfPulse(bg); });
+              }
+              cfPulse(tg); return cfAnim(el, [{ opacity: 1 }, { opacity: 0 }], 80);
+            });
+          });
+        }));
+        setN('rune', after.rune + ' / ' + DATA.runeConf.cap); setN('sigil', after.sigil + ' / ' + DATA.sigilConf.cap); setN('bag', after.bag + ' / ' + CW.CHEST_CAP);
+        setN('gems', fmt(after.gems)); setN('gold', fmtG(after.gold));
+        loot.innerHTML = '';
+        title.textContent = '선물을 모두 받았어요';
+        var bt = []; if (back.rune) bt.push('룬 ' + back.rune + '개'); if (back.sigil) bt.push('신성력 ' + back.sigil + '개');
+        st.textContent = bt.length ? bt.join(' · ') + '는 가방에 보관했어요' : '모두 제자리에 들어갔어요';
+        note.textContent = bt.length ? '빈자리가 생기면 가방에서 꺼낼 수 있어요' : (go.rune || go.sigil || go.gear ? '룬·신성력·장비 칸을 누르면 바로 가요' : '');
+        ['rune', 'sigil', 'gear'].forEach(function (k) { var d = cfx.querySelector('.cfd[data-cfto="' + k + '"]'); if (d) d.classList.toggle('hit', !!go[k]); });
+        btn.textContent = '확인'; btn.className = 'cfok'; btn.disabled = false;
+        cfx.classList.add('done'); cfx._run = false; cfx._skip = false;
+      })();
+    }
+    function openAllChest() {
+      var ids = CW.chestItems(G.state).filter(function (b) { return !CW.chestIsItem(b); }).map(function (b) { return b.id; });
+      if (!ids.length) { toast('열 상자가 없어요. 가방의 룬·신성력은 하나씩 꺼내 주세요.'); return; }
+      chestFx(ids);
+    }
+    CW.chestOpenUI = openChest;
+
     var panel = $('panel'), dock = $('dock');
 
     // ---------- modal / toast ----------
@@ -904,12 +1130,13 @@
         critDmg: '치명타 피해 ×' + st.critDmg.toFixed(2),
         gold: '골드 +' + pct(st.goldMul - 1),
         mastery: '모든 스킬 피해 ×' + st.mastery.toFixed(2),
-        superCrit: '치명타 중 ' + pct(st.superRate) + ' 슈퍼 (피해 ×' + st.superDmg + ')',
-        ultraCrit: '슈퍼 중 ' + pct(st.ultraRate) + ' 울트라 (피해 ×' + st.ultraDmg + ')',
-        hyperCrit: '울트라 중 ' + pct(st.hyperRate) + ' 하이퍼 (피해 ×' + st.hyperDmg + ')',
-        megaCrit: '하이퍼 중 ' + pct(st.megaRate) + ' 메가 (최대 100%)', megaDmg: '메가 크리티컬 피해 ×' + st.megaDmg.toFixed(2),
-        ultimateCrit: '메가 중 ' + pct(st.ultimateRate) + ' 얼티밋 (최대 100%)', ultimateDmg: '얼티밋 크리티컬 피해 ×' + st.ultimateDmg.toFixed(2),
-        alphaCrit: '얼티밋 중 ' + pct(st.alphaRate) + ' 알파 (최대 100%)', alphaDmg: '알파 크리티컬 피해 ×' + st.alphaDmg.toFixed(2),
+        criticalCrit: '치명타 중 ' + pct(st.criticalRate) + ' 크리티컬 (피해 ×' + st.criticalDmg.toFixed(2) + ')', criticalDmg: '크리티컬 피해 ×' + st.criticalDmg.toFixed(2),   // 크리티컬 (2026-11-17)
+        superCrit: '크리티컬 중 ' + pct(st.superRate) + ' 테라 (피해 ×' + st.superDmg + ')',
+        ultraCrit: '테라 중 ' + pct(st.ultraRate) + ' 루나 (피해 ×' + st.ultraDmg + ')',
+        hyperCrit: '루나 중 ' + pct(st.hyperRate) + ' 솔라 (피해 ×' + st.hyperDmg + ')',
+        megaCrit: '솔라 중 ' + pct(st.megaRate) + ' 노바 (최대 100%)', megaDmg: '노바 크리티컬 피해 ×' + st.megaDmg.toFixed(2),
+        ultimateCrit: '노바 중 ' + pct(st.ultimateRate) + ' 오라 (최대 100%)', ultimateDmg: '오라 크리티컬 피해 ×' + st.ultimateDmg.toFixed(2),
+        alphaCrit: '오라 중 ' + pct(st.alphaRate) + ' 제로 (최대 100%)', alphaDmg: '제로 크리티컬 피해 ×' + st.alphaDmg.toFixed(2),
         chainInfo: ''
       };
       // 초월 lines: what each level grows, e.g. 하이퍼 크리티컬 피해 +0.20배 (1레벨당 +0.02배)
@@ -931,7 +1158,7 @@
         if (upMul > 1) { var sum = 0, n = 0; while (n < upMul && sum + CW.upgradeCost(k, lv + n, s) <= s.gold) { sum += CW.upgradeCost(k, lv + n, s); n++; } if (n > 0) { cost = sum; nBuy = n; } }
         var max = u.max !== null && lv >= u.max && !oi;
         // 한계 돌파 (2026-11-15): past the row's max, each level adds 1% to the damage it is about
-        var OVK = { finalMul: '모든 피해', critDmg: '치명타 피해', superDmg: '슈퍼 피해', ultraDmg: '울트라 피해', hyperDmg: '하이퍼 피해', megaDmg: '메가 피해', ultimateDmg: '얼티밋 피해', alphaDmg: '알파 피해', omegaDmg: '오메가 피해', eternalDmg: '이터널 피해', genesisDmg: '제네시스 피해', bossDmg: '보스 피해', skillDmg: '스킬 피해', weakMul: '약점 피해', surgeMul: '폭주 피해' };
+        var OVK = { finalMul: '모든 피해', critDmg: '치명타 피해', criticalDmg: '크리티컬 피해', superDmg: '테라 피해', ultraDmg: '루나 피해', hyperDmg: '솔라 피해', megaDmg: '노바 피해', ultimateDmg: '오라 피해', alphaDmg: '제로 피해', omegaDmg: '오메가 피해', eternalDmg: '이터널 피해', genesisDmg: '에온 피해', bossDmg: '보스 피해', skillDmg: '스킬 피해', weakMul: '약점 피해', surgeMul: '폭주 피해' };
         var past = oi && u.max !== null && lv > u.max, effTxt = past ? (eff[k] || '').replace(/ \((최대|1레벨당) [^)]*\)/g, '') : eff[k];
         var overTxt = past ? '<br>' + OVK[oi.stat] + ' +' + Math.round(oi.pct * 100) + '%' : '';
         var lvTxt = 'Lv.' + lv + (u.max !== null && lv <= u.max ? '<small>/' + u.max + '</small>' : '');   // 「최대」 줄 대신 Lv 옆에 (장비 Lv.41/400 처럼)
@@ -1134,7 +1361,8 @@
         if (g.mana) lines.push(CW.ICO.cur('mana') + ' 마력석 ' + fmt(g.mana));
         (g.sigils || []).forEach(function (x) { lines.push(gi('sigil', x.grade) + '<b style="color:' + hc(x.grade) + '">' + hn(x.grade) + '</b> 신성력 ' + x.n + '개'); });
         if (g.sigilStone) lines.push(CW.ICO.cur('sigil') + ' 신성석 ' + fmt(g.sigilStone));
-        return lines.join(' · ');
+        // 2026-11-17 (형: 줄·칸 맞춰): 항목 하나는 끊기지 않는 덩어리 — 「(사냥 / 1시간치)」·「영웅 / 신성력」처럼 갈라지지 않고 항목 사이에서만 줄이 바뀜
+        return lines.map(function (x) { return '<span class="pkit">' + x + '</span>'; }).join('<i class="pksep"> · </i>');
       };
       var packRow = function (p) {
         var why = CW.packOpen(s, p.id), times = (s.packs || {})[p.id] || 0, btn;
@@ -1386,13 +1614,27 @@
       if (list) list.style.removeProperty('--buyw');
       buys.forEach(function (b) { b.style.width = 'max-content'; bw = Math.max(bw, b.getBoundingClientRect().width); b.style.width = ''; });
       if (list && bw) list.style.setProperty('--buyw', Math.ceil(bw) + 'px');
-      panel.querySelectorAll('.row.grow .name').forEach(function (n) {
-        var nm = n.querySelector('.nm'); if (!nm) return; nm.style.fontSize = ''; n.classList.remove('nomax');
-        var fit = function () { var full = nm.scrollWidth, room = nm.clientWidth; return full > room + 0.5 ? parseFloat(getComputedStyle(nm).fontSize) * (room - 1) / full : 0; };
-        var f = fit();
-        if (f && f < 13.5 && n.querySelector('.lv small')) { n.classList.add('nomax'); f = fit(); }   // 긴 이름은 Lv 옆 /최대를 빼고 글씨를 덜 줄임
-        if (f) nm.style.fontSize = Math.max(10, f).toFixed(2) + 'px';
-      });
+      // 좁은 폰 (2026-11-17, 사용자: 줄·칸·너비·간격 깔끔하게): 이름이 12px 밑으로 줄거나 잘리면 목록 전체의 Lv 를
+      // 아이콘 아래로 내림(lvdown) — 이름 칸을 넓혀 한 줄에 다 보이고, 줄마다 모양이 같게
+      if (list) list.classList.remove('lvdown');
+      // 이름 글씨 크기와 /최대 표시는 목록 전체가 같게 (2026-11-17): 가장 긴 이름에 맞춘 크기를 모든 줄에
+      var sizeNames = function () {
+        var names = Array.prototype.filter.call(panel.querySelectorAll('.row.grow .name'), function (n) { return n.querySelector('.nm'); });
+        var fitAll = function () {
+          var low = 99;
+          names.forEach(function (n) {
+            var nm = n.querySelector('.nm'), full = nm.scrollWidth, room = nm.clientWidth;
+            if (full > room + 0.5) low = Math.min(low, parseFloat(getComputedStyle(nm).fontSize) * (room - 1) / full);
+          });
+          return low;
+        };
+        names.forEach(function (n) { n.querySelector('.nm').style.fontSize = ''; n.classList.remove('nomax'); });
+        var low = fitAll();
+        if (low < 13.5) { names.forEach(function (n) { n.classList.add('nomax'); }); low = fitAll(); }   // 긴 이름이 있으면 모든 줄에서 Lv 옆 /최대를 빼고 글씨를 덜 줄임
+        if (low < 99) names.forEach(function (n) { n.querySelector('.nm').style.fontSize = Math.max(10, low).toFixed(2) + 'px'; });
+        return low;
+      };
+      if (sizeNames() < 12 && list) { list.classList.add('lvdown'); sizeNames(); }
       // 수치 상자: 숫자가 길면 글씨만 줄여 양 끝 여백 유지 (최소 10.5px)
       panel.querySelectorAll('.row.grow .gpill').forEach(function (g) {
         g.style.fontSize = '';
@@ -1406,12 +1648,21 @@
         var full = g.scrollWidth, room = g.clientWidth;
         if (full > room + 0.5) { var fs = parseFloat(getComputedStyle(g).fontSize) * (room - 1) / full; if (fs >= 9.5) g.style.fontSize = fs.toFixed(2) + 'px'; else g.classList.add('wrap'); }
       });
+      // 설명이 두 줄인 칸이 있으면 성장 칸 높이를 모두 그 칸에 맞춤 — 칸마다 키가 들쭉날쭉하지 않게 (2026-11-17)
+      var rows = panel.querySelectorAll('.row.grow'), tall = 0;
+      rows.forEach(function (r) { r.style.minHeight = ''; });
+      if (panel.querySelector('.row.grow .gabout.wrap')) {
+        rows.forEach(function (r) { tall = Math.max(tall, r.getBoundingClientRect().height); });
+        rows.forEach(function (r) { r.style.minHeight = Math.ceil(tall) + 'px'; });
+      }
     }
     // 연금술 카드: 효과 알약·만들기 버튼 글이 칸보다 길면 글씨만 줄임 (최소 9.5px) — 값·비용은 그대로 다 보이게
     // 장비 (사용자 2026-11-16 아이폰): 효과 숫자가 길면 「장착 효과」 위로 넘쳐 겹치고, 레벨업 비용이 버튼 밖으로 넘침 → 글자만 줄임.
     // 효과가 둘(반지: 공격 속도 · 보스 피해)이면 두 줄로 나눔
     function fitGear() {
       var shrink = function (el, kids, min) { var g = 0; while (el.scrollWidth > el.clientWidth + 0.5 && g++ < 16) { var done = true; kids.forEach(function (k) { var f = parseFloat(getComputedStyle(k).fontSize); if (f > min) { k.style.setProperty('font-size', Math.max(min, f * 0.95).toFixed(2) + 'px', 'important'); done = false; } }); if (done) break; } };
+      // 코스튬 카드 이름 (2026-11-17, 형: 줄·칸 맞춰): 「시계태엽 가면 …」처럼 잘리지 않게 글씨만 줄임
+      panel.querySelectorAll('.ccard>b').forEach(function (b) { b.style.removeProperty('font-size'); shrink(b, [b], 8.5); });
       panel.querySelectorAll('.opbag .ef b').forEach(function (v) {
         // 두 효과(반지: 공격 속도·보스 피해)는 이름 칸 | 숫자 칸 두 줄 표로 — 이름은 왼쪽, 숫자는 오른쪽 끝을 맞춤 (사용자 2026-11-16)
         if (v.textContent.indexOf(' · ') > 0 && !v.classList.contains('two')) {
@@ -1438,7 +1689,7 @@
       // 위 슬롯 카드 이름(.skc .nm, 폭 71px)도 — 「원소 합체 궁극기」처럼 긴 이름이 잘리던 것 (사용자 2026-11-16): 다 보이게 글씨만 줄임
       panel.querySelectorAll('.skr .how, .skr .nm, .skc .nm').forEach(function (el) {
         var min = el.classList.contains('how') ? 10 : el.closest('.skc') ? 9 : 12, g = 0;
-        if (el.classList.contains('nm')) el.style.maxWidth = '134px';
+        if (el.classList.contains('nm')) el.style.maxWidth = el.closest('.skr') ? '124px' : '134px';   // 스킬 줄: 버튼 칸(194px~) 앞에서 끝나게 (2026-11-17)
         while (el.scrollWidth > el.clientWidth + 0.5 && g++ < 16) { var f = parseFloat(getComputedStyle(el).fontSize); if (f <= min) break; el.style.setProperty('font-size', Math.max(min, f * 0.95).toFixed(2) + 'px', 'important'); var b = el.querySelector('b'); if (b) b.style.setProperty('font-size', 'inherit', 'important'); }
       });
     }
@@ -1729,7 +1980,7 @@
       else if (d.act === 'rbest') { G.runeEquipBest(); toast('추천 룬을 장착했어요.'); renderPanel(true); }
       else if (d.act === 'rdisall') { confirmBox('룬을 일괄 분해할까요?', '장착하지 않고 잠기지 않은 룬을 모두 룬석으로 바꿔요.<br>분해한 룬은 되돌릴 수 없어요.', '룬 분해', function () { var rn2 = G.runeDismantleAll(); toast(rn2 ? '룬석 +' + fmt(rn2) : '분해할 룬이 없어요.'); selRune = null; renderPanel(true); }, { variant: 'danger' }); }
       else if (d.pack && CW.FRIEND) { toast('체험판에서는 수령할 수 없어요.'); }
-      else if (d.pack) { var pk = CW.packById(d.pack); confirmBox('연습용 패키지를 받을까요?', '<b>' + pk.name + '</b> · 표시 가격 ' + pk.won.toLocaleString('ko-KR') + '원<br>실제 결제는 없어요. 구성품이 즉시 지급돼요.', '구성품 받기', function () { var got = G.buyPack(d.pack); if (got === false) toast(CW.packOpen(G.state, d.pack) !== 'ok' ? '현재 수령 조건을 충족하지 않아요.' : '신성력 가방의 여유 공간이 부족해요. (최대 ' + DATA.sigilConf.cap + '개)'); else if (got.gear && got.gear.length) showGacha(got.gear); else if (got.length) showSigils(got, true); else if (pk.give.daily) showDaily(false); else toast(pk.name + ' 수령 완료'); renderPanel(true); hud(); }); }
+      else if (d.pack) { var pk = CW.packById(d.pack); confirmBox('연습용 패키지를 받을까요?', '<b>' + pk.name + '</b> · 표시 가격 ' + pk.won.toLocaleString('ko-KR') + '원<br>실제 결제는 없어요. 구성품은 <b>가방</b>에 상자로 들어가요.', '가방에 넣기', function () { var box = G.buyPack(d.pack); if (!box) toast(CW.chestFull(G.state) ? '가방이 가득 찼어요. (최대 ' + CW.CHEST_CAP + '칸) 가방에서 열고 다시 받아 주세요.' : '현재 수령 조건을 충족하지 않아요.'); else toast(pk.name + ' · 가방에 넣었어요'); chestBadge(); renderPanel(true); hud(); }); }
       else if (d.act === 'daily') { showDaily(false); }
       else if (d.dockx) { if (d.dockx === 'sg') selSigil = null; else selRune = null; renderPanel(true); }
       else if (d.sgswap) { var sw = d.sgswap.split('|'); if (G.sigilSwap(sw[0], sw[1])) { if (CW.opalUI) CW.opalUI.fx('sg:' + sw[1]); toast('신성력을 교체했어요.'); } renderPanel(true); }
@@ -1810,13 +2061,17 @@
     // the rune and sigil shortcuts use the user's pictures (art/ic-rune.webp, ic-sigil.webp, 2026-11-14)
     var QI = { map: CW.ICO.misc('quick', 'map'), alch: CW.ICO.misc('potion', 'rage'), rune: '<img class="ico" src="art/ic-rune.webp" alt="">', sigil: '<img class="ico" src="art/ic-sigil.webp" alt="">',
       // the monster codex (2026-11-15): the book off the user's codex picture, opens the full-screen page (js/dex-ui.js)
-      dex: '<img class="ico" src="art/dex-book.webp" alt="">', mail: '<img class="ico" src="art/mail-box.webp" alt="">', notice: CW.noticeHorn ? CW.noticeHorn() : '', idle: CW.idleMoon ? CW.idleMoon() : '' };   // 우편함 (2026-11-15): the user's mailbox picture, js/mail-ui.js
+      dex: '<img class="ico" src="art/dex-book.webp" alt="">',
+      chest: '<img class="ico" src="art/ic-bag.webp" alt="">',   // 가방 (2026-11-17): 형의 가방 그림 (tools/bag-art.py)
+      mail: '<img class="ico" src="art/mail-box.webp" alt="">', notice: CW.noticeHorn ? CW.noticeHorn() : '', idle: CW.idleMoon ? CW.idleMoon() : '' };   // 우편함 (2026-11-15): the user's mailbox picture, js/mail-ui.js
     document.querySelectorAll('#quick [data-quick]').forEach(function (b) { b.querySelector('i').innerHTML = QI[b.dataset.quick] || ''; });
+    setTimeout(chestBadge, 0);   // 가방에 남은 상자 수
     $('quick').addEventListener('click', function (e) {
       var b = e.target.closest('[data-quick]'); if (!b) return; var q = b.dataset.quick; G.sound('click');
       if (q === 'map') { selDiff = selRegion = -1; openTab(tab === 'stage' ? 'battle' : 'stage'); }
       else if (q === 'alch') { trainSub = 'alch'; openTab('up'); }
       else if (q === 'dex') { if (CW.dexOpen) CW.dexOpen(); }
+      else if (q === 'chest') { openChest(); }
       else if (q === 'mail') { if (CW.mailOpen) CW.mailOpen(); }
       else if (q === 'notice') { if (CW.noticeOpen) CW.noticeOpen(); }   // 공지 (2026-11-16, js/notice-ui.js)
       else if (q === 'idle') { if (CW.idleOn) CW.idleOn(); }   // 방치모드 (2026-11-16, js/idle-ui.js)

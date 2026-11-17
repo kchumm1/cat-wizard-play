@@ -211,7 +211,7 @@
     S + '.rseff p b.stn{color:#30364d;display:inline-flex;align-items:center;gap:4px}' + S + '.rseff p b .ico{width:15px!important;height:15px!important}',
     S + '.rbx{display:inline-block;flex:none;width:15px;height:15px;background:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 16 16\'%3E%3Cpath d=\'M2.2 6h11.6v7.2a1 1 0 0 1-1 1H3.2a1 1 0 0 1-1-1z\' fill=\'%237b82a2\'/%3E%3Crect x=\'1\' y=\'2.6\' width=\'14\' height=\'3.8\' rx=\'1\' fill=\'%23596080\'/%3E%3Crect x=\'6\' y=\'8\' width=\'4\' height=\'1.7\' rx=\'.85\' fill=\'%23fff\'/%3E%3C/svg%3E") 50% 50%/contain no-repeat}',
     // 룬 줄: 시안처럼 칸 4개가 보이고 옆으로 넘겨 봄
-    S + '.rsstrip{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding:3px 2px 6px;margin:0 -2px;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}',
+    S + '.rsstrip{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding:3px 2px 6px;margin:0 -2px;scroll-padding-inline:2px;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}',
     S + '.rsstrip::-webkit-scrollbar{display:none}' + S + '.rsstrip>.rsc{flex:0 0 calc((100% - 24px) / 4);scroll-snap-align:start}',
     '.rsstrip .rsc-orb{animation:rsBob 3.4s ease-in-out infinite;animation-delay:calc(var(--ph,0s) - var(--k,0s))}',
     '.rsstrip .rsc:nth-child(4n+2) .rsc-orb{--k:.85s}.rsstrip .rsc:nth-child(4n+3) .rsc-orb{--k:1.7s}.rsstrip .rsc:nth-child(4n) .rsc-orb{--k:2.55s}',

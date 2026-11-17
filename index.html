@@ -84,15 +84,16 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .dmg.crit{color:var(--gold);font-size:26px}
 .dmg small{display:block;font-size:.5em;line-height:1;text-align:center;letter-spacing:.02em}
 /* 크리티컬 단계 숫자 색 (2026-11-16): 무지개였던 걸 한 계열로 — 노랑(치명타) → 주황 → 빨강(제네시스). 단계는 크기·위의 작은 이름으로 구분, 빛번짐은 높은 단계만 같은 색으로 은은하게 */
-.dmg.c2{color:#ffc43a;font-size:31px;-webkit-text-stroke:5px #3a1a06;paint-order:stroke fill}
-.dmg.c3{color:#ffad33;font-size:36px;-webkit-text-stroke:5px #3a1606;paint-order:stroke fill}
-.dmg.c4{font-size:42px;color:#ff9a2e;-webkit-text-stroke:6px #3a1406;paint-order:stroke fill}
-.dmg.c5{font-size:46px;color:#ff872a;-webkit-text-stroke:6px #3a1006;paint-order:stroke fill}
-.dmg.c6{font-size:50px;color:#ff7428;-webkit-text-stroke:6px #3a0e06;paint-order:stroke fill;text-shadow:0 0 10px rgba(255,116,40,.45)}
-.dmg.c7{font-size:54px;color:#ff6026;-webkit-text-stroke:7px #340a06;paint-order:stroke fill;text-shadow:0 0 12px rgba(255,96,38,.5)}
-.dmg.c8{font-size:56px;color:#ff4d28;-webkit-text-stroke:7px #300806;paint-order:stroke fill;text-shadow:0 0 14px rgba(255,77,40,.5)}
-.dmg.c9{font-size:58px;color:#f53a2e;-webkit-text-stroke:7px #2c0606;paint-order:stroke fill;text-shadow:0 0 16px rgba(245,58,46,.55)}
-.dmg.c10{font-size:60px;color:#ff2e3a;-webkit-text-stroke:7px #280408;paint-order:stroke fill;text-shadow:0 0 18px rgba(255,46,58,.6)}
+.dmg.c2{color:#ffcd3e;font-size:28px;-webkit-text-stroke:4.5px #3a1c06;paint-order:stroke fill}   /* 크리티컬 (2026-11-17): 치명타와 테라 사이 */
+.dmg.c3{color:#ffc43a;font-size:31px;-webkit-text-stroke:5px #3a1a06;paint-order:stroke fill}
+.dmg.c4{color:#ffad33;font-size:36px;-webkit-text-stroke:5px #3a1606;paint-order:stroke fill}
+.dmg.c5{font-size:42px;color:#ff9a2e;-webkit-text-stroke:6px #3a1406;paint-order:stroke fill}
+.dmg.c6{font-size:46px;color:#ff872a;-webkit-text-stroke:6px #3a1006;paint-order:stroke fill}
+.dmg.c7{font-size:50px;color:#ff7428;-webkit-text-stroke:6px #3a0e06;paint-order:stroke fill;text-shadow:0 0 10px rgba(255,116,40,.45)}
+.dmg.c8{font-size:54px;color:#ff6026;-webkit-text-stroke:7px #340a06;paint-order:stroke fill;text-shadow:0 0 12px rgba(255,96,38,.5)}
+.dmg.c9{font-size:56px;color:#ff4d28;-webkit-text-stroke:7px #300806;paint-order:stroke fill;text-shadow:0 0 14px rgba(255,77,40,.5)}
+.dmg.c10{font-size:58px;color:#f53a2e;-webkit-text-stroke:7px #2c0606;paint-order:stroke fill;text-shadow:0 0 16px rgba(245,58,46,.55)}
+.dmg.c11{font-size:60px;color:#ff2e3a;-webkit-text-stroke:7px #280408;paint-order:stroke fill;text-shadow:0 0 18px rgba(255,46,58,.6)}
 .dmg.crit small{color:#fff0c8}
 .screen-flash{position:absolute;inset:0;opacity:0}
 .coin.fly{position:fixed;left:0;top:0;z-index:15;pointer-events:none;will-change:transform}
@@ -1224,8 +1225,7 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 .prof .xpbar i{background:linear-gradient(90deg,#8fd8ef,#5cb8e0)}
 .chip{color:#443C35}
 #quick span{color:#5c4330;text-shadow:none}
-#quick button:active{box-shadow:inset 0 0 0 1.5px #CDB07A,0 0 0 1px rgba(92,67,48,.28)}
-/* bottom menu bar: cream with a champagne line on top, brown labels; the open tab keeps its lifted icon and gets a champagne line */
+#quick button:active{box-shadow:inset 0 0 0 1.5px #CDB07A,0 0 0 1px rgba(92,67,48,.28)}/* bottom menu bar: cream with a champagne line on top, brown labels; the open tab keeps its lifted icon and gets a champagne line */
 #tabs{background:linear-gradient(180deg,#FCF7EE,#F1E8D8);box-shadow:0 -1.5px 0 #D9C69F,0 -8px 20px rgba(40,30,20,.22)}
 #tabs::before{background:linear-gradient(90deg,transparent,rgba(255,255,255,.9) 20%,rgba(255,255,255,.9) 80%,transparent)}
 #tabs button{color:#6d6052}
@@ -2380,6 +2380,90 @@ body{font-family:'Noto Sans KR',"Malgun Gothic","Apple SD Gothic Neo",system-ui,
 #modalCard.guide-card .btns{display:flex;gap:8px;margin-top:20px}
 #modalCard.guide-card .btn{flex:1;min-height:48px;border:1px solid #3a3940;border-radius:14px;background:#2a292f;color:#fff;font:700 15px var(--body);box-shadow:none}
 #modalCard.guide-card .btn.pri{background:#fff;color:#141316;border-color:#fff;box-shadow:none}
+/* 가방 (2026-11-17, js/chest.js · ui.js openChest): 형의 가죽 가방 그림(art/bag-win.webp, 1122×1402) 안에 100칸, 한 줄 4칸.
+   자리는 그림 기준 %: 칸 영역 x 100~1018 · y 214~1268, × 버튼 x 940~1030 · y 70~140, 아래 띠 y 1284~1346 (tools/bag-art.py) */
+#modalCard.chcard .btns{flex-wrap:wrap}#modalCard.chcard .btn{flex:1 1 calc(50% - 4px)}
+#bagwin{position:fixed;inset:0;z-index:19;display:none;align-items:center;justify-content:center;background:rgba(10,14,20,.62);padding:calc(10px + env(safe-area-inset-top,0px)) 10px calc(10px + env(safe-area-inset-bottom,0px));box-sizing:border-box}
+#bagwin.on{display:flex}
+html.fullh #bagwin{position:absolute;bottom:auto;height:var(--apph)}
+#bagwin .bgw{position:relative;flex:none;width:min(94vw,440px,calc((100dvh - 30px) * 1122 / 1402));aspect-ratio:1122/1402;container-type:inline-size}
+#bagwin.rise .bgw{animation:mbrise .38s cubic-bezier(.3,1.45,.5,1)}
+#bagwin.fan .bgw{visibility:hidden}
+/* 가방 열리는 모습 (art/bag-lid.webp · bag-body.webp = 가방 아이콘을 위 730/1254 에서 나눈 두 장) */
+#bagwin .bgfan{display:none;position:absolute;inset:0}#bagwin.fan .bgfan{display:block}
+#bagwin .bgbag{position:absolute;left:50%;top:50%;width:min(48vw,220px);aspect-ratio:1;transform:translate(-50%,-50%);perspective:520px;animation:bgtok .36s cubic-bezier(.3,1.6,.5,1)}
+#bagwin .bgbody{position:absolute;left:0;top:58.2%;width:100%;height:41.8%;pointer-events:none}
+#bagwin .bglid{position:absolute;left:0;top:0;width:100%;height:58.2%;transform-origin:50% 46%;pointer-events:none;animation:bglid .8s .32s cubic-bezier(.3,1.5,.5,1) both}
+#bagwin .bgmouth{position:absolute;left:15%;right:19%;top:47%;height:15%;border-radius:45%;background:radial-gradient(ellipse at 50% 70%,#fff2c2 0%,#e7b54c 32%,#5a3c12 72%,#2a1c08 100%);opacity:0;animation:bgmouth .8s .32s forwards}
+#bagwin .bgglow{position:absolute;left:47%;top:46%;width:90%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(255,236,170,.95) 0%,rgba(255,206,92,.55) 30%,rgba(255,206,92,0) 68%);opacity:0;transform:translate(-50%,-50%) scale(.3);animation:bgglow .9s .55s ease-out forwards;pointer-events:none;mix-blend-mode:screen}
+@keyframes bgtok{from{transform:translate(-50%,-50%) scale(.3)}to{transform:translate(-50%,-50%) scale(1)}}
+@keyframes bglid{0%{transform:none}100%{transform:translateY(-9%) rotateX(34deg)}}
+@keyframes bgmouth{0%{opacity:0}35%{opacity:1}100%{opacity:1}}
+@keyframes bgglow{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}45%{opacity:1}100%{opacity:0;transform:translate(-50%,-60%) scale(1.5)}}
+@media (prefers-reduced-motion:reduce){#bagwin .bgbag,#bagwin .bglid,#bagwin .bgmouth,#bagwin .bgglow,#bagwin.rise .bgw{animation-duration:.01s;animation-delay:0s}}
+#bagwin .bgbg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;user-select:none;-webkit-user-select:none}
+#bagwin .bgx{position:absolute;left:83.8%;top:5%;width:8%;height:5%;border:0;background:none;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+#bagwin .bggrid{position:absolute;left:8.91%;top:15.26%;width:81.82%;height:75.18%;box-sizing:border-box;padding:2.8cqw 2.6cqw;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3.6cqw 3.4cqw;align-content:start;scrollbar-width:none}
+#bagwin .bggrid::-webkit-scrollbar{display:none}
+#bagwin .bgc{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;aspect-ratio:1;margin:0;padding:0 0 1.4cqw;border:0;border-radius:2.4cqw;background:url(art/bag-cell.webp) center/100% 100% no-repeat;font-style:normal;-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+#bagwin .bgc.on:active{transform:scale(.96)}
+#bagwin .bgp{position:absolute;left:12%;top:7%;width:76%;height:52%;display:flex;align-items:center;justify-content:center;pointer-events:none}
+#bagwin .bgp img,#bagwin .bgp svg,#bagwin .bgp .ico{max-width:100%;max-height:100%;width:auto;height:100%;object-fit:contain;filter:drop-shadow(0 .5cqw .6cqw rgba(0,0,0,.45))}
+#bagwin .bgc b{position:absolute;left:9%;right:9%;top:61%;bottom:10%;display:flex;align-items:center;justify-content:center;text-align:center;font:700 3cqw/1.15 var(--body);color:#f6ead2;text-shadow:0 .3cqw .5cqw rgba(0,0,0,.7);word-break:keep-all;overflow:hidden}
+#bagwin .bgbar{position:absolute;left:9%;top:91.6%;width:82%;height:4.4%;display:flex;align-items:center;justify-content:space-between;gap:2cqw}
+#bagwin .bgn{font:700 3.4cqw/1 var(--body);color:#d9cba9;font-variant-numeric:tabular-nums}#bagwin .bgn b{font-weight:800;color:#fff3d6}
+#bagwin .bgall{height:100%;padding:0 4cqw;border:0;border-radius:999px;background:linear-gradient(180deg,#e8c56a,#b98a2e);box-shadow:inset 0 .3cqw 0 rgba(255,255,255,.45),0 .4cqw 0 #6d4f17;color:#3a2a0a;font:800 3.3cqw/1 var(--body);-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+#bagwin .bgall:active{transform:translateY(.3cqw);box-shadow:inset 0 .3cqw 0 rgba(255,255,255,.45)}
+#bagwin .bgall.off{filter:grayscale(.7) brightness(.8)}
+#bagwin .bgc.item::after{content:"";position:absolute;inset:6%;border-radius:1.8cqw;box-shadow:inset 0 0 0 .5cqw var(--gc,#fff);opacity:.55;pointer-events:none}
+/* 상자 여는 연출 (2026-11-17, 형 시안 dev/chest-reward-demo.html — 남색 창·위 지갑·가운데 상자와 보상 카드·아래 도착 칸·금색 버튼,
+   형: 느리게 하나씩 말고 빠르게 후르릭). ui.js chestFx / cfRun */
+#chestfx{position:fixed;inset:0;z-index:21;display:none;align-items:center;justify-content:center;background:rgba(8,10,26,.6);padding:calc(10px + env(safe-area-inset-top,0px)) 10px calc(10px + env(safe-area-inset-bottom,0px));box-sizing:border-box}
+#chestfx.on{display:flex}
+html.fullh #chestfx{position:absolute;bottom:auto;height:var(--apph)}
+#chestfx *{box-sizing:border-box}
+#chestfx .cfw{position:relative;width:min(94vw,400px);max-height:100%;overflow:hidden;border-radius:26px;padding:16px 16px 16px;color:#fff4de;
+  /* 바탕: 형 그림 돌기둥 신전 (art/chest-fx-bg.webp ← art-src/bag/chest-fx-bg.png, 1024×1536) — 아래 기준이라 돌 바닥 위에 도착 칸·버튼 */
+  background:linear-gradient(180deg,rgba(6,28,30,.35),rgba(6,28,30,0) 34%,rgba(6,28,30,0) 62%,rgba(6,22,24,.25)),url(art/chest-fx-bg.webp) 50% 100%/cover no-repeat;background-color:#1f5a57;box-shadow:0 18px 45px rgba(5,18,20,.6),inset 0 0 0 1px rgba(255,240,200,.18);animation:mbrise .32s cubic-bezier(.3,1.45,.5,1)}
+#chestfx .cfhead{display:flex;justify-content:flex-end;align-items:center;gap:8px;min-height:32px}
+#chestfx .cfx{margin-right:auto;width:34px;height:34px;border:0;border-radius:50%;background:rgba(255,255,255,.1);color:#fff;font:400 22px/34px var(--body);padding:0;-webkit-tap-highlight-color:transparent}
+#chestfx .cfwal{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 10px;border-radius:12px;background:rgba(6,30,32,.55);font:700 12.5px/1 var(--body);color:#fff;white-space:nowrap;font-variant-numeric:tabular-nums}
+#chestfx .cfwal .gem,#chestfx .cfwal .coin{width:15px;height:15px}
+#chestfx .cfhd{text-align:center;padding-top:10px}
+#chestfx .cfeye{font:700 12px/1.2 var(--body);letter-spacing:1px;color:#eac67f}
+#chestfx .cft{margin:7px 0 6px;font:800 20px/1.35 var(--body);color:#fff;text-shadow:0 2px 6px rgba(4,24,26,.7)}
+#chestfx .cfst{margin:0;min-height:18px;font:600 13px/1.4 var(--body);color:#e4f1ec;text-shadow:0 1px 4px rgba(4,24,26,.8)}
+#chestfx .cfeye{text-shadow:0 1px 3px rgba(4,24,26,.8)}
+#chestfx .cfstage{position:relative;height:calc(12px + max(3,var(--rows,3)) * 96px);max-height:min(330px,42dvh)}
+#chestfx .cfhalo{position:absolute;left:50%;top:50%;width:230px;height:230px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(255,222,150,.22),transparent 66%);pointer-events:none}
+#chestfx .cfchest{position:absolute;left:50%;top:50%;width:120px;height:120px;margin:-60px 0 0 -60px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 12px 12px rgba(17,19,47,.55))}
+#chestfx .cfchest>img,#chestfx .cfchest>svg,#chestfx .cfchest>.ico{width:100%;height:100%;object-fit:contain}
+#chestfx .cflight{position:absolute;inset:-40px;border-radius:50%;background:radial-gradient(ellipse,rgba(255,243,198,.8),transparent 65%);opacity:0;pointer-events:none}
+#chestfx .cfloot{position:absolute;inset:0}
+#chestfx .cfi{position:absolute;width:30%;height:88px;opacity:0;transform:translate(-50%,0);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 4px;border-radius:14px;background:linear-gradient(145deg,rgba(38,104,100,.92),rgba(14,52,54,.92));box-shadow:inset 0 0 0 1px rgba(214,236,222,.45),0 6px 15px rgba(4,22,24,.45);text-align:center;will-change:transform,opacity}
+#chestfx .cfi.rare{box-shadow:inset 0 0 0 1.5px #ffd582,0 0 15px rgba(237,181,74,.25)}
+#chestfx .cfic{display:flex;align-items:center;justify-content:center;width:34px;height:34px}
+#chestfx .cfic img,#chestfx .cfic svg,#chestfx .cfic .ico{width:34px;height:34px;object-fit:contain}#chestfx .cfic .gem,#chestfx .cfic .coin{width:26px;height:26px}
+#chestfx .cfemo{font-size:24px;line-height:1}
+#chestfx .cfi b{max-width:100%;font:700 12px/1.2 var(--body);color:#fff4dc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#chestfx .cfi small{max-width:100%;font:600 11px/1.2 var(--body);color:#d9d6ed;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#chestfx .cfdest{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:4px}
+#chestfx .cfd{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 2px 9px;border-radius:15px;background:rgba(10,44,46,.72);box-shadow:inset 0 0 0 1px rgba(214,236,222,.35);font:700 12.5px/1.1 var(--body);color:#fff4de;-webkit-tap-highlight-color:transparent}
+#chestfx .cfd>i{display:flex;width:28px;height:28px;align-items:center;justify-content:center}#chestfx .cfd>i img,#chestfx .cfd>i svg,#chestfx .cfd>i .ico{width:28px;height:28px;object-fit:contain}
+#chestfx .cfd small{font:600 10.5px/1 var(--body);color:#d5d2e9;font-variant-numeric:tabular-nums}
+#chestfx .cfd.bag{background:rgba(70,56,30,.75);box-shadow:inset 0 0 0 1px #e9be78}
+#chestfx .cfnote{text-shadow:0 1px 3px rgba(4,24,26,.9)}
+#chestfx.done .cfd.hit{box-shadow:inset 0 0 0 1.5px #ffd582,0 0 12px rgba(255,213,130,.25);cursor:pointer}
+#chestfx .cfnote{min-height:36px;margin:0;display:flex;align-items:center;justify-content:center;text-align:center;font:600 12px/1.4 var(--body);color:#ffdfa3;padding:6px 0}
+#chestfx .cfbtns button{width:100%;min-height:50px;border:0;border-radius:14px;background:linear-gradient(#ffe5a0,#f2b94f);box-shadow:0 4px 0 #b5812c;color:#4f3218;font:800 16px var(--body);-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+#chestfx .cfbtns button:active{transform:translateY(3px);box-shadow:0 1px 0 #b5812c}
+#chestfx .cfbtns button:disabled{opacity:.7}
+@media (prefers-reduced-motion:reduce){#chestfx .cfw{animation:none}}
+.chgot{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.chgot li{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#26252b;border:1px solid #34333a;border-radius:12px;font:600 14px/1.35 var(--body);color:#fff}
+.chgot .wpi{flex:none;display:flex;align-items:center;justify-content:center;width:26px;height:26px;font-style:normal}.chgot .wpi .ico,.chgot .wpi img,.chgot .wpi svg{width:26px;height:26px;object-fit:contain}
+.chgot .wpi .gem,.chgot .wpi .coin{width:20px;height:20px}
 #modalCard.guide-card.danger .guide-section{background:#3a2025;border-color:#5a2d35}
 #modalCard.guide-card.danger .btn.pri{background:#d0566c;border-color:#d0566c;color:#fff}
 #modalCard.guide-card .codebox{width:100%;box-sizing:border-box;border-radius:12px;border:1px solid #3a3940;background:#222126;color:#fff}
@@ -2394,6 +2478,21 @@ body{font-family:'Noto Sans KR',"Malgun Gothic","Apple SD Gothic Neo",system-ui,
 #modalCard .guide-x{position:absolute;top:14px;right:14px;width:36px;height:36px;border:0;border-radius:50%;background:#2a292f;color:#fff;font:400 22px/36px var(--body);padding:0;cursor:pointer}
 .guide-summary{display:flex;width:100%;box-sizing:border-box;justify-content:space-between;gap:12px;align-items:center;border:0;border-radius:12px;padding:11px 13px;margin:6px 0 10px;background:#1f1e23;color:#fff;font:500 13px/1.55 var(--body);text-align:left;cursor:pointer}
 .guide-summary span{flex:1;min-width:0;word-break:keep-all}
+/* 안내 창 성운판 (2026-11-17, 형: 이런 검은 창들 다 찾아서 바꿔 → 성운+반투명 유리): 확인·가이드·저장 코드·가방 상자 창 등
+   guide-card 를 쓰는 창 전부. 바탕은 공지·전직 메뉴와 같은 성운(art/mn-neb-fill.webp), 칸·버튼은 성운이 비치는 유리, 제목은 주아 */
+#modalCard.guide-card{background:linear-gradient(180deg,rgba(40,24,96,.5),rgba(18,10,52,.72)),url(art/mn-neb-fill.webp) 50% 35%/cover;background-color:#2a2160;border:0;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.3),inset 0 1.5px 0 rgba(255,255,255,.35),0 18px 48px rgba(10,5,40,.6)}
+#modalCard.guide-card h2{font:400 25px/1.3 var(--display);letter-spacing:0;color:#fff;text-shadow:0 2px 6px rgba(20,10,60,.75)}
+#modalCard.guide-card>p,.guide-card .guide-section p{color:rgba(255,255,255,.88)}
+.guide-card .guide-lead{color:rgba(255,255,255,.78)!important;text-shadow:0 1px 2px rgba(20,10,60,.6)}
+.guide-card .guide-section,.guide-card .guide-tip,.guide-card .guide-summary,.chgot li{background:rgba(255,255,255,.11);border:0;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.24),0 5px 12px -7px rgba(10,5,40,.65);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#fff}
+.guide-card .guide-tip{color:rgba(255,255,255,.75)}
+#modalCard.guide-card .btn{border:0;background:rgba(255,255,255,.13);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.3);color:#fff;text-shadow:0 1px 2px rgba(20,10,60,.6);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px)}
+#modalCard.guide-card .btn.pri{background:linear-gradient(180deg,#ffe39a,#f0b44e);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.6),0 3px 0 #9c6a1e;color:#3a2507;text-shadow:none}
+#modalCard.guide-card .btn:active{transform:translateY(2px)}#modalCard.guide-card .btn.pri:active{box-shadow:inset 0 1.5px 0 rgba(255,255,255,.6)}
+#modalCard.guide-card.danger .guide-section{background:rgba(255,90,120,.16);box-shadow:inset 0 0 0 1.5px rgba(255,140,160,.45)}
+#modalCard.guide-card.danger .btn.pri{background:linear-gradient(180deg,#ff8aa0,#d0566c);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.45),0 3px 0 #7a2638;color:#fff;text-shadow:0 1px 2px rgba(80,10,30,.5)}
+#modalCard.guide-card .codebox,#modalCard.guide-card .nickin{background:rgba(10,6,36,.45);border:0;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.26)}
+#modalCard.guide-card .guide-x{background:rgba(255,255,255,.14);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.3)}
 .guide-summary b{flex:none;font:700 12px var(--body);color:#141316;background:#fff;border-radius:999px;padding:4px 10px}
 .skinfo{background:#1f1e23;border:0;border-radius:16px;padding:4px 14px;margin:12px 0 6px}
 .skinfo>div{display:flex;gap:12px;align-items:baseline;padding:11px 0;border-top:1px solid #34333a}
@@ -2607,6 +2706,12 @@ body{font-family:'Noto Sans KR',"Malgun Gothic","Apple SD Gothic Neo",system-ui,
 #sheet.cream.neb #panel .tjob.st-now{background:linear-gradient(115deg,rgba(255,170,215,.3),rgba(190,160,255,.26) 55%,rgba(150,215,255,.24)),rgba(16,10,48,.38)}
 #sheet.cream.neb #panel :is(.dung .dname,.tjob .tjname,.prod .name,.pack .name,.row .name){font-family:var(--display);font-weight:400;font-size:17px;letter-spacing:0;text-shadow:0 1px 0 rgba(10,5,40,.7),0 0 6px rgba(10,5,40,.5)}
 #sheet.cream.neb #panel :is(.dung,.prod,.pack,.notice,.row) :is(.note,.desc,.gn,small),#sheet.cream.neb #panel .tjcond{color:rgba(255,255,255,.92);font-weight:700;text-shadow:0 1px 2px rgba(10,5,40,.8)}
+/* 2026-11-17 (형: 줄·칸 맞춰): 설명은 단어 중간에서 끊지 않고(「몬/스터」), 던전 카드 네 장은 가장 긴 카드 높이로 같게 */
+#sheet.cream.neb #panel :is(.dung,.prod,.pack,.notice,.row,.tjob) :is(.note,.desc){word-break:keep-all;overflow-wrap:anywhere}
+#sheet.cream.neb #panel .dlist{display:grid!important;grid-template-columns:minmax(0,1fr);grid-auto-rows:1fr}
+.pack .pkit{display:block;max-width:100%;padding-left:20px;text-indent:-20px;word-break:keep-all;line-height:1.35}.pack .pkit+.pksep+.pkit{margin-top:2px}.pack .pksep{display:none}
+.pack .pkit>:first-child{display:inline-grid!important;place-items:center;width:16px!important;height:16px!important;margin:0 4px 0 0!important;text-indent:0;vertical-align:-3px;background-size:contain;background-position:50% 50%;background-repeat:no-repeat}
+.pack .pkit>:first-child>*{width:16px!important;height:16px!important;object-fit:contain}.pack .pkit>img:first-child{object-fit:contain}
 #sheet.cream.neb #panel .tjob:is(.st-lock,.st-soon) :is(.tjname,.tjcond){color:rgba(255,255,255,.72)}
 #sheet.cream.neb #panel .dung .note b,#sheet.cream.neb #panel .row .note b{color:#ffe39a}
 #sheet.cream.neb #panel .dung .btn.off{background:rgba(255,255,255,.16);color:rgba(255,255,255,.75);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.3)}
@@ -2937,7 +3042,7 @@ body{font-family:'Noto Sans KR',"Malgun Gothic","Apple SD Gothic Neo",system-ui,
       <div id="bossbox"><div class="boss-top"><span id="bossName">보스</span><span id="bossTime">30.0초</span></div><div class="bossrow"><div class="bar"><i id="bossHp"></i></div><b id="bossPct">100%</b></div></div>
       <button id="retry">보스 도전</button>
     </div>
-    <div id="quick" aria-label="바로가기"><button data-quick="map"><i></i><span>지도</span></button><button data-quick="rune"><i></i><span>룬</span></button><button data-quick="sigil"><i></i><span>신성력</span></button><button data-quick="dex"><i></i><span>도감</span></button><button data-quick="mail"><i></i><span>우편함</span></button><button data-quick="notice"><i></i><span>공지</span></button><button data-quick="idle"><i></i><span>방치</span></button></div>
+    <div id="quick" aria-label="바로가기"><button data-quick="map"><i></i><span>지도</span></button><button data-quick="rune"><i></i><span>룬</span></button><button data-quick="sigil"><i></i><span>신성력</span></button><button data-quick="dex"><i></i><span>도감</span></button><button data-quick="chest"><i></i><span>가방</span></button><button data-quick="mail"><i></i><span>우편함</span></button><button data-quick="notice"><i></i><span>공지</span></button><button data-quick="idle"><i></i><span>방치</span></button></div>
     <div id="banner"></div>
     <div id="dunHud"></div>
     <div id="gainlog" aria-live="off"></div>
@@ -3049,6 +3154,7 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script src="js/dex-ui.js"></script>
 <script src="js/mail-gift.js"></script>
 <script src="js/mail.js"></script>
+<script src="js/chest.js"></script>
 <script src="js/mail-ui.js"></script>
 <script src="js/notice.js"></script>
 <script src="js/notice-pages.js"></script>

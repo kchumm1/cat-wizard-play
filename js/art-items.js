@@ -42,11 +42,14 @@
 
   // ---------- 성장 아이콘 (사용자 부품, 2026-11-16, tools/import-growth-parts.py 가 아래 목록을 고침) ----------
   var GROW_ART = ['alphaCrit', 'alphaDmg', 'arcane', 'atk', 'catEye', 'crit', 'critDmg', 'doomClaw', 'elemRule', 'eternalCrit', 'eternalDmg', 'genesisCrit', 'genesisDmg', 'gold', 'haste', 'hyperCrit', 'hyperDmg', 'judge', 'manaBurst', 'mastery', 'megaCrit', 'megaDmg', 'omegaCrit', 'omegaDmg', 'origin', 'resonance', 'rift', 'speed', 'superCrit', 'superDmg', 'ultimateCrit', 'ultimateDmg', 'ultraCrit', 'ultraDmg'];
-  I.growArt = function (k) { return GROW_ART.indexOf(k) >= 0 ? 'art/gro-' + k + '.webp' : null; };
+  // 크리티컬 (2026-11-17, 치명타 다음 단계): 새 그림이 오기 전까지 치명타 계열 그림을 같이 씀 (성장·특성·룬·신성력)
+  var ALIAS = { criticalCrit: 'crit', criticalDmg: 'critDmg', tcCriticalR: 'tcCritR', tcCriticalD: 'tcCritD', rCriticalR: 'rCritR', rCriticalD: 'rWave', criticalRate: 'superRate', criticalDmgPct: 'critDmg' };
+  var al = function (k) { return ALIAS[k] || k; };
+  I.growArt = function (k) { k = al(k); return GROW_ART.indexOf(k) >= 0 ? 'art/gro-' + k + '.webp' : null; };
 
   // ---------- 특성 아이콘 (사용자 부품, 2026-11-16, tools/import-talent-parts.py 가 아래 목록을 고침) ----------
   var TAL_ART = ['tBoss', 'tChain', 'tChain3', 'tCrit', 'tGold', 'tManaBurst', 'tOrigin', 'tRift', 'tSkill', 'tXp', 'tcAlphaD', 'tcAlphaR', 'tcCritD', 'tcCritR', 'tcEterD', 'tcEterR', 'tcGenD', 'tcGenR', 'tcHyperD', 'tcHyperR', 'tcMegaD', 'tcMegaR', 'tcOmegaD', 'tcOmegaR', 'tcSuperD', 'tcSuperR', 'tcUltiD', 'tcUltiR', 'tcUltraD', 'tcUltraR'];
-  I.talentArt = function (id) { return TAL_ART.indexOf(id) >= 0 ? 'art/tal-' + id + '.webp' : null; };
+  I.talentArt = function (id) { id = al(id); return TAL_ART.indexOf(id) >= 0 ? 'art/tal-' + id + '.webp' : null; };
 
   // ---------- 코스튬 새 원화 19종 (사용자, 2026-11-16, tools/import-costumes.py) ----------
   // 메뉴 전시·목록에만 쓰는 그림 (전투 캐릭터 모습은 그대로). 캔버스 1254 기준 발(알파 맨 아래) 위치 — 전시 때 발을 받침대에 맞춤
@@ -72,8 +75,8 @@
     'alphaDmg', 'ultimateRate', 'alphaRate', 'ultraDmg', 'ultimateDmg', 'omegaRate', 'omegaDmg', 'eternalRate', 'eternalDmg', 'genesisRate', 'genesisDmg'];
   var RN2 = ['rFire', 'rWind', 'rEarth', 'rDark', 'rOrigin', 'rWave', 'rLight', 'rBolt', 'rNebula', 'rComet', 'rUltraD', 'rUltiD', 'rCritR', 'rSuperR', 'rUltraR',
     'rHyperR', 'rMegaR', 'rUltiR', 'rAlphaR', 'rOmegaR', 'rOmegaD', 'rEterR', 'rEterD', 'rGenR', 'rGenD'];
-  I.sigilSrc = function (stat) { return SG2.indexOf(stat) >= 0 ? src('sg2-' + stat) : null; };
-  I.runeSrc = function (id) { return RN2.indexOf(id) >= 0 ? src('rn2-' + id) : null; };
+  I.sigilSrc = function (stat) { stat = al(stat); return SG2.indexOf(stat) >= 0 ? src('sg2-' + stat) : null; };
+  I.runeSrc = function (id) { id = al(id); return RN2.indexOf(id) >= 0 ? src('rn2-' + id) : null; };
   I.gradeFrameSrc = function (g) { g = clamp(g, 0, 10); return src('gf-' + (g < 10 ? '0' : '') + g); };
   // bg: 목록 칸과 같은 바탕 그림 (사용자 2026-11-17 「요걸로 다 통일」) — 룬 art/ru-orb(보석 원판), 신성력 art/si-cardbg(별빛 카드).
   // 바탕이 없을 때(패키지 아이콘)만 등급 테두리.

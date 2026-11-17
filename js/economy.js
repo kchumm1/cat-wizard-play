@@ -83,7 +83,7 @@
   var OVER_PER = 0.01;
   // which stat the levels past the max raise: a crit-rate row raises that crit's damage, speed raises all damage,
   // a 초월 row raises what it adds
-  var OVER_TO = { speed: 'finalMul', crit: 'critDmg', superCrit: 'superDmg', ultraCrit: 'ultraDmg', hyperCrit: 'hyperDmg',
+  var OVER_TO = { speed: 'finalMul', crit: 'critDmg', criticalCrit: 'criticalDmg', criticalDmg: 'criticalDmg', superCrit: 'superDmg', ultraCrit: 'ultraDmg', hyperCrit: 'hyperDmg',
     megaCrit: 'megaDmg', megaDmg: 'megaDmg', ultimateCrit: 'ultimateDmg', ultimateDmg: 'ultimateDmg', alphaCrit: 'alphaDmg', alphaDmg: 'alphaDmg',
     superDmg: 'superDmg', ultraDmg: 'ultraDmg', hyperDmg: 'hyperDmg', omegaCrit: 'omegaDmg', omegaDmg: 'omegaDmg',
     eternalCrit: 'eternalDmg', eternalDmg: 'eternalDmg', genesisCrit: 'genesisDmg', genesisDmg: 'genesisDmg' };
@@ -173,7 +173,8 @@
   // the stat bonus 한계 돌파 gives a row right now: { stat, pct } (for the 성장 list)
   function overInfo(state, key) { var t = overTarget(key), n = overLevels(state, key); return t ? { stat: t, levels: n, pct: n * OVER_PER } : null; }
   // the rate a tier gets from its 성장 row (before items)
-  function rowRate(u, i) { var t = TIERS[i]; return i === 0 ? (u.crit || 0) * B.critPerLevel : (u[t.rateRow] || 0) * (B[t.id + 'PerLevel'] || 0); }
+  // RateBase: a tier that starts open (크리티컬 2026-11-17: 100%, so the tiers after it lose nothing)
+  function rowRate(u, i) { var t = TIERS[i]; return i === 0 ? (u.crit || 0) * B.critPerLevel : (B[t.id + 'RateBase'] || 0) + (u[t.rateRow] || 0) * (B[t.id + 'PerLevel'] || 0); }
   function rowDmg(u, i) { var t = TIERS[i]; return i === 0 ? B.critDmgBase + (u.critDmg || 0) * B.critDmgPerLevel : B[t.dmg] + (u[t.dmgRow] || 0) * (DATA.upgrades[t.dmgRow].per || B.highDmgPerLevel); }
   // rates stop at 100%; each 1%p past it adds overPer% to that tier's damage (at most overMax). Damage = (base + '배'
   // bonuses) × (1 + '%' bonuses + that overflow). st[rate + 'Raw'] keeps the rate before the stop, st[dmg + 'Pct'] the % part.
@@ -231,7 +232,7 @@
   // the average boost a surge gives over many casts
   function surgeFactor(st) { return 1 + (st.surgeMul - 1) * Math.min(1, (st.surgeRate || 1) / DATA.surgeConf.charge); }
   function weakFactor(state, st, skill) { return isWeak(skill, regionOf(state), state.diff) ? st.weakMul : 1; }
-  // tiers 1..10: crit, super, ultra, hyper, mega, ultimate, alpha, omega, eternal, genesis
+  // tiers 1..11: crit, critical, super, ultra, hyper, mega, ultimate, alpha, omega, eternal, genesis
   function tierRates(st) { return TIERS.map(function (t) { return st[t.rate] || 0; }); }
   function tierDmgs(st) { return TIERS.map(function (t, i) { return st[t.dmg] || (i ? B[t.dmg] : B.critDmgBase); }); }
   // each tier is only rolled after the one below it hits
@@ -254,7 +255,8 @@
   // power EVEN_POW), and every hit scaled so the average stays exactly critFactor(st) — the game is tuned on that average.
   // A typical fight now lands close to it. tierDmgs/critFactor/upgrades are unchanged: raising any tier raises the average
   // just as before. A player with only crit and super sees no change.
-  var EVEN_FROM = 2, EVEN_POW = 0.15, evenKey = '', evenTab = null;
+  // EVEN_FROM 3 (2026-11-17): 크리티컬 went in after crit, so crit · 크리티컬 · 테라 stay as they are (was crit · super)
+  var EVEN_FROM = 3, EVEN_POW = 0.15, evenKey = '', evenTab = null;
   function evenTable(st) {
     var r = tierRates(st), dm = tierDmgs(st), key = r.join() + '|' + dm.join();
     if (key === evenKey) return evenTab;

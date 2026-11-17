@@ -134,9 +134,10 @@
   }
   function claim(l) {
     var g = G(); if (!l || CW.mailGot(state(), l)) return false;
-    var why = CW.mailClaimBlock(state(), l); if (why) { g.ui.toast(why + '. 정리하고 다시 받아 주세요.'); return false; }
-    if (!g.G.claimMail(l)) return false;
-    if (CW.mailHasReward(l)) g.ui.toast('우편 보상 획득 · ' + CW.mailRewardText(l));
+    // 가방 (2026-11-17): 보상은 가방에 상자로 들어가고, 룬·신성력 자리는 가방에서 열 때 봄
+    if (!g.G.claimMail(l)) { if (CW.chestFull && CW.chestFull(state())) g.ui.toast('가방이 가득 찼어요. 가방에서 열고 다시 받아 주세요.'); return false; }
+    if (CW.mailHasReward(l)) g.ui.toast('가방에 넣었어요 · 가방에서 열어 받아요');
+    if (CW.chestBadge) CW.chestBadge();
     g.ui.hud(); return true;
   }
   function close() { page.classList.remove('on', 'fan', 'rise'); if (G()) G().ui.renderPanel(true); }
@@ -159,7 +160,7 @@
       }
       if (t.closest('[data-mball]')) {
         var n = 0; waiting().filter(CW.mailHasReward).forEach(function (x) { if (claim(x)) n++; });
-        if (n > 1) g.ui.toast('우편 ' + n + '통의 보상을 받았어요.'); render(); return;
+        if (n > 1) g.ui.toast('우편 ' + n + '통의 보상을 가방에 넣었어요.'); render(); return;
       }
       if (t.closest('[data-mbcopy]')) {
         var pid = CW.mailPid(state()), done = function () { g.ui.toast('우편번호를 복사했어요. (' + pid + ')'); };

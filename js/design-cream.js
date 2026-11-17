@@ -73,13 +73,14 @@
 
   // 크리티컬 정비 (2026-11-16): the new rows and the 크리티컬 talents reuse the tier pictures; 오메가·이터널·제네시스 take the
   // 알파 pictures turned red, blue and gold (TINT = a CSS filter on that picture)
-  var TINT = {}, TIER_PIC = [['growth-crit', 'growth-crit-dmg'], ['growth-super-crit', 'growth-super-crit'], ['growth-ultra-crit', 'growth-ultra-crit'],
+  // 크리티컬 (2026-11-17, 치명타 다음 단계): 치명타 그림을 조금 주황빛으로
+  var TINT = {}, TIER_PIC = [['growth-crit', 'growth-crit-dmg'], ['growth-crit', 'growth-crit-dmg', 'hue-rotate(-18deg) saturate(1.35)'], ['growth-super-crit', 'growth-super-crit'], ['growth-ultra-crit', 'growth-ultra-crit'],
     ['growth-hyper-crit', 'growth-hyper-crit'], ['growth-mega-crit', 'growth-mega-dmg'], ['growth-ultimate-crit', 'growth-ultimate-dmg'], ['growth-alpha-crit', 'growth-alpha-dmg'],
     ['growth-alpha-crit', 'growth-alpha-dmg', 'hue-rotate(-115deg) saturate(1.3)'], ['growth-alpha-crit', 'growth-alpha-dmg', 'hue-rotate(105deg) saturate(1.2)'],
     ['growth-alpha-crit', 'growth-alpha-dmg', 'hue-rotate(-60deg) saturate(1.5) brightness(1.1)']];
-  [['superDmg', 1, 1], ['ultraDmg', 2, 1], ['hyperDmg', 3, 1], ['omegaCrit', 7, 0], ['omegaDmg', 7, 1], ['eternalCrit', 8, 0], ['eternalDmg', 8, 1], ['genesisCrit', 9, 0], ['genesisDmg', 9, 1]]
+  [['criticalCrit', 1, 0], ['criticalDmg', 1, 1], ['superDmg', 2, 1], ['ultraDmg', 3, 1], ['hyperDmg', 4, 1], ['omegaCrit', 8, 0], ['omegaDmg', 8, 1], ['eternalCrit', 9, 0], ['eternalDmg', 9, 1], ['genesisCrit', 10, 0], ['genesisDmg', 10, 1]]
     .forEach(function (r) { var p = TIER_PIC[r[1]]; MAP.stat[r[0]] = p[r[2]]; if (p[2]) TINT['stat:' + r[0]] = p[2]; });
-  var TAL = ['Crit', 'Super', 'Ultra', 'Hyper', 'Mega', 'Ulti', 'Alpha', 'Omega', 'Eter', 'Gen'];
+  var TAL = ['Crit', 'Critical', 'Super', 'Ultra', 'Hyper', 'Mega', 'Ulti', 'Alpha', 'Omega', 'Eter', 'Gen'];
   TAL.forEach(function (n, i) {
     var p = TIER_PIC[i]; MAP.talent['tc' + n + 'R'] = p[0]; MAP.talent['tc' + n + 'D'] = i === 0 ? 'talent-sharp-claws' : p[1];
     if (p[2]) { TINT['talent:tc' + n + 'R'] = p[2]; TINT['talent:tc' + n + 'D'] = p[2]; }

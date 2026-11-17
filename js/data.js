@@ -135,18 +135,18 @@
       { id: 'pawHammer', name: '말랑 발바닥 망치', stat: 'atkPct', per: 0.05, icon: '🔨', desc: '공격력' },
       { id: 'catEye', name: '고양이 눈 구슬', stat: 'critRate', per: 0.001, icon: '🔮', desc: '치명타 확률' },
       { id: 'clawRing', name: '은빛 발톱 반지', stat: 'critDmg', per: 0.03, icon: '💍', desc: '치명타 피해' },
-      { id: 'starFeather', name: '별가루 깃털', stat: 'superRate', per: 0.001, icon: '🪶', desc: '슈퍼 크리티컬 확률' },
-      { id: 'moonBell', name: '달빛 방울', stat: 'superDmg', per: 0.02, icon: '🔔', desc: '슈퍼 크리티컬 피해' },
+      { id: 'starFeather', name: '별가루 깃털', stat: 'superRate', per: 0.001, icon: '🪶', desc: '테라 크리티컬 확률' },
+      { id: 'moonBell', name: '달빛 방울', stat: 'superDmg', per: 0.02, icon: '🔔', desc: '테라 크리티컬 피해' },
       { id: 'hunterBadge', name: '사냥꾼 휘장', stat: 'bossDmg', per: 0.02, icon: '🎖️', desc: '보스 피해' },
       { id: 'grassCharm', name: '풀잎 부적', stat: 'normalDmg', per: 0.02, icon: '🍀', desc: '일반 몬스터 피해' },
       { id: 'bookmark', name: '마도서 책갈피', stat: 'skillDmg', per: 0.02, icon: '📖', desc: '스킬 피해' },
       { id: 'piggyBank', name: '금화 저금통', stat: 'goldMul', per: 0.02, icon: '🐷', desc: '골드 획득' },
       { id: 'sleepyPillow', name: '졸린 베개', stat: 'xpMul', per: 0.01, icon: '🛏️', desc: '경험치 획득' },
       { id: 'windChime', name: '바람 풍경', stat: 'speed', per: 0.002, icon: '🎐', desc: '공격 속도' },
-      { id: 'cometShard', name: '고대 혜성 조각', stat: 'ultraRate', per: 0.002, icon: '☄️', desc: '울트라 크리티컬 확률', divine: true },
-      { id: 'galaxyDaggers', name: '은하 쌍단검', stat: 'ultraDmg', per: 0.06, icon: '🗡️', desc: '울트라 크리티컬 피해', divine: true },
-      { id: 'dawnCrystal', name: '태초의 수정', stat: 'hyperRate', per: 0.002, icon: '💎', desc: '하이퍼 크리티컬 확률', divine: true },
-      { id: 'hourglass', name: '시간의 모래시계', stat: 'hyperDmg', per: 0.08, icon: '⏳', desc: '하이퍼 크리티컬 피해', divine: true },
+      { id: 'cometShard', name: '고대 혜성 조각', stat: 'ultraRate', per: 0.002, icon: '☄️', desc: '루나 크리티컬 확률', divine: true },
+      { id: 'galaxyDaggers', name: '은하 쌍단검', stat: 'ultraDmg', per: 0.06, icon: '🗡️', desc: '루나 크리티컬 피해', divine: true },
+      { id: 'dawnCrystal', name: '태초의 수정', stat: 'hyperRate', per: 0.002, icon: '💎', desc: '솔라 크리티컬 확률', divine: true },
+      { id: 'hourglass', name: '시간의 모래시계', stat: 'hyperDmg', per: 0.08, icon: '⏳', desc: '솔라 크리티컬 피해', divine: true },
       { id: 'kingScepter', name: '고양이 왕의 홀', stat: 'atkPct', per: 0.3, icon: '👑', desc: '공격력', divine: true }
     ],
     // costumes change the wizard's look; owning one (and levelling it) gives a bonus whether worn or not
@@ -265,15 +265,16 @@
       // 크리티컬 row (2026-11-16): a rate talent and a damage talent per crit tier, 2 levels each (+5%p rate / +5% damage a
       // level), open once that tier is open; they do not go past their max. stat/per are filled in below.
       { id: 'tcCritR', name: '매서운 눈빛', row: 4, crit: 0, kind: 'rate', max: 2, icon: '🎯' }, { id: 'tcCritD', name: '날카로운 발톱', row: 4, crit: 0, kind: 'dmg', max: 2, icon: '🐾' },
-      { id: 'tcSuperR', name: '번뜩이는 감각', row: 4, crit: 1, kind: 'rate', max: 2, icon: '✨' }, { id: 'tcSuperD', name: '빛나는 발톱', row: 4, crit: 1, kind: 'dmg', max: 2, icon: '☀️' },
-      { id: 'tcUltraR', name: '약점 간파', row: 4, crit: 2, kind: 'rate', max: 2, icon: '👁️' }, { id: 'tcUltraD', name: '한계 돌파', row: 4, crit: 2, kind: 'dmg', max: 2, icon: '💢' },
-      { id: 'tcHyperR', name: '초감각', row: 4, crit: 3, kind: 'rate', max: 2, icon: '💡' }, { id: 'tcHyperD', name: '천둥의 일격', row: 4, crit: 3, kind: 'dmg', max: 2, icon: '⚡' },
-      { id: 'tcMegaR', name: '별의 인도', row: 4, crit: 4, kind: 'rate', max: 2, icon: '🌠' }, { id: 'tcMegaD', name: '은하의 힘', row: 4, crit: 4, kind: 'dmg', max: 2, icon: '🌌' },
-      { id: 'tcUltiR', name: '운명 포착', row: 4, crit: 5, kind: 'rate', max: 2, icon: '🎲' }, { id: 'tcUltiD', name: '최후의 심판', row: 4, crit: 5, kind: 'dmg', max: 2, icon: '⚖️' },
-      { id: 'tcAlphaR', name: '기원의 눈', row: 4, crit: 6, kind: 'rate', max: 2, icon: '🌱' }, { id: 'tcAlphaD', name: '태초의 일격', row: 4, crit: 6, kind: 'dmg', max: 2, icon: '☄️' },
-      { id: 'tcOmegaR', name: '종언의 예감', row: 4, crit: 7, kind: 'rate', max: 2, icon: '🔚' }, { id: 'tcOmegaD', name: '종극의 일격', row: 4, crit: 7, kind: 'dmg', max: 2, icon: '🩸' },
-      { id: 'tcEterR', name: '불변의 의지', row: 4, crit: 8, kind: 'rate', max: 2, icon: '♾️' }, { id: 'tcEterD', name: '영원의 마력', row: 4, crit: 8, kind: 'dmg', max: 2, icon: '💠' },
-      { id: 'tcGenR', name: '창세의 계시', row: 4, crit: 9, kind: 'rate', max: 2, icon: '🌅' }, { id: 'tcGenD', name: '창세의 권능', row: 4, crit: 9, kind: 'dmg', max: 2, icon: '🌞' }
+      { id: 'tcCriticalR', name: '연속 포착', row: 4, crit: 1, kind: 'rate', max: 2, icon: '🔆' }, { id: 'tcCriticalD', name: '이어치기', row: 4, crit: 1, kind: 'dmg', max: 2, icon: '🔥' },
+      { id: 'tcSuperR', name: '번뜩이는 감각', row: 4, crit: 2, kind: 'rate', max: 2, icon: '✨' }, { id: 'tcSuperD', name: '빛나는 발톱', row: 4, crit: 2, kind: 'dmg', max: 2, icon: '☀️' },
+      { id: 'tcUltraR', name: '약점 간파', row: 4, crit: 3, kind: 'rate', max: 2, icon: '👁️' }, { id: 'tcUltraD', name: '한계 돌파', row: 4, crit: 3, kind: 'dmg', max: 2, icon: '💢' },
+      { id: 'tcHyperR', name: '초감각', row: 4, crit: 4, kind: 'rate', max: 2, icon: '💡' }, { id: 'tcHyperD', name: '천둥의 일격', row: 4, crit: 4, kind: 'dmg', max: 2, icon: '⚡' },
+      { id: 'tcMegaR', name: '별의 인도', row: 4, crit: 5, kind: 'rate', max: 2, icon: '🌠' }, { id: 'tcMegaD', name: '은하의 힘', row: 4, crit: 5, kind: 'dmg', max: 2, icon: '🌌' },
+      { id: 'tcUltiR', name: '운명 포착', row: 4, crit: 6, kind: 'rate', max: 2, icon: '🎲' }, { id: 'tcUltiD', name: '최후의 심판', row: 4, crit: 6, kind: 'dmg', max: 2, icon: '⚖️' },
+      { id: 'tcAlphaR', name: '기원의 눈', row: 4, crit: 7, kind: 'rate', max: 2, icon: '🌱' }, { id: 'tcAlphaD', name: '태초의 일격', row: 4, crit: 7, kind: 'dmg', max: 2, icon: '☄️' },
+      { id: 'tcOmegaR', name: '종언의 예감', row: 4, crit: 8, kind: 'rate', max: 2, icon: '🔚' }, { id: 'tcOmegaD', name: '종극의 일격', row: 4, crit: 8, kind: 'dmg', max: 2, icon: '🩸' },
+      { id: 'tcEterR', name: '불변의 의지', row: 4, crit: 9, kind: 'rate', max: 2, icon: '♾️' }, { id: 'tcEterD', name: '영원의 마력', row: 4, crit: 9, kind: 'dmg', max: 2, icon: '💠' },
+      { id: 'tcGenR', name: '창세의 계시', row: 4, crit: 10, kind: 'rate', max: 2, icon: '🌅' }, { id: 'tcGenD', name: '창세의 권능', row: 4, crit: 10, kind: 'dmg', max: 2, icon: '🌞' }
     ],
     // row 4 (크리티컬) needs no points above it: each talent opens with its crit tier
     talentConf: { levelsPerPoint: 20, rowLevel: [10, 120, 300, 300, 10], rowNeed: [0, 8, 13, 14, 0], critPer: { rate: 0.05, dmg: 0.05 } },
@@ -320,28 +321,30 @@
       // 기존 계열 (치명타~알파): the old runes keep their names and numbers (2026-11-16, the user: keep what was invested);
       // the new ones of this family work the same way — rate in %p, damage in 배, nothing capped.
       { id: 'rWave', name: '물결 룬', stat: 'critDmg', per: 0.04, crit: 0, kind: 'dmg', icon: '🌊', color: '#3fb6ff', w: 13 },
-      { id: 'rLight', name: '빛의 룬', stat: 'superDmg', per: 0.02, crit: 1, kind: 'dmg', icon: '☀️', color: '#ffe14a', w: 13 },
-      { id: 'rBolt', name: '천둥 룬', stat: 'hyperDmg', per: 0.02, crit: 3, kind: 'dmg', icon: '⚡', color: '#5ff4ff', w: 6 },
-      { id: 'rNebula', name: '성운 룬', stat: 'megaDmg', per: 0.02, crit: 4, kind: 'dmg', icon: '🌌', color: '#ff4fa8', w: 6 },
-      { id: 'rComet', name: '혜성 룬', stat: 'alphaDmg', per: 0.015, crit: 6, kind: 'dmg', icon: '☄️', color: '#7dff6a', w: 6 },
-      { id: 'rUltraD', name: '격파의 룬', stat: 'ultraDmg', per: 0.02, crit: 2, kind: 'dmg', icon: '💢', color: '#b05bff', w: 4 },
-      { id: 'rUltiD', name: '심판의 룬', stat: 'ultimateDmg', per: 0.015, crit: 5, kind: 'dmg', icon: '⚖️', color: '#e6e6ff', w: 4 },
+      { id: 'rLight', name: '빛의 룬', stat: 'superDmg', per: 0.02, crit: 2, kind: 'dmg', icon: '☀️', color: '#ffe14a', w: 13 },
+      { id: 'rBolt', name: '천둥 룬', stat: 'hyperDmg', per: 0.02, crit: 4, kind: 'dmg', icon: '⚡', color: '#5ff4ff', w: 6 },
+      { id: 'rNebula', name: '성운 룬', stat: 'megaDmg', per: 0.02, crit: 5, kind: 'dmg', icon: '🌌', color: '#ff4fa8', w: 6 },
+      { id: 'rComet', name: '혜성 룬', stat: 'alphaDmg', per: 0.015, crit: 7, kind: 'dmg', icon: '☄️', color: '#7dff6a', w: 6 },
+      { id: 'rUltraD', name: '격파의 룬', stat: 'ultraDmg', per: 0.02, crit: 3, kind: 'dmg', icon: '💢', color: '#b05bff', w: 4 },
+      { id: 'rUltiD', name: '심판의 룬', stat: 'ultimateDmg', per: 0.015, crit: 6, kind: 'dmg', icon: '⚖️', color: '#e6e6ff', w: 4 },
       { id: 'rCritR', name: '예리함의 룬', stat: 'critRate', per: 0.0002, crit: 0, kind: 'rate', icon: '🎯', color: '#ffd84a', w: 4 },
-      { id: 'rSuperR', name: '섬광의 룬', stat: 'superRate', per: 0.0002, crit: 1, kind: 'rate', icon: '✨', color: '#ff9a5a', w: 4 },
-      { id: 'rUltraR', name: '통찰의 룬', stat: 'ultraRate', per: 0.0002, crit: 2, kind: 'rate', icon: '👁️', color: '#d07bff', w: 4 },
-      { id: 'rHyperR', name: '직감의 룬', stat: 'hyperRate', per: 0.0002, crit: 3, kind: 'rate', icon: '💡', color: '#8ff9ff', w: 4 },
-      { id: 'rMegaR', name: '별무리의 룬', stat: 'megaRate', per: 0.0002, crit: 4, kind: 'rate', icon: '🌠', color: '#ff86c8', w: 4 },
-      { id: 'rUltiR', name: '운명의 룬', stat: 'ultimateRate', per: 0.0002, crit: 5, kind: 'rate', icon: '🎲', color: '#f3f3f8', w: 4 },
-      { id: 'rAlphaR', name: '기원의 룬', stat: 'alphaRate', per: 0.0002, crit: 6, kind: 'rate', icon: '🌱', color: '#a6ff8f', w: 4 },
+      { id: 'rCriticalR', name: '집중의 룬', stat: 'criticalRate', per: 0.0002, crit: 1, kind: 'rate', icon: '🔆', color: '#ffc870', w: 4 },
+      { id: 'rCriticalD', name: '연격의 룬', stat: 'criticalDmgPct', per: 0.004, crit: 1, kind: 'dmg', icon: '🔥', color: '#ffb84a', w: 6 },
+      { id: 'rSuperR', name: '섬광의 룬', stat: 'superRate', per: 0.0002, crit: 2, kind: 'rate', icon: '✨', color: '#ff9a5a', w: 4 },
+      { id: 'rUltraR', name: '통찰의 룬', stat: 'ultraRate', per: 0.0002, crit: 3, kind: 'rate', icon: '👁️', color: '#d07bff', w: 4 },
+      { id: 'rHyperR', name: '직감의 룬', stat: 'hyperRate', per: 0.0002, crit: 4, kind: 'rate', icon: '💡', color: '#8ff9ff', w: 4 },
+      { id: 'rMegaR', name: '별무리의 룬', stat: 'megaRate', per: 0.0002, crit: 5, kind: 'rate', icon: '🌠', color: '#ff86c8', w: 4 },
+      { id: 'rUltiR', name: '운명의 룬', stat: 'ultimateRate', per: 0.0002, crit: 6, kind: 'rate', icon: '🎲', color: '#f3f3f8', w: 4 },
+      { id: 'rAlphaR', name: '기원의 룬', stat: 'alphaRate', per: 0.0002, crit: 7, kind: 'rate', icon: '🌱', color: '#a6ff8f', w: 4 },
       // 각성 계열 (오메가·이터널·제네시스): awaken = worn only in the awakening slots (runeConf.awakenSlots), opened with 오메가.
       // Rate in %p, damage in % (×(1+%)), per level runeConf.critPer; all awakened runes worn add at most
       // critConf.caps.rune to one tier. stat/per are filled in below.
-      { id: 'rOmegaR', name: '종언의 룬', crit: 7, kind: 'rate', awaken: true, icon: '🔚', color: '#ff7a6a', w: 5 },
-      { id: 'rOmegaD', name: '종극의 룬', crit: 7, kind: 'dmg', awaken: true, icon: '🩸', color: '#ff4a3a', w: 5 },
-      { id: 'rEterR', name: '불변의 룬', crit: 8, kind: 'rate', awaken: true, icon: '♾️', color: '#8fb0ff', w: 5 },
-      { id: 'rEterD', name: '영원의 룬', crit: 8, kind: 'dmg', awaken: true, icon: '💠', color: '#5a8cff', w: 5 },
-      { id: 'rGenR', name: '여명의 룬', crit: 9, kind: 'rate', awaken: true, icon: '🌅', color: '#fff0b0', w: 5 },
-      { id: 'rGenD', name: '창세의 룬', crit: 9, kind: 'dmg', awaken: true, icon: '🌞', color: '#ffe27a', w: 5 }
+      { id: 'rOmegaR', name: '종언의 룬', crit: 8, kind: 'rate', awaken: true, icon: '🔚', color: '#ff7a6a', w: 5 },
+      { id: 'rOmegaD', name: '종극의 룬', crit: 8, kind: 'dmg', awaken: true, icon: '🩸', color: '#ff4a3a', w: 5 },
+      { id: 'rEterR', name: '불변의 룬', crit: 9, kind: 'rate', awaken: true, icon: '♾️', color: '#8fb0ff', w: 5 },
+      { id: 'rEterD', name: '영원의 룬', crit: 9, kind: 'dmg', awaken: true, icon: '💠', color: '#5a8cff', w: 5 },
+      { id: 'rGenR', name: '여명의 룬', crit: 10, kind: 'rate', awaken: true, icon: '🌅', color: '#fff0b0', w: 5 },
+      { id: 'rGenD', name: '창세의 룬', crit: 10, kind: 'dmg', awaken: true, icon: '🌞', color: '#ffe27a', w: 5 }
     ],
     // each rune has a grade (hiGrades): the level cap is lvPerGrade × (grade + 1), promoting needs the cap and rune stones,
     // and each grade adds gradeStep to the rune's effect
@@ -362,16 +365,16 @@
     // awaken) are worn only in the awakening slots, grow gently (sigilConf.critRate / critDmg), add % damage (×(1+%)) and
     // add at most critConf.caps.sigil to one tier.
     sigilStats: [
-      { stat: 'superRate', base: 0.004, crit: 1, icon: '✴️' }, { stat: 'ultraRate', base: 0.003, crit: 2, icon: '💫' }, { stat: 'hyperRate', base: 0.002, crit: 3, icon: '🌀' },
-      { stat: 'megaRate', base: 0.0015, crit: 4, icon: '🌟' }, { stat: 'critDmg', base: 0.15, crit: 0, icon: '🗡️' }, { stat: 'superDmg', base: 0.12, crit: 1, icon: '⚡' },
+      { stat: 'superRate', base: 0.004, crit: 2, icon: '✴️' }, { stat: 'ultraRate', base: 0.003, crit: 3, icon: '💫' }, { stat: 'hyperRate', base: 0.002, crit: 4, icon: '🌀' },
+      { stat: 'megaRate', base: 0.0015, crit: 5, icon: '🌟' }, { stat: 'critDmg', base: 0.15, crit: 0, icon: '🗡️' }, { stat: 'criticalDmgPct', base: 0.01, crit: 1, icon: '🔥' }, { stat: 'criticalRate', base: 0.004, crit: 1, icon: '🔆' }, { stat: 'superDmg', base: 0.12, crit: 2, icon: '⚡' },
       { stat: 'skillDmg', base: 0.08, icon: '📜' }, { stat: 'bossDmg', base: 0.08, icon: '👹' }, { stat: 'weakDmg', base: 0.08, icon: '🎯' },
       { stat: 'surgeDmg', base: 0.12, icon: '💥' }, { stat: 'atkPct', base: 0.1, icon: '🐾' },
-      { stat: 'hyperDmg', base: 0.08, crit: 3, icon: '🌀' }, { stat: 'megaDmg', base: 0.06, crit: 4, icon: '🌟' }, { stat: 'alphaDmg', base: 0.04, crit: 6, icon: '☄️' },
-      { stat: 'ultimateRate', base: 0.001, crit: 5, icon: '🎲' }, { stat: 'alphaRate', base: 0.0007, crit: 6, icon: '🌱' },
-      { stat: 'ultraDmg', base: 0.1, crit: 2, icon: '💢' }, { stat: 'ultimateDmg', base: 0.05, crit: 5, icon: '⚖️' },
-      { stat: 'omegaRate', crit: 7, kind: 'rate', awaken: true, icon: '🔚' }, { stat: 'omegaDmg', crit: 7, kind: 'dmg', awaken: true, icon: '🩸' },
-      { stat: 'eternalRate', crit: 8, kind: 'rate', awaken: true, icon: '♾️' }, { stat: 'eternalDmg', crit: 8, kind: 'dmg', awaken: true, icon: '💠' },
-      { stat: 'genesisRate', crit: 9, kind: 'rate', awaken: true, icon: '🌅' }, { stat: 'genesisDmg', crit: 9, kind: 'dmg', awaken: true, icon: '🌞' }
+      { stat: 'hyperDmg', base: 0.08, crit: 4, icon: '🌀' }, { stat: 'megaDmg', base: 0.06, crit: 5, icon: '🌟' }, { stat: 'alphaDmg', base: 0.04, crit: 7, icon: '☄️' },
+      { stat: 'ultimateRate', base: 0.001, crit: 6, icon: '🎲' }, { stat: 'alphaRate', base: 0.0007, crit: 7, icon: '🌱' },
+      { stat: 'ultraDmg', base: 0.1, crit: 3, icon: '💢' }, { stat: 'ultimateDmg', base: 0.05, crit: 6, icon: '⚖️' },
+      { stat: 'omegaRate', crit: 8, kind: 'rate', awaken: true, icon: '🔚' }, { stat: 'omegaDmg', crit: 8, kind: 'dmg', awaken: true, icon: '🩸' },
+      { stat: 'eternalRate', crit: 9, kind: 'rate', awaken: true, icon: '♾️' }, { stat: 'eternalDmg', crit: 9, kind: 'dmg', awaken: true, icon: '💠' },
+      { stat: 'genesisRate', crit: 10, kind: 'rate', awaken: true, icon: '🌅' }, { stat: 'genesisDmg', crit: 10, kind: 'dmg', awaken: true, icon: '🌞' }
     ],
     // critRate/critDmg: an awakened option = base × (1 + step × grade) × (0.85 + 0.15 × quality); awakenSlots: its own slots
     sigilConf: { unlockTier: 5, cap: 150, awakenSlots: 2, critRate: { base: 0.015, step: 0.25 }, critDmg: { base: 0.025, step: 0.6 }, slotsBase: 4, slotsPer: 10, slotsMax: 20, lvCostBase: 20, lvCostGrowth: 1.09, lvFinal: 0.04, lvMax: 300,
@@ -402,15 +405,17 @@
     // × (1 + dmgPct) — the '%' bonuses of runes, sigils, talents and the rate past 100%). rateRow/dmgRow: the 성장 rows.
     critTiers: [
       { id: 'crit', short: '치명타', name: '치명타', color: '#ffd84a', rate: 'critRate', dmg: 'critDmg', rateRow: 'crit', dmgRow: 'critDmg' },
-      { id: 'super', short: '슈퍼', name: '슈퍼 크리티컬', color: '#ff7a3a', rate: 'superRate', dmg: 'superDmg', rateRow: 'superCrit', dmgRow: 'superDmg' },
-      { id: 'ultra', short: '울트라', name: '울트라 크리티컬', color: '#d07bff', rate: 'ultraRate', dmg: 'ultraDmg', rateRow: 'ultraCrit', dmgRow: 'ultraDmg' },
-      { id: 'hyper', short: '하이퍼', name: '하이퍼 크리티컬', color: '#5ff4ff', rate: 'hyperRate', dmg: 'hyperDmg', rateRow: 'hyperCrit', dmgRow: 'hyperDmg' },
-      { id: 'mega', short: '메가', name: '메가 크리티컬', color: '#ff4fa8', rate: 'megaRate', dmg: 'megaDmg', rateRow: 'megaCrit', dmgRow: 'megaDmg' },
-      { id: 'ultimate', short: '얼티밋', name: '얼티밋 크리티컬', color: '#ffffff', rate: 'ultimateRate', dmg: 'ultimateDmg', rateRow: 'ultimateCrit', dmgRow: 'ultimateDmg' },
-      { id: 'alpha', short: '알파', name: '알파 크리티컬', color: '#7dff6a', rate: 'alphaRate', dmg: 'alphaDmg', rateRow: 'alphaCrit', dmgRow: 'alphaDmg' },
+      // 크리티컬 (2026-11-17, 형: 치명타 다음 단계): 2차부터, 확률은 처음부터 100% (뒤 단계가 줄지 않게), 피해는 ×1부터 성장·룬·신성력·특성으로
+      { id: 'critical', short: '크리티컬', name: '크리티컬', color: '#ffb84a', rate: 'criticalRate', dmg: 'criticalDmg', rateRow: 'criticalCrit', dmgRow: 'criticalDmg' },
+      { id: 'super', short: '테라', name: '테라 크리티컬', color: '#ff7a3a', rate: 'superRate', dmg: 'superDmg', rateRow: 'superCrit', dmgRow: 'superDmg' },
+      { id: 'ultra', short: '루나', name: '루나 크리티컬', color: '#d07bff', rate: 'ultraRate', dmg: 'ultraDmg', rateRow: 'ultraCrit', dmgRow: 'ultraDmg' },
+      { id: 'hyper', short: '솔라', name: '솔라 크리티컬', color: '#5ff4ff', rate: 'hyperRate', dmg: 'hyperDmg', rateRow: 'hyperCrit', dmgRow: 'hyperDmg' },
+      { id: 'mega', short: '노바', name: '노바 크리티컬', color: '#ff4fa8', rate: 'megaRate', dmg: 'megaDmg', rateRow: 'megaCrit', dmgRow: 'megaDmg' },
+      { id: 'ultimate', short: '오라', name: '오라 크리티컬', color: '#ffffff', rate: 'ultimateRate', dmg: 'ultimateDmg', rateRow: 'ultimateCrit', dmgRow: 'ultimateDmg' },
+      { id: 'alpha', short: '제로', name: '제로 크리티컬', color: '#7dff6a', rate: 'alphaRate', dmg: 'alphaDmg', rateRow: 'alphaCrit', dmgRow: 'alphaDmg' },
       { id: 'omega', short: '오메가', name: '오메가 크리티컬', color: '#ff4a3a', rate: 'omegaRate', dmg: 'omegaDmg', rateRow: 'omegaCrit', dmgRow: 'omegaDmg' },
       { id: 'eternal', short: '이터널', name: '이터널 크리티컬', color: '#5a8cff', rate: 'eternalRate', dmg: 'eternalDmg', rateRow: 'eternalCrit', dmgRow: 'eternalDmg' },
-      { id: 'genesis', short: '제네시스', name: '제네시스 크리티컬', color: '#ffe27a', rate: 'genesisRate', dmg: 'genesisDmg', rateRow: 'genesisCrit', dmgRow: 'genesisDmg' }
+      { id: 'genesis', short: '에온', name: '에온 크리티컬', color: '#ffe27a', rate: 'genesisRate', dmg: 'genesisDmg', rateRow: 'genesisCrit', dmgRow: 'genesisDmg' }
     ],
     // 각성 (2026-11-16): a free rune or sigil of grade 'from' (불멸) or higher gives shards[grade - from] 각성 파편 when it is
     // taken apart; craftCost shards make one awakened rune or sigil of the chosen kind at craftGrade (불멸)
@@ -426,29 +431,32 @@
       critDmg: { name: '치명타 피해', costBase: 60, costGrowth: 1.1, max: null },
       gold: { name: '골드 획득', costBase: 30, costGrowth: 1.1, max: null },
       mastery: { name: '마법 숙련', costBase: 200, costGrowth: 1.12, max: null },
-      superCrit: { name: '슈퍼 크리티컬 확률', costBase: 2e6, costGrowth: 1.14, max: 100, tier: 3 },
+      // 크리티컬 (2026-11-17): 확률은 기본 100% — 올린 만큼은 100% 를 넘어 크리티컬 피해로 (critConf.overPer), 피해 ×1 + 레벨당 0.003 (최대 ×1.9)
+      criticalCrit: { name: '크리티컬 확률', costBase: 2e7, costGrowth: 1.14, max: 100, tier: 2 },
+      criticalDmg: { name: '크리티컬 피해', costBase: 1e7, costGrowth: 1.1, max: 300, tier: 2, per: 0.003 },   // 밸런스 시뮬 (tools/sim.cjs, 시드 6개): 원래보다 약 5% 빠름
+      superCrit: { name: '테라 크리티컬 확률', costBase: 2e6, costGrowth: 1.14, max: 100, tier: 3 },
       // 2026-11-16: every tier has a damage row too (슈퍼·울트라·하이퍼 had none); it opens with the tier's rate row.
       // per = '배' a level for the new damage rows: at the max they double the tier's base (the old ones keep highDmgPerLevel)
-      superDmg: { name: '슈퍼 크리티컬 피해', costBase: 1e6, costGrowth: 1.1, max: 300, tier: 3, per: 0.01 },
-      ultraCrit: { name: '울트라 크리티컬 확률', costBase: 2e11, costGrowth: 1.14, max: 100, tier: 5 },
-      ultraDmg: { name: '울트라 크리티컬 피해', costBase: 1e11, costGrowth: 1.1, max: 300, tier: 5, per: 0.0134 },
-      hyperCrit: { name: '하이퍼 크리티컬 확률', costBase: 1.5e16, costGrowth: 1.14, max: 100, tier: 7 },
-      hyperDmg: { name: '하이퍼 크리티컬 피해', costBase: 7.5e15, costGrowth: 1.1, max: 300, tier: 7, per: 0.0167 },
+      superDmg: { name: '테라 크리티컬 피해', costBase: 1e6, costGrowth: 1.1, max: 300, tier: 3, per: 0.01 },
+      ultraCrit: { name: '루나 크리티컬 확률', costBase: 2e11, costGrowth: 1.14, max: 100, tier: 5 },
+      ultraDmg: { name: '루나 크리티컬 피해', costBase: 1e11, costGrowth: 1.1, max: 300, tier: 5, per: 0.0134 },
+      hyperCrit: { name: '솔라 크리티컬 확률', costBase: 1.5e16, costGrowth: 1.14, max: 100, tier: 7 },
+      hyperDmg: { name: '솔라 크리티컬 피해', costBase: 7.5e15, costGrowth: 1.1, max: 300, tier: 7, per: 0.0167 },
       // need: [upgrade, level] that must be reached first (the tier below)
-      megaCrit: { name: '메가 크리티컬 확률', costBase: 1e20, costGrowth: 1.14, max: 100, need: ['hyperCrit', 50] },
-      megaDmg: { name: '메가 크리티컬 피해', costBase: 5e19, costGrowth: 1.1, max: 300, need: ['hyperCrit', 50] },
-      ultimateCrit: { name: '얼티밋 크리티컬 확률', costBase: 5e24, costGrowth: 1.14, max: 100, need: ['megaCrit', 50] },
-      ultimateDmg: { name: '얼티밋 크리티컬 피해', costBase: 2.5e24, costGrowth: 1.1, max: 300, need: ['megaCrit', 50] },
-      alphaCrit: { name: '알파 크리티컬 확률', costBase: 2e29, costGrowth: 1.14, max: 100, need: ['ultimateCrit', 50] },
-      alphaDmg: { name: '알파 크리티컬 피해', costBase: 1e29, costGrowth: 1.1, max: 300, need: ['ultimateCrit', 50] },
+      megaCrit: { name: '노바 크리티컬 확률', costBase: 1e20, costGrowth: 1.14, max: 100, need: ['hyperCrit', 50] },
+      megaDmg: { name: '노바 크리티컬 피해', costBase: 5e19, costGrowth: 1.1, max: 300, need: ['hyperCrit', 50] },
+      ultimateCrit: { name: '오라 크리티컬 확률', costBase: 5e24, costGrowth: 1.14, max: 100, need: ['megaCrit', 50] },
+      ultimateDmg: { name: '오라 크리티컬 피해', costBase: 2.5e24, costGrowth: 1.1, max: 300, need: ['megaCrit', 50] },
+      alphaCrit: { name: '제로 크리티컬 확률', costBase: 2e29, costGrowth: 1.14, max: 100, need: ['ultimateCrit', 50] },
+      alphaDmg: { name: '제로 크리티컬 피해', costBase: 1e29, costGrowth: 1.1, max: 300, need: ['ultimateCrit', 50] },
       // 2026-11-16: three more tiers. Each opens at the tier below's rate Lv.70 plus a late goal (diff: the hardest
       // difficulty reached, 2 = 루나틱, 4 = 엘리멘탈). Their own multiplier is ×2 on top of everything below.
       omegaCrit: { name: '오메가 크리티컬 확률', costBase: 1e34, costGrowth: 1.14, max: 100, need: ['alphaCrit', 70], tier: 10 },
       omegaDmg: { name: '오메가 크리티컬 피해', costBase: 5e33, costGrowth: 1.1, max: 300, need: ['alphaCrit', 70], tier: 10, per: 0.0067 },
       eternalCrit: { name: '이터널 크리티컬 확률', costBase: 5e38, costGrowth: 1.14, max: 100, need: ['omegaCrit', 70], tier: 10, diff: 2 },
       eternalDmg: { name: '이터널 크리티컬 피해', costBase: 2.5e38, costGrowth: 1.1, max: 300, need: ['omegaCrit', 70], tier: 10, diff: 2, per: 0.0067 },
-      genesisCrit: { name: '제네시스 크리티컬 확률', costBase: 2e43, costGrowth: 1.14, max: 100, need: ['eternalCrit', 70], tier: 10, diff: 4 },
-      genesisDmg: { name: '제네시스 크리티컬 피해', costBase: 1e43, costGrowth: 1.1, max: 300, need: ['eternalCrit', 70], tier: 10, diff: 4, per: 0.0067 },
+      genesisCrit: { name: '에온 크리티컬 확률', costBase: 2e43, costGrowth: 1.14, max: 100, need: ['eternalCrit', 70], tier: 10, diff: 4 },
+      genesisDmg: { name: '에온 크리티컬 피해', costBase: 1e43, costGrowth: 1.1, max: 300, need: ['eternalCrit', 70], tier: 10, diff: 4, per: 0.0067 },
       // 초월 (2026-11-14): open when the stat before is maxed; adds = bonus per level (same keys as gear/relic bonuses).
       // costBase = the needed stat's last level cost. judge/origin/doomClaw/elemRule open inside the main story (user 2026-11-14).
       catEye: { name: '고양이의 눈빛', costBase: 3.25e9, costGrowth: 1.1, max: 200, need: ['crit', 140], adds: { superDmg: 0.02 }, ascend: true },
@@ -551,6 +559,7 @@
       mergeCount: 5,
       // 2026-11-16: every rate row reaches 70% at its max (치명타 140 × 0.5%); runes, sigils and talents bring the last 30%p
       superPerLevel: 0.007, ultraPerLevel: 0.007, hyperPerLevel: 0.007, superDmg: 3, ultraDmg: 4, hyperDmg: 5,
+      criticalPerLevel: 0.007, criticalRateBase: 1, criticalDmg: 1,   // 크리티컬 (2026-11-17): 확률 기본 100%, 피해 기본 ×1
       megaPerLevel: 0.007, ultimatePerLevel: 0.007, alphaPerLevel: 0.007, megaDmg: 6, ultimateDmg: 7, alphaDmg: 8, highDmgPerLevel: 0.05,
       omegaPerLevel: 0.007, eternalPerLevel: 0.007, genesisPerLevel: 0.007, omegaDmg: 2, eternalDmg: 2, genesisDmg: 2,
       skillUpBase: 150, skillOwnedPer: 0.01, skillUpGrowth: 1.6, skillLvBonus: 0.1, skillMaxLv: 50,

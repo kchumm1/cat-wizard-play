@@ -10,10 +10,10 @@
 
   function pct(v) { return (Math.round(v * 1000) / 10) + '%'; }
   function x(v) { return '×' + (Math.round(v * 100) / 100).toFixed(2); }
-  var NAME = { superDmg: '슈퍼 크리티컬 피해', hyperDmg: '하이퍼 크리티컬 피해', megaDmg: '메가 크리티컬 피해', ultimateDmg: '얼티밋 크리티컬 피해',
-    alphaDmg: '알파 크리티컬 피해', omegaDmg: '오메가 크리티컬 피해', eternalDmg: '이터널 크리티컬 피해', genesisDmg: '제네시스 크리티컬 피해', bossDmg: '보스 피해', finalPct: '모든 피해', skillDmg: '스킬 피해', weakDmg: '약점 피해', surgeDmg: '폭주 피해' };
-  var OVER_NAME = { finalMul: '모든 피해', critDmg: '치명타 피해', superDmg: '슈퍼 피해', ultraDmg: '울트라 피해', hyperDmg: '하이퍼 피해',
-    megaDmg: '메가 피해', ultimateDmg: '얼티밋 피해', alphaDmg: '알파 피해', omegaDmg: '오메가 피해', eternalDmg: '이터널 피해', genesisDmg: '제네시스 피해', bossDmg: '보스 피해', skillDmg: '스킬 피해', weakMul: '약점 피해', surgeMul: '폭주 피해' };
+  var NAME = { criticalDmg: '크리티컬 피해', superDmg: '테라 크리티컬 피해', hyperDmg: '솔라 크리티컬 피해', megaDmg: '노바 크리티컬 피해', ultimateDmg: '오라 크리티컬 피해',
+    alphaDmg: '제로 크리티컬 피해', omegaDmg: '오메가 크리티컬 피해', eternalDmg: '이터널 크리티컬 피해', genesisDmg: '에온 크리티컬 피해', bossDmg: '보스 피해', finalPct: '모든 피해', skillDmg: '스킬 피해', weakDmg: '약점 피해', surgeDmg: '폭주 피해' };
+  var OVER_NAME = { finalMul: '모든 피해', critDmg: '치명타 피해', criticalDmg: '크리티컬 피해', superDmg: '테라 피해', ultraDmg: '루나 피해', hyperDmg: '솔라 피해',
+    megaDmg: '노바 피해', ultimateDmg: '오라 피해', alphaDmg: '제로 피해', omegaDmg: '오메가 피해', eternalDmg: '이터널 피해', genesisDmg: '에온 피해', bossDmg: '보스 피해', skillDmg: '스킬 피해', weakMul: '약점 피해', surgeMul: '폭주 피해' };
   // the base rows: the plain sentence, the stat it shows, how it reads, where the stat stops (if it does) and, for the
   // crit tiers, the damage that tier does when it lands
   var ROW = {
@@ -30,7 +30,10 @@
     var below = DATA.critTiers[i - 1];
     var from = i === 1 ? '치명타' : below.short, c = from.charCodeAt(from.length - 1) - 0xac00, ga = c >= 0 && c % 28 ? '이' : '가';
     var to = t.short.charCodeAt(t.short.length - 1) - 0xac00, ro = to >= 0 && to % 28 && to % 28 !== 8 ? '으로' : '로';
-    ROW[t.rateRow] = { about: from + ga + ' ' + t.short + ro + ' 이어질 확률', val: function (s) { return pct(s[t.rate]); }, cap: '100%', own: pct(DATA.balance[t.id + 'PerLevel'] * DATA.upgrades[t.rateRow].max), dmg: function (s) { return x(s[t.dmg]); } };
+    // 이미 100% 에서 시작하는 단계 (크리티컬, 2026-11-17): 올리면 넘친 만큼 그 단계 피해가 오름 — 「100% → 크리티컬 피해 +0.4%」
+    var base = DATA.balance[t.id + 'RateBase'] || 0;
+    ROW[t.rateRow] = { about: from + ga + ' ' + t.short + ro + ' 이어질 확률', val: function (s) { return pct(s[t.rate]); }, cap: '100%', own: base ? null : pct(DATA.balance[t.id + 'PerLevel'] * DATA.upgrades[t.rateRow].max), dmg: function (s) { return x(s[t.dmg]); },
+      over: function (s) { return s[t.dmg + 'Over'] || 0; }, overName: t.short + ' 피해' };
     ROW[t.dmgRow] = { about: t.name + ' 적중 시 피해 배율', val: function (s) { return x(s[t.dmg]); } };
   });
   function withLevel(state, key, lv) { var up = {}; for (var k in state.up) up[k] = state.up[k]; up[key] = lv; var c = {}; for (var j in state) c[j] = state[j]; c.up = up; return c; }
@@ -57,6 +60,7 @@
       lines.push(['지금', R.val(st)]);
       var capped = R.cap && R.val(st) === R.cap;
       if (!atMax && !capped) lines.push(['다음', R.val(nx) + (R.rise ? R.rise(st, nx) : '')]);
+      else if (!atMax && capped && R.over && R.over(nx) > R.over(st) + 1e-12) lines.push(['다음', R.overName + ' +' + pct(R.over(nx))]);
       if (R.dmg) lines.push(['피해', '터지면 ' + R.dmg(st)]);
       if (R.own) lines.push(['최대', R.own + ' (Lv.' + u.max + ') · 룬·신성력·특성으로 ' + R.cap + '까지']);
       else if (R.cap) lines.push(['최대', R.cap + (u.max !== null ? ' (Lv.' + u.max + ')' : '')]);

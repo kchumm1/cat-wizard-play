@@ -861,6 +861,8 @@
     '#sheet.opal#sheet.opal .row.grow .name,#sheet.opal#sheet.opal .row.lockrow .name{display:flex!important;align-items:baseline;gap:10px!important;margin:0!important;font:800 15.5px/1.15 var(--body)!important;color:var(--navy)!important;white-space:nowrap;max-width:100%}',
     '#sheet.opal#sheet.opal .row.grow .name .nm{font-family:var(--body)!important;font-weight:800!important;font-size:15.5px;line-height:1.15!important;overflow:hidden;text-overflow:ellipsis;min-width:0}',   // 크기는 고정 안 함: 긴 이름은 fitGrowNames 가 줄임
     '#sheet.opal#sheet.opal .row.grow .name .lv{flex:none;font:700 13px/1 "Times New Roman",Georgia,serif!important;color:var(--navy)!important}#sheet.opal .row.grow .name .lv small{font:600 10px var(--body);color:#9aa0b8;margin-left:1px}#sheet.opal .row.grow .name.nomax .lv small{display:none}',
+    // 좁은 폰 (lvdown, fitGrowNames): Lv 는 아이콘 받침 위 작은 알약으로 — 이름이 칸을 다 씀 (2026-11-17)
+    '#sheet.opal .list.lvdown .row.grow{position:relative}#sheet.opal#sheet.opal .list.lvdown .row.grow .name .lv{position:absolute;left:49px;bottom:7px;transform:translateX(-50%);z-index:2;white-space:nowrap}',
     '#sheet.opal#sheet.opal .row.grow .gabout,#sheet.opal#sheet.opal .row.lockrow .desc{font-family:var(--body)!important;font-weight:500!important;font-size:11px;line-height:1.3!important;letter-spacing:-.2px;color:#3d4260!important;margin:0!important}',
     // 설명도 한 줄: 넘치면 fitGrowNames 가 글씨를 9.5px 까지 줄이고, 그래도 넘치면 두 줄 (.wrap)
     '#sheet.opal#sheet.opal .row.grow .gabout{white-space:nowrap;max-width:100%;overflow:hidden}#sheet.opal#sheet.opal .row.grow .gabout.wrap{white-space:normal}',
@@ -937,7 +939,9 @@
     '#sheet.opal#sheet.opal .tinfo.tnw .tidesc{position:relative;top:-5px;align-self:center;height:62px;overflow:hidden;min-width:0;padding-left:10px;border-left:1px solid #d6d9e6;display:flex;flex-direction:column;justify-content:flex-start;gap:6px}',   // 높이 고정·위부터: 어떤 특성이든 이름 줄·선·효과 줄이 같은 자리 (사용자 2026-11-16)   // 사용자: 이름 줄 살짝 위로, 이름과 효과 사이 넓게
     '#sheet.opal#sheet.opal .tinfo.tnw .tidesc>b{display:block;padding-bottom:6px;border-bottom:1px solid #e2e4ee;font:800 15.5px/1.15 var(--body)!important;color:var(--navy)!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#sheet.opal#sheet.opal .tinfo.tnw .tidesc>b small{font:700 11px var(--body);color:#8a90a8;margin-left:3px}',
     '#sheet.opal#sheet.opal .tinfo.tnw .tieff{font-family:var(--body)!important;font-weight:700!important;font-size:12px;line-height:1.2!important;letter-spacing:-.2px;color:var(--navy)!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#sheet.opal#sheet.opal .tinfo.tnw .tieff i{font-style:normal;color:#7a8099;margin:0 1px}#sheet.opal#sheet.opal .tinfo.tnw .tieff span{color:#1f857e!important;font-weight:800}',
-    '#sheet.opal #opTabs:has(.tinfo.tnw){background:linear-gradient(180deg,rgba(239,234,246,.4) 0,#ece7f5 5px)!important}',   // 상세 칸 위 틈으로 뒤 글자가 비치지 않게
+    '#sheet.opal #opTabs:has(.tinfo.tnw){position:relative;background:#ece7f5!important}',   // 상세 칸 위 틈으로 뒤 글자가 비치지 않게
+    // 2026-11-17 (형: 줄·칸·여백 맞춰): 상세 칸 위로 뒤 목록이 반쯤 잘려 비치던 것 → 칸 위 16px 에서 부드럽게 사라짐
+    '#sheet.opal #opTabs:has(.tinfo.tnw)::before{content:"";position:absolute;left:0;right:0;top:-16px;height:16px;background:linear-gradient(180deg,rgba(236,231,245,0),#ece7f5);pointer-events:none}',
     '#sheet.opal#sheet.opal .tinfo.tnw .tieff.wrap{white-space:normal;line-height:1.15!important}#sheet.opal#sheet.opal .tinfo.tnw .tidesc:has(.tieff.wrap) .tinote{display:none}',
     '#sheet.opal#sheet.opal .tinfo.tnw .tinote{margin-top:-2px;font:600 9.5px/1.2 var(--body);color:#8a90a8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
     '#sheet.opal#sheet.opal .tinfo.tnw .tupb{width:118px!important;min-height:0!important;height:29px!important;padding:0 0 1px!important;display:flex!important;align-items:center;justify-content:center;gap:5px;font:800 12.5px/1 var(--body)!important;letter-spacing:-.2px;color:#fff!important;text-shadow:0 1px 2px rgba(10,60,60,.5)!important;border:0 solid transparent!important;border-image:url(art/tp-up.webp) 54 fill / 12.1px / 2.5px 2.2px 3.6px 2.2px stretch!important;background:none!important;box-shadow:none!important;border-radius:0!important;transition:transform .12s}',
@@ -977,7 +981,7 @@
     '#sheet.opal#sheet.opal .opflow.anw span{font:800 12.5px/1 var(--body)!important;color:var(--navy)!important;background:none!important;box-shadow:none!important;padding:0!important;white-space:nowrap}',
     '#sheet.opal#sheet.opal .opflow.anw i{width:18px;height:13px;font-size:0;background:url(art/al-arrow.webp) 50% 50%/contain no-repeat}',
     // 물약 카드 3장 (보이는 119×256, 사이 6.6): 물약 그림 → 이름 → 효과 알약 → 시간 알약 → 「만들기 🪙 비용」
-    '#sheet.opal#sheet.opal .pgrid.anw{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:6.6px!important;margin:3px -4.3px 0!important}',
+    '#sheet.opal#sheet.opal .pgrid.anw{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:6.6px!important;margin:3px 0 0!important}',   // 2026-11-17 (형: 줄·칸 맞춰): 위 띠·카드와 같은 양쪽 끝 (전엔 4.3px 더 나감)
     '#sheet.opal#sheet.opal .pcard.anw{position:relative;display:block!important;height:256px;margin:0!important;padding:0!important;background:none!important;box-shadow:none!important;border:0 solid transparent!important;border-radius:0!important;border-image:url(art/al-card.webp) 63 fill / 22.3px / 3.9px 3.5px 5.6px 3.5px stretch!important;overflow:visible!important}',
     '#sheet.opal#sheet.opal .pcard.anw>*{position:absolute;left:50%;transform:translateX(-50%);margin:0!important}',
     '#sheet.opal#sheet.opal .pcard.anw .pbot{top:1.5px;width:132px;height:124px;display:block!important;background:none!important;box-shadow:none!important;border:0!important;border-radius:0!important;padding:0!important}',
@@ -1200,7 +1204,7 @@
     '#sheet.opal#sheet.opal .tinfo.tnw .tieff{height:16px;margin-top:1.5px;font-size:12.5px;line-height:16px!important;white-space:nowrap!important;text-overflow:clip!important}',
     '#sheet.opal#sheet.opal .tinfo.tnw .tinote{display:block!important;height:12px;margin:2px 0 0!important;font:700 10px/12px var(--body)!important;color:#6f7590!important;white-space:nowrap;text-overflow:clip!important}#sheet.opal#sheet.opal .tinfo.tnw .tinote.lock{color:#b0623f!important}',
     '#sheet.opal#sheet.opal .tinfo.tnw .tinote .tnlock{display:inline-block;width:12px;height:13px;margin:0 2px 0 -1px;vertical-align:-2.5px;background:url(art/tp-lock.webp) 50% 50%/contain no-repeat}',   // 자물쇠 = 특성 부품 (사용자 2026-11-16)
-    '#sheet.opal#sheet.opal .tinfo.tnw .tupb{width:100px!important;height:30px!important;margin-top:31px!important;align-self:start!important;font-size:12px!important;gap:0!important}',
+    '#sheet.opal#sheet.opal .tinfo.tnw .tupb{width:100px!important;height:30px!important;margin-top:24px!important;align-self:start!important;font-size:12px!important;gap:0!important}',
     '#sheet.opal#sheet.opal .tinfo.tnw .tupb::before,#sheet.opal#sheet.opal .tinfo.tnw .tupb::after{content:none!important}',
     // ---- 알림 (노란 상자 → 오팔 진주 알약): 메뉴가 열려 있을 때, 아래에서 톡 떠오르며 반짝 ----
     'body:has(#sheet.opal.on) #toast{background:linear-gradient(180deg,#ffffff,#f1ecfa)!important;color:var(--navy,#2b3157)!important;border:1px solid rgba(170,160,220,.55)!important;border-radius:999px!important;box-shadow:0 8px 20px rgba(80,70,140,.25),inset 0 1px 0 #fff,inset 0 -2px 5px rgba(150,140,210,.18)!important;font:800 13.5px/1.25 "Noto Sans KR","Malgun Gothic",sans-serif!important;padding:10px 18px 10px 16px!important;text-shadow:none!important;overflow:hidden;white-space:nowrap!important;width:max-content!important}',
@@ -1313,6 +1317,15 @@
     '#sheet.opal#sheet.opal .skr .b.put.long,#sheet.opal#sheet.opal .skr .b.out{font-size:10.5px!important;letter-spacing:-.3px}',
     // 「3번에 넣기」·「1번 빼기」가 47px 칸에 꽉 끼던 것 (사용자 2026-11-16 「너무 타이트해서 터질라고」): 가운데 칸을 60px 로, 보기·강화는 조금 좁게
     '#sheet.opal#sheet.opal .skr .b.see{width:43px!important}#sheet.opal#sheet.opal .skr .b.put,#sheet.opal#sheet.opal .skr .b.out{left:46px;width:61px!important}#sheet.opal#sheet.opal .skr .b.up{left:110px;width:42px!important}#sheet.opal#sheet.opal .skr .b.put.long,#sheet.opal#sheet.opal .skr .b.out{font-size:11px!important;letter-spacing:-.2px}',
+    // 2026-11-17 (형: 줄·칸 맞춰): 보기·넣기/빼기·강화 세 버튼 글씨를 모두 12px 로 같게 (가운데만 11px 로 작았음)
+    '#sheet.opal#sheet.opal .skr :is(.b.see,.b.put,.b.put.long,.b.out,.b.up){font-size:12px!important}',
+    // 2026-11-17 (형: 이 세로줄 없애고 보기·1번 빼기·강화 칸을 좀 키워): 구분선 없애고 그 자리까지 버튼 칸을 넓힘 — 152×20 → 162×24,
+    // 위로는 이름 줄(3~20px)과 안 겹치고 아래로는 설명 줄(37px~)과 안 겹치는 13~37px
+    '#sheet.opal#sheet.opal .skr .dv{display:none!important}',
+    '#sheet.opal#sheet.opal .skr .bs{left:194px;top:12px;width:162px;height:23px}',
+    '#sheet.opal#sheet.opal .skr .b{height:23px!important}',
+    '#sheet.opal#sheet.opal .skr .b.see{left:0;width:46px!important}#sheet.opal#sheet.opal .skr .b.put,#sheet.opal#sheet.opal .skr .b.out{left:50px;width:64px!important}#sheet.opal#sheet.opal .skr .b.up{left:118px;width:44px!important}',
+    '#sheet.opal#sheet.opal .skr :is(.b.see,.b.put,.b.put.long,.b.out,.b.up){font-size:12.5px!important}',
     '#sheet.opal#sheet.opal .skr .b.off{color:#9aa0b8!important}',
     '#sheet.opal#sheet.opal .skr .b:active{filter:brightness(.95);transform:scale(.97)}#sheet.opal#sheet.opal .skr .b.put:active{border-image-source:url(art/sk-btn-press.webp)!important}',
     '#sheet.opal#sheet.opal .skr .lk{left:0;top:0;width:152px;height:20px;display:flex;align-items:center;justify-content:center;gap:4px;font:700 12px/1 var(--body);color:#8a90a8}#sheet.opal#sheet.opal .skr .lk>i{width:12px;height:13px;background:url(art/sk-lock.webp) 50% 50%/contain no-repeat}',
