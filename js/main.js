@@ -203,7 +203,8 @@
       var dmg = CW.hitDamage(st, skill, { boss: mob.boss, critTier: ct, even: true, frozen: mob.frozen > 0, shocked: mob.shocked > 0 }) * (frac === undefined ? 1 : frac) * (mul || 1);
       if (dun && mob === dun.golem) dun.dmg += dmg; else mob.hp -= dmg;
       mob.lastCol = skill.color;
-      if (skill.status === 'freeze') mob.frozen = Math.max(mob.frozen, mob.boss ? 0.7 : 1.5);
+      // a boss freezes now and then, not under every ice spell (it would stand frozen the whole fight)
+      if (skill.status === 'freeze') { if (!mob.boss) mob.frozen = Math.max(mob.frozen, 1.5); else if (!(mob.frzCd > 0)) { mob.frozen = Math.max(mob.frozen, 0.7); mob.frzCd = 2.8; } }
       if (skill.status === 'shock') mob.shocked = 2.2;
       sc.hitMob(mob, crit, (power || 1) * (1 + 0.25 * Math.max(0, ct - 1)));
       // water skills: the number in near white — in the skill's own blue it could not be read on the water (2026-11-17,

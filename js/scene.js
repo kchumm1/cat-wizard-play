@@ -678,17 +678,24 @@
     // power: 0.5 small poke … 2 huge blast. Pushes away from the hero, bends the top back, snaps the head.
     function hitMob(mob, crit, power) {
       var p = (power || 1) * (crit ? 1.5 : 1), d = mob.group.userData, heavy = mob.boss ? 0.45 : 1;
+      // A boss staggers now and then, not under every spell (the user 2026-11-17): a big hit (crit) at most every 1.8 s
+      // makes it reel back, stop for a moment and straighten up again. Before, every hit of a barrage stunned it again and
+      // bent it the same way, so it stood still bent over, slid to the edge on the knockback, and walked about still bent.
+      // The hits in between only flash and shiver it.
+      var stag = false;
+      if (mob.boss) { if (p > 1.4 && !(mob.stunCd > 0)) { stag = true; mob.stun = Math.max(mob.stun, 0.35); mob.stunCd = 1.8; } heavy = stag ? 0.6 : 0.05; }
       mob.flash = Math.min(0.5, 0.28 + 0.12 * p);
       d.bend.v += 2.6 * p * heavy; d.sq.v -= 2.2 * p * heavy;
       mob.kx.v += 2.2 * p * heavy;
       if (mob.pull === undefined && mob.arrived) {
         var hx = mob.x - HB.x, hz = mob.z - HB.z, hl = Math.sqrt(hx * hx + hz * hz) || 1, push = 1.7 * p * heavy;
         mob.pvx += hx / hl * push; mob.pvz += hz / hl * push * 0.8;
-        var pl = Math.sqrt(mob.pvx * mob.pvx + mob.pvz * mob.pvz); if (pl > 3.6) { mob.pvx *= 3.6 / pl; mob.pvz *= 3.6 / pl; }
+        // a boss is only nudged: the shoves of many spells in a row would otherwise add up and carry it off to the edge
+        var pl = Math.sqrt(mob.pvx * mob.pvx + mob.pvz * mob.pvz), pmax = mob.boss ? 0.9 : 3.6; if (pl > pmax) { mob.pvx *= pmax / pl; mob.pvz *= pmax / pl; }
         mob.tilt.v -= (scrX(hx, hz) > 0 ? 1 : -1) * 2.6 * p * heavy;
       }
-      mob.hurt = Math.min(1, mob.hurt + 0.6 * p);
-      if (!mob.boss || p > 1.4) mob.stun = Math.max(mob.stun, mob.boss ? 0.12 : 0.22 + 0.08 * p);
+      if (!mob.boss || stag) mob.hurt = Math.min(1, mob.hurt + 0.6 * p);
+      if (!mob.boss) mob.stun = Math.max(mob.stun, 0.22 + 0.08 * p);
       if (!mob.boss && p >= 1.6 && mob.y <= 0.01) mob.vy = Math.max(mob.vy, 2 + p);
       if (crit) shake(0.18 * p);
     }
@@ -972,7 +979,8 @@
     // ---------- monster brain ----------
     var KEEP = 0.78;
     function chargers() { var n = 0; mobs.forEach(function (m) { if (m.state === 'charge' || m.state === 'swipe' || m.state === 'windup') n++; }); return n; }
-    function setGoal(m, x, z, speed, state) { var p = clampField({ x: x, z: z }); m.tx = p.x; m.tz = p.z; m.speed = speed; m.state = state; }
+    // m.st: how long it may try to get there (a walk that keeps being shoved off its goal gives up and picks something else)
+    function setGoal(m, x, z, speed, state) { var p = clampField({ x: x, z: z }); m.tx = p.x; m.tz = p.z; m.speed = speed; m.state = state; m.st = 3.5; }
     function nearHero(m, dist) { var dx = m.x - HB.x, dz = (m.z - HB.z) / 1.15, d = Math.sqrt(dx * dx + dz * dz) || 1; return { x: HB.x + dx / d * dist, z: HB.z + dz / d * dist * 1.15 }; }
     function nextAction(m) {
       // left outside the picture (the camera moved with the wizard): walk back in first
@@ -997,7 +1005,7 @@
     function mobBrain(m, dt) {
       var g = m.group, d = g.userData, gait = m.gait;
       m.atk = Math.max(0, m.atk - dt * 3); m.cheer = 0; m.hopCd -= dt;
-      if (m.frozen > 0 || m.pull !== undefined) { m.walk = 0; m.vx = m.vz = m.sp = 0; return; }
+      if (m.stunCd > 0) m.stunCd -= dt; if (m.frzCd > 0) m.frzCd -= dt;      if (m.frozen > 0 || m.pull !== undefined) { m.walk = 0; m.vx = m.vz = m.sp = 0; return; }
       if (m.stun > 0) { m.stun -= dt; m.walk *= 0.8; m.vx *= 0.8; m.vz *= 0.8; m.sp = 0; return; }
       m.st -= dt;
       var st = m.state, moving = false, grounded = m.y <= 0.01;
@@ -1011,6 +1019,9 @@
       }
       if (st === 'enter' || st === 'wander' || st === 'charge' || st === 'back' || st === 'orbit') {
         var dx = m.tx - m.x, dz = m.tz - m.z, dist = Math.sqrt(dx * dx + dz * dz);
+        // a boss under fire is nudged by every hit and never lands right on the spot: near enough counts, and so does
+        // having tried long enough (it used to stay stuck walking "back" a step short of its goal for the whole fight)
+        if ((st === 'wander' || st === 'back') && ((m.boss && dist < 0.35) || m.st <= 0)) dist = 0;
         var want = m.speed > 0 && dist > 0.05 ? Math.min(m.speed, dist * (st === 'charge' ? 6 : 2.5) + 0.3) : 0;
         var acc = Math.min(1, dt * (st === 'charge' ? 9 : gait === 'float' ? 2.6 : gait === 'skitter' ? 12 : 4.5));
         m.vx += ((dist > 1e-4 ? dx / dist * want : 0) - m.vx) * acc; m.vz += ((dist > 1e-4 ? dz / dist * want : 0) - m.vz) * acc;
