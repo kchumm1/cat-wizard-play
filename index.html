@@ -2696,6 +2696,140 @@ body{font-family:'Noto Sans KR',"Malgun Gothic","Apple SD Gothic Neo",system-ui,
 .place,#placeBtn,.chip{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 #slots .sk,#slots .sk.empty{background:linear-gradient(180deg,rgba(255,255,255,.40),rgba(255,255,255,.20))!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 #slots .sk b{background:rgba(255,255,255,.78)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+/* ---------- 가로 화면 (2026-11-17, 형: 핸드폰 가로모드를 완벽하게 · 세로모드 해 논 건 유지) ----------
+   A phone turned on its side (and a computer window): the fight fills the whole screen edge to edge; the quick buttons
+   stand in a column on the left, the seven tabs in a column on the right, the top bar is one band, the skills sit at the
+   bottom right (the right thumb), and a menu opens as a drawer from the right so the fight stays in sight on the left.
+   Portrait is untouched: every rule is inside this one media query, and js/land.js asks the same question (CW.isLand). */
+@media (orientation:landscape) and (min-aspect-ratio:6/5){
+  :root{--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px);--sb:env(safe-area-inset-bottom,0px);--st:env(safe-area-inset-top,0px);--qw:58px;--tw:52px;--dw:min(390px,48vw);--el:var(--sl);--er:var(--sr)}
+  /* the two columns stand inside the safe gaps (--el, --er). The side without the notch (js/land.js: notchL / notchR)
+     has only the round corner, so its column goes right to the edge (형: 핸드폰 끝쪽에 붙힌다는 느낌으로 · 더 넓게 →
+     좀 더 많이 붙이고); the notch side keeps the whole gap, or the Dynamic Island would sit on the middle tabs */
+  html.notchL{--er:calc(var(--sr) * .12)}
+  html.notchR{--el:calc(var(--sl) * .12)}
+  #app{max-width:none}
+  /* the region's picture is upright (about 9:16): stretched to a sideways screen it was squashed flat, so it covers
+     the screen instead, keeping its middle (the ground the fight stands on) */
+  .stagebg{background-size:cover!important;background-position:50% 55%!important}
+  /* left column: 지도 · 룬 · 신성력 · 도감 · 우편함 · 공지 · 방치, all seven always in reach */
+  #quick{left:calc(var(--el) + 6px)!important;right:auto!important;top:calc(var(--st) + 6px)!important;bottom:calc(var(--sb) + 6px);width:calc(var(--qw) - 8px);display:flex;flex-direction:column;justify-content:space-between;align-items:center;gap:0!important}
+  #quick button{width:48px!important;padding:3px 0 2px!important;border-radius:13px!important}
+  #quick i,#quick i .ico{width:22px!important;height:22px!important}
+  #quick span{font-size:10px!important;line-height:1.1}
+  /* top band: profile · stage · wallet on one line, the boss bar and 보스 도전 under the stage */
+  #hud{left:calc(var(--el) + var(--qw));right:calc(var(--er) + var(--tw));top:var(--st);padding:6px 8px 0!important;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:start;gap:4px 8px!important}
+  #hud .hud-row{display:contents}
+  #hud .prof{grid-column:1;grid-row:1}
+  #hud .wallet{grid-column:3;grid-row:1}
+  #hud .place.stg{grid-column:2;grid-row:1;justify-self:center;align-self:start;width:min(300px,100%)!important}
+  #bossbox{grid-column:2;grid-row:2;justify-self:center;width:min(300px,100%)}
+  #retry{grid-column:2;grid-row:2;justify-self:center;align-self:start}
+  /* right column: the seven tabs, top to bottom */
+  /* (형: 아이콘들을 가운데 정렬) the pictures stand in the middle of the column you see: without a notch at this edge the
+     column reaches the edge and its tabs fill all of it; with the notch here it stands just inside the notch's gap as a
+     rounded panel of its own, the field showing under the notch as it does at the left */
+  #tabs{left:auto!important;right:var(--er);top:0;bottom:0;width:var(--tw);height:auto;display:grid;grid-template-columns:1fr!important;grid-template-rows:repeat(7,minmax(0,1fr));gap:0!important;padding:calc(var(--st) + 10px) 0 calc(var(--sb) + 4px) 0!important;border-radius:0!important;box-shadow:-1px 0 0 rgba(255,255,255,.35),-8px 0 22px rgba(40,20,100,.35)!important;
+    /* the same nebula as the upright tab bar (mn-neb-fill, the stars in ::after), sized to the tall column and drifting
+       up and down instead of across */
+    background:linear-gradient(270deg,rgba(40,24,96,.28),rgba(24,14,64,.5)),url(art/mn-neb-fill.webp) 50% 20%/auto 150%!important;animation:tabnebV 46s ease-in-out infinite alternate!important}
+  @keyframes tabnebV{from{background-position:0 0,35% 10%}to{background-position:0 0,65% 90%}}
+  html.notchL #tabs{right:0;width:calc(var(--tw) + var(--er))}
+  html.notchR #tabs{top:6px;bottom:6px;border-radius:20px!important;padding-top:calc(var(--st) + 6px)!important;padding-bottom:calc(var(--sb) + 2px)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.28),0 6px 18px rgba(40,20,100,.4)!important}
+  #tabs button{min-height:0;padding:0!important}
+  /* a thin column (형: 가로모드는 화면을 더 넓게 보는 거니까 좀 더 줄이고): smaller pictures, names and halo */
+  #tabs button img.ico,#tabs button svg{width:25px!important;height:25px!important}
+  #tabs button span{font-size:10px!important;line-height:1.15!important;margin-top:1px}
+  #tabs button[aria-selected=true]::before{width:36px!important;height:36px!important;margin-left:-18px!important}
+  /* menu heads made thin (형: 머리 부분이 커서 훈련 목록이 2~3줄만): the title line, the ×1/×10/×100 row and the sub-tabs
+     at the bottom; the 길게 누르면 연속 강화 hint goes (it is in 성장 가이드 too) */
+  /* (#sheet#sheet#sheet: js/ui-opal.js puts its own !important rules for these after this sheet) */
+  #sheet#sheet#sheet .sheet-head{flex:none!important;padding:calc(var(--st) + 9px) 10px 3px!important}
+  /* the opal menus' painted frame (js/ui-opal.js, 34px deep) is thinner here, so it does not cover the short title line */
+  #sheet#sheet#sheet.opal::after{border-image-width:20px 20px 0 20px!important}
+  #sheet#sheet#sheet .sheet-head b{font-size:18px!important;letter-spacing:1px!important;line-height:1.25!important}
+  #sheet#sheet#sheet .sheet-head b::before{padding-left:34px!important;background-size:28px 1.2px!important}
+  #sheet#sheet#sheet .sheet-head b::after{padding-right:34px!important;background-size:28px 1.2px!important}
+  #sheet#sheet#sheet #sheetClose{height:28px!important;min-height:28px!important;padding:0 12px!important;font-size:13px!important}
+  #sheet#sheet#sheet.opal #sheetClose{top:50%!important;transform:translateY(-50%)!important}
+  /* 뽑기 (형: 상자 그림이 서랍을 다 차지해서 버튼을 보려면 내려야): the level card on top, then the pull buttons with the
+     chest small beside them (it still shakes and opens there when you pull), all on the first screen */
+  #panel:has(> .gchest){display:grid!important;grid-template-columns:minmax(0,1fr) 84px;grid-auto-rows:max-content;column-gap:6px;align-content:start}
+  #panel:has(> .gchest) > *{grid-column:1 / -1}
+  /* (the drawer's own title already says 뽑기) */
+  #panel:has(> .gchest) > h3{display:none!important}
+  #panel:has(> .gchest) > .gacha-head{grid-row:1;margin:0!important;padding:8px 12px!important}
+  #panel:has(> .gchest) .gh2 .ghbar{margin:5px 0 7px!important}
+  #panel:has(> .gchest) .gh2 .ghchips span{padding:4px 8px!important}
+  #panel:has(> .gchest) > .gchest{grid-column:2;grid-row:2;height:84px!important;margin:0!important;align-self:center}
+  #panel:has(> .gchest) > .pulls{grid-column:1;grid-row:2;gap:6px!important;margin-top:7px!important}
+  /* the buttons with smaller writing and less padding (the 500회 one keeps its own one-line layout) */
+  #sheet#sheet #panel:has(> .gchest) > .pulls .pull{min-height:0!important;padding:7px 10px!important;border-radius:14px!important;gap:1px!important}
+  #sheet#sheet #panel:has(> .gchest) > .pulls .pull b{font-size:17px!important;line-height:1.15!important}
+  #sheet#sheet #panel:has(> .gchest) > .pulls .pull span{font-size:14px!important;line-height:1.2!important;margin:0!important}
+  #sheet#sheet #panel:has(> .gchest) > .pulls .pull small{font-size:11.5px!important;line-height:1.2!important;margin:0!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  #sheet#sheet#sheet #panel{padding-top:6px!important;margin-top:0!important}
+  #sheet#sheet#sheet .ophead{margin:0 0 6px!important}
+  #sheet#sheet#sheet .mulpick button{height:25px!important;font-size:14px!important}
+  #sheet#sheet#sheet #opTabs{padding:3px 10px calc(var(--sb) + 3px)!important}
+  #sheet#sheet#sheet #opTabs .ophold{display:none!important}
+  #sheet#sheet#sheet #opTabs .subtabs{padding:1px 4px!important}
+  #sheet#sheet#sheet #opTabs .subtabs button{height:30px!important;min-height:30px!important;font-size:13.5px!important}
+  /* bottom band: 목표 at the left; presets, 폭주 and the four skills at the right */
+  #skillbar{left:calc(var(--el) + var(--qw))!important;right:calc(var(--er) + var(--tw))!important;bottom:0!important;padding:0 10px calc(var(--sb) + 6px)!important;display:grid!important;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto;align-items:end;justify-items:end;gap:4px 10px!important;background:none!important}
+  #qrow{display:contents!important}
+  #quest{grid-column:1;grid-row:3;justify-self:start;align-self:end;max-width:100%}
+  #pre{grid-column:2;grid-row:1}
+  #surgeGauge{grid-column:2;grid-row:2;width:100%!important;margin:0!important}
+  #skillbar .slots{grid-column:2;grid-row:3}
+  #gainlog{left:calc(var(--el) + var(--qw) + 10px)!important;bottom:calc(var(--sb) + 46px)!important}
+  #toast{bottom:calc(var(--sb) + 64px)!important}
+  /* a menu: a drawer from the right, under nothing but the tab column, as tall as the screen */
+  #sheet,#sheet.tall,html.shortv #sheet,html.shortv #sheet.tall{left:auto!important;right:calc(var(--er) + var(--tw))!important;top:0!important;bottom:0!important;width:var(--dw)!important;height:auto!important;border-radius:22px 0 0 22px!important;transform:translateX(calc(100% + var(--tw) + var(--er) + 40px))}
+  #sheet.on{transform:none}
+  #sheet .sheet-head{padding:calc(var(--st) + 8px) 12px 4px!important}
+  #panel{padding-left:12px!important;padding-right:12px!important;padding-bottom:calc(var(--sb) + 12px)!important}
+  /* with a menu open the top band keeps only the wallet (gold and gems are what a menu spends), next to the column */
+  html.sheeton #hud .prof,html.sheeton #hud .place.stg{visibility:hidden}
+  html.sheeton #hud .wallet{grid-column:1;grid-row:1;flex-direction:column;align-items:flex-start}
+  html.sheeton #skillbar .slots,html.sheeton #surgeGauge,html.sheeton #pre{visibility:hidden}
+  /* the start screen (js/update-screen.js): the picture fills the screen, the title and the cat at the left, the card
+     with the progress and 모험 시작 at the right — all of it on one screen, nothing to scroll down to */
+  #cwUpdate{overflow:hidden!important}
+  #cwUpdate .game-screen{max-width:none!important;width:100%!important;height:100%!important;min-height:0!important;padding:0!important;aspect-ratio:auto!important;background-size:cover!important;background-position:50% 35%!important}
+  #cwUpdate .game-heading{top:calc(var(--st) + 5%)!important;left:calc(var(--sl) + 3%)!important;right:52%!important;padding-top:0!important}
+  #cwUpdate .game-heading h1{font-size:clamp(28px,9vh,46px)!important}
+  #cwUpdate .character-scene{top:40%!important;bottom:0!important;height:auto!important;left:calc(var(--sl) + 8%)!important;right:56%!important}
+  #cwUpdate .status-panel{position:absolute!important;top:50%!important;bottom:auto!important;transform:translateY(-50%);left:auto!important;right:calc(var(--sr) + 3%)!important;width:min(400px,46%)!important;min-height:0!important;height:auto!important;max-height:calc(100% - 16px);overflow-y:auto;margin:0!important;padding:12px 16px 14px!important;background:rgba(255,247,230,.94);border-radius:20px;box-shadow:0 10px 30px rgba(20,15,10,.35)}
+  #cwUpdate .status-panel h2{margin:6px 0 4px!important}
+  #cwUpdate .game-action{margin-top:10px!important}
+  #cwUpdate .wizard-message,#cwUpdate .game-footer{display:none!important}
+  /* 몬스터 도감: the whole width (inside the safe edges) instead of the upright column; a thin picture band on top, the
+     count card and the 전체·발견·미발견 tabs side by side, five cards to a row (six made long names run off the card) */
+  #dex .dxcol{max-width:none!important;left:var(--sl)!important;right:var(--sr)!important;margin:0!important}
+  #dex .dxhead{height:calc(var(--st) + 66px);overflow:hidden}
+  #dex .dxhead>img{width:100%;height:100%!important;object-fit:cover;object-position:50% 62%}
+  #dex .dxhead .dxback{top:6px!important;height:34px!important}
+  #dex .dxbody{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);column-gap:3%;align-content:start;padding-bottom:calc(var(--sb) + 14px)!important}
+  #dex .dxbody>*{grid-column:1 / -1}
+  #dex .dxbody>.dxprog{grid-column:1;grid-row:1 / span 2;align-self:center}
+  #dex .dxbody>.dxtabs{grid-column:2;grid-row:1;margin:4px 0!important}
+  #dex .dxbody>.dxall{grid-column:2;grid-row:2;align-self:start}
+  #dex .dxtabs span{font-size:16px!important}
+  #dex .dxgrid{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:8px 2%!important}
+}
+/* a small phone on its side (iPhone SE, 667 wide: the drawer is 320): the 뽑기 level chips and the pull buttons' lines
+   are made smaller still so nothing runs into anything and all five buttons stay on the first screen */
+@media (orientation:landscape) and (min-aspect-ratio:6/5) and (max-width:740px){
+  #panel:has(> .gchest){grid-template-columns:minmax(0,1fr) 62px}
+  #panel:has(> .gchest) > .gchest{height:62px!important}
+  #panel:has(> .gchest) .gh2 .ghchips{gap:4px!important}
+  #panel:has(> .gchest) .gh2 .ghchips span{padding:3px 5px!important;gap:3px!important}
+  #panel:has(> .gchest) .gh2 .ghchips em{font-size:10.5px!important;gap:3px!important;letter-spacing:-.03em}
+  #panel:has(> .gchest) .gh2 .ghchips em::before{width:6px!important;height:6px!important}
+  #panel:has(> .gchest) .gh2 .ghchips b{font-size:11.5px!important}
+  #sheet#sheet #panel:has(> .gchest) > .pulls .pull small{font-size:10.5px!important;letter-spacing:-.03em}
+}
 </style>
 
 <!-- 업데이트 화면 (2026-11-15, the user's design art-src/update-20261115; js/update-screen.js): shown first, "모험 시작" goes into the game -->
@@ -2798,6 +2932,7 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script>(function(){var sa=navigator.standalone||(window.matchMedia&&(matchMedia("(display-mode: standalone)").matches||matchMedia("(display-mode: fullscreen)").matches));if(!sa)return;document.documentElement.classList.add("sa");var d=document.documentElement;function typing(){var a=document.activeElement;return a&&/^(INPUT|TEXTAREA)$/.test(a.tagName);}var pr=document.createElement("div");pr.style.cssText="position:fixed;left:0;top:0;width:0;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none";document.body.appendChild(pr);function fit(){var inside=false;try{inside=localStorage.getItem("cw-bottom")==="inside";}catch(e){}var under=pr.offsetHeight>0;d.classList.toggle("under",under);var land=window.innerWidth>window.innerHeight,h=land?Math.min(screen.width,screen.height):Math.max(screen.width,screen.height),gap=h-window.innerHeight;var stretch=under&&!inside&&gap<=120;if(stretch){d.style.setProperty("--apph",h+"px");d.classList.add("fullh");}else d.classList.remove("fullh");d.classList.toggle("shortv",under&&!stretch&&gap>=30&&gap<=120);if(window.scrollY&&!typing())window.scrollTo(0,0);}window.__cwFit=fit;fit();addEventListener("resize",function(){setTimeout(fit,60);});addEventListener("orientationchange",function(){setTimeout(fit,250);});addEventListener("pageshow",function(){setTimeout(fit,60);});document.addEventListener("visibilitychange",function(){if(!document.hidden)setTimeout(fit,120);});[300,1000,2500].forEach(function(t){setTimeout(fit,t);});setInterval(fit,4000);addEventListener("scroll",function(){if(window.scrollY&&!typing())window.scrollTo(0,0);},{passive:true});addEventListener("focusout",function(){setTimeout(function(){if(!typing())window.scrollTo(0,0);},200);});})();</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="js/friend.js"></script>
+<script src="js/land.js"></script>
 <script src="js/num.js"></script>
 <script src="js/data.js"></script>
 <script src="js/economy.js"></script>

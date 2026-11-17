@@ -100,7 +100,13 @@
     var camera = new T.PerspectiveCamera(38, 1, 0.5, 140);
     var lookAt = new T.Vector3(0, 0.55, -0.4), PITCH = 0.87, CAM_D = 16, H_HALF = 0.185, baseFov = 44;
     var camBase = new T.Vector3(0, lookAt.y + CAM_D * Math.sin(PITCH), lookAt.z + CAM_D * Math.cos(PITCH));
-    var viewShift = 0, viewShiftT = 0, vw = 360, vh = 640;
+    var viewShift = 0, viewShiftT = 0, vw = 360, vh = 640, shiftX = false;
+    // 가로 화면 (2026-11-17): a stage clearly wider than tall (a phone on its side, a computer). The lens is set by the
+    // width there: LAND_HALF of ground each side of the middle, so the fight fills the screen from side to side rather
+    // than a narrow strip, and monsters may spread LAND_FX wider across the field to fill it
+    // LAND_UP of the screen's height the fight sits higher there, so the wizard (low in the field) stays clear of the
+    // skills at the bottom right
+    var LAND = false, LAND_HALF = 5.2, LAND_FX = 1.3, LAND_UP = 0.1;
     // the canvas's size on the page, kept up to date by the browser (ResizeObserver) instead of being read for every
     // damage number: reading it right after numbers were added makes the browser lay the page out again each time,
     // and a spell that hits the whole crowd at once did that once per monster (a stall on phones)
@@ -207,15 +213,20 @@
       else { renderer.setPixelRatio(pr); renderer.setSize(w, h, false); canvas.style.imageRendering = 'auto'; }
       camera.aspect = w / h; vw = w; vh = h; cssW = canvas.clientWidth; cssH = canvas.clientHeight;
       // keep the same width of ground on every phone; tall screens simply see more ground above and below
-      baseFov = Math.max(22, Math.min(60, 2 * Math.atan(Math.tan(H_HALF) / Math.min(w / h, 0.95)) * 180 / Math.PI));
+      LAND = w / h > 1.1;
+      baseFov = LAND ? Math.max(8, 2 * Math.atan(LAND_HALF / (CAM_D * w / h)) * 180 / Math.PI)
+        : Math.max(22, Math.min(60, 2 * Math.atan(Math.tan(H_HALF) / Math.min(w / h, 0.95)) * 180 / Math.PI));
       camera.fov = baseFov; applyShift(); camera.updateProjectionMatrix();
       homeCam.fov = baseFov; homeCam.aspect = camera.aspect; homeCam.updateProjectionMatrix();
     }
 
+    // a menu over part of the fight pushes the view away from it: up from a sheet below (upright), left from a drawer at
+    // the right (sideways, ax 'x')
     function applyShift() {
-      if (viewShift > 0.002) camera.setViewOffset(vw, vh, 0, viewShift * vh, vw, vh); else camera.clearViewOffset();
+      var s = viewShift > 0.002 ? viewShift : 0, ox = shiftX ? s * vw : 0, oy = (shiftX ? 0 : s * vh) + (LAND ? LAND_UP * vh : 0);
+      if (ox || oy) camera.setViewOffset(vw, vh, ox, oy, vw, vh); else camera.clearViewOffset();
     }
-    function setViewShift(f) { viewShiftT = f; }
+    function setViewShift(f, ax) { viewShiftT = f; if (ax) shiftX = ax === 'x'; }
     // ---------- region dressing ----------
     function lambert(c) { return new T.MeshLambertMaterial({ color: c }); }
     function add(geo, mat, x, y, z, s, parent) { var m = new T.Mesh(geo, mat); m.position.set(x, y, z); if (s) m.scale.setScalar(s); (parent || world).add(m); return m; }
@@ -521,7 +532,7 @@
 
     // ---------- monsters ----------
     var FIELD = { z0: -4.6, z1: 3.8 };
-    function halfX(z) { return 2.2 + (3.8 - z) * 0.16; }
+    function halfX(z) { return (2.2 + (3.8 - z) * 0.16) * (LAND ? LAND_FX : 1); }
     // Where a monster may go is also kept inside what the camera shows now: on a tall phone the painted field is wider
     // than the picture, and the camera follows the wizard a little, so a monster (or a boss) could walk out past the edge,
     // or under the skill bar, and every spell aimed at it flew off the screen with it. The limits are for a monster's
@@ -1148,8 +1159,8 @@
       // the region's painted backdrop stays on the screen however the camera is turned (the user, 2026-11-17: 돌려도 정면
       // 배경이 똑같이) — the camera keeps its height and lean, so from any side it is the same field seen the same way;
       // only the fight on it turns. Zooming in makes the picture bigger with the fight; zooming out leaves it filling the screen
-      var bgY = -Math.round(viewShift * cssH), bgS = Math.round(1000 / Math.min(1, orb.zoom)) / 1000, bgK = bgY + '|' + bgS;
-      if (bgK !== bgEl._k) { bgEl._k = bgK; bgEl.style.transform = (bgY ? 'translateY(' + bgY + 'px)' : '') + (bgS !== 1 ? ' scale(' + bgS + ')' : ''); }
+      var bgY = shiftX ? 0 : -Math.round(viewShift * cssH), bgX = shiftX ? -Math.round(viewShift * cssW) : 0, bgS = Math.round(1000 / Math.min(1, orb.zoom)) / 1000, bgK = bgX + '|' + bgY + '|' + bgS;
+      if (bgK !== bgEl._k) { bgEl._k = bgK; bgEl.style.transform = (bgX ? 'translateX(' + bgX + 'px)' : '') + (bgY ? ' translateY(' + bgY + 'px)' : '') + (bgS !== 1 ? ' scale(' + bgS + ')' : ''); }
       var fk = Math.min(1, rdt * 2.2); pan.x += (HB.x * 0.3 - pan.x) * fk; pan.z += (HB.z * 0.22 - pan.z) * fk;
       // the usual view (kept for where monsters may go), then the one turned and zoomed by hand; the shake and the slow
       // drift go along the screen's left/right, whichever way the camera looks

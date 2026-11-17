@@ -424,6 +424,16 @@
   // ---------- actions used by the screens ----------
   // how many frames a second are drawn (js/framepace.js): the 절전 setting, a menu sheet open, no touch for a while
   var pace = CW.createFramePace();
+  // 가로 (2026-11-17): how far left the view goes with the drawer open — the middle of the stage to the middle of the
+  // part still showing (between the quick-button column and the drawer), a little short of it so the wizard at the left
+  // of the fight is not pushed against the column
+  var sheetOpen = false;
+  function landShift() {
+    var app = $('app'), sh = $('sheet'), q = $('quick'), W = app ? app.clientWidth : 0; if (!W || !sh) return 0.2;
+    var left = q ? q.offsetLeft + q.offsetWidth : 0, mid = (left + sh.offsetLeft) / 2;
+    return Math.max(0, Math.min(0.35, (W / 2 - mid) / W * 0.8));
+  }
+  if (CW.onLand) CW.onLand(function () { sc.size(); G.setSheet(sheetOpen); });
   var G = {
     get state() { return state; },
     boss: function () { return boss; },
@@ -532,7 +542,13 @@
     storageOk: function () { return !!storage; },
     exportSave: function () { save(); return CW.exportCode(state); },
     importSave: function (code) { var st2 = CW.importCode(code); if (!st2 || !adopt(JSON.stringify(st2))) return false; save(); cloudPush(true); return true; },
-    setSheet: function (open) { sc.setViewShift(open ? 0.22 : 0); pace.setSheet(open); },
+    // a menu open: upright the sheet comes up from below and the view goes up; sideways (가로, js/land.js) the drawer comes
+    // in from the right and the view goes left, so the fight sits in the middle of what is left of the screen
+    setSheet: function (open) {
+      sheetOpen = open; var land = CW.isLand && CW.isLand();
+      document.documentElement.classList.toggle('sheeton', open);
+      sc.setViewShift(open ? (land ? landShift() : 0.22) : 0, land ? 'x' : 'y'); pace.setSheet(open);
+    },
     screenHz: function () { return pace.hz(); },
     // 성능 표시 (설정 › 문제 확인용): on / off, and the record for the settings page
     perfOn: function () { return !!(perf && perf.on()); },
