@@ -180,6 +180,21 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
 .items li button{border:0;background:transparent;color:var(--bad);font:inherit;font-size:24px;min-width:44px;min-height:44px;border-radius:10px;cursor:pointer}
 .check{display:flex;align-items:center;gap:12px;margin-top:14px;font-size:16px;font-weight:700;color:var(--ink);min-height:44px}.check input{width:24px;height:24px;accent-color:var(--accent);flex:none}
 
+/* 저장해 둔 우편번호 목록: 스크롤해서 눌러 고름 */
+.pidhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:14px}
+.pidbtns{display:flex;gap:2px}
+.pidbtns button{font:inherit;font-size:14px;font-weight:800;color:var(--accent2);background:transparent;border:0;min-height:40px;padding:0 10px;border-radius:10px;cursor:pointer}
+.pidbtns button:hover{background:var(--accent-soft)}
+.pidlist{margin-top:6px;max-height:216px;overflow-y:auto;border:1.5px solid var(--line2);border-radius:14px;background:var(--sunk);overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.pidrow{display:flex;align-items:center;gap:14px;width:100%;min-height:60px;padding:8px 16px;border:0;border-top:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;text-align:left;cursor:pointer;transition:background .15s}
+.pidrow:first-child{border-top:0}
+.pidrow:hover{background:var(--accent-soft)}
+.pidrow b{flex:1;font-size:18px;font-weight:800;letter-spacing:.08em}
+.pidrow small{color:var(--soft);font-size:13px;font-weight:600}
+.chk{flex:none;width:28px;height:28px;border-radius:9px;border:2px solid var(--line2);display:grid;place-items:center;background:var(--card)}
+.pidrow.on{background:var(--accent-soft)}
+.pidrow.on .chk{background:linear-gradient(135deg,var(--accent),var(--accent3));border-color:transparent}
+.pidrow.on .chk::after{content:'✓';color:#fff;font-size:17px;font-weight:800;line-height:1}
 #qrBox{text-align:center;margin-top:14px}
 #qr{display:inline-block;background:#fff;padding:12px;border-radius:14px;line-height:0}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
@@ -215,13 +230,14 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
 
       <div class="grp">
         <h3>누구에게</h3>
-        <div class="seg" id="toSeg"><button type="button" data-to="all" class="on">모두</button><button type="button" data-to="pid">우편번호</button><button type="button" data-to="mine">내 기기 2개</button></div>
+        <div class="seg" id="toSeg"><button type="button" data-to="all" class="on">모두</button><button type="button" data-to="pid">우편번호</button></div>
         <div id="pidBox" class="hide">
-          <label for="pids">우편번호 (여러 명이면 쉼표로)</label>
+          <div class="pidhead"><label style="margin:0">저장해 둔 우편번호 <span class="count" id="pidSel" style="float:none;margin-left:6px">0명 선택</span></label>
+            <div class="pidbtns"><button type="button" id="pidAll">모두 선택</button><button type="button" id="pidNone">해제</button></div></div>
+          <div class="pidlist" id="pidList" role="group" aria-label="저장해 둔 우편번호"></div>
+          <label for="pids">받는 우편번호 <span class="count" style="float:none;font-weight:600">(다른 번호는 쉼표로 더해요)</span></label>
           <input id="pids" type="text" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="AB12CD34">
           <p class="hint" id="pidHint">우편번호는 게임 우편함 화면에 보여요.</p>
-          <label class="small">저장해 둔 내 우편번호 (누르면 넣고 빼요)</label>
-          <div class="chips" id="myPids"></div>
         </div>
       </div>
 
@@ -784,21 +800,25 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
   })();
 
   // 내 우편번호 (2026-11-18, the user: 내 핸드폰이랑 홈페이지 우편번호를 기록해 두고 바로 보낼 수 있게, 이 2개만):
-  // 나중에 서버가 생겨도 이 두 개로 바로 보내 보기 쉽게 한곳에 적어 둠. 바꿀 때는 여기만 고치면 돼요.
-  var MY_PIDS = ['KNPQDWDD', 'XDMCRFAY'];
+  // 「우편번호」를 누르면 바로 이 목록이 나와요. 나중에 서버가 생겨도 이 두 개로 바로 시험해 볼 수 있어요.
+  // 바꿀 때는 여기만 고치면 돼요(번호, 이름).
+  var MY_PIDS = [['KNPQDWDD', '내 기기 1'], ['XDMCRFAY', '내 기기 2']];
   function pidList() { return $('pids').value.toUpperCase().split(/[\s,;·]+/).filter(Boolean); }
   function setPids(a) { $('pids').value = a.join(', '); fire('pids'); markMy(); }
-  function markMy() { var cur = pidList(); [].forEach.call($('myPids').children, function (b) { b.classList.toggle('on', b.dataset.pids.split(',').every(function (p) { return cur.indexOf(p) >= 0; })); }); }
-  MY_PIDS.concat([MY_PIDS.join(',')]).forEach(function (p, k) {
-    var b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.dataset.pids = p; b.textContent = k < MY_PIDS.length ? p : '둘 다';
-    b.onclick = function () {
-      var want = p.split(','), cur = pidList(), has = want.every(function (x) { return cur.indexOf(x) >= 0; });
-      setPids(has ? cur.filter(function (x) { return want.indexOf(x) < 0; }) : cur.concat(want.filter(function (x) { return cur.indexOf(x) < 0; })));
-    };
-    $('myPids').appendChild(b);
+  function markMy() {
+    var cur = pidList();
+    [].forEach.call($('pidList').children, function (r) { var on = cur.indexOf(r.dataset.pid) >= 0; r.classList.toggle('on', on); r.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+    $('pidSel').textContent = cur.length + '명 선택';
+  }
+  MY_PIDS.forEach(function (p) {
+    var r = document.createElement('button'); r.type = 'button'; r.className = 'pidrow'; r.dataset.pid = p[0];
+    r.innerHTML = '<i class="chk"></i><b></b><small></small>'; r.querySelector('b').textContent = p[0]; r.querySelector('small').textContent = p[1];
+    r.onclick = function () { var cur = pidList(), k = cur.indexOf(p[0]); if (k >= 0) cur.splice(k, 1); else cur.push(p[0]); setPids(cur); };
+    $('pidList').appendChild(r);
   });
-  $('pids').addEventListener('input', markMy);
-  $('toSeg').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b && b.dataset.to === 'mine') setPids(MY_PIDS); });
+  $('pidAll').onclick = function () { var cur = pidList(); MY_PIDS.forEach(function (p) { if (cur.indexOf(p[0]) < 0) cur.push(p[0]); }); setPids(cur); };
+  $('pidNone').onclick = function () { var mine = MY_PIDS.map(function (p) { return p[0]; }); setPids(pidList().filter(function (x) { return mine.indexOf(x) < 0; })); };
+  $('pids').addEventListener('input', markMy); markMy();
 
   showKey();
   if (token()) load(NZ).then(function (cur) { nzDraw(cur.doc); }).catch(function (e) { say('nzListMsg', e.message, 'bad'); });
