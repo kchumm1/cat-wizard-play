@@ -372,6 +372,20 @@
     CW.recordBest(state, d.kind, res); CW.applyReward(state, r);
     dun = null; clearField(true); restT = 0.6; ui.dunHud(null);
     snd.play('win'); ui.banner('던전 클리어!'); save();
+    // the reward book (js/dungeon-book.js, 2026-11-17): the game's own currency pictures, counting up
+    if (CW.dungeonBook) {
+      var fG = function (v) { return '+' + CW.fmtGold(v); }, fN = function (v) { return '+' + CW.fmt(v); };
+      var rw = d.kind === 'mana' ? [{ ico: 'mana', label: '마력석', value: r.mana || 0, fmt: fN }]
+        : d.kind === 'gold' ? [{ ico: 'gold', label: '골드', value: r.gold || 0, fmt: fG }]
+        : d.kind === 'gem' ? [{ ico: 'gem', label: '다이아', value: r.gems || 0, fmt: fN }]
+        : [{ ico: 'runeStone', label: '룬석', value: r.runeStone || 0, fmt: fN }];
+      if (d.kind === 'rune' && r.got && r.got.length) rw.push({ ico: 'rune', label: '룬', value: r.got.length, fmt: function (v) { return CW.fmt(v); }, unit: '개' });
+      if (d.kind === 'rune' && r.overflow) rw.push({ ico: 'runeStone', label: '가방이 꽉 차 룬석', value: r.overflow, fmt: fN, sub: true });
+      CW.dungeonBook({ kind: d.kind, name: d.def.name, tickets: CW.ticketsLeft(state, d.kind, Date.now()), rewards: rw,
+        stat: d.kind === 'mana' ? ['골렘에게 준 피해', CW.fmt(d.dmg), ' · Lv.' + r.level] : ['잡은 몬스터', d.kills, '마리'],
+        onClose: function () { snd.play('click'); } });
+      return;
+    }
     var lines = d.kind === 'mana' ? '<p>골렘에게 준 피해 <b>' + CW.fmt(d.dmg) + '</b> (Lv.' + r.level + ')</p><p style="color:#8fd8ff;font:400 22px var(--display)">마력석 +' + CW.fmt(r.mana) + '</p>'
       : '<p>잡은 몬스터 <b>' + d.kills + '마리</b></p><p style="color:' + (d.kind === 'gold' ? 'var(--gold)' : d.kind === 'rune' ? '#d8b8ff' : 'var(--gem)') + ';font:400 22px var(--display)">' + (d.kind === 'gold' ? '골드 +' + CW.fmtGold(r.gold) : d.kind === 'rune' ? '룬석 +' + CW.fmt(r.runeStone) + (r.got && r.got.length ? ' · 룬 ' + r.got.length + '개' : '') + (r.overflow ? ' · 가방이 꽉 차 룬석 +' + CW.fmt(r.overflow) : '') : '다이아 +' + CW.fmt(r.gems)) + '</p>';
     ui.modal('<h2>' + d.def.name + '</h2>' + lines + '<p class="note">남은 입장권 ' + CW.ticketsLeft(state, d.kind, Date.now()) + '장<br>소탕으로 최고 기록의 보상을 바로 받을 수 있어요.</p>', [{ label: '확인', pri: true }]);
