@@ -2771,6 +2771,78 @@ html.fullh #chestfx{position:absolute;bottom:auto;height:var(--apph)}
 @keyframes wpkin{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
 .wpk .pack .desc{color:#eef6ff!important}
 .wpknote{position:relative;z-index:1;margin:8px 4px 0;font:600 11.5px/1.4 var(--body);color:#e0eeff;text-align:center}
+/* 패키지 상자 (2026-11-17, 형: 글자 나열 말고 상자 하나 — 누르면 구매, 꾸욱 누르면 구성품) */
+.pkhint{margin:2px 4px 10px;font:600 12px/1.4 var(--body);color:rgba(255,255,255,.8);text-align:center}.pkhint b{color:#ffe08a}
+.pkgrid{position:relative;z-index:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.pkbox{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;min-height:132px;padding:10px 6px 8px;border:0;border-radius:18px;color:#fff;font:inherit;cursor:pointer;background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.05)),rgba(16,10,48,.45);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.3),0 5px 12px -7px rgba(10,5,40,.65);-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation;transition:transform .15s}
+.pkbox.press{transform:scale(.94)}
+.pkbox .pkpic{position:relative;width:64px;height:64px;display:grid;place-items:center;border-radius:16px;background:radial-gradient(circle at 50% 30%,rgba(255,255,255,.34),rgba(255,255,255,.08) 70%);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.5);font-size:34px}
+.pkbox .pkpic .ico{width:82%;height:82%;animation:pkbob 3s ease-in-out infinite;animation-delay:var(--pd,0s);-webkit-user-drag:none;pointer-events:none}
+.pkbox .pkpic em{position:absolute;right:-6px;top:-6px;font:800 10px/1 var(--body);font-style:normal;padding:3px 5px;border-radius:99px;background:#7a4ad0;color:#fff}
+.pkbox .pkname{font:400 14px/1.2 var(--display);text-align:center;text-shadow:0 1px 2px rgba(10,5,40,.7);word-break:keep-all}
+.pkbox .pkprice{margin-top:auto;min-width:80%;padding:6px 4px;border-radius:99px;font:800 12.5px/1 var(--body);background:linear-gradient(#ffd96a,#f0a93a);color:#4a2a00;box-shadow:0 2px 0 #b5741a}
+.pkbox .pkprice.off{background:rgba(255,255,255,.18);color:rgba(255,255,255,.8);box-shadow:none;font-size:11px}
+.pkbox.off .pkpic{filter:saturate(.5) brightness(.8)}
+.pkdaily{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:-4px 0 12px;padding:8px 12px;border-radius:14px;background:rgba(255,255,255,.1);font:600 12.5px var(--body);color:#fff}.pkdaily i{font-style:normal;opacity:.8}
+.pkinfo .pkihead{display:flex;align-items:center;gap:12px;margin-bottom:10px}.pkinfo .pkihead h2{margin:0}.pkinfo .pkihead em{font-style:normal;font-weight:700;opacity:.8}
+.pkinfo .pkpic{width:60px;height:60px;flex:none;display:grid;place-items:center;font-size:32px}.pkinfo .pkpic .ico{width:90%;height:90%}
+.pkinfo .pkisub{margin:0 0 6px;font-weight:700;opacity:.8}
+.pkilist{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.pkilist li{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:12px;background:rgba(127,127,127,.14);font:600 13.5px/1.3 var(--body)}
+.pkilist .pkmi{display:inline-grid;place-items:center;width:20px;height:20px;font-style:normal}.pkilist .pkmi>*,.pkilist .pkmi img,.pkilist .pkmi svg{width:100%!important;height:100%!important;margin:0!important;object-fit:contain}
+.pkinfo .pkinote{margin:10px 0 0;font-size:12px;opacity:.7}
+/* 2026-11-17 형: 예전처럼 한 줄에 상자 하나씩 — 그림 크게, 이름, 현금 금액만 (글자 구성품은 꾸욱 눌러서) */
+.pkgrid{grid-template-columns:1fr}
+.pkbox{flex-direction:row;min-height:0;gap:14px;padding:12px 14px;text-align:left}
+.pkbox .pkpic{width:84px;height:84px;flex:none;border-radius:20px}
+.pkbox .pkpic .ico{width:90%;height:90%}
+.pkbox .pkname{flex:1;min-width:0;font-size:19px;text-align:left}
+.pkbox .pkprice{margin:0;min-width:96px;flex:none;padding:11px 10px;font-size:15px;text-align:center}
+.pkbox .pkprice.off{font-size:12.5px}
+/* 2026-11-17 형: 상자 더 키우고 잘 보이게 */
+.pkbox{padding:10px 14px 10px 10px}
+.pkbox .pkpic{width:112px;height:112px;border-radius:24px;background:radial-gradient(circle at 50% 45%,rgba(255,240,200,.75),rgba(255,210,140,.28) 55%,rgba(255,255,255,.08) 75%);box-shadow:inset 0 0 0 2px rgba(255,255,255,.65),0 0 18px -4px rgba(255,220,150,.7)}
+.pkbox .pkpic .ico{width:100%;height:100%;transform:scale(1.08);filter:drop-shadow(0 4px 4px rgba(20,10,50,.5)) drop-shadow(0 0 6px rgba(255,255,255,.55)) saturate(1.15) brightness(1.06)}
+.pkbox .pkname{font-size:20px}
+.pkbox .pkname{text-shadow:0 2px 0 rgba(20,10,60,.6)}
+/* 폰 폭에서 이름이 세 줄로 갈리지 않게: 그림 오른쪽에 이름, 그 아래 금액 */
+.pkbox{display:grid;grid-template-columns:auto 1fr;grid-template-rows:1fr auto;column-gap:14px;row-gap:8px;align-items:center}
+.pkbox .pkpic{grid-row:1/3}
+.pkbox .pkname{align-self:end;font-size:19px;line-height:1.25}
+.pkbox .pkprice{align-self:start;justify-self:start;min-width:110px;padding:10px 16px}
+.pkilist .gem,.pkilist .coin{display:inline-block;width:20px;height:20px;flex:none}
+/* 구성품 창 타일 (형: 좁잖아, 한눈에) */
+.pkilist{grid-template-columns:1fr 1fr;gap:8px}
+.pkilist li{flex-direction:column;justify-content:flex-start;gap:3px;padding:12px 6px 10px;border-radius:16px;text-align:center;background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.06));box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.22)}
+.pkilist li:last-child:nth-child(odd){grid-column:1/-1}
+.pkilist .pkti{width:46px;height:46px;display:grid;place-items:center;margin-bottom:2px;filter:drop-shadow(0 3px 3px rgba(10,5,40,.45))}
+.pkilist .pkti>*,.pkilist .pkti .ico{width:100%!important;height:100%!important;margin:0!important;object-fit:contain;display:block}
+.pkilist .pkta{font:800 19px/1.15 var(--body);color:#ffe9a8;text-shadow:0 1px 2px rgba(10,5,40,.6)}.pkilist .pkta small{font-size:.8em}
+.pkilist .pktn{font:700 13.5px/1.2 var(--body);color:#fff}
+.pkilist li small{font:600 11.5px/1.2 var(--body);color:rgba(255,255,255,.7)}
+.pkilist{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.pkilist li:last-child:nth-child(odd){grid-column:auto}
+.pkilist li{padding:10px 4px 9px}
+.pkilist .pkti{width:42px;height:42px}
+.pkilist .pkta,.pkilist .pkta .gn{font:800 17px/1.15 var(--body);color:#ffe9a8}.pkilist .pkta .gn small{font-size:.8em}
+.pkilist .pktn{font-size:12.5px}
+/* 형: 간격 넓으니 글자를 가운데로 — 그림 오른쪽 공간 한가운데에 이름·금액 */
+.pkbox .pkname{justify-self:center;text-align:center}
+.pkbox .pkprice{justify-self:center}
+/* 형: 쓸데없는 여백 — 이름·금액을 붙여서 세로 가운데에, 넓은 화면에선 상자 두 개씩 */
+.pkbox{grid-template-rows:auto auto;align-content:center;row-gap:8px;padding:10px 12px 10px 10px}
+.pkbox .pkname{align-self:auto}
+.pkbox .pkprice{align-self:auto}
+.pkgrid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.pkbox{display:flex;flex-direction:row;align-items:center;gap:12px}
+.pkbox .pkbody{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px}
+.pkbox .pkname,.pkbox .pkprice{align-self:center;justify-self:auto}
+.pkgrid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+.pkbox{justify-content:center;gap:22px}.pkbox .pkbody{flex:0 1 auto;min-width:140px}
+/* 형: 원래 반투명 유리로 (다른 메뉴 카드 .pack과 같은 바탕) */
+.pkbox{background:linear-gradient(180deg,rgba(255,255,255,.13),rgba(255,255,255,.05)),rgba(16,10,48,.42);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.26),0 5px 12px -7px rgba(10,5,40,.65);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.wpk .pkbox{background:linear-gradient(120deg,rgba(255,255,255,.26),rgba(255,255,255,.08));box-shadow:inset 0 0 0 1.5px rgba(230,245,255,.7);-webkit-backdrop-filter:none;backdrop-filter:none}
+@media (prefers-reduced-motion:reduce){.pkbox .pkpic .ico{animation:none}}
 @media (prefers-reduced-motion:reduce){.wpk *,.wpk::before,.wpk::after{animation:none!important}}
 /* 전직 카드 메달 안쪽 크림색도 반투명 (2026-11-16, the user: 견습 냥법사 스킬 안에 크림색도 반투명) — 테두리는 그 직업 색 */
 #sheet.cream.neb #panel .tjmed{background:radial-gradient(circle at 35% 28%,rgba(255,255,255,.38),rgba(255,255,255,.08) 60%),radial-gradient(circle at 50% 75%,color-mix(in srgb,var(--c) 45%,transparent),transparent 72%);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--c) 65%,#fff),0 3px 8px -2px rgba(10,5,40,.6);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}

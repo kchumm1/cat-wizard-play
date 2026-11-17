@@ -1364,33 +1364,64 @@
         // 2026-11-17 (형: 줄·칸 맞춰): 항목 하나는 끊기지 않는 덩어리 — 「(사냥 / 1시간치)」·「영웅 / 신성력」처럼 갈라지지 않고 항목 사이에서만 줄이 바뀜
         return lines.map(function (x) { return '<span class="pkit">' + x + '</span>'; }).join('<i class="pksep"> · </i>');
       };
-      var packRow = function (p) {
-        var why = CW.packOpen(s, p.id), times = (s.packs || {})[p.id] || 0, btn;
-        if (CW.FRIEND) btn = '<button class="buy" disabled style="opacity:.5;filter:grayscale(1)">체험판</button>';
-        else if (why === 'ok') btn = '<button class="buy gemb" data-pack="' + p.id + '">' + won(p.won) + '</button>';
-        else if (why === 'tier') btn = '<button class="buy" disabled>' + p.need.tier + '차 전직 후 이용</button>';
-        else if (why === 'limit') btn = '<button class="buy" disabled>수령 완료</button>';
-        else btn = '<button class="buy" disabled>받는 중</button>';
-        var dd = s.dailyGems || {}, extra = '';
-        if (p.give.daily && dd.left > 0) {
-          var today = G.dayKey(), took = dd.last === today;
-          extra = '<div class="desc">남은 기간 ' + dd.left + '일 · ' + (took ? '오늘 수령 완료' : '<button class="btn pri" data-act="daily">오늘 다이아 받기</button>') + '</div>';
-        }
-        return '<div class="pack"><div class="picon">' + mi('pack', p) + '</div><div class="info"><div class="name">' + p.name + (times && !p.limit && !p.give.daily ? ' <span class="lv">' + times + '회 수령</span>' : '') + '</div><div class="desc">' + packLines(p.give) + '</div>' + extra + '</div>' + btn + '</div>';
+      // 2026-11-17 (형: 글자로 나열하지 말고 상자 하나만 — 누르면 구매, 꾸욱 누르면 안에 뭐가 들었는지): one box tile a
+      // package; a tap buys (data-pkbox → the old data-pack confirm), a long press opens pkInfo (contents + the same buy)
+      var pkState = function (p) {
+        var why = CW.packOpen(s, p.id);
+        return why === 'ok' ? { ok: true, label: won(p.won) } : { ok: false, label: why === 'tier' ? p.need.tier + '차 전직 후' : why === 'limit' ? '수령 완료' : '받는 중' };
       };
+      var packRow = function (p, k) {
+        var st = pkState(p), times = (s.packs || {})[p.id] || 0;
+        return '<button class="pkbox' + (st.ok ? '' : ' off') + '" data-pkbox="' + p.id + '" style="--pd:' + (k * 0.7) + 's">' +
+          '<span class="pkpic">' + mi('pack', p) + (times && !p.limit && !p.give.daily ? '<em>' + times + '회</em>' : '') + '</span>' +
+          '<span class="pkbody"><b class="pkname">' + p.name + '</b><span class="pkprice' + (st.ok ? '' : ' off') + '">' + st.label + '</span></span></button>';
+      };
+      pkInfo = function (id) {
+        var p = CW.packById(id); if (!p) return;
+        var st = pkState(p);
+        modal('<div class="pkinfo"><div class="pkihead"><span class="pkpic">' + mi('pack', p) + '</span><div><h2>' + p.name + '</h2><em>' + won(p.won) + (p.limit ? ' · ' + p.limit + '번만' : '') + '</em></div></div>' +
+          '<p class="pkisub">상자 안에 들어 있는 것</p><ul class="pkilist">' + pkTiles(p.give) + '</ul>' +
+          '<p class="pkinote">받으면 가방에 상자로 들어가요.</p></div>',
+          st.ok ? [{ label: '닫기' }, { label: won(p.won) + ' 받기', pri: true, fn: function () { pkBuy(id); } }] : [{ label: '닫기' }], { variant: 'guide', close: true });
+      };
+      // 구성품 창 (2026-11-17 형: 좁잖아, 한눈에 보기 좋게): two tiles a row — a big mark on top, the amount large, the name
+      // and a short note under it
+      var pkTiles = function (g) {
+        var T = [], gi = function (k, gr) { return CW.giveIco ? CW.giveIco(k, gr) : ''; };
+        var tile = function (ico, amt, name, note) { T.push('<li><span class="pkti">' + ico + '</span><b class="pkta">' + amt + '</b><span class="pktn">' + name + '</span>' + (note ? '<small>' + note + '</small>' : '') + '</li>'); };
+        var hrs = function (m) { return m >= 60 ? m / 60 + '시간' : m + '분'; };
+        if (g.daily) tile('<i class="gem"></i>', fmt(g.daily.gems) + ' × ' + g.daily.days + '일', '다이아', '매일 받기');
+        if (g.gems) tile('<i class="gem"></i>', fmt(g.gems), '다이아');
+        if (g.goldMin) tile('<i class="coin"></i>', gh(CW.goldPerSecond(s) * 60 * g.goldMin), '골드', '사냥 ' + hrs(g.goldMin) + '치');
+        if (g.potionMin) tile(gi('potion'), hrs(g.potionMin), '물약 3종');
+        if (g.pulls) tile(gi('pull'), g.pulls + '번', '장비 뽑기', '다이아 안 씀');
+        (g.runes || []).forEach(function (x) { tile(gi('rune', x.grade), x.n + '개', '<b style="color:' + hc(x.grade) + '">' + hn(x.grade) + '</b> 룬'); });
+        if (g.runeStone) tile(CW.ICO.cur('rune'), fmt(g.runeStone), '룬석');
+        if (g.mana) tile(CW.ICO.cur('mana'), fmt(g.mana), '마력석');
+        (g.sigils || []).forEach(function (x) { tile(gi('sigil', x.grade), x.n + '개', '<b style="color:' + hc(x.grade) + '">' + hn(x.grade) + '</b> 신성력'); });
+        if (g.sigilStone) tile(CW.ICO.cur('sigil'), fmt(g.sigilStone), '신성석');
+        return T.join('');
+      };
+      var dailyRow = function () {   // 매일 다이아: today's claim stays a plain row under the box (it is not a purchase)
+        var dd = s.dailyGems || {};
+        if (!(dd.left > 0)) return '';
+        var took = dd.last === G.dayKey();
+        return '<div class="pkdaily"><span>매일 다이아 남은 기간 <b>' + dd.left + '일</b></span>' + (took ? '<i>오늘 수령 완료</i>' : '<button class="btn pri" data-act="daily">오늘 다이아 받기</button>') + '</div>';
+      };
+      var pkHint = '<p class="pkhint">상자를 <b>꾸욱</b> 누르면 안에 든 걸 볼 수 있어요</p>';
       // 2026-11-17 (the user): 연습용 패키지 글 빼고, 다이아·매일 다이아·성장(골드 꾸러미·마력석 꾸러미)만 두고 룬·장비 뽑기는 빼 —
       // packages marked off stay in DATA for old saves; 겨울 신규 냥법사 comes first while its season lasts (packOpen 'over')
       var SECTIONS = [['winter', '❄️ 겨울 신규 냥법사 (한 번만)'], ['daily', '매일 다이아'], ['grow', '성장'], ['tier', '전직 축하 (한 번만)']];
-      var packs = '<h3>패키지</h3>' + gems + SECTIONS.map(function (sec) {
+      var packs = '<h3>패키지</h3>' + gems + pkHint + SECTIONS.map(function (sec) {
         var list = DATA.packs.filter(function (p) { return p.cat === sec[0] && !p.off && CW.packOpen(s, p.id) !== 'over'; });
         if (!list.length) return '';
         if (sec[0] === 'winter') {   // a frosty showcase with falling snow (2026-11-17, the user: 애니메이션화해서 보기 좋게)
           var dleft = Math.max(0, Math.ceil((Date.parse(list[0].until + 'T23:59:59+09:00') - Date.now()) / 864e5));
           var flakes = ''; for (var fi = 0; fi < 16; fi++) flakes += '<i style="--x:' + ((fi * 37) % 100) + '%;--d:' + (5 + (fi * 7) % 6) + 's;--w:' + (-((fi * 13) % 9)) + 's;--z:' + (0.5 + (fi % 4) * 0.25) + '"></i>';
           return '<div class="wpk"><div class="wsnow" aria-hidden="true">' + flakes + '</div><div class="wpkhead" style="background-image:url(' + (CW.ART_BASE || 'art/') + 'ui-winter-banner.webp)"><b>겨울 신규 냥법사</b><span>처음 오신 냥법사님께 · 각 1번</span><em>D-' + dleft + '</em></div>' +
-            '<div class="packs winter">' + list.map(packRow).join('') + '</div><p class="wpknote">룬은 3차, 신성력은 5차 전직 후 장착할 수 있어요 (가방에 보관)</p></div>';
+            '<div class="pkgrid winter">' + list.map(packRow).join('') + '</div><p class="wpknote">룬은 3차, 신성력은 5차 전직 후 장착할 수 있어요 (가방에 보관)</p></div>';
         }
-        return '<div class="subh">' + sec[1] + '</div><div class="packs">' + list.map(packRow).join('') + '</div>';
+        return '<div class="subh">' + sec[1] + '</div><div class="pkgrid">' + list.map(packRow).join('') + '</div>' + (sec[0] === 'daily' ? dailyRow() : '');
       }).join('');
       var st = s.settings;
       // 화면 성능 (2026-11-17, 발열): everything about how hard the screen works, in one group (화질, 화면 빈도, 절전, 안티앨리어싱)
@@ -1432,6 +1463,14 @@
       if (moreSub >= parts.length) moreSub = 0;
       var jump = '<div class="jump three" role="tablist">' + parts.map(function (p, i) { return '<button role="tab" aria-selected="' + (i === moreSub) + '" data-jump="' + i + '">' + p[0] + '</button>'; }).join('') + '</div>';
       return jump + parts[moreSub][1];
+    }
+    // 패키지 상자 (morePanel): pkInfo is set there each time 더보기 › 패키지 is drawn; pkBuy gives the package (no payment)
+    var pkInfo = function () {}, pkHeldAt = -1e9, pkHoldT = null;
+    function pkBuy(id) {
+      var pk = CW.packById(id), box = G.buyPack(id);
+      if (!box) toast(CW.chestFull(G.state) ? '가방이 가득 찼어요. (최대 ' + CW.CHEST_CAP + '칸) 가방에서 열고 다시 받아 주세요.' : '현재 수령 조건을 충족하지 않아요.');
+      else toast(pk.name + ' · 가방에 넣었어요');
+      chestBadge(); renderPanel(true); hud();
     }
     function bottomInside() { try { return localStorage.getItem('cw-bottom') === 'inside'; } catch (e) { return false; } }
     // 문제 확인용 stays open while the page is made again (2026-11-17): its lines change on their own (화면 지연, 성능 기록
@@ -1911,6 +1950,18 @@
     panel.addEventListener('touchstart', function (e) { var t = e.touches[0]; if (t) { holdX = t.clientX; holdY = t.clientY; } }, { passive: true });
     window.addEventListener('touchmove', function (e) { var t = e.touches[0]; if (t && Math.abs(t.clientX - holdX) + Math.abs(t.clientY - holdY) > 10) stopHold(); }, { passive: true, capture: true });
     panel.addEventListener('pointerdown', onDown); dock.addEventListener('pointerdown', onDown);
+    // 패키지 상자 꾸욱 (0.45초 가만히): 구성품 창. 손가락이 10px 넘게 움직이면(스크롤) 취소, 폰 기본 길게 누르기 메뉴는 막음
+    (function () {
+      var x0 = 0, y0 = 0, stop = function () { clearTimeout(pkHoldT); pkHoldT = null; };
+      panel.addEventListener('pointerdown', function (e) {
+        var b = e.target.closest('[data-pkbox]'); stop(); if (!b) return;
+        x0 = e.clientX; y0 = e.clientY; var id = b.dataset.pkbox; b.classList.add('press');
+        pkHoldT = setTimeout(function () { pkHoldT = null; b.classList.remove('press'); pkHeldAt = performance.now(); if (navigator.vibrate) try { navigator.vibrate(15); } catch (er) {} pkInfo(id); }, 450);
+      });
+      panel.addEventListener('pointermove', function (e) { if (pkHoldT && Math.abs(e.clientX - x0) + Math.abs(e.clientY - y0) > 10) { stop(); panel.querySelectorAll('.pkbox.press').forEach(function (b) { b.classList.remove('press'); }); } });
+      ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) { panel.addEventListener(ev, function () { stop(); panel.querySelectorAll('.pkbox.press').forEach(function (b) { b.classList.remove('press'); }); }); });
+      panel.addEventListener('contextmenu', function (e) { if (e.target.closest('[data-pkbox]')) e.preventDefault(); });
+    })();
     panel.addEventListener('touchstart', function () { panelTouch = true; }, { passive: true });
     ['touchend', 'touchcancel'].forEach(function (ev) { panel.addEventListener(ev, function () { panelTouch = false; panelScrollAt = panelTouchEnd = performance.now(); }, { passive: true }); });
     // 손가락 스크롤과 그 뒤 미끄러짐(2초 안)만 셈 — 다시 그릴 때 제자리로 맞추는 스크롤은 세지 않음
@@ -1984,7 +2035,14 @@
       else if (d.act === 'rbest') { G.runeEquipBest(); toast('추천 룬을 장착했어요.'); renderPanel(true); }
       else if (d.act === 'rdisall') { confirmBox('룬을 일괄 분해할까요?', '장착하지 않고 잠기지 않은 룬을 모두 룬석으로 바꿔요.<br>분해한 룬은 되돌릴 수 없어요.', '룬 분해', function () { var rn2 = G.runeDismantleAll(); toast(rn2 ? '룬석 +' + fmt(rn2) : '분해할 룬이 없어요.'); selRune = null; renderPanel(true); }, { variant: 'danger' }); }
       else if (d.pack && CW.FRIEND) { toast('체험판에서는 수령할 수 없어요.'); }
-      else if (d.pack) { var pk = CW.packById(d.pack); confirmBox('연습용 패키지를 받을까요?', '<b>' + pk.name + '</b> · 표시 가격 ' + pk.won.toLocaleString('ko-KR') + '원<br>실제 결제는 없어요. 구성품은 <b>가방</b>에 상자로 들어가요.', '가방에 넣기', function () { var box = G.buyPack(d.pack); if (!box) toast(CW.chestFull(G.state) ? '가방이 가득 찼어요. (최대 ' + CW.CHEST_CAP + '칸) 가방에서 열고 다시 받아 주세요.' : '현재 수령 조건을 충족하지 않아요.'); else toast(pk.name + ' · 가방에 넣었어요'); chestBadge(); renderPanel(true); hud(); }); }
+      else if (d.pkbox) {   // 패키지 상자: 꾸욱 누른 뒤 손을 뗀 클릭은 무시(구성품 창이 이미 열림), 아니면 바로 구매 확인
+        if (performance.now() - pkHeldAt < 700) return;
+        var pkb = CW.packById(d.pkbox), why = CW.packOpen(G.state, d.pkbox);
+        if (CW.FRIEND) toast('체험판에서는 수령할 수 없어요.');
+        else if (why !== 'ok') pkInfo(d.pkbox);   // 살 수 없는 상자는 눌러도 구성품만 보여 줌
+        else confirmBox('연습용 패키지를 받을까요?', '<b>' + pkb.name + '</b> · 표시 가격 ' + pkb.won.toLocaleString('ko-KR') + '원<br>실제 결제는 없어요. 구성품은 <b>가방</b>에 상자로 들어가요.<br><small>상자를 꾸욱 누르면 구성품을 볼 수 있어요.</small>', '가방에 넣기', function () { pkBuy(d.pkbox); });
+      }
+      else if (d.pack) { var pk = CW.packById(d.pack); confirmBox('연습용 패키지를 받을까요?', '<b>' + pk.name + '</b> · 표시 가격 ' + pk.won.toLocaleString('ko-KR') + '원<br>실제 결제는 없어요. 구성품은 <b>가방</b>에 상자로 들어가요.', '가방에 넣기', function () { pkBuy(d.pack); }); }
       else if (d.act === 'daily') { showDaily(false); }
       else if (d.dockx) { if (d.dockx === 'sg') selSigil = null; else selRune = null; renderPanel(true); }
       else if (d.sgswap) { var sw = d.sgswap.split('|'); if (G.sigilSwap(sw[0], sw[1])) { if (CW.opalUI) CW.opalUI.fx('sg:' + sw[1]); toast('신성력을 교체했어요.'); } renderPanel(true); }
