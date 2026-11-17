@@ -534,7 +534,7 @@
   // little (WOBBLE, in the shape's own units; the outline sways with it) and the picture flows along it.
   // uv.x: 0 water · 1 water with a foam crest near its tip · 2 the bubble (see-through in the middle) · 3 foam (cream).
   // k (vX.y): how far it has grown — the part past it (uv.y > k) is not there yet; a lip of foam rides its front edge.
-  var WOBBLE = 'vec3 wq=position+normal*(0.022*sin(position.y*11.0+position.x*7.0-uTime*7.0+iX.z)+0.014*sin(position.z*13.0+uTime*9.0+iX.z)+0.018*sin(uv.y*26.0-uTime*13.0+position.x*5.0));vec4 lp=vec4(wq,1.0);';
+  var WOBBLE = 'vec3 wq=position+normal*(0.016*sin(position.y*9.0+position.x*6.1-uTime*5.3+iX.z)+0.011*sin(position.z*11.7+position.x*3.3+uTime*7.9+iX.z*1.7)+0.008*sin(position.y*23.0-uTime*11.0+iX.z*2.3)+0.014*sin(uv.y*21.0-uTime*9.0+position.x*4.3));vec4 lp=vec4(wq,1.0);';
   var VS_BMW = VS_BMT.replace('vec4 lp=vec4(position,1.0);', WOBBLE);
   var VS_BMLW = VS_BML.replace('vec4 lp=vec4(position,1.0);', WOBBLE);
   var WATER_CUT = 'float k=vX.y,y=vUv.y,kind=vUv.x;if(y>k)discard;';
@@ -545,36 +545,42 @@
   // spiral). The navy outline round the whole shape is the outline layer (waterLine).
   FS_BM.water = 'varying vec4 vX;varying vec2 vT;void main(){' + WATER_CUT + F +
     'vec3 N=normalize(vWN);float lam=max(dot(N,normalize(vec3(0.45,0.85,0.3))),0.0),sh=lam>0.25?1.0:0.0,a=vX.x;' +
-    'vec3 cream=vec3(1.0,0.96,0.86),navy=vec3(0.04,0.12,0.38),line=vec3(0.03,0.1,0.28);' +
+        // (5th, 2026-11-17, the user: 물 색이 물 같지 않다 → 얼음 스킬 색으로, 얼음 동굴처럼 묻히는 곳에서만 또렷하게) the 4th-tier
+    // ice's clear blues and white — (8th, the user: 얼음 지역도 통일, 사막에서 뿌옇다) one colour in every region, a little
+    // deeper and less see-through than the pale ice so it is clear on sand and on snow alike
+    'vec3 cream=vec3(1.0),navy=vec3(0.15,0.45,0.84),line=vec3(0.1,0.32,0.62);' +
     'bool pic=vT.x>-0.5;float cell=pic?floor(vT.x):0.0,lu=pic?clamp((vT.x-cell-0.01)/0.98,0.0,1.0):vUv.x,tv=pic?vT.y:y,sd=vX.z;' +
     'vec3 c;' +
     // a foam puff: cream, its shaded side pale blue, a few blue flecks
-    'if(kind>2.5&&kind<3.5){c=lam>0.22?cream:vec3(0.66,0.84,0.95);c=mix(c,vec3(0.58,0.8,0.94),step(0.66,fb(vP*26.0+vec3(sd)))*0.7);}' +
+    'if(kind>2.5&&kind<3.5){c=mix(vec3(0.66,0.82,0.95),cream,smoothstep(0.0,0.7,lam));c=mix(c,vec3(0.72,0.86,0.96),smoothstep(0.55,0.75,fb(vP*20.0+vec3(sd)))*0.5);vec3 Rf=reflect(-normalize(vV),normalize(vN));c+=vec3(1.0)*pow(max(dot(Rf,normalize(vec3(0.25,0.7,0.65))),0.0),24.0)*0.5;}' +
     // the bubble (glass of water): clear teal in the middle, deep at its rim, white arcs of light
     'else if(kind>1.5&&kind<2.5){float rm=pow(1.0-f,1.5);a*=0.3+0.7*rm;c=mix(vec3(0.62,0.9,0.95),vec3(0.06,0.32,0.6),smoothstep(0.25,0.8,rm));' +
     'c=mix(c,line,smoothstep(0.86,0.95,rm));float arc=dot(N,normalize(vec3(-0.5,0.65,0.55)));c=mix(c,cream,(smoothstep(0.86,0.9,arc)-smoothstep(0.95,0.98,arc)+step(0.985,arc))*0.95);a=max(a,step(0.86,arc)*vX.x);}' +
-    'else{float fy=kind<1.5?y:0.5,sw=kind>3.5?1.0:0.0;' +
-    // where along and across it the bands are drawn: stretched along the flow; on a whirl, wound into a spiral
+    // (6th, 2026-11-17, the user: 파도랑 스킬들이 너무 그림같이 보인다) water with volume rather than a drawing: the bands
+    // and the foam with soft edges and no navy lines inside, smooth light, deeper where you look through it (thick) and
+    // brighter at its thin edges, the sky in it and hard sun glints
+    'else{float fy=kind<1.5?y:0.5,sw=kind>3.5&&kind<4.5?1.0:0.0;' +
     'vec2 q=sw>0.5?vec2(lu*5.0+tv*2.2,tv*1.3-uTime*0.7):vec2(lu*5.0,tv*0.75-uTime*1.7);' +
     'float bnd=fb(vec3(q,sd))+0.22*(fy-0.5);' +
-    'c=bnd<0.4?navy:bnd<0.6?vec3(0.04,0.44,0.74):vec3(0.1,0.74,0.8);' +
-    // (4th, the user: 실제 물 같지 않다 → 원신 같은 반투명 물) see-through where it is thin: the light bands most, the deep
-    // ones less; foam, the rim (seen edge-on: thick) and the outline stay solid
-    'float op=bnd<0.4?0.94:bnd<0.6?0.84:0.74;' +
-    'c*=sh>0.5?1.0:0.82;' +
-    // long white streaks of light in the lighter bands
-    'float hl=fb(vec3(q.x*1.6+3.0,q.y*1.4,sd+5.0));c=mix(c,cream,step(0.74,hl)*step(0.5,bnd)*0.92);' +
-    // foam: curly patches, more of it toward a crest and on a whirl's rings; each with its own thin navy edge
+    'vec3 mid=vec3(0.34,0.68,0.96),lite=vec3(0.74,0.92,1.0);' +
+    'c=mix(navy,mid,smoothstep(0.28,0.5,bnd));c=mix(c,lite,smoothstep(0.52,0.74,bnd));' +
+    // looking straight into it you see through the most water: deeper
+    'c=mix(c,navy*0.8,smoothstep(0.55,1.0,f)*0.4);' +
+    'c*=0.64+0.46*lam;' +
+    'float op=mix(0.96,0.84,smoothstep(0.35,0.72,bnd));' +
+    // foam: soft-edged white patches, more toward a crest and on a whirl's rings
     'float fm=fb(vec3(q.x*1.3,q.y*1.9+1.7,sd+11.0)),thr=0.76-0.3*smoothstep(0.62,0.95,fy)*step(0.5,kind)*step(kind,1.5)-0.12*sw;' +
-    'float isF=step(thr,fm);c=mix(c,cream*(sh>0.5?1.0:0.88),isF);c=mix(c,line,smoothstep(0.016,0.0,abs(fm-thr))*0.9);' +
-    'if(kind>0.5&&kind<1.5)c=mix(c,cream*(sh>0.5?1.0:0.88),smoothstep(0.95,0.99,y));' +
-    // the front edge while it grows: a lip of foam
-    'c=mix(c,cream,smoothstep(0.04,0.0,k-y)*step(k,0.999)*0.9);' +
-    // sky light sliding over it: where the surface turns the sky toward the eye, a soft pale sheen that runs with the flow
-    'vec3 R=reflect(-normalize(vV),normalize(vN));float sky=max(R.y,0.0)*0.5+max(dot(R,normalize(vec3(0.3,0.6,0.75))),0.0)*0.5;' +
-    'float run=0.5+0.5*sin(tv*7.0-uTime*5.0+lu*3.0);c=mix(c,vec3(0.82,0.96,1.0),smoothstep(0.62,0.9,sky*(0.75+0.35*run))*0.55*(1.0-isF));' +
-    'float crest=kind>0.5&&kind<1.5?smoothstep(0.95,0.99,y):0.0,lipF=smoothstep(0.04,0.0,k-y)*step(k,0.999);' +
-    'a*=clamp(max(max(op,max(isF,max(crest,lipF))),smoothstep(0.3,0.75,pow(1.0-f,1.4))),0.0,1.0);}' +
+    'float isF=smoothstep(thr-0.04,thr+0.06,fm);c=mix(c,cream*(0.78+0.22*lam),isF*0.95);' +
+    'float crest=kind>0.5&&kind<1.5?smoothstep(0.9,0.99,y):0.0,lipF=smoothstep(0.06,0.0,k-y)*step(k,0.999);' +
+    'c=mix(c,cream*(0.8+0.2*lam),max(crest,lipF*0.9));' +
+    // the sky in it, a hard sun glint, a bright thin edge
+    'vec3 R=reflect(-normalize(vV),normalize(vN));float sp=pow(max(dot(R,normalize(vec3(0.25,0.7,0.65))),0.0),40.0);' +
+    'float nf=1.0-max(isF,crest);c=mix(c,vec3(0.9,0.97,1.0),smoothstep(0.2,0.95,R.y*0.5+0.5)*0.22*nf);c+=vec3(1.0)*sp*1.2*nf;' +
+    'c=mix(c,vec3(0.93,0.98,1.0),pow(1.0-f,3.0)*0.45*nf);' +
+    'a*=clamp(max(max(op,max(isF,max(crest,lipF))),smoothstep(0.3,0.75,pow(1.0-f,1.4))),0.0,1.0);' +
+    // (9th, the user: 모든 게 좀 자연스럽게) no hard borders: the flood fades out at all its edges, a whirl at its rim
+    'if(kind>4.5){float ed=min(min(lu,1.0-lu),min(tv/1.5,1.0-tv/1.5));a*=smoothstep(0.0,0.18,ed+0.03*sin(lu*23.0+tv*9.0+uTime*2.0));}' +
+    'if(sw>0.5)a*=1.0-smoothstep(0.8,1.0,y+0.04*sin(lu*40.0+uTime*3.0));}' +
     'gl_FragColor=vec4(c,a);}';
   FS_BM.waterLine = 'varying vec4 vX;uniform vec3 uLine;void main(){' + WATER_CUT + 'gl_FragColor=vec4(uLine,vX.x);}';
 
@@ -1763,17 +1769,17 @@
       woodLeaf: { fs: 'wood', lineFs: 'woodLine', cap: 320, line: 0x10240a, lineW: 0.006, order: 6.6 },
       leafBlade: { fs: 'wood', lineFs: 'woodLine', cap: 700, line: 0x0c2208, lineW: 0.005, order: 6.62 },
       // the 11th-tier water (js/mesh-water.js): drawn by FS_BM.water (no picture), swaying (VS_BMW), grown by k
-      waveSheet: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 6, line: 0x0a1a3a, lineW: 0.03, order: 6.6 },
-      waterRing: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 12, line: 0x0a1a3a, lineW: 0.03, order: 6.6 },
-      waterColumn: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 40, line: 0x0a1a3a, lineW: 0.03, order: 6.6 },
-      splashCrown: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 60, line: 0x0a1a3a, lineW: 0.022, order: 6.62 },
+      waveSheet: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 6, line: 0x245f9e, lineW: 0.015, order: 6.6 },
+      waterRing: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 12, line: 0x245f9e, lineW: 0.015, order: 6.6 },
+      waterColumn: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 40, line: 0x245f9e, lineW: 0.015, order: 6.6 },
+      splashCrown: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 60, line: 0x245f9e, lineW: 0.011, order: 6.62 },
       // (no outline shell: through the clear bubble its back would show as a dark ball — the shader darkens its rim instead)
       waterBubble: { fs: 'water', vs: 'water', line: null, cap: 4, order: 6.66 },
-      fallStream: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 4, line: 0x0a1a3a, lineW: 0.035, order: 6.6 },
-      waterBlob: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 360, line: 0x0a1a3a, lineW: 0.014, order: 6.64 },
-      foamPuff: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 360, line: 0x0a1a3a, lineW: 0.012, order: 6.65 },
-      waterTongue: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 240, line: 0x0a1a3a, lineW: 0.01, order: 6.62 },
-      waterDrop: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 500, line: 0x0a1a3a, lineW: 0.005, order: 6.64 },
+      fallStream: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 4, line: 0x245f9e, lineW: 0.0175, order: 6.6 },
+      waterBlob: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 360, line: 0x245f9e, lineW: 0.007, order: 6.64 },
+      foamPuff: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 360, line: 0x245f9e, lineW: 0.006, order: 6.65 },
+      waterTongue: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 240, line: 0x245f9e, lineW: 0.005, order: 6.62 },
+      waterDrop: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 500, line: 0x245f9e, lineW: 0.0025, order: 6.64 },
       // (flat sheets: no outline shell)
       waterSwirl: { fs: 'water', vs: 'water', line: null, cap: 6, order: 6.58, side: T.DoubleSide },
       floodSheet: { fs: 'water', vs: 'water', line: null, cap: 6, order: 2.4, side: T.DoubleSide }
