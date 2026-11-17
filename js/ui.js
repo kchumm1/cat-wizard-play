@@ -1853,10 +1853,34 @@
         if (n) { draw(day); toast('다이아 +' + fmt(n) + ' 수령 완료'); hud(); renderPanel(true); }
       };
     }
+    // 전직 축하 (2026-11-17, the user: 노란 상자가 너무 촌스러워 — 디자인해서 애니메이션으로): a full-screen moment instead of the cream
+    // box. A night nebula with slow light rays in the job's own colour, a glowing ring that lands with the job number, sparks that
+    // burst out, the job name popping in letter by letter with a gold shine, then the new skill's card rising and the other skills
+    // of that job beside it, and a glass button. A tap closes it once everything is in; reduced motion shows it still.
+    var TIER_COL = ['#ffd84a', '#ff6a2b', '#9fd8ff', '#bfefff', '#ffe14a', '#e6e6ff', '#ffd84a', '#b04bff', '#ffffff', '#7fdc6a', '#4fc3ff', '#9fe8c8', '#c8a8ff'];
     function showTierUp(tier, skill) {
-      var t = DATA.tiers[tier - 1];
-      $('flashbg').classList.remove('go'); void $('flashbg').offsetWidth; $('flashbg').classList.add('go');
-      modal('<h2 style="color:var(--gold)">' + tier + '차 전직 완료!</h2><div class="big">' + t.name + '</div>' + (skill ? '<p>새 스킬 <b style="color:#fff">' + skill.name + '</b>을(를) 획득해 슬롯에 배치했어요.</p>' + (function () { var more = DATA.skills.filter(function (x) { return x.tier === tier && x.id !== skill.id; }); return more.length ? '<p>같은 계열 스킬 <b style="color:#fff">' + more.map(function (x) { return x.name; }).join(' · ') + '</b>도 열렸어요.<br>스킬 메뉴에서 원하는 조합을 만들어 보세요.</p>' : ''; })() : '') + '<p>효과 연출도 더 화려해져요.</p>', [{ label: '확인', pri: true }]);
+      var t = DATA.tiers[tier - 1] || { name: tier + '차' }, col = TIER_COL[tier - 1] || '#ffd84a';
+      var old = document.getElementById('tierfx'); if (old) old.remove();
+      var art = function (sk) { var a = CW.ICO.skillArt && CW.ICO.skillArt(sk.id); return a ? '<img src="' + a + '" alt="" draggable="false">' : '<span class="tf-noart">' + sk.name.slice(0, 1) + '</span>'; };
+      var more = skill ? DATA.skills.filter(function (x) { return x.tier === tier && x.id !== skill.id; }) : [];
+      var letters = t.name.split('').map(function (ch, i) { return '<i style="--i:' + i + '">' + (ch === ' ' ? '&nbsp;' : ch) + '</i>'; }).join('');
+      var sparks = ''; for (var k = 0; k < 18; k++) sparks += '<b style="--a:' + (k * 20 + (k % 3) * 7) + 'deg;--d:' + (90 + (k * 37) % 70) + 'px;--s:' + (0.6 + (k % 4) * 0.25) + '"></b>';
+      var el = document.createElement('div'); el.id = 'tierfx'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', tier + '차 전직 완료');
+      el.style.setProperty('--tc', col);
+      el.innerHTML = '<div class="tf-bg"></div><div class="tf-rays"></div>' +
+        '<div class="tf-wrap">' +
+          '<div class="tf-ring"><i class="tf-rune"></i><i class="tf-glow"></i><div class="tf-num"><b>' + tier + '</b><span>차 전직</span></div><div class="tf-sparks">' + sparks + '</div></div>' +
+          '<div class="tf-name">' + letters + '</div>' +
+          '<div class="tf-sub">전직 완료!</div>' +
+          (skill ? '<div class="tf-skill"><div class="tf-card">' + art(skill) + '</div><div class="tf-new"><small>새 스킬</small><b>' + skill.name + '</b><span>슬롯에 바로 넣었어요</span></div></div>' : '') +
+          (more.length ? '<div class="tf-more">' + more.map(function (x, i) { return '<div class="tf-mini" style="--j:' + i + '">' + art(x) + '<span>' + x.name + '</span></div>'; }).join('') + '</div>' : '') +
+          '<button class="tf-ok" type="button">확인</button>' +
+        '</div>';
+      document.body.appendChild(el);
+      var ready = false, close = function () { if (!ready) return; el.classList.add('out'); setTimeout(function () { el.remove(); }, 380); };
+      setTimeout(function () { ready = true; }, 1300);
+      el.addEventListener('click', close);
+      requestAnimationFrame(function () { el.classList.add('on'); });
     }
     // 뽑기를 누르면 메뉴 위의 고양이 귀 상자가 그 자리에서 덜컹 → 딱 열리고 바로 장비 카드 (2026-11-16, the user: 이 그림을 크게,
     // 100회 뽑기 누르면 저거 딱 열리면서 나오는 거지). 상자가 화면 밖(스크롤)이면 예전처럼 따로 뜨는 상자로. 메뉴는 카드가 뜬 뒤 다시 그림
