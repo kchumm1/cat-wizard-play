@@ -2785,12 +2785,15 @@ body{font-family:'Noto Sans KR',"Malgun Gothic","Apple SD Gothic Neo",system-ui,
   #sheet#sheet#sheet #opTabs .subtabs{padding:1px 4px!important}
   #sheet#sheet#sheet #opTabs .subtabs button{height:30px!important;min-height:30px!important;font-size:13.5px!important}
   /* bottom band: 목표 at the left; presets, 폭주 and the four skills at the right */
-  #skillbar{left:calc(var(--el) + var(--qw))!important;right:calc(var(--er) + var(--tw))!important;bottom:0!important;padding:0 10px calc(var(--sb) + 6px)!important;display:grid!important;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto;align-items:end;justify-items:end;gap:4px 10px!important;background:none!important}
+  /* (형 2026-11-17: 스킬 네모 창이 폭주 게이지바를 살짝 가린다 → 스킬 네모들을 살짝 밑으로) the four squares sit 9px lower,
+     with a wider gap above them, so the picked one floating up stays clear of the 폭주 bar; the bar itself stays put.
+     They are at the right, away from the home bar in the middle of the bottom edge */
+  #skillbar{left:calc(var(--el) + var(--qw))!important;right:calc(var(--er) + var(--tw))!important;bottom:0!important;padding:0 10px max(4px, calc(var(--sb) - 3px))!important;display:grid!important;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto;align-items:end;justify-items:end;gap:4px 10px!important;background:none!important}
   #qrow{display:contents!important}
   #quest{grid-column:1;grid-row:3;justify-self:start;align-self:end;max-width:100%}
   #pre{grid-column:2;grid-row:1}
   #surgeGauge{grid-column:2;grid-row:2;width:100%!important;margin:0!important}
-  #skillbar .slots{grid-column:2;grid-row:3}
+  #skillbar .slots{grid-column:2;grid-row:3;margin-top:10px!important}
   #gainlog{left:calc(var(--el) + var(--qw) + 10px)!important;bottom:calc(var(--sb) + 46px)!important}
   #toast{bottom:calc(var(--sb) + 64px)!important}
   /* a menu: a drawer from the right, under nothing but the tab column, as tall as the screen */
