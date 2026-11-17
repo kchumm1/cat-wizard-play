@@ -56,12 +56,16 @@ button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
   .tools{order:2;margin-top:auto;justify-content:space-between}
   .keychip{flex:1;min-height:44px}
   .page{padding:32px 40px 0}
-  .panel.on{display:grid;grid-template-columns:minmax(0,1fr) 470px;gap:22px 28px;align-items:start}
-  .panel.solo.on{grid-template-columns:minmax(0,620px)}
-  .panel>.ph,.panel>.stats{grid-column:1/-1}
+  .panel.on{max-width:900px;gap:22px}
+  .panel.solo.on{max-width:620px}
   .ph h1{font-size:30px}.ph p{font-size:16px}
   .stats{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
   .stat{padding:16px 22px}.stat b{font-size:38px}.stat span{font-size:15px}
+}
+@media (min-width:1360px){
+  .panel.on{display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:22px 28px;align-items:start;max-width:none}
+  .panel.solo.on{grid-template-columns:minmax(0,620px)}
+  .panel>.ph,.panel>.stats{grid-column:1/-1}
   .panel>.listcard{position:sticky;top:24px;max-height:calc(100vh - 48px);overflow-y:auto}
 }
 @media (min-width:1500px){body{font-size:17px}}
@@ -102,6 +106,13 @@ input[type=date]::-webkit-date-and-time-value{text-align:center;margin:0}
 .chip:hover{border-color:var(--accent2);background:var(--accent-soft)}
 .chip.on{background:var(--accent-soft);border-color:var(--accent2);color:var(--accent2)}
 .chip:active{transform:translateY(1px)}
+/* 버튼 줄 맞추기: 같은 크기로 칸에 딱딱 */
+.chips .chip{text-align:center;white-space:nowrap;padding:6px 4px}
+#presetBar,#nzPresets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+#dayChips,#nzDayChips{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+#mailChips,#nzChips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+#dayChips .chip,#nzDayChips .chip,#mailChips .chip,#nzChips .chip{font-size:14px}
+@media (min-width:600px){#presetBar,#nzPresets{grid-template-columns:repeat(4,minmax(0,1fr))}}
 
 /* 버튼 */
 .btn{display:block;width:100%;border:0;border-radius:14px;font:inherit;font-weight:800;font-size:17px;padding:13px;min-height:54px;margin-top:16px;background:linear-gradient(135deg,var(--accent),var(--accent3));color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(111,88,245,.35);transition:filter .15s,transform .05s}
@@ -267,6 +278,15 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
       </div>
 
       <div class="grp">
+        <h3>편지 글</h3>
+        <p class="why">빠른 시작을 누르면 맞는 글이 들어와요. 그대로 보내도 되고 고쳐도 돼요.</p>
+        <label for="mTitle" style="margin-top:0">편지 제목 <span class="count" id="mTitleCount">0/30</span></label>
+        <input id="mTitle" type="text" maxlength="30" autocomplete="off">
+        <label for="mText">편지 내용</label>
+        <textarea id="mText" style="min-height:170px"></textarea>
+      </div>
+
+      <div class="grp">
         <h3>이렇게 보여요</h3>
         <div class="letter" id="preview"></div>
         <button class="btn send" id="send">편지 보내기</button>
@@ -373,11 +393,11 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
     </section>
   </div>
 </main>
-<script src="js/data.js"></script>
-<script src="js/mail-gift.js"></script>
-<script src="js/mail.js"></script>
-<script src="js/mail-ops.js"></script>
-<script src="js/notice.js"></script>
+<script src="js/data.js?v=20261118a"></script>
+<script src="js/mail-gift.js?v=20261118a"></script>
+<script src="js/mail.js?v=20261118a"></script>
+<script src="js/mail-ops.js?v=20261118a"></script>
+<script src="js/notice.js?v=20261118a"></script>
 <script>
 (function () {
   var OWNER = 'kchumm1', REPO = 'cat-wizard-play', FILE = 'mail.json', BRANCH = 'main', KEY = 'cw-ops-token';
@@ -491,7 +511,8 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
   var HINT = { gear: '장비 가방에 바로 들어가요. 잠재 3줄을 고르면 최상급(레전더리)으로 들어가고, 그 장비에 있던 잠재는 바뀌어요.', runes: '룬 가방(100칸)에 Lv.0으로 들어가요. 자리가 모자라면 정리한 뒤에 받을 수 있어요.',
     sigils: '신성력 가방(150칸)에 들어가요. 고른 능력, 품질은 언제나 최상급이에요. (각성)은 각성 칸에 껴요.', relics: '하나에 레벨 +1(소환과 같아요). 최대 레벨을 넘는 만큼은 다이아로 돌려줘요.',
     costumes: '없는 코스튬은 Lv.1로 생기고, 이미 있으면 레벨 +1이에요.' };
-  function itForm() {
+  function itForm() { try { itForm0(); } catch (e) { $('itOpts').textContent = ''; $('itHint').textContent = '아이템 목록을 못 불러왔어요. 화면을 새로고침(Ctrl+F5)해 주세요. (' + e.message + ')'; $('itHint').style.color = 'var(--bad)'; } }
+  function itForm0() {
     var t = $('itType').value; $('itOpts').textContent = '';
     if (t === 'gear') {
       sel('itKind', '부위', CAT.gearKinds.map(function (k) { return [k.id, k.name]; }));
@@ -546,7 +567,7 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
       li.appendChild(s); li.appendChild(x); ul.appendChild(li);
     });
   }
-  function form() { return { toAll: toAll, toText: $('pids').value, gold: $('gold').value, gems: $('gems').value === '' ? 0 : +$('gems').value, give: give(), from: $('from').value, until: $('until').value, sub: $('sub').value }; }
+  function form() { return { toAll: toAll, toText: $('pids').value, gold: $('gold').value, gems: $('gems').value === '' ? 0 : +$('gems').value, give: give(), from: $('from').value, until: $('until').value, sub: $('sub').value, title: $('mTitle').value, text: $('mText').value }; }
   function preview() {
     var f = form(), g = CW.parseGold(f.gold), gr = $('goldRead');
     if (!f.gold.trim()) { gr.textContent = '경·조·억·만을 붙여 적거나 숫자만 적어도 돼요.'; gr.style.color = ''; }
@@ -558,12 +579,12 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
     var gift = []; if (g > 0) gift.push('골드 ' + CW.countText(g)); if (f.gems > 0) gift.push('다이아 ' + CW.countText(f.gems) + '개');
     CW.giftLines({ give: f.give }).forEach(function (x) { gift.push(x.icon + ' ' + x.text); });
     var p = $('preview'); p.textContent = '';
-    var b = document.createElement('b'); b.textContent = '모험 응원 선물'; p.appendChild(b);
-    p.appendChild(document.createTextNode(CW.GIFT_TEXT));
+    var b = document.createElement('b'); b.textContent = f.title.trim() || '모험 응원 선물'; p.appendChild(b);
+    p.appendChild(document.createTextNode(f.text.trim() || CW.GIFT_TEXT)); $('mTitleCount').textContent = f.title.length + '/30';
     var s = document.createElement('div'); s.className = 'sign'; s.textContent = '냥법사 운영팀 드림'; p.appendChild(s);
     var g = document.createElement('div'); g.className = 'gift'; g.textContent = gift.length ? '선물: ' + gift.join(' · ') : '선물: (아직 없음)'; p.appendChild(g);
   }
-  ['gold', 'gems', 'pids', 'from', 'until'].forEach(function (id) { $(id).addEventListener('input', preview); });
+  ['gold', 'gems', 'pids', 'from', 'until', 'mTitle', 'mText'].forEach(function (id) { $(id).addEventListener('input', preview); });
   $('sub').addEventListener('input', function () { subTouched = $('sub').value.trim() !== ''; });
   $('from').value = CW.kstDay(); $('until').value = CW.kstDay(Date.now(), 30);
   preview();
@@ -576,7 +597,7 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
     if (!confirm('보낼까요?\n받는 사람: ' + who + '\n선물: ' + CW.mailRewardText(l) + '\n받을 수 있는 날: ' + (l.from || l.date) + ' ~ ' + (l.until || '계속'))) return;
     $('send').disabled = true; say('sendMsg', '보내는 중…');
     save(function (doc) { return CW.mailAdd(doc, l); }, '운영자 편지: ' + l.sub)
-      .then(function (doc) { say('sendMsg', '보냈어요! 게임이 켜져 있어도 1분 안에 우편함에 도착해요.', 'ok'); $('gold').value = ''; $('gems').value = ''; $('pids').value = ''; document.querySelectorAll('#curBox input,#potBox input,#tkBox input').forEach(function (x) { x.value = ''; }); items = []; drawItems(); subTouched = false; $('sub').value = ''; preview(); draw(doc); })
+      .then(function (doc) { say('sendMsg', '보냈어요! 게임이 켜져 있어도 1분 안에 우편함에 도착해요.', 'ok'); $('gold').value = ''; $('gems').value = ''; $('pids').value = ''; document.querySelectorAll('#curBox input,#potBox input,#tkBox input').forEach(function (x) { x.value = ''; }); items = []; drawItems(); subTouched = false; $('sub').value = ''; setMailText(); preview(); draw(doc); })
       .catch(function (e) { say('sendMsg', '못 보냈어요: ' + e.message, 'bad'); })
       .then(function () { $('send').disabled = false; });
   };
@@ -678,11 +699,12 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
 
   // ---- 운영 편의 (2026-11-18)
   // 빠른 시작 틀: 숫자는 여기서 마음대로 고치면 돼요
+  var HI = '안녕하세요, 냥법사님!\n\n';
   var PRESETS = [
-    { name: '🛠 점검 보상', gold: '1000만', gems: 300 },
-    { name: '🙇 사과 보상', gold: '1억', gems: 1000 },
-    { name: '🎉 이벤트 선물', gold: '', gems: 500 },
-    { name: '🐾 신규 환영', gold: '500만', gems: 200 }
+    { name: '🛠 점검 보상', gold: '1000만', gems: 300, title: '점검 보상 선물', text: HI + '점검 동안 기다려 주셔서 정말 고마워요.\n불편했을 시간을 작은 선물로 채워 드릴게요.\n\n더 편안하고 안정적인 모험이 되도록\n계속 노력할게요.\n오늘도 즐거운 모험 되세요!' },
+    { name: '🙇 사과 보상', gold: '1억', gems: 1000, title: '사과의 선물', text: HI + '모험 중에 불편을 드려서 진심으로 미안해요.\n마음을 담아 작은 선물을 준비했어요.\n\n같은 일이 없도록 꼼꼼히 고치고 있어요.\n이해해 주셔서 고마워요.' },
+    { name: '🎉 이벤트 선물', gold: '', gems: 500, title: '이벤트 선물', text: HI + '이벤트에 함께해 주셔서 고마워요.\n약속드린 선물을 우편함으로 보내요.\n\n앞으로도 즐거운 이벤트로 찾아올게요.\n새로운 모험도 함께해 주세요!' },
+    { name: '🐾 신규 환영', gold: '500만', gems: 200, title: '환영 선물', text: HI + '냥법사의 세계에 오신 걸 환영해요.\n첫 모험을 응원하는 선물을 준비했어요.\n\n천천히, 즐겁게 모험해 보세요.\n멋진 마법사가 되길 응원할게요!' }
   ];
   var NZP = [
     { name: '🛠 점검 안내', tag: '점검', title: '점검 안내', text: '점검 시간: \n점검 내용: \n보상: \n\n불편을 드려 죄송해요.' },
@@ -696,7 +718,7 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
     list.forEach(function (p) { var b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = p[0]; b.onclick = function () { on(p[1]); }; box.appendChild(b); });
   }
   function dayOf(n) { return n == null ? '' : CW.kstDay(Date.now(), n); }
-  chipBar($('presetBar'), PRESETS.map(function (p) { return [p.name, p]; }), function (p) { $('gold').value = p.gold; $('gems').value = p.gems || ''; fire('gold'); fire('gems'); say('sendMsg', ''); });
+  chipBar($('presetBar'), PRESETS.map(function (p) { return [p.name, p]; }), function (p) { clearGift(); $('gold').value = p.gold; $('gems').value = p.gems || ''; $('mTitle').value = p.title; $('mText').value = p.text; preview(); say('sendMsg', '「' + p.title + '」 편지가 써졌어요. 확인하고 보내세요.', 'ok'); });
   chipBar($('dayChips'), DAYS, function (n) { $('until').value = dayOf(n); fire('until'); });
   chipBar($('nzDayChips'), DAYS, function (n) { $('nzUntil').value = dayOf(n); });
   $('pids').addEventListener('input', function () {
@@ -707,8 +729,9 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
     ['gold', 'gems', 'pids'].forEach(function (id) { $(id).value = ''; });
     document.querySelectorAll('#curBox input,#potBox input,#tkBox input').forEach(function (x) { x.value = ''; });
     items = []; drawItems(); subTouched = false; $('sub').value = '';
-    $('from').value = CW.kstDay(); $('until').value = CW.kstDay(Date.now(), 30);
+    $('from').value = CW.kstDay(); $('until').value = CW.kstDay(Date.now(), 30); setMailText();
   }
+  function setMailText(t, x) { $('mTitle').value = t || '모험 응원 선물'; $('mText').value = x || CW.GIFT_TEXT; }
   $('mailReset').onclick = function () { clearGift(); preview(); say('sendMsg', ''); };
   function reuseLetter(l) {
     setTab('mail'); clearGift();
@@ -723,7 +746,7 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
       else if (Array.isArray(v)) v.forEach(function (o) { items.push(Object.assign({ t: k }, o)); });
       else { var el2 = $('cur-' + k); if (el2) el2.value = v; }
     });
-    drawItems(); preview();
+    setMailText(l.title, l.text); drawItems(); preview();
     say('sendMsg', '「' + (l.sub || l.title) + '」 내용을 불러왔어요. 고쳐서 새로 보내세요.', 'ok');
   }
   // 공지
@@ -746,7 +769,7 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
     $('nzFrom').value = CW.kstDay(); $('nzUntil').value = ''; nzPv();
     say('nzMsg', '「' + n.title + '」 내용을 불러왔어요. 고쳐서 새로 올리세요.', 'ok');
   }
-  nzPv();
+  nzPv(); setMailText(); preview();
   statCards($('mailStats'), { all: 0, on: 0, soon: 0, end: 0 }); statCards($('nzStats'), { all: 0, on: 0, soon: 0, end: 0 });
   filterChips($('mailChips'), { all: 0, on: 0, soon: 0, end: 0 }, 'all', function () {}); filterChips($('nzChips'), { all: 0, on: 0, soon: 0, end: 0 }, 'all', function () {});
   // 밝게 · 어둡게
