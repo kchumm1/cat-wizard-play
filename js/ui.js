@@ -1907,9 +1907,43 @@
     // burst out, the job name popping in letter by letter with a gold shine, then the new skill's card rising and the other skills
     // of that job beside it, and a glass button. A tap closes it once everything is in; reduced motion shows it still.
     var TIER_COL = ['#ffd84a', '#ff6a2b', '#9fd8ff', '#bfefff', '#ffe14a', '#e6e6ff', '#ffd84a', '#b04bff', '#ffffff', '#7fdc6a', '#4fc3ff', '#9fe8c8', '#c8a8ff'];
+    // 전직 그림 (2026-11-17, the user: 전직을 딱 하면 저 화면이 나오기만 하면 돼 → 에니메이션화): the GPT picture of that job,
+    // cut by tools/cut-tierup.py into layers at the picture's own coordinates (852×1846, art/tuNN-*.webp), put back together and
+    // brought in one by one: the background, the name dropping in, a flash and light rays where the cat pops out of its ring,
+    // sparks, the skill card rising and its four pictures popping in turn, then the button with a shine. Afterwards the cat
+    // floats, the pictures bob and stars twinkle. The sides beyond the picture take its own edge colour. A tap closes it once
+    // everything is in. Jobs without a picture keep the nebula moment below.
+    // e: edge colour · a: the button colour (flash and sparks) · r: ring centre and radius · b: layer boxes [x0, y0, x1, y1]
+    var TIER_PIC = {"2":{"e":"#fccebb","a":"#b54731","r":[426,720,398],"b":{"ch":[22,310,830,1126],"hd":[130,70,722,338],"sk":[18,1122,834,1500],"i1":[43,1221,238,1427],"i2":[238,1207,428,1441],"i3":[428,1218,616,1433],"i4":[616,1205,809,1442],"bt":[50,1524,802,1660]}},"3":{"e":"#feeeb4","a":"#f4b804","r":[426,720,398],"b":{"ch":[22,310,830,1126],"hd":[130,70,722,338],"sk":[18,1122,834,1500],"i1":[43,1219,238,1435],"i2":[238,1223,428,1427],"i3":[428,1214,616,1438],"i4":[616,1224,809,1433],"bt":[50,1524,802,1660]}},"4":{"e":"#bce5fd","a":"#3286bc","r":[426,720,398],"b":{"ch":[22,310,830,1126],"hd":[130,70,722,338],"sk":[18,1122,834,1500],"i1":[43,1219,238,1434],"i2":[238,1225,428,1432],"i3":[428,1229,616,1430],"i4":[616,1220,809,1435],"bt":[50,1524,802,1660]}},"5":{"e":"#e9d5fd","a":"#8d59af","r":[426,720,398],"b":{"ch":[22,310,830,1126],"hd":[130,70,722,338],"sk":[18,1122,834,1500],"i1":[43,1216,238,1423],"i2":[238,1223,428,1425],"i3":[428,1217,616,1433],"i4":[616,1216,809,1431],"bt":[50,1524,802,1660]}},"6":{"e":"#c6cffd","a":"#4b4e92","r":[426,720,398],"b":{"ch":[22,310,830,1126],"hd":[130,70,722,338],"sk":[18,1122,834,1500],"i1":[43,1233,238,1416],"i2":[238,1224,428,1419],"i3":[428,1227,616,1413],"i4":[616,1216,809,1407],"bt":[50,1524,802,1660]}},"7":{"e":"#fdddaa","a":"#d15e20","r":[426,720,398],"b":{"ch":[22,310,830,1126],"hd":[130,70,722,338],"sk":[18,1122,834,1500],"i1":[43,1220,238,1420],"i2":[238,1220,428,1412],"i3":[428,1220,616,1418],"i4":[616,1217,809,1421],"bt":[50,1524,802,1660]}},"8":{"e":"#48367f","a":"#975ba6","r":[426,720,398],"b":{"ch":[22,310,830,1126],"hd":[130,70,722,338],"sk":[18,1122,834,1500],"i1":[43,1230,238,1431],"i2":[238,1237,428,1419],"i3":[428,1234,616,1414],"i4":[616,1228,809,1428],"bt":[50,1524,802,1660]}},"9":{"e":"#fdf5e6","a":"#443c40","r":[426,768,398],"b":{"ch":[22,358,830,1168],"hd":[130,70,722,390],"sk":[18,1162,834,1504],"i1":[43,1249,238,1455],"i2":[238,1252,428,1457],"i3":[428,1254,616,1460],"i4":[616,1242,809,1468],"bt":[50,1528,802,1662]}},"10":{"e":"#dbecc4","a":"#296032","r":[426,720,398],"b":{"ch":[22,310,830,1126],"hd":[130,70,722,338],"sk":[18,1122,834,1500],"i1":[43,1224,238,1435],"i2":[238,1220,428,1437],"i3":[428,1226,616,1435],"i4":[616,1221,809,1440],"bt":[50,1524,802,1660]}},"11":{"e":"#fdeedc","a":"#0c6465","r":[426,720,398],"b":{"ch":[22,310,830,1126],"hd":[130,70,722,338],"sk":[18,1122,834,1500],"i1":[43,1228,238,1444],"i2":[238,1235,428,1443],"i3":[428,1221,616,1446],"i4":[616,1221,809,1451],"bt":[50,1524,802,1660]}}};
+    function showTierPic(tier, t) {
+      var P = TIER_PIC[tier], B = CW.ART_BASE || 'art/', nn = (tier < 10 ? '0' : '') + tier;
+      var at = function (x0, y0, x1, y1) { return 'left:' + (x0 / 8.52).toFixed(3) + '%;top:' + (y0 / 18.46).toFixed(3) + '%;width:' + ((x1 - x0) / 8.52).toFixed(3) + '%;height:' + ((y1 - y0) / 18.46).toFixed(3) + '%;'; };
+      var pic = function (k, cls, more) { var q = P.b[k] || [0, 0, 852, 1846]; return '<img class="tu-p ' + cls + '" src="' + B + 'tu' + nn + '-' + k + '.webp" style="' + at(q[0], q[1], q[2], q[3]) + (more || '') + '" alt="" draggable="false">'; };
+      var cx = P.r[0], cy = P.r[1], R = P.r[2], bt = P.b.bt;
+      var sparks = ''; for (var k = 0; k < 16; k++) sparks += '<b style="--a:' + (k * 22.5 + (k % 3) * 6) + 'deg;--d:' + (30 + (k * 37) % 22) + 'cqw;--s:' + (0.7 + (k % 4) * 0.22) + '"></b>';
+      var tw = '', TW = [[8, 22], [90, 17], [14, 47], [87, 44], [6, 70], [93, 62], [20, 86], [80, 88], [50, 3], [30, 33], [71, 31], [48, 96]];
+      TW.forEach(function (p, i) { tw += '<i class="tu-tw" style="left:' + p[0] + '%;top:' + p[1] + '%;--k:' + i + ';--z:' + (0.6 + (i % 3) * 0.3) + '"></i>'; });
+      var el = document.createElement('div'); el.id = 'tierfx'; el.className = 'pic'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', tier + '차 전직 완료 · ' + t.name);
+      el.style.background = P.e;
+      el.innerHTML = '<div class="tu-stage" style="--ac:' + P.a + '">' + pic('bg', 'tu-bg') +
+        '<div class="tu-rays" style="' + at(cx - R * 1.25, cy - R * 1.25, cx + R * 1.25, cy + R * 1.25) + '"></div>' +
+        '<div class="tu-chw">' + pic('ch', 'tu-ch') + '</div>' +
+        '<div class="tu-burst" style="' + at(cx - R, cy - R, cx + R, cy + R) + '"><i></i><u></u><div class="tu-sp">' + sparks + '</div></div>' +
+        pic('hd', 'tu-hd') + pic('sk', 'tu-sk') + pic('i1', 'tu-ic', '--j:0') + pic('i2', 'tu-ic', '--j:1') + pic('i3', 'tu-ic', '--j:2') + pic('i4', 'tu-ic', '--j:3') +
+        pic('bt', 'tu-bt') + '<div class="tu-shine" style="' + at(bt[0] + 10, bt[1] + 12, bt[2] - 10, bt[3] - 14) + '"></div>' + tw + '</div>' +
+        '<button class="tf-hit" type="button" aria-label="새로운 힘 확인"></button>';
+      document.body.appendChild(el);
+      var ready = false, shown = false, close = function () { if (!ready) return; el.classList.add('out'); setTimeout(function () { el.remove(); }, 380); };
+      var show = function () { if (shown) return; shown = true; requestAnimationFrame(function () { el.classList.add('on'); }); setTimeout(function () { ready = true; }, 1700); };
+      var imgs = el.querySelectorAll('img'), left = imgs.length, one = function () { if (--left <= 0) show(); };
+      for (var i = 0; i < imgs.length; i++) { if (imgs[i].complete) one(); else { imgs[i].onload = one; imgs[i].onerror = one; } }
+      setTimeout(show, 2500);
+      el.addEventListener('click', close);
+    }
     function showTierUp(tier, skill) {
       var t = DATA.tiers[tier - 1] || { name: tier + '차' }, col = TIER_COL[tier - 1] || '#ffd84a';
       var old = document.getElementById('tierfx'); if (old) old.remove();
+      if (TIER_PIC[tier]) return showTierPic(tier, t);
       var art = function (sk) { var a = CW.ICO.skillArt && CW.ICO.skillArt(sk.id); return a ? '<img src="' + a + '" alt="" draggable="false">' : '<span class="tf-noart">' + sk.name.slice(0, 1) + '</span>'; };
       var more = skill ? DATA.skills.filter(function (x) { return x.tier === tier && x.id !== skill.id; }) : [];
       var letters = t.name.split('').map(function (ch, i) { return '<i style="--i:' + i + '">' + (ch === ' ' ? '&nbsp;' : ch) + '</i>'; }).join('');

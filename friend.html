@@ -2070,6 +2070,50 @@ i.sigilstone{display:inline-block;flex:none;width:18px;height:18px;vertical-alig
 @media (prefers-reduced-motion:reduce){#tierfx *,#tierfx{animation-duration:.01s!important;animation-delay:0s!important;animation-iteration-count:1!important}}
 /* short screens (phones on their side): the whole moment a little smaller so the button stays on screen */
 @media (max-height:640px){#tierfx .tf-wrap{transform:scale(.8)}}@media (max-height:520px){#tierfx .tf-wrap{transform:scale(.62)}}@media (max-height:420px){#tierfx .tf-wrap{transform:scale(.5)}}
+/* 전직 그림 (2026-11-17, 에니메이션): the picture's layers in a stage of its own shape, as big as the screen allows */
+#tierfx.pic{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#tierfx.pic .tu-stage{position:relative;width:min(100%,calc((100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * .46154));width:min(100%,calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * .46154));aspect-ratio:852/1846;container-type:inline-size;pointer-events:none}
+#tierfx.pic .tu-p{position:absolute;display:block;max-width:none;-webkit-user-drag:none;opacity:0}
+#tierfx.pic .tu-bg{inset:0!important;width:100%!important;height:100%!important}
+#tierfx.pic .tu-chw{position:absolute;inset:0}
+#tierfx.pic .tu-ch{transform-origin:50% 72%}
+#tierfx.pic .tu-rays{position:absolute;border-radius:50%;opacity:0;background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.55) 0 5deg,transparent 5deg 15deg);-webkit-mask:radial-gradient(circle,#000 18%,transparent 70%);mask:radial-gradient(circle,#000 18%,transparent 70%);mix-blend-mode:soft-light}
+#tierfx.pic .tu-burst{position:absolute}
+#tierfx.pic .tu-burst i{position:absolute;inset:18%;border-radius:50%;background:radial-gradient(circle,#fff 0,rgba(255,255,255,.85) 30%,transparent 68%);opacity:0;scale:.2}
+#tierfx.pic .tu-burst u{position:absolute;inset:4%;border-radius:50%;border:1.4cqw solid var(--ac);box-shadow:0 0 4cqw var(--ac),inset 0 0 3cqw #fff;opacity:0;scale:.3}
+#tierfx.pic .tu-sp{position:absolute;left:50%;top:50%}
+#tierfx.pic .tu-sp b{position:absolute;left:-1.1cqw;top:-1.1cqw;width:2.2cqw;height:2.2cqw;border-radius:.4cqw;background:#fff;box-shadow:0 0 2cqw var(--ac),0 0 .8cqw #fff;opacity:0;transform:rotate(var(--a)) translateY(0) scale(0) rotate(45deg)}
+#tierfx.pic .tu-shine{position:absolute;overflow:hidden;border-radius:2.6cqw;opacity:0}
+#tierfx.pic .tu-shine::after{content:'';position:absolute;top:0;bottom:0;left:-40%;width:30%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:translateX(-120%) skewX(-18deg)}
+#tierfx.pic .tu-tw{position:absolute;width:3.4cqw;height:3.4cqw;margin:-1.7cqw 0 0 -1.7cqw;background:#fff;clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);filter:drop-shadow(0 0 1cqw var(--ac));opacity:0;scale:var(--z)}
+#tierfx.pic .tf-hit{position:absolute;inset:0;border:0;background:none;padding:0;cursor:pointer}
+/* in order: background → name drops in → flash, ring and sparks as the cat pops out → card → its four pictures → button */
+#tierfx.pic.on .tu-bg{animation:tfIn .3s forwards}
+#tierfx.pic.on .tu-hd{animation:tuDrop .6s .12s cubic-bezier(.2,1.5,.4,1) forwards}
+#tierfx.pic.on .tu-ch{animation:tuPop .75s .32s cubic-bezier(.2,1.45,.4,1) forwards}
+#tierfx.pic.on .tu-chw{animation:tuFloat 3.2s 1.3s ease-in-out infinite alternate}
+#tierfx.pic.on .tu-rays{animation:tfIn .5s .4s forwards,tfRays 18s linear infinite}
+#tierfx.pic.on .tu-burst i{animation:tuFlash .75s .34s ease-out forwards}
+#tierfx.pic.on .tu-burst u{animation:tuRing .85s .36s cubic-bezier(.1,.7,.3,1) forwards}
+#tierfx.pic.on .tu-sp b{animation:tuSpark 1s .42s cubic-bezier(.15,.8,.3,1) forwards}
+#tierfx.pic.on .tu-sk{animation:tuRise .5s .85s cubic-bezier(.2,1.3,.4,1) forwards}
+#tierfx.pic.on .tu-ic{animation:tuIcon .55s calc(1.05s + var(--j) * .13s) cubic-bezier(.2,1.7,.4,1) forwards,tuBob 2.4s calc(1.8s + var(--j) * .3s) ease-in-out infinite alternate}
+#tierfx.pic.on .tu-bt{animation:tuRise .45s 1.6s cubic-bezier(.2,1.3,.4,1) forwards,tuBreath 1.6s 2.2s ease-in-out infinite alternate}
+#tierfx.pic.on .tu-shine{animation:tfIn .1s 2s forwards}#tierfx.pic.on .tu-shine::after{animation:tuSweep 2.6s 2.1s ease-in-out infinite}
+#tierfx.pic.on .tu-tw{animation:tuTw calc(1.6s + var(--k) * .11s) calc(.7s + var(--k) * .23s) ease-in-out infinite}
+@keyframes tuDrop{0%{opacity:0;translate:0 -18%;scale:.9}100%{opacity:1;translate:0 0;scale:1}}
+@keyframes tuPop{0%{opacity:0;scale:.35;translate:0 6%}55%{opacity:1}100%{opacity:1;scale:1;translate:0 0}}
+@keyframes tuFloat{to{translate:0 -.9%}}
+@keyframes tuFlash{0%{opacity:0;scale:.2}25%{opacity:.95}100%{opacity:0;scale:1.5}}
+@keyframes tuRing{0%{opacity:0;scale:.3}20%{opacity:.9}100%{opacity:0;scale:1.25}}
+@keyframes tuSpark{0%{opacity:1;transform:rotate(var(--a)) translateY(0) scale(var(--s)) rotate(45deg)}100%{opacity:0;transform:rotate(var(--a)) translateY(calc(var(--d) * -1)) scale(0) rotate(45deg)}}
+@keyframes tuRise{0%{opacity:0;translate:0 14%}100%{opacity:1;translate:0 0}}
+@keyframes tuIcon{0%{opacity:0;scale:.2;rotate:-14deg}100%{opacity:1;scale:1;rotate:0deg}}
+@keyframes tuBob{to{translate:0 -4%}}
+@keyframes tuBreath{to{scale:1.025}}
+@keyframes tuSweep{0%{transform:translateX(-120%) skewX(-18deg)}55%,100%{transform:translateX(480%) skewX(-18deg)}}
+@keyframes tuTw{0%,100%{opacity:0;rotate:0deg}50%{opacity:.95;rotate:45deg}}
+@media (prefers-reduced-motion:reduce){#tierfx.pic.on .tu-p{animation:tfIn .01s forwards!important}#tierfx.pic .tu-rays,#tierfx.pic .tu-burst,#tierfx.pic .tu-tw,#tierfx.pic .tu-shine{display:none}}
 /* 룬석·신성석 pictures in costs and boxes a little bigger than the drawn icons were (the user: 살짝 키우자) */
 img.icur{width:19px!important;height:19px!important;vertical-align:-5px!important;object-fit:contain}#gainlog img.icur{width:17px!important;height:17px!important}
 .fuse-p{display:block;margin-top:1px;font:800 10.5px/1.1 var(--body);color:#c4485f}
