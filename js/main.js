@@ -534,6 +534,12 @@
     importSave: function (code) { var st2 = CW.importCode(code); if (!st2 || !adopt(JSON.stringify(st2))) return false; save(); cloudPush(true); return true; },
     setSheet: function (open) { sc.setViewShift(open ? 0.22 : 0); pace.setSheet(open); },
     screenHz: function () { return pace.hz(); },
+    // 성능 표시 (설정 › 문제 확인용): on / off, and the record for the settings page
+    perfOn: function () { return !!(perf && perf.on()); },
+    perfSet: function (v) { perfSwitch(v, true); },
+    perfLog: function () { return perf ? perf.log() : null; },
+    perfMinutes: function () { return perf ? perf.minutes() : []; },
+    perfText: function () { return perf ? perf.text() : ''; },
     sound: function (n) { snd.play(n); },
     thumb: function (id) {
       thumbs = thumbs || {};
@@ -577,6 +583,68 @@
   // limits are measured against the rate it aims for, so drawing 30 a second on purpose never lowers the quality.
   // safety valve for skill spam (js/fxload.js): fewer small pieces while frames run late, never fewer skills
   var fxLoad = CW.createFxLoad ? CW.createFxLoad() : null;
+  // ---------- 성능 표시 (2026-11-17, js/perfmon.js) ----------
+  // Only measured on a real phone can show what heat does over 20 minutes. While it is on (설정 › 문제 확인용, kept in
+  // localStorage cw-perf; 형꺼 only): a small box over the game with the last second's numbers, and a row every 10 s
+  // kept in cw-perflog that the settings page shows and copies. Off, nothing at all is measured.
+  var perf = !CW.FRIEND && CW.createPerfMon ? CW.createPerfMon({ store: storage, probe: perfProbe, info: perfInfo }) : null;
+  var perfBox = null, perfBoxAt = 0, perfLeft = '', battery = null;
+  function perfProbe() {
+    var r = sc.renderer, inf = r && r.info, pm = root.performance && performance.memory;
+    return {
+      q: sc.getQuality(), pr: r ? r.getPixelRatio() : undefined, k: fx.load(),
+      dc: inf ? inf.render.calls : undefined, tri: inf ? inf.render.triangles : undefined,
+      tex: inf ? inf.memory.textures : undefined, geo: inf ? inf.memory.geometries : undefined,
+      b: battery ? Math.round(battery.level * 100) : undefined, ch: battery ? (battery.charging ? 1 : 0) : undefined,   // Galaxy Chrome only
+      mem: pm && pm.usedJSHeapSize ? Math.round(pm.usedJSHeapSize / 1048576) : undefined   // Chrome only
+    };
+  }
+  function perfInfo() {
+    var ua = navigator.userAgent || '', s = state.settings, cap = s.fpsCap || 60;
+    var dev = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android' : /Mac/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : '기타';
+    var br = /SamsungBrowser/.test(ua) ? '삼성 인터넷' : /CriOS|Chrome/.test(ua) ? 'Chrome' : /Safari/.test(ua) ? 'Safari' : '';
+    var app = navigator.standalone || (root.matchMedia && matchMedia('(display-mode: standalone)').matches);
+    return {
+      dev: '기기: ' + dev + (br ? ' ' + br : '') + (app ? ' (홈 화면 앱)' : '') + ' · 화면 ' + screen.width + '×' + screen.height + ' · DPR ' + Math.round((root.devicePixelRatio || 1) * 100) / 100 + (pace.hz() ? ' · ' + pace.hz() + 'Hz' : ''),
+      set: '설정: 화면 빈도 ' + (cap >= 60 ? cap : '절전 ' + cap + '장') + ' · 화질 ' + ({ auto: '자동', high: '높음', mid: '보통', low: '낮음' })[s.quality] +
+        ' · 안티앨리어싱 ' + (CW.aaOn && CW.aaOn() ? '켜기' : '끄기') + ' · ' + (s.pixel ? '픽셀' : '3D')
+    };
+  }
+  // fresh: turned on from the settings page (a new record); otherwise opened with it on (the same record goes on)
+  function perfSwitch(v, fresh) {
+    if (!perf) return;
+    try { if (v) storage.setItem('cw-perf', '1'); else storage.removeItem('cw-perf'); } catch (e) { /* no storage: on until closed */ }
+    // the draw counts are added up over the whole frame (a lens takes two passes) and cleared by hand before each one
+    if (sc.renderer) sc.renderer.info.autoReset = !v;
+    if (v) {
+      perf.start(perfInfo(), fresh);
+      if (!battery && navigator.getBattery) navigator.getBattery().then(function (b) { battery = b; }, function () {});
+      if (!perfBox) {
+        perfBox = document.createElement('div'); perfBox.id = 'perfBox'; perfBox.setAttribute('aria-hidden', 'true');
+        // over everything, never in the way of a finger; under the clock / notch and clear of the round corners
+        perfBox.style.cssText = 'position:fixed;z-index:9998;left:calc(env(safe-area-inset-left,0px) + 8px);top:calc(env(safe-area-inset-top,0px) + 96px);' +
+          'pointer-events:none;-webkit-user-select:none;user-select:none;white-space:pre;contain:content;' +
+          'padding:5px 8px;border-radius:8px;background:rgba(10,6,20,.66);color:#fff;font:600 11px/1.4 system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums;';
+        document.body.appendChild(perfBox);
+        root.addEventListener('resize', placePerfBox);
+      }
+      perfBox.hidden = false; perfBox.textContent = '재는 중…'; placePerfBox();
+    } else {
+      perf.stop(); if (perfBox) perfBox.hidden = true;
+    }
+  }
+  // just under the top bar (name, stage bar), so the stage bar and the gold stay in sight; that bar sits lower on a
+  // phone with a notch, so it is measured, not guessed
+  function placePerfBox() {
+    if (!perfBox) return;
+    var h = $('hud'), b = h ? h.getBoundingClientRect().bottom : 0;
+    var top = Math.round(b + 6) + 'px';
+    if (b > 0 && perfBox.style.top !== top) perfBox.style.top = top;
+    // a phone on its side shows the game in the middle with room on both sides: the box stays on the game
+    var a = $('app'), l = a ? a.getBoundingClientRect().left : 0, left = l > 0 ? Math.round(l + 8) + 'px' : 'calc(env(safe-area-inset-left,0px) + 8px)';
+    if (left !== perfLeft) { perfLeft = left; perfBox.style.left = left; }
+  }
+  try { if (perf && storage && storage.getItem('cw-perf') === '1') perfSwitch(true, false); } catch (e) { noteError(e); }
   var autoQ = 'high', fpsAcc = 0, fpsN = 0, fpsT = 0, stalls = 0, fpsAim = 60;
   // 발열 (2026-11-17): a phone that keeps up 60 a second never had its quality lowered, and got hot over a long run.
   // After HOT_AFTER seconds of the fight on screen, a phone at 'high' steps down to 'mid' once (fewer pixels, effects and
@@ -675,6 +743,7 @@
     requestAnimationFrame(frame);
     // fewer frames on purpose (절전 / menu open / no touch for a while): this refresh is skipped, nothing is computed
     if (!pace.shouldDraw(now)) return;
+    var t0 = ready && perf && perf.on() ? performance.now() : 0;   // 성능 표시: the time this frame's own code takes
     var aim = pace.target(now);
     if (aim > 60) aim = Math.max(60, Math.min(aim, pace.hz() || 60));   // 120 chosen on a 60 Hz screen is 60 a second
     var gap = now - last;
@@ -702,7 +771,16 @@
         if (fxLoad) { var lk = CW.fxLoadOff ? 1 : fxLoad.note(rdt, aim); if (lk !== fx.load()) fx.setLoad(lk); }
       } catch (e) { noteError(e); }
     }
+    if (t0 && sc.renderer) sc.renderer.info.reset();
     try { sc.render(); } catch (e) { noteError(e); }
+    if (t0) {
+      try {
+        var t1 = performance.now(); perf.frame(gap, t1 - t0, aim);
+        // the box's words change twice a second, not every frame (writing the page each frame costs on its own)
+        // the top bar grows at times (a boss bar, a small phone), so the box is put under it again each time (read first, then write)
+        if (perfBox && t1 - perfBoxAt > 500) { perfBoxAt = t1; placePerfBox(); perfBox.textContent = perf.hudText(); }
+      } catch (e) { noteError(e); }
+    }
   }
 
   // ---------- leaving and coming back ----------

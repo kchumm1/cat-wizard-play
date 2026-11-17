@@ -1165,9 +1165,9 @@
         (!CW.FRIEND && root.__cwFit && document.documentElement.classList.contains('under') ? '<div class="row"><div class="info"><div class="name">하단 메뉴 위치</div><div class="desc">메뉴가 잘리면 ‘안쪽’을 선택해 주세요.</div></div><button class="btn" data-set="bottomFit">' + (bottomInside() ? '안쪽' : '맨 아래') + '</button></div>' : '') +
         (CW.FRIEND ? '' : '<div class="row"><div class="info"><div class="name">다른 기기로 진행 옮기기</div><div class="desc">저장 코드를 복사한 뒤, 다른 기기의 ‘진행 불러오기’에 붙여 넣으세요.</div></div><div class="sbtns"><button class="btn" data-act="savecopy">저장 코드 복사</button><button class="btn" data-act="savepaste">진행 불러오기</button></div></div>') +
         (G.storageOk() ? '' : '<p class="note">이 브라우저에서는 진행을 저장할 수 없어요.<br>창을 닫으면 진행이 사라져요.</p>') + '</div>' +
-        (CW.FRIEND ? '' : '<details class="fold"><summary>문제 확인용</summary><div class="list">' +
+        (CW.FRIEND ? '' : '<details class="fold"' + (foldOpen ? ' open' : '') + '><summary>문제 확인용</summary><div class="list">' +
         '<div class="row"><div class="info"><div class="name">게임 버전</div><div class="desc">새 버전은 앱을 다시 열 때 적용돼요.</div></div><b class="appver" id="appVer">' + appVersion() + '</b></div>' +
-        lastErrorRow() + hitchRow() +
+        lastErrorRow() + hitchRow() + perfRows() +
         '<div class="row"><div class="info"><div class="name">화면 높이</div><div class="desc" id="scrInfo">' + screenInfo() + '</div></div></div>' +
         '<div class="row"><div class="info"><div class="name">진행 초기화</div><div class="desc">모든 진행 데이터가 삭제돼요.</div></div><button class="btn" data-set="reset">처음부터 시작</button></div>' +
         '</div></details>');
@@ -1179,6 +1179,9 @@
       return jump + parts[moreSub][1];
     }
     function bottomInside() { try { return localStorage.getItem('cw-bottom') === 'inside'; } catch (e) { return false; } }
+    // 문제 확인용 stays open while the page is made again (2026-11-17): its lines change on their own (화면 지연, 성능 기록
+    // every 10 s), and each time the panel was rebuilt it folded shut under the finger
+    var foldOpen = false;
     // the last error the game kept going through (main.js noteError), only when there was one: to find what broke
     function lastErrorRow() {
       var r = null; try { r = JSON.parse(localStorage.getItem('cw-lasterr') || 'null'); } catch (e) {}
@@ -1200,6 +1203,39 @@
       var d = new Date(r.t), p2 = function (v) { return (v < 10 ? '0' : '') + v; };
       return '<div class="row"><div class="info"><div class="name">전투 화면 끊김</div><div class="desc">' + r.n + '회 · 마지막 ' + (d.getMonth() + 1) + '/' + d.getDate() + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes()) +
         ' · ' + (r.back ? '다시 그려짐' : r.reload && r.reload >= r.t ? '새로 불러옴' : '돌아오지 않음') + ' (폰이 그래픽 부담으로 전투 화면을 끊은 횟수예요. 멈춤이 또 있으면 이 줄을 캡처해 보내 주세요)</div></div></div>';
+    }
+    // 성능 표시 (2026-11-17, main.js · js/perfmon.js): a small box of live numbers over the game, and a row every 10 s kept
+    // on this phone. The record reads as one line a minute and is copied to send back (실제 폰에서 발열·렉 재기).
+    function perfRows() {
+      if (!G.perfLog) return '';
+      var on = G.perfOn(), L = G.perfLog(), rows = L && L.rows || [];
+      var out = '<div class="row"><div class="info"><div class="name">성능 표시</div><div class="desc">게임 위에 1초에 그린 화면 수·화질·멈칫을 작게 보여 주고, 10초마다 이 폰에 기록해요. 20분쯤 플레이한 뒤 기록을 복사해 보내 주세요.</div></div>' +
+        '<div class="sbtns"><button class="btn' + (on ? ' on' : '') + '" data-set="perfOn">켜기</button><button class="btn' + (on ? '' : ' on') + '" data-set="perfOff">끄기</button></div></div>';
+      if (!rows.length) return out;
+      var f = 0, dd = 0, h = 0; rows.forEach(function (r) { f += r.f; dd += r.d; h += r.h; });
+      var d = new Date(L.start), p2 = function (v) { return (v < 10 ? '0' : '') + v; };
+      return out + '<div class="row"><div class="info"><div class="name">성능 기록</div><div class="desc">' + (d.getMonth() + 1) + '/' + d.getDate() + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes()) +
+        '부터 ' + Math.floor(rows[rows.length - 1].t / 60) + '분 · 평균 ' + Math.round(dd ? f / dd : 0) + '장 · 멈칫 ' + h + '회</div></div>' +
+        '<div class="sbtns"><button class="btn" data-act="perfview">보기</button><button class="btn" data-act="perfcopy">복사</button></div></div>';
+    }
+    // one line a minute; a minute that ran under 80% of its aim or stood still is marked
+    function showPerf() {
+      var pm = G.perfMinutes(); if (!pm.length) { toast('아직 기록이 없어요. 10초 뒤에 다시 봐 주세요.'); return; }
+      var QN = { high: '높음', mid: '보통', low: '낮음' }, hasB = pm.some(function (o) { return o.b !== undefined; });
+      var th = '<tr><th>분</th><th>장</th><th>최장</th><th>계산</th><th>화질</th><th>효과</th><th>멈칫</th>' + (hasB ? '<th>배터리</th>' : '') + '</tr>';
+      var tb = pm.map(function (o) {
+        var bad = o.fps < (o.a || 60) * 0.8 || o.h > 0;
+        return '<tr' + (bad ? ' class="bad"' : '') + '><td>' + o.m + '</td><td>' + Math.round(o.fps) + '/' + (o.a || 60) + '</td><td>' + Math.round(o.w) + '</td><td>' + o.c.toFixed(1) + '</td><td>' +
+          (QN[o.q] || '-') + (o.pr ? '×' + (Math.round(o.pr * 100) / 100) : '') + '</td><td>' + Math.round((o.k === undefined ? 1 : o.k) * 100) + '%</td><td>' + o.h + '</td>' +
+          (hasB ? '<td>' + (o.b === undefined ? '-' : o.b + '%' + (o.ch ? '⚡' : '')) + '</td>' : '') + '</tr>';
+      }).join('');
+      modal('<h2>성능 기록</h2><p class="guide-lead">한 줄이 1분이에요. 장 = 1초에 그린 화면 수, 최장·계산은 ms(1000분의 1초). 빨간 줄은 느려졌거나 멈칫한 분이에요.</p><div class="perftab"><table>' + th + tb + '</table></div>',
+        [{ label: '닫기' }, { label: '복사', pri: true, fn: copyPerf }], { variant: 'guide', close: true });
+    }
+    function copyPerf() {
+      var t = G.perfText ? G.perfText() : ''; if (!t) { toast('아직 기록이 없어요.'); return; }
+      var show = function () { modal('<h2>성능 기록</h2><p class="guide-lead">글 전체를 복사해 보내 주세요.</p><textarea class="codebox" readonly>' + esc(t) + '</textarea>', [{ label: '확인', pri: true }], { variant: 'guide' }); var ta = $('modalCard').querySelector('textarea'); ta.focus(); ta.select(); };
+      try { navigator.clipboard.writeText(t).then(function () { toast('성능 기록을 복사했어요. 그대로 붙여 넣어 보내 주세요.'); }, show); } catch (err) { show(); }
     }
     // the heights this phone reports (to find out why the bottom is cut on some iPhones): what is visible, the page,
     // the whole screen, the safe gaps at the top and bottom, and how tall the game really is
@@ -1693,6 +1729,8 @@
         var show = function () { modal('<h2>저장 코드</h2><p class="guide-lead">코드 전체를 복사해 다른 기기에서 사용하세요.</p><textarea class="codebox" readonly>' + code + '</textarea>', [{ label: '확인', pri: true }], { variant: 'guide' }); var ta = $('modalCard').querySelector('textarea'); ta.focus(); ta.select(); };
         try { navigator.clipboard.writeText(code).then(done, show); } catch (err) { show(); }
       }
+      else if (d.act === 'perfview') showPerf();
+      else if (d.act === 'perfcopy') copyPerf();
       else if (d.act === 'nick') {
         modal('<h2>닉네임 변경</h2><p class="guide-lead">1~8글자로 입력해 주세요.</p><input class="nickin" type="text" maxlength="8" autocomplete="off" value="' + esc(G.nickName()) + '">',
           [{ label: '취소' }, { label: '변경하기', pri: true, fn: function () { var v = ($('modalCard').querySelector('.nickin').value || '').replace(/\s+/g, ' ').trim(); if (!v || v.length > 8) { toast('닉네임은 1~8글자로 입력해 주세요.'); return; } G.setNick(v); toast('닉네임을 변경했어요.'); renderPanel(true); hud(); } }], { variant: 'guide' });
@@ -1714,6 +1752,8 @@
         if (d.set === 'fpsCap') G.setSetting('fpsCap', { 50: 40, 40: 30, 30: 60 }[st.fpsCap || 60] || 50);
         if (d.set === 'fps60') G.setSetting('fpsCap', 60);
         if (d.set === 'fps120') G.setSetting('fpsCap', 120);
+        if (d.set === 'perfOn' && !G.perfOn()) { G.perfSet(true); toast('성능 표시를 켰어요. 지금부터 10초마다 기록해요.'); }
+        if (d.set === 'perfOff' && G.perfOn()) { G.perfSet(false); toast('성능 표시를 껐어요. 기록은 남아 있어요.'); }
         if ((d.set === 'aaOn' || d.set === 'aaOff') && CW.aaOn() !== (d.set === 'aaOn')) {   // the 3D picture is made again with the new choice: save, then open the game again
           try { localStorage.setItem('cw-aa', d.set === 'aaOn' ? 'on' : 'off'); } catch (e) {}
           G.setSetting('fpsCap', st.fpsCap || 60);
@@ -1725,6 +1765,7 @@
       }
     };
     panel.addEventListener('click', onClick); dock.addEventListener('click', onClick);
+    panel.addEventListener('toggle', function (e) { var t = e.target; if (t && t.classList && t.classList.contains('fold')) foldOpen = t.open; }, true);   // (toggle does not bubble)
     // 승인 시안 (2026-11-16): 훈련·장비의 하위 탭은 시트 맨 아래 막대에 (renderPanel이 그려진 탭 줄을 여기로 옮김)
     var opTabs = document.createElement('div'); opTabs.id = 'opTabs'; opTabs.hidden = true; $('sheet').appendChild(opTabs);
     opTabs.addEventListener('click', onClick); opTabs.addEventListener('pointerdown', onDown);
