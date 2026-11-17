@@ -1,7 +1,7 @@
 (function (root, f) { var m = f(root); if (typeof module !== 'undefined' && module.exports) module.exports = m; else { root.CW = root.CW || {}; Object.assign(root.CW, m); } })(this, function () {
   // How many pictures a second the game draws (2026-11-15, the phone got warm after a long run).
   // The picture itself is not touched (same quality, same effects); only how often it is drawn:
-  //  - the 절전 setting caps it (60 = off, 50, 40, 30);
+  //  - the setting caps it (120 = every refresh of a fast screen, 60 = the usual, 50, 40, 30);
   //  - while a menu sheet covers most of the battle, 30 (the strip above the sheet still moves);
   //  - after IDLE_MS without a touch, 30; the next touch brings it back at once.
   // The screen asks for a frame every refresh (60 or 120 a second); a frame is drawn when its turn has come. The turns
@@ -32,7 +32,10 @@
       SLACK = vs * 0.5;
       var t = target(now);
       if (t !== lastTarget) { lastTarget = t; next = now; }   // the rate changed: draw now and count from here
-      if (t >= 60) { next = now; return true; }
+      // 120 (설정): every refresh, whatever the screen. 60 on a 60 Hz screen: every refresh too. 60 on a 90/120 Hz screen
+      // used to be every refresh as well (the phone drew twice as much as asked and got hot, 2026-11-17): now it is held
+      // to 60 like the lower rates.
+      if (t > 60 || (t === 60 && vs > 1000 / 66)) { next = now; return true; }
       var iv = 1000 / t;
       if (now < next - SLACK) return false;
       next += iv;
@@ -40,7 +43,7 @@
       return true;
     }
     return {
-      setCap: function (fps) { cap = fps === 30 || fps === 40 || fps === 50 ? fps : 60; },
+      setCap: function (fps) { cap = fps === 30 || fps === 40 || fps === 50 || fps === 120 ? fps : 60; },
       setSheet: function (open) { sheet = !!open; },
       touch: function (now) { touchedAt = now; },
       target: target,

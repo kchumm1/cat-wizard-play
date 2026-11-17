@@ -1078,11 +1078,20 @@
         return '<div class="subh">' + sec[1] + '</div><div class="packs">' + DATA.packs.filter(function (p) { return p.cat === sec[0]; }).map(packRow).join('') + '</div>';
       }).join('');
       var st = s.settings;
-      var settings = '<h3>설정</h3><div class="list">' +
-        '<div class="row"><div class="info"><div class="name">닉네임</div><div class="desc">' + esc(G.nickName()) + '</div></div><button class="btn" data-act="nick">변경</button></div>' +
+      // 화면 성능 (2026-11-17, 발열): everything about how hard the screen works, in one group (화질, 화면 빈도, 절전, 안티앨리어싱)
+      var aaNow = !!(CW.aaOn && CW.aaOn());
+      var perf = '<div class="subh">화면 성능</div><div class="list">' +
         '<div class="row"><div class="info"><div class="name">화질</div><div class="desc">화면이 끊기면 화질을 낮춰 보세요.</div></div><button class="btn" data-set="quality">' + ({ auto: '자동', high: '높음', mid: '보통', low: '낮음' })[st.quality] + '</button></div>' +
+        // 60 is held to 60 even on a 120 Hz phone; 120 draws every refresh of a fast screen (warmer)
+        '<div class="row"><div class="info"><div class="name">화면 빈도</div><div class="desc">120은 더 부드럽지만 폰이 더 뜨거워져요.' + (G.screenHz && G.screenHz() ? '<br>지금 화면 ' + G.screenHz() + 'Hz' : '') + '</div></div>' +
+          '<div class="sbtns"><button class="btn' + ((st.fpsCap || 60) === 60 ? ' on' : '') + '" data-set="fps60">60</button><button class="btn' + ((st.fpsCap || 60) === 120 ? ' on' : '') + '" data-set="fps120">120</button></div></div>' +
         // 절전 (2026-11-15): the picture stays the same, only fewer pictures a second (js/framepace.js); 30 is the even one
-        '<div class="row"><div class="info"><div class="name">절전 모드</div><div class="desc">화질을 유지하며 화면 재생 빈도를 낮춰요.' + (G.screenHz && G.screenHz() ? '<br>현재 화면 ' + G.screenHz() + 'Hz · 설정 ' + (st.fpsCap || 60) + 'fps' : '') + '</div></div><button class="btn" data-set="fpsCap">' + ({ 60: '끄기', 50: '50장', 40: '40장', 30: '30장' })[st.fpsCap || 60] + '</button></div>' +
+        '<div class="row"><div class="info"><div class="name">절전 모드</div><div class="desc">화질을 유지하며 화면 재생 빈도를 낮춰요.</div></div><button class="btn" data-set="fpsCap">' + ({ 50: '50장', 40: '40장', 30: '30장' }[(st.fpsCap || 60)] || '끄기') + '</button></div>' +
+        '<div class="row"><div class="info"><div class="name">안티앨리어싱</div><div class="desc">테두리를 매끄럽게 해요. 끄면 폰이 덜 뜨거워져요.<br>바꾸면 게임을 다시 불러와요.</div></div>' +
+          '<div class="sbtns"><button class="btn' + (aaNow ? ' on' : '') + '" data-set="aaOn">켜기</button><button class="btn' + (aaNow ? '' : ' on') + '" data-set="aaOff">끄기</button></div></div>' +
+        '</div><div class="subh">게임</div>';
+      var settings = '<h3>설정</h3>' + perf + '<div class="list">' +
+        '<div class="row"><div class="info"><div class="name">닉네임</div><div class="desc">' + esc(G.nickName()) + '</div></div><button class="btn" data-act="nick">변경</button></div>' +
         '<div class="row"><div class="info"><div class="name">화면 표현</div><div class="desc">기본 3D 또는 픽셀 스타일</div></div><button class="btn" data-set="pixel">' + (st.pixel ? '픽셀 스타일' : '기본 3D') + '</button></div>' +
         '<div class="row"><div class="info"><div class="name">효과음</div></div><button class="btn" data-set="sound">' + (st.sound ? '켜짐' : '꺼짐') + '</button></div>' +
         dmgRow('dmgSize', '대미지 글씨 크기', '작게 하면 몬스터가 잘 보여요', st.dmgSize === undefined ? 60 : st.dmgSize, 30, 120) +
@@ -1586,7 +1595,14 @@
           try { if (bottomInside()) localStorage.removeItem('cw-bottom'); else localStorage.setItem('cw-bottom', 'inside'); } catch (e) {}
           if (root.__cwFit) root.__cwFit(); root.dispatchEvent(new Event('resize'));
         }
-        if (d.set === 'fpsCap') G.setSetting('fpsCap', { 60: 50, 50: 40, 40: 30, 30: 60 }[st.fpsCap || 60]);
+        if (d.set === 'fpsCap') G.setSetting('fpsCap', { 50: 40, 40: 30, 30: 60 }[st.fpsCap || 60] || 50);
+        if (d.set === 'fps60') G.setSetting('fpsCap', 60);
+        if (d.set === 'fps120') G.setSetting('fpsCap', 120);
+        if ((d.set === 'aaOn' || d.set === 'aaOff') && CW.aaOn() !== (d.set === 'aaOn')) {   // the 3D picture is made again with the new choice: save, then open the game again
+          try { localStorage.setItem('cw-aa', d.set === 'aaOn' ? 'on' : 'off'); } catch (e) {}
+          G.setSetting('fpsCap', st.fpsCap || 60);
+          setTimeout(function () { location.reload(); }, 60);
+        }
         if (d.set === 'quality') G.setSetting('quality', { auto: 'high', high: 'mid', mid: 'low', low: 'auto' }[st.quality]);
         if (d.set === 'reset') confirmBox('모든 진행을 삭제할까요?', '진행·장비·다이아가 모두 삭제되며 <strong>복구할 수 없어요.</strong>', '계속', function () { confirmBox('최종 확인', '진행을 완전히 삭제해요.', '모든 진행 삭제', G.reset, { variant: 'danger' }); }, { variant: 'danger' });
         renderPanel(true);

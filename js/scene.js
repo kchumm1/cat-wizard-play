@@ -82,9 +82,19 @@
   function spring(k, c) { return { x: 0, v: 0, target: 0, k: k, c: c }; }
   function stepSpring(s, dt) { var a = -s.k * (s.x - s.target) - s.c * s.v; s.v += a * dt; s.x += s.v * dt; }
 
+  // 안티앨리어싱 (설정, 2026-11-17): chosen when the 3D picture is made, so a change takes effect after the game is opened
+  // again. Not chosen: off on a phone with a sharp screen (2× and more, edges are fine without it there), on elsewhere.
+  CW.aaOn = function () {
+    var v = null; try { v = localStorage.getItem('cw-aa'); } catch (e) { /* storage blocked */ }
+    if (v === 'on') return true; if (v === 'off') return false;
+    return !(CW.PHONE && (window.devicePixelRatio || 1) >= 2);
+  };
   function createScene(canvas, overlay) {
     var GLOW = CW.GLOW = CW.GLOW || glowTexture();
-    var renderer = new T.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+    // 발열 (2026-11-17): a phone draws at most 1.5× its CSS size (see size()), and on a sharp screen (2× and more) the
+    // edges are already fine without smoothing, which costs the most at that size
+    var PHONE = !!CW.PHONE;
+    var renderer = new T.WebGLRenderer({ canvas: canvas, antialias: CW.aaOn(), alpha: true, powerPreference: PHONE ? 'default' : 'high-performance' });
     if (T.sRGBEncoding) renderer.outputEncoding = T.sRGBEncoding;
     var scene = new T.Scene();
     var camera = new T.PerspectiveCamera(38, 1, 0.5, 140);
@@ -190,7 +200,9 @@
 
     function size() {
       var w = canvas.clientWidth || 360, h = canvas.clientHeight || 420;
-      var pr = quality === 'high' ? Math.min(window.devicePixelRatio || 1, 2) : quality === 'mid' ? Math.min(window.devicePixelRatio || 1, 1.5) : 1;
+      var dpr = window.devicePixelRatio || 1;
+      var pr = PHONE ? (quality === 'high' ? Math.min(dpr, 1.5) : quality === 'mid' ? Math.min(dpr, 1.25) : 1)
+        : quality === 'high' ? Math.min(dpr, 2) : quality === 'mid' ? Math.min(dpr, 1.5) : 1;
       if (pixel) { renderer.setPixelRatio(1); renderer.setSize(Math.max(1, Math.round(w / 3)), Math.max(1, Math.round(h / 3)), false); canvas.style.imageRendering = 'pixelated'; }
       else { renderer.setPixelRatio(pr); renderer.setSize(w, h, false); canvas.style.imageRendering = 'auto'; }
       camera.aspect = w / h; vw = w; vh = h; cssW = canvas.clientWidth; cssH = canvas.clientHeight;

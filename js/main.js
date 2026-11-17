@@ -559,8 +559,13 @@
   // safety valve for skill spam (js/fxload.js): fewer small pieces while frames run late, never fewer skills
   var fxLoad = CW.createFxLoad ? CW.createFxLoad() : null;
   var autoQ = 'high', fpsAcc = 0, fpsN = 0, fpsT = 0, stalls = 0, fpsAim = 60;
+  // 발열 (2026-11-17): a phone that keeps up 60 a second never had its quality lowered, and got hot over a long run.
+  // After HOT_AFTER seconds of the fight on screen, a phone at 'high' steps down to 'mid' once (fewer pixels, effects and
+  // little ones) until the game is opened again.
+  var HOT_AFTER = 600, hotT = 0;
   function watchFps(rdt, aim) {
     if (state.settings.quality !== 'auto') return;
+    if (CW.PHONE && autoQ === 'high') { hotT += rdt; if (hotT >= HOT_AFTER) { autoQ = 'mid'; applySettings(); return; } }
     aim = aim || 60;
     if (aim !== fpsAim) { fpsAim = aim; fpsAcc = 0; fpsN = 0; fpsT = 0; stalls = 0; return; }
     fpsAcc += rdt; fpsN++; fpsT += rdt; if (rdt > Math.max(0.045, 1.4 / aim)) stalls++;
@@ -625,6 +630,7 @@
     // fewer frames on purpose (절전 / menu open / no touch for a while): this refresh is skipped, nothing is computed
     if (!pace.shouldDraw(now)) return;
     var aim = pace.target(now);
+    if (aim > 60) aim = Math.max(60, Math.min(aim, pace.hz() || 60));   // 120 chosen on a 60 Hz screen is 60 a second
     var gap = now - last;
     if (ready && gap > Math.max(100, 2500 / aim) && gap < 5000 && !document.hidden) noteHitch(gap);
     var steps = CW.frameSteps(gap / 1000, aim), rdt = 0; last = now;

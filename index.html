@@ -2316,6 +2316,13 @@ body{font-family:'Noto Sans KR',"Malgun Gothic","Apple SD Gothic Neo",system-ui,
 #slots .sk{padding:2px!important}
 #slots .sk>img.isk,#slots .sk>.ico{width:100%!important;height:100%!important;max-width:none!important;object-fit:contain;border-radius:15px}
 #slots .sk b{background:rgba(255,255,255,.5)!important;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);color:#2c2f48!important;box-shadow:0 0 0 1px rgba(255,255,255,.8)!important}
+/* 설정 '화면 성능'의 두 칸 버튼(60·120, 켜기·끄기): 고른 쪽을 금색으로 */
+#sheet.cream #panel .sbtns .btn.on:not(.buy){background:linear-gradient(180deg,#ffe98f,#ffc02e);color:#3a2400;text-shadow:none;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.75),0 3px 8px -4px rgba(10,5,40,.6)}
+/* 발열 (2026-11-17): 전투 화면 위 칸은 블러 없이. 뒤의 3D 화면이 매 프레임 바뀌어 블러를 초당 60번 다시 계산했다.
+   지역 칸은 원래 불투명이라 블러가 보이지도 않았고, 스킬 칸·숫자 배지는 색을 조금 진하게 해 비슷하게 보이게 한다. */
+.place,#placeBtn,.chip{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+#slots .sk,#slots .sk.empty{background:linear-gradient(180deg,rgba(255,255,255,.40),rgba(255,255,255,.20))!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+#slots .sk b{background:rgba(255,255,255,.78)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 </style>
 
 <!-- 업데이트 화면 (2026-11-15, the user's design art-src/update-20261115; js/update-screen.js): shown first, "모험 시작" goes into the game -->
