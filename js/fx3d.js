@@ -465,7 +465,10 @@
     wood: 'varying vec4 vX;void main(){' + WOOD_CUT + F +
       'vec3 N=normalize(vWN);float lam=max(dot(N,normalize(vec3(0.45,0.85,0.3))),0.0);' +
       'float band=lam>0.6?1.0:lam>0.25?0.8:0.62;vec3 c;' +
-      'if(kind<0.5){float g=fbm(vP*vec3(10.0,2.4,10.0)+vec3(vX.z));' +
+      // the world tree's face (2026-11-17, the user's 3D 시안): uv.x 0.3 its dark maw, a hot glow deep in it; 0.2 its cream fangs
+      'if(kind>0.25&&kind<0.5){c=mix(vec3(0.06,0.02,0.01),vec3(1.0,0.42,0.06),pow(f,3.0)*0.85);}' +
+      'else if(kind>0.15&&kind<0.5){c=mix(vec3(0.8,0.68,0.5),vec3(1.0,0.95,0.84),smoothstep(0.0,0.7,lam));}' +
+      'else if(kind<0.5){float g=fbm(vP*vec3(10.0,2.4,10.0)+vec3(vX.z));' +
       'float groove=smoothstep(0.4,0.5,g)*(1.0-smoothstep(0.5,0.6,g));' +
       'c=vIC*(0.82+0.36*g)*(1.0-0.35*groove)*band;' +
       // a warm rim so the wood stands out on dark ground (the galaxy, the castle)
@@ -475,7 +478,10 @@
       'else if(kind<1.5){c=mix(vec3(0.09,0.3,0.07),vec3(0.36,0.68,0.16),band);c=mix(c,vec3(0.8,0.88,0.32),smoothstep(0.65,1.0,y)*0.4);}' +
       'else if(kind<2.5){float g=fbm(vP*6.0+vec3(vX.z));c=vIC*band*(0.8+0.32*g);}' +
       // a thorn: the vine's colour at its foot, hard pale bone toward its point
-      'else if(kind<3.5){c=mix(vIC*0.6,vec3(0.94,0.86,0.6),smoothstep(0.25,0.9,y))*band;}' +
+      // (2026-11-17, the user's 3D 시안) 3.2 the flytrap's big cream fangs, 3.4 its khaki horns and the neck's cone thorns: soft light
+      'else if(kind<3.5){if(kind>3.3)c=mix(vec3(0.4,0.38,0.12),vec3(0.88,0.82,0.44),smoothstep(0.0,0.85,y))*mix(0.6,1.12,smoothstep(0.1,0.6,lam));' +
+      'else if(kind>3.1)c=mix(vec3(0.8,0.67,0.5),vec3(1.0,0.96,0.86),smoothstep(0.05,0.8,y))*mix(0.66,1.1,smoothstep(0.1,0.6,lam));' +
+      'else c=mix(vIC*0.6,vec3(0.94,0.86,0.6),smoothstep(0.25,0.9,y))*band;}' +
       // a blade leaf (uv.x 4 + 0.4 × out from the midrib): deep green in the copy's shade, its edge and point gilded
       // like a whetted blade, a gleam running along it as it turns
       'else if(kind<4.5){float e=clamp((kind-4.0)*2.5,0.0,1.0);c=mix(vIC*0.42,vIC*1.05,band);' +
@@ -492,7 +498,7 @@
       'float rib=max(smoothstep(0.07,0.0,v),max(smoothstep(0.04,0.0,abs(v-0.36)),smoothstep(0.04,0.0,abs(v-0.7))))*step(e,0.8);' +
       'float spot=step(0.7,fbm(vP*24.0+vec3(3.1,vX.z,1.7)))*step(e,0.6);' +
       'c=mix(vec3(0.3,0.58,0.13),vec3(0.62,0.08,0.1),spot)*sh;' +
-      'c=e>0.92?vec3(0.85,0.1,0.12)*sh:(e>0.7?vec3(0.95,0.7,0.15)*sh:c);c*=1.0-0.62*rib;}' +
+      'c=e>0.92?vec3(1.0,0.58,0.44)*mix(0.62,1.12,smoothstep(0.1,0.6,lam)):(e>0.7?vec3(0.95,0.7,0.15)*sh:c);c*=1.0-0.62*rib;}' +
       'gl_FragColor=vec4(c,vX.x);}',
     // its outline follows the same growth
     woodLine: 'varying vec4 vX;uniform vec3 uLine;void main(){' + WOOD_CUT + 'gl_FragColor=vec4(uLine,vX.x);}'
@@ -504,7 +510,7 @@
   // 0) or where there is no picture (vT.x -1: teeth, thorns) it is drawn as before.
   FS_BM.woodPaint = FS_BM.wood.replace('varying vec4 vX;void main(){', 'varying vec4 vX;varying vec2 vT;uniform sampler2D uMap;uniform float uPaint,uAnim;void main(){')
     .replace(/gl_FragColor=vec4\(c,vX\.x\);\}$/, 'if(uPaint>0.5&&vT.x>-0.5){float cell=floor(vT.x),lu=clamp((vT.x-cell-0.01)/0.98,0.0,1.0),lv=vT.y<=1.0?vT.y:fract(vT.y);' +
-      'vec2 at=vec2((mod(cell,3.0)+0.015+0.97*lu)/3.0,(1.0-floor(cell/3.0)+0.015+0.97*lv)*0.5);' +
+      'vec2 at=vec2((mod(cell,3.0)+0.015+0.97*lu)/3.0,(2.0-floor(cell/3.0)+0.015+0.97*lv)/3.0);' +
       'c=texture2D(uMap,at).rgb*(lam>0.42?1.0:0.72);' +
       // the world tree's pictures alive (uAnim 1, 2026-11-17, the user: 세계수 나무를 이렇게 — 3D wearing pictures that move):
       // 0 bark: a warm light rising up the dark grooves; 1 leaf mass: light rippling over it; 2 fruit: a heartbeat glow
@@ -512,7 +518,9 @@
       'if(uAnim>0.5){vec3 pc=texture2D(uMap,at).rgb;float pl=max(dot(pc,vec3(0.3,0.59,0.11)),0.02),q=pl<0.22?0.16:pl<0.5?0.42:0.74;' +
       // cel look (2026-11-17, the user: 더 또렷하게): the picture's light flattened into three tones, and the light on the
       // shape cut hard into two
-      'c=mix(pc,pc*(q/pl),0.75)*(lam>0.32?1.08:0.58);float lum=dot(c,vec3(0.3,0.59,0.11)),ph=vX.z*3.0;' +
+      // (2026-11-17 3D-sculpt pictures, the user's GPT 시안: soft and glossy, so the tones are only nudged and the light
+      // on the shape rolls off softly instead of cutting)
+      'c=mix(pc,pc*(q/pl),0.2)*mix(0.6,1.08,smoothstep(0.16,0.5,lam));float lum=dot(c,vec3(0.3,0.59,0.11)),ph=vX.z*3.0;' +
       // the flytrap (uAnim 2, 2026-11-17, the user: 덩굴 대신 넣었던 스킬도 똑같이): 0 the mouth's flesh throbbing, a wet shine
       // sliding over it; 1 the jaw's skin, its veins glowing red in time; 2 the neck, a swallow of light running up it;
       // 3 petals shimmering; 4 leaf: light up the veins
@@ -521,11 +529,11 @@
       'else if(cell<1.5){float vn=smoothstep(0.3,0.12,lum),th=pow(0.5+0.5*sin(uTime*5.0+ph),3.0);c+=vec3(1.0,0.2,0.15)*vn*th*0.8;}' +
       'else if(cell<2.5){float sw=pow(0.5+0.5*sin(lv*6.0-uTime*4.0+ph),6.0);c+=vec3(0.85,1.0,0.4)*sw*0.55;}' +
       'else if(cell<3.5){float sh=smoothstep(0.85,1.0,0.5+0.5*sin(lv*8.0+lu*3.0-uTime*3.0+ph));c+=vec3(1.0,0.8,0.9)*sh*0.45;}' +
-      'else{float vein=max(smoothstep(0.035,0.0,abs(lu-0.5)),smoothstep(0.62,0.82,lum)),run=pow(0.5+0.5*sin(lv*11.0-uTime*4.5+ph),4.0);c+=vec3(1.0,0.95,0.55)*vein*run*0.9;}}' +
+      'else if(cell<4.5){float vein=max(smoothstep(0.035,0.0,abs(lu-0.5)),smoothstep(0.62,0.82,lum)),run=pow(0.5+0.5*sin(lv*11.0-uTime*4.5+ph),4.0);c+=vec3(1.0,0.95,0.55)*vein*run*0.9;}}' +
       'else if(cell<0.5){float gr=smoothstep(0.22,0.08,lum),up=pow(0.5+0.5*sin(lv*9.0-uTime*3.2+ph),3.0);c+=vec3(1.0,0.72,0.28)*gr*up*1.3;}' +
-      'else if(cell<1.5){float rip=smoothstep(0.82,1.0,0.5+0.5*sin(lv*7.0+lu*4.0-uTime*2.6+ph));c+=vec3(0.75,1.0,0.45)*rip*smoothstep(0.2,0.55,lum)*0.8;}' +
+      'else if(cell<1.5){float eye=smoothstep(0.55,0.85,pc.r-pc.b)*smoothstep(0.6,0.9,lv);c+=vec3(1.0,0.6,0.1)*eye*(0.35+0.35*sin(uTime*5.0+ph));}' +
       'else if(cell<2.5){float beat=pow(0.5+0.5*sin(uTime*(6.0+8.0*clamp(vX.y,0.0,1.0))+ph),6.0);c=c*(1.0+0.45*beat)+vec3(1.0,0.7,0.25)*beat*0.22;}' +
-      'else{float vein=max(smoothstep(0.035,0.0,abs(lu-0.5)),smoothstep(0.62,0.82,lum)),run=pow(0.5+0.5*sin(lv*11.0-uTime*4.5+ph),4.0);c+=vec3(1.0,0.95,0.55)*vein*run*1.15;}}' +
+      'else if(cell<3.5){float vein=max(smoothstep(0.035,0.0,abs(lu-0.5)),smoothstep(0.62,0.82,lum)),run=pow(0.5+0.5*sin(lv*11.0-uTime*4.5+ph),4.0);c+=vec3(1.0,0.95,0.55)*vein*run*0.3;}}' +
       '}gl_FragColor=vec4(c,vX.x);}');
   var VS_BMT = VS.replace('void main(){', 'attribute vec4 iX;attribute vec2 uvT;varying vec4 vX;varying vec2 vT;void main(){vX=iX;vT=uvT;');
   // ---------- the 11th-tier water (js/mesh-water.js, tools/blender/water_meshes.py, 2026-11-17) ----------
@@ -1772,10 +1780,11 @@
       woodMound: { fs: 'wood', lineFs: 'woodLine', cap: 240, line: 0x2a1a0e, lineW: 0.01, order: 6.55 },
       trapStem: { fs: 'woodPaint', map: 'trap-skin', lineFs: 'woodLine', cap: 16, line: 0x0a1006, lineW: 0.045, order: 6.6 },
       trapJaw: { fs: 'woodPaint', map: 'trap-skin', lineFs: 'woodLine', cap: 32, line: 0x120304, lineW: 0.042, order: 6.64 },
+      trapTongue: { fs: 'woodPaint', map: 'trap-skin', lineFs: 'woodLine', cap: 16, line: 0x3a0610, lineW: 0.03, order: 6.65 },
       trapPetal: { fs: 'woodPaint', map: 'trap-skin', lineFs: 'woodLine', cap: 96, line: 0x20040c, lineW: 0.03, order: 6.6 },
       // the world tree (세계수 열매 폭탄), painted (art/tree-skin.webp)
       treeTrunk: { fs: 'woodPaint', map: 'tree-skin', lineFs: 'woodLine', cap: 4, line: 0x120804, lineW: 0.055, order: 6.58 },
-      treeClump: { fs: 'woodPaint', map: 'tree-skin', lineFs: 'woodLine', cap: 96, line: 0x061404, lineW: 0.02, order: 6.6 },   // (a spray of leaves: a fine line)
+      treeClump: { fs: 'woodPaint', map: 'tree-skin', cap: 96, line: null, order: 6.6 },   // (no outline: round every leaf it fizzed — 2026-11-17)
       treeFruit: { fs: 'woodPaint', map: 'tree-skin', lineFs: 'woodLine', cap: 48, line: 0x2a1002, lineW: 0.035, order: 6.64 },
       woodLeaf: { fs: 'wood', lineFs: 'woodLine', cap: 320, line: 0x10240a, lineW: 0.006, order: 6.6 },
       leafBlade: { fs: 'wood', lineFs: 'woodLine', cap: 700, line: 0x0c2208, lineW: 0.005, order: 6.62 },
