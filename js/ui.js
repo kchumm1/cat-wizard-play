@@ -303,12 +303,18 @@
         return '<button role="tab" aria-selected="' + (gearSub === t[0]) + '" data-gsub="' + t[0] + '">' + t[1] + '</button>';
       }).join('') + '</div>';
     }
+    // 다이아 소환 버튼 한 칸 (유물·신성력·각성 공용): 가운데에 「N회」, 아래 다이아 값. 모자라면 값만 빨갛게(.off)
+    function summonBtn(n, cost, attr, big) {
+      return '<button class="rsb' + (big ? ' big' : '') + (G.state.gems < cost ? ' off' : '') + '" ' + attr + '="' + n + '"><span class="rsb-n"><b>' + n + '</b>회</span><span class="rsb-c"><i class="gem"></i>' + fmt(cost) + '</span></button>';
+    }
     var selRelic = null;   // 유물 전시대에 보일 것 (보기만, 저장 안 함)
     function relicPanel() {
       var s = G.state, own = s.relics || {}, have = DATA.relics.filter(function (r) { return own[r.id]; }).length;
-      var pulls = '<div class="pulls relicpulls">' + [5, 10, 100].map(function (n) {
-        return '<button class="pull' + (n === 100 ? ' big' : '') + '" data-relic="' + n + '"><b>' + n + '회 소환</b><span><i class="gem"></i>' + fmt(CW.relicCost(n)) + '</span></button>';
-      }).join('') + '</div>';
+      // 소환 카드 (2026-11-17, 사용자: 뽑기 부분 깔끔하게 · 줄맞춤 칸맞춤): 제목줄 · 같은 크기 버튼 3칸 · 안내 2줄
+      var RS = DATA.relicSummon;
+      var pulls = '<div class="opcard rsum"><div class="opcard-h"><b>유물 소환</b><span class="rsum-rate">신유물 <em>' + pct(RS.divineRate) + '</em></span></div><div class="rsum-btns">' + [5, 10, 100].map(function (n) {
+        return summonBtn(n, CW.relicCost(n), 'data-relic', n === 100);
+      }).join('') + '</div><dl class="rsum-f"><dt>중복 획득</dt><dd>레벨 +1 · 보유 효과 증가</dd><dt>최대 레벨 중복</dt><dd>다이아 ' + fmt(RS.refund) + '개로 전환</dd></dl></div>';
       // 오팔 (2026-11-16): 고른 유물을 전시대에, 전체는 4열 소켓. 장착 없음 — 가진 유물 모두의 레벨 효과가 합쳐진다.
       // 성장은 중복 획득뿐 (골드 강화·합성 없음). 신유물(금빛 테두리)과 삼신기는 다른 분류.
       var sorted = DATA.relics.slice().sort(function (a, b) { return (b.divine ? 1 : 0) - (a.divine ? 1 : 0); });
@@ -316,14 +322,12 @@
       var sr = CW.relicById(selRelic), slv = own[sr.id] || 0, smax = CW.relicMax(sr);
       var show = '<div class="rlstage' + (sr.divine ? ' divine' : '') + (slv ? '' : ' none') + '">' + (CW.opalUI ? CW.opalUI.stage(mi('relic', sr), { cls: 'rstage', seed: 2 }) : '<div class="rl-fig">' + mi('relic', sr) + '<i></i></div>') + '<div class="rl-info">' +
         (sr.divine ? '<em class="cb own">신유물</em>' : '') + (slv ? '' : '<em class="cb none">미보유</em>') + '<b>' + sr.name + '</b><span class="rl-lv">Lv.<span data-opv="rl:' + sr.id + '">' + slv + '</span> / ' + smax + '</span>' +
-        '<span class="rl-eff">' + (slv ? bonusText(sr.stat, slv * sr.per) + (slv < smax ? ' <em>→</em> +' + pct((slv + 1) * sr.per) : ' · 최대') : (STAT_KO[sr.stat] || sr.stat) + ' · 레벨당 +' + pct(sr.per)) + '</span></div></div>' +
-        '<div class="opflow"><span>중복 획득</span><i>→</i><span>레벨 +1</span><i>→</i><span>보유 효과 증가</span></div>';
+        '<span class="rl-eff">' + (slv ? bonusText(sr.stat, slv * sr.per) + (slv < smax ? ' <em>→</em> +' + pct((slv + 1) * sr.per) : ' · 최대') : (STAT_KO[sr.stat] || sr.stat) + ' · 레벨당 +' + pct(sr.per)) + '</span></div></div>';
       var grid = sorted.map(function (r) {
         var lv = own[r.id] || 0;
         return '<button class="rlsock' + (r.divine ? ' divine' : '') + (lv ? '' : ' none') + (r.id === selRelic ? ' sel' : '') + '" data-rlsel="' + r.id + '" aria-label="' + esc(r.name) + (lv ? ' Lv.' + lv : ' 미보유') + '">' + mi('relic', r) + '<b>' + (lv ? 'Lv.' + lv : '—') + '</b></button>';
       }).join('');
-      return '<h3 class="opsubh">유물 수집 <b>' + have + ' / ' + DATA.relics.length + '</b></h3>' + show + pulls +
-        guideRow('relic', '신유물 확률 ' + pct(DATA.relicSummon.divineRate) + ' · 최대 레벨 중복은 다이아로 전환') + '<div class="rlgrid">' + grid + '</div>';
+      return '<h3 class="opsubh">유물 수집 <b>' + have + ' / ' + DATA.relics.length + '</b></h3>' + show + pulls + '<div class="rlgrid">' + grid + '</div>';
     }
     var cosPrev = null;   // 코스튬 미리보기 (저장 안 함, 착용과 별개)
     function costumePanel() {
@@ -355,7 +359,15 @@
         '<div class="cs-act">' + pact + '</div></div>';
       // 승인 시안 순서: 전시 → 이름 → 효과 → 입기·강화 → 의상 목록 (수집 효과는 목록 아래)
       return '<h3 class="ophide">코스튬</h3>' + stage + '<div class="cgrid">' + cards + '</div>' +
-        '<div class="codexbar"><span>코스튬 수집 (' + nOwn + '/' + DATA.costumes.length + ')</span><b>모든 피해 +' + pct(Math.max(0, nOwn - 1) * CC.collect) + '</b></div>';
+        // 수집 카드 (2026-11-17, 사용자: 코스튬 수집 부분 이쁘게): 제목·개수 → 진행 막대 → 지금 효과 | 다음 하나 더
+        (function () {
+          var nAll = DATA.costumes.length, done = nOwn >= nAll;
+          return '<div class="opcard ccol"><div class="opcard-h"><b>코스튬 수집</b><span class="ccol-n"><b>' + nOwn + '</b> / ' + nAll + '</span></div>' +
+            '<i class="ccol-bar"><em style="width:' + (100 * nOwn / nAll).toFixed(1) + '%"></em></i>' +
+            '<div class="ccol-cells"><p><small>지금 효과</small><b>모든 피해 +' + pct(Math.max(0, nOwn - 1) * CC.collect) + '</b></p>' +
+            '<p class="' + (done ? 'max' : 'nx') + '"><small>' + (done ? '모두 모음' : '하나 더 모으면') + '</small><b>' + (done ? '최대' : '모든 피해 +' + pct(nOwn * CC.collect)) + '</b></p></div>' +
+            '<p class="opcard-f">두 번째 코스튬부터 하나 모을 때마다 모든 피해 +' + pct(CC.collect) + '</p></div>';
+        })();
     }
     var selDivine = null;   // 삼신기 설명·강화 대상 (보기만)
     function divinePanel() {
@@ -504,10 +516,13 @@
         : CW.sigilPool(s, true).map(function (d) { return [d.stat, STAT_KO[d.stat] || d.stat, '']; });
       var craft = kinds.map(function (k) { return '<button class="btn' + (sh < A.craftCost ? ' off' : '') + '" ' + (rune ? 'data-rcraft' : 'data-sgcraft') + '="' + k[0] + '"' + (k[2] ? ' style="color:' + k[2] + '"' : '') + '>' + k[1] + '</button>'; }).join('');
       var sumAttr = rune ? 'data-rasum' : 'data-sgasum', cost = rune ? DATA.runeConf.summon : DATA.sigilConf.summon;
-      return '<div class="potbox awbox"><small>각성 슬롯 · 오메가 이상 ' + (rune ? '룬' : '신성력') + ' 전용</small><div class="rsgrid aw">' + cells + '</div>' +
-        '<div class="pulls sgpulls">' + [5, 10].map(function (m) { return '<button class="pull' + (s.gems < cost[m] ? ' off' : '') + '" ' + sumAttr + '="' + m + '"><b>각성 ' + m + '회 소환</b><span><i class="gem"></i>' + cost[m] + '</span></button>'; }).join('') + '</div>' +
-        '<p class="awshard">✧ 각성 파편 <b>' + fmt(sh) + '</b> · 제작 1개 ' + A.craftCost + '개 (' + hn(A.craftGrade) + ' 등급)</p><div class="btns awcraft">' + craft + '</div>' +
-        '<p class="note">' + hn(A.from) + ' 등급 이상 룬·신성력을 분해하면 각성 파편을 얻어요. 기존 슬롯과 따로 쓰여요.</p></div>';
+      // 각성 카드 (2026-11-17, 사용자: 각성 파편 부분 보기좋게): 슬롯 → 각성 소환 2칸 → 파편 상자(보유·제작 값) → 제작 버튼 칸 → 안내
+      var full = sh >= A.craftCost;
+      return '<div class="opcard awcard"><div class="opcard-h"><b>각성 슬롯</b><span class="aw-tag">오메가 이상 ' + (rune ? '룬' : '신성력') + ' 전용</span></div><div class="rsgrid aw">' + cells + '</div>' +
+        '<p class="aw-sub">각성 소환</p><div class="rsum-btns n2">' + [5, 10].map(function (m) { return summonBtn(m, cost[m], sumAttr, m === 10); }).join('') + '</div>' +
+        '<p class="aw-sub">각성 제작</p><div class="aw-shard"><span class="aw-have"><small><i>✧</i>보유 각성 파편</small><b class="' + (full ? '' : 'low') + '">' + fmt(sh) + '개</b></span><span class="aw-cost"><small>1회 제작 · ' + hn(A.craftGrade) + ' 등급</small><b>' + fmt(A.craftCost) + '개</b></span></div>' +
+        '<div class="aw-craft">' + craft + '</div>' +
+        '<p class="opcard-f">' + hn(A.from) + ' 등급 이상 룬·신성력을 분해하면 각성 파편을 얻어요<br>각성 슬롯은 기존 슬롯과 따로 쓰여요</p></div>';
     }
     var runeResSeen = null, rnBag = false;   // rnBag: 룬 보관함 보기 (본문의 「보관함」 ↔ 「‹ 룬」, 사용자 2026-11-17 「보관함도 만들고」)
     // 고른 룬 상세 머리 (시안: 왼쪽 선택 칸 안 유리 돔 + 룬 + Lv 알약 (+ 공명 기준 리본), 오른쪽 이름·실제 효과) — 본문·보관함 아래 칸이 같이 씀
@@ -520,8 +535,9 @@
     // 강화 (최대 레벨이면 승급) · 장착/해제/교체 · 잠금 버튼
     function runeUpBtn(s, it, open) {
       var cap = CW.runeCap(it), cost = CW.runeCost(it.lv), top = it.grade >= DATA.hiGrades.length - 1, full = it.lv >= cap, gcost = CW.runeGradeCost(it.grade);
-      return full && !top ? '<button class="buy gemb rdup' + (!open || (s.runeStone || 0) < gcost ? ' off' : '') + '" data-rgrade="' + it.id + '"><small>' + hn(it.grade + 1) + ' 승급</small><span>' + CW.ICO.cur('rune') + ' ' + fmt(gcost) + '</span></button>'
-        : '<button class="buy rdup' + (!open || full || (s.runeStone || 0) < cost ? ' off' : '') + '" data-rune="' + it.id + '">' + (full ? '최대 레벨' : '<i class="rsp w"></i><span class="t">강화</span><span>' + CW.ICO.cur('rune') + ' ' + fmt(cost) + '</span>') + '</button>';
+      // 2026-11-17 사용자: 승급·강화 글자를 칸에 딱 맞게 → 위 「이름」 / 아래 「룬석 값」 두 줄 가운데 (.two)
+      return full && !top ? '<button class="buy gemb rdup two' + (!open || (s.runeStone || 0) < gcost ? ' off' : '') + '" data-rgrade="' + it.id + '"><span class="t">' + hn(it.grade + 1) + ' 승급</span><span class="c">' + CW.ICO.cur('rune') + fmt(gcost) + '</span></button>'
+        : '<button class="buy rdup two' + (!open || full || (s.runeStone || 0) < cost ? ' off' : '') + '" data-rune="' + it.id + '">' + (full ? '<span class="t">최대 레벨</span>' : '<span class="t">강화</span><span class="c">' + CW.ICO.cur('rune') + fmt(cost) + '</span>') + '</button>';
     }
     function runeEqBtn(s, it) {
       var worn = CW.runeIsWorn(s, it.id), rc = CW.runeCompare(s, it.id), swapTo = !worn && rc && rc.full && rc.target;
@@ -572,8 +588,9 @@
       var line = wornR.concat(strong.filter(function (x) { return !CW.runeIsWorn(s, x.id); })).map(function (x) { return runeCell(s, x, curId); }).join('');
       var strip = line ? '<div class="rsstrip">' + line + '</div>' : '<p class="rsempty">아직 보유한 룬이 없어요</p>';
       // 룬 소환 (사용자 「룬뽑기 깔끔하게」): 상자 하나 — 제목 + 계열(전체·확률·피해) + 5회·10회
-      var pulls = '<div class="rssum"><div class="rssh"><b><i class="rsp"></i>룬 소환</b><div class="rsseg" role="tablist" aria-label="소환 계열">' + [['all', '전체'], ['rate', '확률'], ['dmg', '피해']].map(function (g) { return '<button role="tab" aria-selected="' + (rnGroup === g[0]) + '" data-rgrp="' + g[0] + '">' + g[1] + '</button>'; }).join('') + '</div></div>' +
-        '<div class="rspulls">' + [5, 10].map(function (m) { return '<button class="rspull' + (m === 10 ? ' pri' : '') + (!open || s.gems < RC.summon[m] ? ' off' : '') + '" data-rsum="' + m + '"><b>' + m + '회 소환</b><span><i class="gem"></i>' + fmt(RC.summon[m]) + '</span></button>'; }).join('') + '</div></div>';
+      // 소환 카드 (2026-11-17, 사용자: 룬도 소환하는 부분 이쁘게) — 유물·신성력과 같은 .opcard, 오른쪽 위에 계열 고르기
+      var pulls = '<div class="opcard rsum rnsum"><div class="opcard-h"><b>룬 소환</b><div class="rsseg" role="tablist" aria-label="소환 계열">' + [['all', '전체'], ['rate', '확률'], ['dmg', '피해']].map(function (g) { return '<button role="tab" aria-selected="' + (rnGroup === g[0]) + '" data-rgrp="' + g[0] + '">' + g[1] + '</button>'; }).join('') + '</div></div>' +
+        '<div class="rsum-btns n2">' + [5, 10].map(function (m) { return summonBtn(m, RC.summon[m], 'data-rsum', m === 10).replace('class="rsb', 'class="rsb' + (open ? '' : ' lock')); }).join('') + '</div></div>';
       return stage + eff + nx + det + strip + pulls + awakenBox('rune');
     }
     // 룬 보관함: 위에 「‹ 룬」 돌아가기·보유 수, 추천 장착·일괄 분해, 종류 탭, 전체 칸. 고르면 아래 고정 칸에 상세(강화·장착·잠금·분해·합성)
@@ -588,7 +605,7 @@
           (top ? '' : '<span class="note">합성 · 같은 종류·등급 3개 → ' + hn(it.grade + 1) + '</span>') + '</div>';
       }
       var have = {}; bag.items.forEach(function (x) { have[x.kind] = 1; });
-      var filt = '<div class="kindtabs">' + ['all'].concat(DATA.runes.filter(function (x) { return have[x.id] || rnFilter === x.id; }).map(function (x) { return x.id; })).map(function (kid) { var kk = CW.runeById(kid); return '<button role="tab" aria-selected="' + (rnFilter === kid) + '" data-rkf="' + kid + '"' + (kk ? ' style="color:' + kk.color + '"' : '') + '>' + (kk ? kk.name.replace(' 룬', '').replace('의', '') : '전체') + '</button>'; }).join('') + '</div>';
+      var filt = '<div class="kindtabs">' + ['all'].concat(DATA.runes.filter(function (x) { return have[x.id] || rnFilter === x.id; }).map(function (x) { return x.id; })).map(function (kid) { var kk = CW.runeById(kid); return '<button role="tab" aria-selected="' + (rnFilter === kid) + '" data-rkf="' + kid + '">' + (kk ? '<em class="kdot" style="--kc:' + kk.color + '"></em>' : '') + (kk ? kk.name.replace(' 룬', '').replace('의', '') : '전체') + '</button>'; }).join('') + '</div>';
       var inv = bag.items.filter(function (x) { return rnFilter === 'all' || x.kind === rnFilter; }).sort(function (a, c) { return CW.runePower(c) - CW.runePower(a); }).map(function (x) { return runeCell(s, x); }).join('');
       return '<div class="rsbh"><button class="rsback" data-act="rbagx" aria-label="룬 화면으로">‹ 룬</button><b>룬 보관함</b><span><b>' + bag.items.length + '</b> / ' + RC.cap + '</span></div>' +
         '<div class="rsacts"><button class="btn" data-act="rbest">추천 장착</button><button class="btn" data-act="rdisall">일괄 분해<small>잠금·장착 제외</small></button></div>' +
@@ -634,7 +651,7 @@
     function sigilFuseOk(s, sel) { var same = s.sigil.items.filter(function (x) { return x !== sel && x.grade === sel.grade && !x.lock && !CW.isEquipped(s, x.id); }).length; return { same: same, ok: same >= 2 && sel.grade < DATA.hiGrades.length - 1 && !sel.lock && !CW.isEquipped(s, sel.id) }; }
     function sigilUpBtn(s) {
       var C = DATA.sigilConf, b = s.sigil, lvCost = CW.sigilLvCost(b.lv);
-      return '<button class="buy rdup sgup2' + (b.stone < lvCost || b.lv >= C.lvMax ? ' off' : '') + '" data-sglv="1">' + (b.lv >= C.lvMax ? '최대 레벨' : '<i class="rsp w"></i><span class="t">레벨업</span><span>' + CW.ICO.cur('sigil') + ' ' + fmt(lvCost) + '</span>') + '</button>';
+      return '<button class="buy rdup sgup2 two' + (b.stone < lvCost || b.lv >= C.lvMax ? ' off' : '') + '" data-sglv="1">' + (b.lv >= C.lvMax ? '<span class="t">최대 레벨</span>' : '<span class="t">레벨업</span><span class="c">' + CW.ICO.cur('sigil') + fmt(lvCost) + '</span>') + '</button>';
     }
     function sigilPanel() {
       var s = G.state, C = DATA.sigilConf;
@@ -668,7 +685,8 @@
       // 신성력 줄: 장착한 것(칸 순서) 다음 나머지 센 순서, 옆으로 넘겨 봄
       var line = wornS.concat(strong.filter(function (x) { return !CW.isEquipped(s, x.id); })).map(function (x) { return sgCell(x, CW.isEquipped(s, x.id), curId); }).join('');
       var strip = (line ? '<div class="rsstrip">' + line + '</div>' : '<p class="rsempty">아직 보유한 신성력이 없어요</p>');
-      var pulls = '<div class="rssum"><div class="rssh"><b><i class="rsp"></i>신성력 소환</b></div><div class="rspulls">' + [5, 10].map(function (m) { return '<button class="rspull' + (m === 10 ? ' pri' : '') + (s.gems < C.summon[m] ? ' off' : '') + '" data-sgsum="' + m + '"><b>' + m + '회 소환</b><span><i class="gem"></i>' + fmt(C.summon[m]) + '</span></button>'; }).join('') + '</div></div>';
+      // 소환 카드 (2026-11-17, 사용자: 신성력 소환도 유물처럼 딱 가운데·줄맞춤 칸맞춤) — 유물 소환과 같은 .opcard/.rsb
+      var pulls = '<div class="opcard rsum sgsum"><div class="opcard-h"><b>신성력 소환</b></div><div class="rsum-btns n2">' + [5, 10].map(function (m) { return summonBtn(m, C.summon[m], 'data-sgsum', m === 10); }).join('') + '</div></div>';
       return stage + head + det + btns + strip + pulls + awakenBox('sigil');
     }
     // 신성력 보관함: 「‹ 신성력」·보유 수, 레벨 효과·장착 효과, 추천 장착·일괄 분해, 등급 탭, 전체 칸. 고르면 아래 고정 칸에 상세
@@ -688,7 +706,7 @@
       var lvInfo = '<p><i class="rsp"></i><span>레벨 효과 Lv.' + b.lv + '</span><b>모든 피해 <span data-opv="sglve">+' + pct(b.lv * C.lvFinal) + '</span></b></p>' +
         '<p><i class="rsp"></i><span>신성석</span><b class="stn">' + CW.ICO.cur('sigil') + ' ' + fmt(b.stone) + '</b></p>' +
         (slots < C.slotsMax ? '<p><i class="rsp"></i><span>장착 칸 ' + slots + ' / ' + C.slotsMax + '</span><b class="stn">Lv.' + C.slotsPer + '마다 1칸</b></p>' : '');
-      var filt = '<div class="kindtabs">' + [-1].concat(DATA.hiGrades.map(function (x, i) { return i; })).map(function (g) { return '<button role="tab" aria-selected="' + (sgFilter === g) + '" data-sgf="' + g + '"' + (g >= 0 ? ' style="color:' + hc(g) + '"' : '') + '>' + (g < 0 ? '전체' : hn(g)) + '</button>'; }).join('') + '</div>';
+      var filt = '<div class="kindtabs">' + [-1].concat(DATA.hiGrades.map(function (x, i) { return i; })).map(function (g) { return '<button role="tab" aria-selected="' + (sgFilter === g) + '" data-sgf="' + g + '">' + (g >= 0 ? '<em class="kdot" style="--kc:' + hc(g) + '"></em>' + hn(g) : '전체') + '</button>'; }).join('') + '</div>';
       var inv = b.items.filter(function (x) { return sgFilter < 0 || x.grade === sgFilter; }).sort(function (a, c) { return CW.sigilPower(c) - CW.sigilPower(a); }).map(function (x) { return sgCell(x, CW.isEquipped(s, x.id)); }).join('');
       return '<div class="rsbh"><button class="rsback" data-act="sgbagx" aria-label="신성력 화면으로">‹ 신성력</button><b>신성력 보관함</b><span><b>' + b.items.length + '</b> / ' + C.cap + '</span></div>' +
         '<div class="rseff">' + lvInfo + '</div><div class="rseff"><small>장착 효과</small>' + effs + '</div>' +
