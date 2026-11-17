@@ -18,7 +18,8 @@
   // stepper (장비), a ring-bound note with a gem stamp per grade, the green ribbon. The pictures are cut from the design
   // (tools/cut-rates.py, art/rt-*.webp); every word and number is written here from DATA.
   // stamp (rt-st-<n>) and bar colour for each grade name; 고대·천상 (runes, sigils) are a near stamp re-tinted
-  var GRADE_LOOK = { '일반': [0, '#a3a3a3'], '고급': [1, '#a2ca7d'], '희귀': [2, '#70bcfd'], '영웅': [3, '#c691d7'], '전설': [4, '#ffb356'], '신화': [5, '#f489a4'],
+  var GRADE_LOOK = { '일반': [0, '#c9a27e'],   // 일반: latte, not grey (2026-11-17, the user: 회색 말고 다른 걸로)
+    '고급': [1, '#a2ca7d'], '희귀': [2, '#70bcfd'], '영웅': [3, '#c691d7'], '전설': [4, '#ffb356'], '신화': [5, '#f489a4'],
     '고대': [4, '#d2ad6c', 'sepia(.55) saturate(.8) brightness(.95)'], '태초': [6, '#4bcbc4'], '불멸': [7, '#fbc749'], '천상': [3, '#e48cf0', 'hue-rotate(28deg) saturate(1.35)'],
     '혼돈': [8, '#a77ae0'], '멸망': [9, '#ef7b72'] };
   function A() { return CW.ART_BASE || 'art/'; }
