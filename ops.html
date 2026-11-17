@@ -231,9 +231,15 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
   #p-home.on{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);align-items:stretch;max-width:none}
   #p-home .qbtn{min-height:104px;padding:16px 18px}
   #p-gift.on{display:flex;flex-direction:column;max-width:none}
-  .gcols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 44px;align-items:start}
+  .gcols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 44px;align-items:stretch}
   .gcol>.grp:first-child{border-top:0;padding-top:0;margin-top:12px}
-  .gcol:last-child{position:sticky;top:24px}
+  /* 오른쪽 줄은 따로 움직이지 않고, 왼쪽 길이만큼 아래로 늘어남(편지 내용 칸이 커짐) */
+  .gcol:last-child{display:flex;flex-direction:column}
+  .gcol:last-child>.grp:nth-child(2){flex:1 1 auto;display:flex;flex-direction:column}
+  .gcol:last-child>.grp:nth-child(2)>textarea{flex:1 1 auto;min-height:220px!important}
+  /* 홈: 빠른 공지 버튼이 카드 아래까지 채움 */
+  #homeNotice{display:flex;flex-direction:column}
+  #hmNotices{flex:1 1 auto;grid-auto-rows:1fr}
   .gcol .grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 @media (min-width:1700px){.gcol .grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
