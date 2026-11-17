@@ -193,6 +193,10 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
 .pidrow small{color:var(--soft);font-size:13px;font-weight:600}
 .chk{flex:none;width:28px;height:28px;border-radius:9px;border:2px solid var(--line2);display:grid;place-items:center;background:var(--card)}
 .pidrow.on{background:var(--accent-soft)}
+/* 폰: 체크 칸이 아니라 한 번 터치로 고르는 둥근 표시, 헤더 버튼도 손가락 크기로 */
+.pidlist.touch .chk{border-radius:50%}
+.pidlist.touch .pidrow:active{background:var(--accent-soft)}
+@media (pointer:coarse),(max-width:699px){.pidbtns button{min-height:44px;padding:0 12px;font-size:15px}}
 .pidrow.on .chk{background:linear-gradient(135deg,var(--accent),var(--accent3));border-color:transparent}
 .pidrow.on .chk::after{content:'✓';color:#fff;font-size:17px;font-weight:800;line-height:1}
 #qrBox{text-align:center;margin-top:14px}
@@ -803,6 +807,7 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
   // 「우편번호」를 누르면 바로 이 목록이 나와요. 나중에 서버가 생겨도 이 두 개로 바로 시험해 볼 수 있어요.
   // 바꿀 때는 여기만 고치면 돼요(번호, 이름).
   var MY_PIDS = [['KNPQDWDD', '내 기기 1'], ['XDMCRFAY', '내 기기 2']];
+  var TOUCH = !!(window.matchMedia && matchMedia('(pointer:coarse)').matches) || innerWidth < 700;   // 폰·태블릿
   function pidList() { return $('pids').value.toUpperCase().split(/[\s,;·]+/).filter(Boolean); }
   function setPids(a) { $('pids').value = a.join(', '); fire('pids'); markMy(); }
   function markMy() {
@@ -813,9 +818,16 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
   MY_PIDS.forEach(function (p) {
     var r = document.createElement('button'); r.type = 'button'; r.className = 'pidrow'; r.dataset.pid = p[0];
     r.innerHTML = '<i class="chk"></i><b></b><small></small>'; r.querySelector('b').textContent = p[0]; r.querySelector('small').textContent = p[1];
-    r.onclick = function () { var cur = pidList(), k = cur.indexOf(p[0]); if (k >= 0) cur.splice(k, 1); else cur.push(p[0]); setPids(cur); };
+    r.onclick = function () {
+      var cur = pidList(), k = cur.indexOf(p[0]);
+      if (TOUCH) {   // 폰: 터치 한 번에 그 번호로 바로 적용(저장해 둔 다른 번호는 빠지고, 직접 적은 번호는 남아요)
+        var mine = MY_PIDS.map(function (m) { return m[0]; });
+        setPids(cur.filter(function (x) { return mine.indexOf(x) < 0; }).concat([p[0]]));
+      } else { if (k >= 0) cur.splice(k, 1); else cur.push(p[0]); setPids(cur); }   // PC: 체크로 끄고 켜기
+    };
     $('pidList').appendChild(r);
   });
+  if (TOUCH) { $('pidList').classList.add('touch'); $('pidAll').textContent = '둘 다 선택'; }
   $('pidAll').onclick = function () { var cur = pidList(); MY_PIDS.forEach(function (p) { if (cur.indexOf(p[0]) < 0) cur.push(p[0]); }); setPids(cur); };
   $('pidNone').onclick = function () { var mine = MY_PIDS.map(function (p) { return p[0]; }); setPids(pidList().filter(function (x) { return mine.indexOf(x) < 0; })); };
   $('pids').addEventListener('input', markMy); markMy();
