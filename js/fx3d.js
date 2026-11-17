@@ -944,9 +944,12 @@
       body.mesh.name = 'core3d rock';
       var cap = add(new T.Mesh(GEO.dome, mat(FS.sheath, { uCol: { value: C(o.col || 0xffb030) }, uAlpha: { value: 1 } })), { order: 6 });
       var tail = add(new T.Mesh(GEO.cone, mat(FS.tail, { uCol: { value: C(o.col || 0xffb030) }, uSeed: { value: Math.random() * 9 }, uAlpha: { value: 1 } })), { order: 6 });
-      var glow = orb({ col: o.col || 0xffb030, deep: o.hot || 0xff6a1a, alpha: 0.26, order: 6 });
+      // o.plain (2026-11-17, 발열): one of many falling at once (fast casting overlaps meteor rains) — no glow round it, one
+      // shell of flame, no smoke trail. The glow alone is a ball 2.5× the stone drawn over everything behind it
+      var plain = !!o.plain;
+      var glow = plain ? null : orb({ col: o.col || 0xffb030, deep: o.hot || 0xff6a1a, alpha: 0.26, order: 6 });
       var blaze = add(new T.Mesh(GEO.ball, mat(FS.blaze, { uCol: { value: C(o.col || 0xffb030) }, uSeed: { value: Math.random() * 9 }, uAlpha: { value: 1 } })), { order: 6 });
-      var blaze2 = add(new T.Mesh(GEO.ball, mat(FS.blaze, { uCol: { value: C(o.hot || 0xff7a1a) }, uSeed: { value: Math.random() * 9 }, uAlpha: { value: 0.65 } })), { order: 6 });
+      var blaze2 = plain ? null : add(new T.Mesh(GEO.ball, mat(FS.blaze, { uCol: { value: C(o.hot || 0xff7a1a) }, uSeed: { value: Math.random() * 9 }, uAlpha: { value: 0.65 } })), { order: 6 });
       return {
         set: function (pos, vel, dt) {
           var sp = vel.length(); if (sp > 1e-4) vd.copy(vel).multiplyScalar(1 / sp);
@@ -958,20 +961,20 @@
           qb.setFromUnitVectors(Y, back);
           var len = Math.max(1.6, Math.min(6.5, sp * 0.24)) * size / 0.3;
           tail.mesh.position.copy(pos).addScaledVector(back, size * 0.15); tail.mesh.quaternion.copy(qb); tail.mesh.scale.set(size * 0.9, len, size * 0.9);
-          glow.set(pos, size * 2.5);
+          if (glow) glow.set(pos, size * 2.5);
           // two shells of flame round the stone, the outer one longer and pulled back
           blaze.mesh.position.copy(pos).addScaledVector(back, size * 0.2); blaze.mesh.quaternion.copy(qb); blaze.mesh.scale.set(size * 1.3, size * 1.6, size * 1.3);
-          blaze2.mesh.position.copy(pos).addScaledVector(back, size * 0.65); blaze2.mesh.quaternion.copy(qb); blaze2.mesh.scale.set(size * 1.55, size * 2.3, size * 1.55);
+          if (blaze2) { blaze2.mesh.position.copy(pos).addScaledVector(back, size * 0.65); blaze2.mesh.quaternion.copy(qb); blaze2.mesh.scale.set(size * 1.55, size * 2.3, size * 1.55); }
           // smoke left behind along the path: it hangs there after the rock has gone, so its way down stays in sight
           puffT -= dt || 0;
-          if (puffT <= 0) {
+          if (!plain && puffT <= 0) {
             // (every 0.09 s, each puff a third bigger: at every 0.038 s a meteor rain kept about 500 puffs alive and an iPhone fell
-            // to 20-25 frames a second, 2026-11-15)
-            puffT = 0.09; at.copy(pos).addScaledVector(back, size * (1.4 + Math.random() * 1.2)).add(new T.Vector3((Math.random() - 0.5) * size * 0.4, (Math.random() - 0.5) * size * 0.4, 0));
+            // to 20-25 frames a second, 2026-11-15; every 0.12 s since 2026-11-17)
+            puffT = 0.12; at.copy(pos).addScaledVector(back, size * (1.4 + Math.random() * 1.2)).add(new T.Vector3((Math.random() - 0.5) * size * 0.4, (Math.random() - 0.5) * size * 0.4, 0));
             puff(at, { s0: size * 0.36, s1: size * (0.95 + Math.random() * 0.4), life: 0.7 + Math.random() * 0.3, vel: back.clone().multiplyScalar(0.6).add(new T.Vector3(0, 0.25, 0)), dark: o.smokeDark || 0x302826, light: o.smokeLight || 0x7e746e, alpha: 0.42, order: 4 });
           }
         },
-        kill: function () { drop(body); drop(line); drop(cap); drop(tail); drop(blaze); drop(blaze2); glow.kill(); }
+        kill: function () { drop(body); drop(line); drop(cap); drop(tail); drop(blaze); if (blaze2) drop(blaze2); if (glow) glow.kill(); }
       };
     }
     // ---------- a fireball: rolling fire round a white-hot heart, flames streaming back off it, a fire tail and a little
@@ -2034,15 +2037,19 @@
     }
     function bmCount() { var n = 0; for (var k in bmLayers) n += bmLayers[k].list.length; return n; }
 
+    // a part whose update throws is taken away and the others go on (one such part used to stop every part after it,
+    // 2026-11-17); the first error is thrown again at the end so the game keeps it
     function update(dt) {
-      time += dt;
+      time += dt; var err = null;
       for (var i = parts.length - 1; i >= 0; i--) {
         var p = parts[i];
         if (p.dead) { parts.splice(i, 1); continue; }
         p.t += dt; var u = p.mesh.material && p.mesh.material.uniforms; if (u && u.uTime) u.uTime.value = time;
-        if ((p.upd && p.upd(dt, p.t) === true) || p.t >= p.life) { drop(p); parts.splice(i, 1); }
+        var end; try { end = (p.upd && p.upd(dt, p.t) === true) || p.t >= p.life; } catch (e) { err = err || e; end = true; }
+        if (end) { drop(p); parts.splice(i, 1); }
       }
       drawChips(dt); drawSpikes(dt); drawCrystals(dt); drawBM(); drawBoom(dt); drawFireBoom(dt); drawSheets();
+      if (err) throw err;
     }
     function clear() { if (boomL) { boomL.list.length = 0; drawBoom(0); } if (fbL) { fbL.list.length = 0; drawFireBoom(0); } for (var sk in sheetL) sheetL[sk].list.length = 0; drawSheets(); for (var bk in bmLayers) bmLayers[bk].list.forEach(function (h) { h.dead = true; }); drawBM(); parts.forEach(drop); parts.length = 0; spikes.length = 0; chips.forEach(function (l) { l.length = 0; }); xs.length = 0; drawSpikes(0); drawChips(0); drawCrystals(0); if (sc.lens) sc.lens(null); }
     // Build every program before it is needed. A compiled program also depends on the scene (whether it has fog, and of

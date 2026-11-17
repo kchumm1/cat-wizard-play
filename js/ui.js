@@ -1191,7 +1191,15 @@
     function hitchRow() {
       var h = G.hitches ? G.hitches() : null; if (!h) return '';
       return '<div class="row"><div class="info"><div class="name">화면 지연</div><div class="desc">최근 1분 ' + h.n + '회' + (h.n ? ' · 최장 ' + (h.worst / 1000).toFixed(1) + '초' : '') +
-        ' (0.1초 넘게 멈춘 화면 수예요. 렉이 느껴질 때 이 줄을 캡처해 보내 주세요)</div></div></div>';
+        ' (0.1초 넘게 멈춘 화면 수예요. 렉이 느껴질 때 이 줄을 캡처해 보내 주세요)</div></div></div>' + glLostRow();
+    }
+    // how often the phone took the fight's 3D picture away (main.js, cw-gllost), only when it has happened
+    function glLostRow() {
+      var r = null; try { r = JSON.parse(localStorage.getItem('cw-gllost') || 'null'); } catch (e) {}
+      if (!r || !r.n) return '';
+      var d = new Date(r.t), p2 = function (v) { return (v < 10 ? '0' : '') + v; };
+      return '<div class="row"><div class="info"><div class="name">전투 화면 끊김</div><div class="desc">' + r.n + '회 · 마지막 ' + (d.getMonth() + 1) + '/' + d.getDate() + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes()) +
+        ' · ' + (r.back ? '다시 그려짐' : r.reload && r.reload >= r.t ? '새로 불러옴' : '돌아오지 않음') + ' (폰이 그래픽 부담으로 전투 화면을 끊은 횟수예요. 멈춤이 또 있으면 이 줄을 캡처해 보내 주세요)</div></div></div>';
     }
     // the heights this phone reports (to find out why the bottom is cut on some iPhones): what is visible, the page,
     // the whole screen, the safe gaps at the top and bottom, and how tall the game really is

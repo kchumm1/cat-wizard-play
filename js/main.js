@@ -631,6 +631,31 @@
     try { localStorage.setItem('cw-lasterr', JSON.stringify({ t: n, msg: String(e && e.message || e).slice(0, 160), at: at.slice(0, 160) })); } catch (x) {}
   }
   root.addEventListener('error', function (ev) { noteError(ev.error || ev.message); });
+  // The fight's 3D picture lost by the phone (2026-11-17, the user: 화면이 멈춰): a phone takes the 3D picture away when its
+  // graphics chip is overworked or short of memory, and the fight then stands still while the menus still work. It is
+  // kept for settings (cw-gllost, "전투 화면 끊김"); three.js asks for it back, and if it is not back within 3 s the game
+  // is saved and opened again (not again within a minute, so a phone that keeps losing it does not keep reloading).
+  (function () {
+    var cv = sc.renderer && sc.renderer.domElement; if (!cv) return;
+    function note(kind) {
+      var r = null; try { r = JSON.parse(localStorage.getItem('cw-gllost') || 'null'); } catch (e) {}
+      r = r || { n: 0 }; if (kind === 'lost') { r.n++; r.t = Date.now(); r.back = false; } else if (kind === 'back') r.back = true; else r.reload = Date.now();
+      try { localStorage.setItem('cw-gllost', JSON.stringify(r)); } catch (e) {}
+    }
+    var wait = 0;
+    cv.addEventListener('webglcontextlost', function (e) {
+      e.preventDefault(); note('lost'); clearTimeout(wait);
+      wait = setTimeout(function () {
+        var gl = sc.renderer.getContext(); if (!gl || !gl.isContextLost || !gl.isContextLost()) return;
+        var last = 0; try { last = +sessionStorage.getItem('cw-glreload') || 0; } catch (x) {}
+        if (Date.now() - last < 60000) return;
+        try { sessionStorage.setItem('cw-glreload', String(Date.now())); } catch (x) {}
+        note('reload'); try { save(); } catch (x) {}
+        root.location.reload();
+      }, 3000);
+    }, false);
+    cv.addEventListener('webglcontextrestored', function () { clearTimeout(wait); note('back'); }, false);
+  })();
   // hitches: a frame that came more than 0.1 s after the one before while the game is on screen. Settings shows how many
   // in the last minute ("화면 멈칫"), so a phone that lags can tell us what we cannot measure from here.
   var hitches = [];

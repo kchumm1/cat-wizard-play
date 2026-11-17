@@ -27,14 +27,17 @@
       return s;
     }
     sc = Object.create(realSc);
-    sc.mobPos = function (m) { var s = standIn(m); return s ? realSc.mobPos(s) : m.fellPos ? m.fellPos.clone() : realSc.mobPos(m); };
-    sc.mobTop = function (m) { var s = standIn(m); return s ? realSc.mobTop(s) : m.fellTop ? m.fellTop.clone() : realSc.mobTop(m); };
+    // (no monster at all — a spell whose targets all fell before its later shots left, so volley had no one to give them:
+    // the middle of the field. This threw every frame and stopped all effects, 2026-11-17: see update)
+    sc.mobPos = function (m) { if (!m) return FC.clone(); var s = standIn(m); return s ? realSc.mobPos(s) : m.fellPos ? m.fellPos.clone() : realSc.mobPos(m); };
+    sc.mobTop = function (m) { if (!m) return FC.clone().setY(0.8); var s = standIn(m); return s ? realSc.mobTop(s) : m.fellTop ? m.fellTop.clone() : realSc.mobTop(m); };
     var vx = CW.createVfx(sc.scene, sc.camera);
     // real 3D parts (js/fx3d.js) for the spells whose body should have a shape: the laser, the meteors, the black hole
     var P3 = CW.createFx3d(sc);
     P3.warm(); warmPics();
     var staffCol = 0xffe14a;
     var timers = [], ticks = [], time = 0, dustCol = 0xd8c8a8, idleT = 0, crackleT = 0, tierNow = 1;
+    var meteorLive = 0, METEOR_FULL = 8, scorchAt = [];   // meteor rain: rocks still falling, and when the last hollows were left (see S.meteors)
     function after(t, fn) { timers.push({ at: time + Math.max(0, t), fn: fn }); }
     function tick(fn) { ticks.push(fn); }
     function E(o) {
@@ -819,34 +822,49 @@
       sc.dim(0.6, c.D(1.2)); sc.flash('rgba(255,90,30,0.22)', 0.25);
       // the sky reddens and a few far-off streaks show where they come from; every rock that comes down is aimed at a
       // monster and is a real hit
-      fieldRain(c, 18, c.D(0.6), { y: function () { return rr(4.2, 5.8); }, vel: function () { return V(rr(-2.6, -1.6), rr(-6.5, -4), 0.3); }, frames: ['streak', 'dot'], cols: [0xffffff, 0xffd080, 0xff9a40], size: function () { return [rr(0.08, 0.13), 0.02]; }, life: 0.45, stretch: 0.07 });
+      fieldRain(c, 8, c.D(0.6), { y: function () { return rr(4.2, 5.8); }, vel: function () { return V(rr(-2.6, -1.6), rr(-6.5, -4), 0.3); }, frames: ['streak', 'dot'], cols: [0xffffff, 0xffd080, 0xff9a40], size: function () { return [rr(0.08, 0.13), 0.02]; }, life: 0.45, stretch: 0.07 });
       // dirt for the crown thrown up at each hit: the ground of this place, darkened to earth
       var dirt = new T.Color(dustCol).lerp(new T.Color(0x4a382c), 0.75).getHex(), landed = [];
-      volley(c, { shots: CW.fxOff && CW.fxOff.half ? 6 : 12, t0: 0.14, span: 0.55, fire: function (mob, frac, m, n) {
+      // 발열 (2026-11-17, the user: 아직 발열이 심하고 별똥별 비 하다가 화면이 멈춰): one meteor rain drew every pixel of the
+      // screen about 15 times over (four 9th-tier skills together: 5), measured as an iPhone 17 Pro and a Galaxy S24. So:
+      //  - one rock per monster when six or more stand (it used to be two each, up to 20 rocks; each monster still takes the
+      //    same damage in all, as volley splits it over its rocks), 12 on a lone or a few monsters as before;
+      //  - the fire, sparks and bits do not grow past 1.2× with tier and level (c.n reaches 2.4);
+      //  - while METEOR_FULL rocks of earlier casts are still falling (fast casting overlaps them) a new rock is drawn plain:
+      //    the stone, its outline, its cap and tail, no second shell of flame, glow or smoke trail; nothing is hit less
+      var M0 = c.pool().length, dn = Math.min(c.n, 1.2);
+      volley(c, { shots: CW.fxOff && CW.fxOff.half ? 6 : M0 >= 6 ? M0 : 12, t0: 0.14, span: 0.55, fire: function (mob, frac, m, n) {
         var big = c.tier >= 7 && m === n - 1, land = mob ? sc.mobPos(mob) : fieldPt(0.1), cs = Math.min(1.6, c.s), P = big ? 2.0 : 1, R = 0.3 * cs * P;
         // they come in steep from high up and off to the side, so the fall crosses most of the screen
         var from = land.clone().add(V(rr(2.0, 2.6), rr(5.0, 5.6), -1.0));
         // a faceted stone with a dark outline: white hot only on the side it flies into, a cap of burning air in front,
         // a tail of fire behind it, smoke hanging along its way; the spot where it will land darkens and glows first
-        var rock = null, spot = null;
-        after(big ? c.D(0.22) : 0, function () { rock = P3.rock({ size: R, col: 0xffb83a, hot: 0xff7a1a }); spot = P3.mark({ col: 0xff9a30 });
-        homing({ from: from, to: function () { land = sc.mobPos(mob); return land; }, time: c.D(big ? 0.46 : 0.34), ease: function (k) { return k * k * 0.55 + k * 0.45; },
+        var rock = null, spot = null, plain = false;
+        after(big ? c.D(0.22) : 0, function () { plain = !big && meteorLive >= METEOR_FULL; meteorLive++;
+        rock = P3.rock({ size: R, col: 0xffb83a, hot: 0xff7a1a, plain: plain }); spot = P3.mark({ col: 0xff9a30 });
+        homing({ from: from, to: function () { if (mob) land = sc.mobPos(mob); return land; }, time: c.D(big ? 0.46 : 0.34), ease: function (k) { return k * k * 0.55 + k * 0.45; },
           fancy: false, heads: [],
           emit: function (p, v, dt, k) {
             rock.set(p, v, dt); spot.set(land, k, R * 1.6);
-            // bits burning off the stone
-            if (Math.random() < dt * 60 * c.n) E({ pos: p.clone().add(rdir(0.3 * R / 0.3)), vel: v.clone().multiplyScalar(-0.15).add(rdir(1.4)), frame: pick(['dot', 'flare', 'star']), color: [0xffffff, 0xffd060, 0xff8a2b], size: [rr(0.1, 0.18), 0], life: rr(0.3, 0.6) });
-            if (Math.random() < dt * 34 * c.n) fire(p.clone().addScaledVector(v, -0.02), 1, { size: 0.5 * R / 0.3, speed: 0.6, up: 0.4, life: 0.45, cols: [0xffe14a, 0xff8a2b, 0xd8401a] });
+            // bits burning off the stone (a plain rock: half as many)
+            var q = plain ? 0.5 : 1;
+            if (Math.random() < dt * 30 * dn * q) E({ pos: p.clone().add(rdir(0.3 * R / 0.3)), vel: v.clone().multiplyScalar(-0.15).add(rdir(1.4)), frame: pick(['dot', 'flare', 'star']), color: [0xffffff, 0xffd060, 0xff8a2b], size: [rr(0.1, 0.18), 0], life: rr(0.3, 0.6) });
+            if (Math.random() < dt * 20 * dn * q) fire(p.clone().addScaledVector(v, -0.02), 1, { size: 0.5 * R / 0.3, speed: 0.6, up: 0.4, life: 0.45, cols: [0xffe14a, 0xff8a2b, 0xd8401a] });
           },
           onHit: function (p) {
             var gp2 = V(p.x, 0.03, p.z);
-            rock.kill(); spot.kill();
+            rock.kill(); spot.kill(); meteorLive = Math.max(0, meteorLive - 1);
             var near2 = 0; landed = landed.filter(function (q) { return time - q.t < 0.4; }); landed.forEach(function (q) { if ((q.x - p.x) * (q.x - p.x) + (q.z - p.z) * (q.z - p.z) < 1.2) near2++; }); landed.push({ x: p.x, z: p.z, t: time });
-            P3.impact(gp2, { size: 0.55 * cs * P, col: 0xff9a2a, hot: 0xff6a1a, dirt: dirt, chips: big ? 20 : 10, ring: big ? 4.2 : 2.8, calm: big ? 1 : 1 / (1 + 0.7 * near2), lite: !big && landed.length > 1 });
+            // the scorched hollow stays 1.8 s, and fast casting left about 50 on the ground at once, each drawn on its own:
+            // at most 10 lie there together (the big last rock always leaves one)
+            scorchAt = scorchAt.filter(function (t) { return time - t < 1.8; });
+            var hollow = big || scorchAt.length < 10; if (hollow) scorchAt.push(time);
+            P3.impact(gp2, { size: 0.55 * cs * P, col: 0xff9a2a, hot: 0xff6a1a, dirt: dirt, chips: big ? 20 : 6, ring: big ? 4.2 : 2.8, calm: big ? 1 : 1 / (1 + 0.7 * near2), lite: !big && (landed.length > 1 || plain), hollow: hollow });
             // flames and sparks thrown up out of the hit
-            fire(V(p.x, 0.3, p.z), N(big ? 16 : 7, c), { size: 0.85 * cs * P, speed: 3.8, up: 3.2, life: 0.7 });
-            sparks(p, [0xffffff, 0xffd060, 0xff8a2b], N(big ? 40 : 20, c), 8.5, { size: 0.18, up: 2.8, stretch: 0.12 });
-            for (var fk = 0; fk < N(big ? 14 : 5, c); fk++) E({ pos: p.clone().add(V(0, 0.2, 0)), vel: V(rr(-6, 6), rr(3, 8), rr(-4, 4)), frame: 'flame', color: [0xffe080, 0xff7a1a, 0xc8301a], size: [rr(0.3, 0.55) * cs, 0.08], life: rr(0.6, 1.0), grav: 10, drag: 0.5, spin: rr(-5, 5), fadeOut: 0.3 });
+            var cn = { n: dn };
+            fire(V(p.x, 0.3, p.z), N(big ? 16 : 4, cn), { size: 0.85 * cs * P, speed: 3.8, up: 3.2, life: 0.7 });
+            sparks(p, [0xffffff, 0xffd060, 0xff8a2b], N(big ? 40 : 10, cn), 8.5, { size: 0.18, up: 2.8, stretch: 0.12 });
+            for (var fk = 0; fk < N(big ? 14 : 3, cn); fk++) E({ pos: p.clone().add(V(0, 0.2, 0)), vel: V(rr(-6, 6), rr(3, 8), rr(-4, 4)), frame: 'flame', color: [0xffe080, 0xff7a1a, 0xc8301a], size: [rr(0.3, 0.55) * cs, 0.08], life: rr(0.6, 1.0), grav: 10, drag: 0.5, spin: rr(-5, 5), fadeOut: 0.3 });
             sc.flash(big ? 'rgba(255,200,120,0.75)' : 'rgba(255,170,80,0.28)', big ? 0.6 : 0.1);
             if (big) { fieldWave(gp2, 0xffb040, 0.9, 0xff7a1a); fieldWave(gp2, 0xff6a1a, 1.1); sc.slowmo(0.45, 0.45, true); }
             sc.light(p, 0xffa040, big ? 3.2 : 2.4, 0.4); sc.shake(big ? 0.8 : 0.2); sc.punch(big ? 0.14 : 0.03);
@@ -1518,9 +1536,14 @@
     function update(dt) {
       time += dt;
       costumeTick(dt); picTick(dt);
-      for (var i = timers.length - 1; i >= 0; i--) { var tm = timers[i]; if (tm && tm.at <= time) { timers.splice(i, 1); tm.fn(); } }
+      // One that throws is dropped and the rest go on; the first error is thrown again at the end so the game keeps it
+      // (main.js noteError → 설정 "최근 오류"). A meteor rain whose monsters had all fallen left a part that threw every
+      // frame: every part after it in the list and every effect stopped where it stood and piled up (about 550 3D parts a
+      // second) until the screen was a frozen white blur (2026-11-17, the user: 별똥별 비 하다가 화면이 멈춰).
+      var err = null;
+      for (var i = timers.length - 1; i >= 0; i--) { var tm = timers[i]; if (tm && tm.at <= time) { timers.splice(i, 1); try { tm.fn(); } catch (e) { err = err || e; } } }
       // a hit inside one of these can end the stage, which empties the list while it is being walked
-      for (var j = ticks.length - 1; j >= 0; j--) { var fn = ticks[j]; if (fn && fn(dt)) { var at = ticks.indexOf(fn); if (at >= 0) ticks.splice(at, 1); } }
+      for (var j = ticks.length - 1; j >= 0; j--) { var fn = ticks[j], done; try { done = fn && fn(dt); } catch (e) { err = err || e; done = true; } if (done) { var at = ticks.indexOf(fn); if (at >= 0) ticks.splice(at, 1); } }
       // idle sparkle on the staff and crackles on shocked monsters
       idleT += dt; crackleT += dt;
       if (idleT > 0.35) { idleT = 0; var tp = sc.heroTip(); E({ pos: tp.clone().add(rdir(0.08)), vel: V(rr(-0.2, 0.2), rr(0.3, 0.7), 0), frame: 'flare', color: [0xffffff, staffCol], size: [0.13, 0], life: 0.6, spin: 3, drag: 0.5, white: true }); }
@@ -1530,13 +1553,14 @@
       }
       if (BEASTS) BEASTS.update(dt);
       vx.update(dt); P3.update(dt);
+      if (err) throw err;
     }
     function setQuality(q) { vx.setQuality(q); }
     // the safety valve (js/fxload.js): a factor on how many small pieces new effects spawn while frames run late
     function setLoad(k) { vx.setLoad(k); }
     function setBright(v) { vx.setBright(v); P3.setBright(v); }
     function setRegion(regionData) { dustCol = new T.Color(regionData.ground).lerp(new T.Color(0xffffff), 0.45).getHex(); P3.warm(); warmPics(); }
-    function clear() { epoch++; timers.length = 0; ticks.length = 0; vx.clear(); P3.clear(); picClear(); if (BEASTS) BEASTS.clear(); sc.mobs().forEach(function (m) { m.pull = undefined; m.pullZ = undefined; m.lift = undefined; }); }
+    function clear() { epoch++; timers.length = 0; ticks.length = 0; meteorLive = 0; scorchAt.length = 0; vx.clear(); P3.clear(); picClear(); if (BEASTS) BEASTS.clear(); sc.mobs().forEach(function (m) { m.pull = undefined; m.pullZ = undefined; m.lift = undefined; }); }
     return { setStaffColor: function (c) { staffCol = c; }, setCostume: function (f) { cosFx = f; cosAcc = 0; }, cast: cast, update: update, setQuality: setQuality, setLoad: setLoad, load: function () { return vx.load(); }, setBright: setBright, setRegion: setRegion, clear: clear, count: vx.count, minionBurst: minionBurst,
       impact: impact, levelUp: levelUp, bossEnter: bossEnter, coinPop: coinPop, burst: function (pos, col) { impact(pos, col, 0.8); }, vfx: vx,
       // for checks: 3D parts alive, and painted heads alive (only those of the given pictures when names are given)
