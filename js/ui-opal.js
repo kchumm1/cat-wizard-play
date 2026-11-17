@@ -867,6 +867,9 @@
     // 설명도 한 줄: 넘치면 fitGrowNames 가 글씨를 9.5px 까지 줄이고, 그래도 넘치면 두 줄 (.wrap)
     '#sheet.opal#sheet.opal .row.grow .gabout{white-space:nowrap;max-width:100%;overflow:hidden}#sheet.opal#sheet.opal .row.grow .gabout.wrap{white-space:normal}',
     '#sheet.opal#sheet.opal .row.grow .gpill{display:inline-flex!important;align-items:center;gap:7px;min-width:118px;max-width:100%;height:23px;padding:0 13px 1px!important;margin-top:2px;justify-content:center;border:0 solid transparent!important;border-image:url(art/gp-pill.webp) 36 fill / 11.5px / 3.5px 3.2px 5.1px 3.2px stretch!important;background:none!important;box-shadow:none!important;font-family:var(--body)!important;font-weight:700!important;font-size:13.5px;line-height:1!important;color:var(--navy)!important;white-space:nowrap}',   // 사용자: 수치 상자 조금 크게 (23px). 숫자가 길면 fitGrowNames 가 글씨만 줄여 양 끝 여백 13px 유지
+    // 원소 지배 (형 2026-11-18: 「422레벨 폭주 400, 칸 글자 넘쳐」): "약점 +200% · 폭주 +400% → 약점 피해 +223%" does not fit one line even at 10.5px (js/ui.js
+    // puts .pill2 on it): the box grows to two lines — the now-value on top, the arrow and the next value under it — both centred
+    '#sheet.opal#sheet.opal .row.grow .gpill.pill2{height:auto;min-height:23px;flex-wrap:wrap;justify-content:center;column-gap:6px;row-gap:1px;padding:4px 7px 5px!important;font-size:11px;letter-spacing:-.3px;line-height:1.15!important;white-space:normal}#sheet.opal#sheet.opal .row.grow .gpill.pill2>span{flex:0 0 100%;text-align:center;word-break:keep-all}',
     '#sheet.opal#sheet.opal .row.grow .gpill i{font-style:normal;color:#6f7591;font-size:11px}#sheet.opal#sheet.opal .row.grow .gpill b{font-family:var(--body)!important;font-weight:800!important;font-size:inherit!important;line-height:1!important;color:#1f857e!important}#sheet.opal#sheet.opal .row.grow .gpill span{font-size:inherit!important}',
     '#sheet.opal#sheet.opal .row.grow .gmore{margin:0!important;font:600 10.5px/1.3 var(--body)!important;color:#7a8099!important}',
     // 강화 버튼 보이는 87×42 (9분할 15): 위 동전+비용 12.5, 아래 ✦ 강화 ✦ 17. 돈 부족·최대는 회색 판, 누르면 눌린 판 + 0.98배
@@ -944,6 +947,11 @@
     '#sheet.opal #opTabs:has(.tinfo.tnw)::before{content:"";position:absolute;left:0;right:0;top:-16px;height:16px;background:linear-gradient(180deg,rgba(236,231,245,0),#ece7f5);pointer-events:none}',
     '#sheet.opal#sheet.opal .tinfo.tnw .tieff.wrap{white-space:normal;line-height:1.15!important}#sheet.opal#sheet.opal .tinfo.tnw .tidesc:has(.tieff.wrap) .tinote{display:none}',
     '#sheet.opal#sheet.opal .tinfo.tnw .tinote{margin-top:-2px;font:600 9.5px/1.2 var(--body);color:#8a90a8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    // 2026-11-18 (형: 「여기 하나도 안맞잖아」): the card's painted frame (art/tp-detail.webp) has two rules across it, at 25px and
+    // 48px from the top of the card, and the writing sat across them (the name over the first, the effect over the second) with an
+    // extra rule of its own under the name. The three lines now stand in the three bands the frame makes — name 4-25,
+    // effect 25-48, note 48-70 — each in a box of its own height, centred in it; the painted rules are the only rules
+    // (the numbers are in the 「특성 상세 칸 다시 맞춤」 rules further down, which come last)
     '#sheet.opal#sheet.opal .tinfo.tnw .tupb{width:118px!important;min-height:0!important;height:29px!important;padding:0 0 1px!important;display:flex!important;align-items:center;justify-content:center;gap:5px;font:800 12.5px/1 var(--body)!important;letter-spacing:-.2px;color:#fff!important;text-shadow:0 1px 2px rgba(10,60,60,.5)!important;border:0 solid transparent!important;border-image:url(art/tp-up.webp) 54 fill / 12.1px / 2.5px 2.2px 3.6px 2.2px stretch!important;background:none!important;box-shadow:none!important;border-radius:0!important;transition:transform .12s}',
     '#sheet.opal#sheet.opal .tinfo.tnw .tupb::before,#sheet.opal#sheet.opal .tinfo.tnw .tupb::after{content:"✦";font-size:8px;line-height:1;opacity:.85;flex:none}',   // 사용자: 별을 글 양쪽에 같은 간격으로
     '#sheet.opal#sheet.opal .tinfo.tnw .tupb:active{border-image-source:url(art/tp-up-press.webp)!important;transform:scale(.98)}',
@@ -1199,12 +1207,16 @@
     // ---- 특성 상세 칸 다시 맞춤 (사용자 2026-11-16): 돔 | 이름 / 효과 / 조건 (세 줄 높이 고정, 두 줄로 안 넘어감) | 강화 버튼 — 버튼 가운데 = 효과 줄 가운데 ----
     '#sheet.opal#sheet.opal .tinfo.tnw{grid-template-columns:66px minmax(0,1fr) 100px!important;column-gap:10px!important;align-items:start!important;height:78px!important;padding:0 12px 0 4px!important}',
     '#sheet.opal#sheet.opal .tinfo.tnw .tidome{width:80px!important;height:75px!important;margin:1.5px 0 0 -2px!important;transform:scale(.84);transform-origin:0 50%}',
-    '#sheet.opal#sheet.opal .tinfo.tnw .tidesc{top:0!important;height:78px!important;overflow:hidden;padding:12.5px 0 0 10px!important;display:grid!important;grid-template-columns:minmax(0,1fr);grid-template-rows:22px 16px 12px;row-gap:1.5px;align-content:start;gap:0!important;row-gap:1.5px!important}',
-    '#sheet.opal#sheet.opal .tinfo.tnw .tidesc>b{height:22px;padding-bottom:4px!important;font-size:15px!important;line-height:17px!important}',
-    '#sheet.opal#sheet.opal .tinfo.tnw .tieff{height:16px;margin-top:1.5px;font-size:12.5px;line-height:16px!important;white-space:nowrap!important;text-overflow:clip!important}',
-    '#sheet.opal#sheet.opal .tinfo.tnw .tinote{display:block!important;height:12px;margin:2px 0 0!important;font:700 10px/12px var(--body)!important;color:#6f7590!important;white-space:nowrap;text-overflow:clip!important}#sheet.opal#sheet.opal .tinfo.tnw .tinote.lock{color:#b0623f!important}',
+    '#sheet.opal#sheet.opal .tinfo.tnw .tidesc{top:0!important;height:78px!important;overflow:hidden;padding:4px 0 0 10px!important;display:grid!important;grid-template-columns:minmax(0,1fr);grid-template-rows:21px 23px 22px;align-content:start;gap:0!important;row-gap:0!important}',
+    // 2026-11-18 (형: 「여기 하나도 안맞잖아」): the card's painted frame (art/tp-detail.webp) has two rules across it, 25px and 48px from
+    // the card's top; the writing used to sit ON them (name 10-32, effect 37-54) with a rule of its own under the name. The three
+    // lines now stand in the three bands the frame makes — name 4-25, effect 25-48, note 48-70 — each centred in a box of its
+    // own height; the painted rules are the only rules
+    '#sheet.opal#sheet.opal .tinfo.tnw .tidesc>b{height:21px;padding:0!important;border-bottom:0!important;font-size:15px!important;line-height:21px!important}',
+    '#sheet.opal#sheet.opal .tinfo.tnw .tieff{height:23px;margin-top:0;font-size:12.5px;line-height:23px!important;white-space:nowrap!important;text-overflow:clip!important}',
+    '#sheet.opal#sheet.opal .tinfo.tnw .tinote{display:block!important;height:22px;margin:0!important;font:700 10px/22px var(--body)!important;color:#6f7590!important;white-space:nowrap;text-overflow:clip!important}#sheet.opal#sheet.opal .tinfo.tnw .tinote.lock{color:#b0623f!important}',
     '#sheet.opal#sheet.opal .tinfo.tnw .tinote .tnlock{display:inline-block;width:12px;height:13px;margin:0 2px 0 -1px;vertical-align:-2.5px;background:url(art/tp-lock.webp) 50% 50%/contain no-repeat}',   // 자물쇠 = 특성 부품 (사용자 2026-11-16)
-    '#sheet.opal#sheet.opal .tinfo.tnw .tupb{width:100px!important;height:30px!important;margin-top:24px!important;align-self:start!important;font-size:12px!important;gap:0!important}',
+    '#sheet.opal#sheet.opal .tinfo.tnw .tupb{width:100px!important;height:30px!important;margin-top:21.5px!important;align-self:start!important;font-size:12px!important;gap:0!important}',
     '#sheet.opal#sheet.opal .tinfo.tnw .tupb::before,#sheet.opal#sheet.opal .tinfo.tnw .tupb::after{content:none!important}',
     // ---- 알림 (노란 상자 → 오팔 진주 알약): 메뉴가 열려 있을 때, 아래에서 톡 떠오르며 반짝 ----
     'body:has(#sheet.opal.on) #toast{background:linear-gradient(180deg,#ffffff,#f1ecfa)!important;color:var(--navy,#2b3157)!important;border:1px solid rgba(170,160,220,.55)!important;border-radius:999px!important;box-shadow:0 8px 20px rgba(80,70,140,.25),inset 0 1px 0 #fff,inset 0 -2px 5px rgba(150,140,210,.18)!important;font:800 13.5px/1.25 "Noto Sans KR","Malgun Gothic",sans-serif!important;padding:10px 18px 10px 16px!important;text-shadow:none!important;overflow:hidden;white-space:nowrap!important;width:max-content!important}',

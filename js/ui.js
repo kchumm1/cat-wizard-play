@@ -1677,9 +1677,12 @@
       // 수치 상자: 숫자가 길면 글씨만 줄여 양 끝 여백 유지 (최소 10.5px)
       panel.querySelectorAll('.row.grow .gpill').forEach(function (g) {
         g.style.fontSize = '';
+        g.classList.remove('pill2');
         var cs = getComputedStyle(g), room = g.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), gap = parseFloat(cs.columnGap) || 0, used = 0;
         Array.prototype.forEach.call(g.children, function (c, i) { used += c.getBoundingClientRect().width + (i ? gap : 0); });
         if (used > room + 0.5) g.style.fontSize = Math.max(10.5, parseFloat(cs.fontSize) * (room - 1) / used).toFixed(2) + 'px';
+        // 원소 지배 (약점 +200% · 폭주 +400% → …): wider than the box even at 10.5px → two lines in a taller box (the now-value above, → and the next one below), nothing runs out of it
+        { var used2 = 0, cs2 = getComputedStyle(g); Array.prototype.forEach.call(g.children, function (c, i) { used2 += c.getBoundingClientRect().width + (i ? gap : 0); }); var room2 = g.clientWidth - parseFloat(cs2.paddingLeft) - parseFloat(cs2.paddingRight); if (used2 > room2 + 3) { g.style.fontSize = ''; g.classList.add('pill2'); } }
       });
       // 성장 시안 (2026-11-16): 설명도 한 줄 — 넘치면 9.5px 까지 줄이고, 그래도 넘치면 두 줄로
       panel.querySelectorAll('.row.grow .gabout').forEach(function (g) {
@@ -1690,7 +1693,7 @@
       // 설명이 두 줄인 칸이 있으면 성장 칸 높이를 모두 그 칸에 맞춤 — 칸마다 키가 들쭉날쭉하지 않게 (2026-11-17)
       var rows = panel.querySelectorAll('.row.grow'), tall = 0;
       rows.forEach(function (r) { r.style.minHeight = ''; });
-      if (panel.querySelector('.row.grow .gabout.wrap')) {
+      if (panel.querySelector('.row.grow .gabout.wrap, .row.grow .gpill.pill2')) {
         rows.forEach(function (r) { tall = Math.max(tall, r.getBoundingClientRect().height); });
         rows.forEach(function (r) { r.style.minHeight = Math.ceil(tall) + 'px'; });
       }

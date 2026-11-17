@@ -20,32 +20,9 @@
     if (n && !d) { d = document.createElement('b'); d.className = 'qnum'; b.appendChild(d); }
     if (d) { if (n) d.textContent = n > 99 ? '99+' : n; else d.remove(); }
   }
-  // 운영자가 보낸 편지가 바로 들어오게 (2026-11-18, the user: 더 빨리): on the real site read the repository file itself
-  // (no wait for the site to rebuild, ?t= skips the 5-minute cache); anywhere else, or if that fails, the site's own file
-  function getJson(file) {
-    var rel = file + '?t=' + Date.now(), host = (root.location && root.location.hostname) || '';
-    var go = function (u) { return fetch(u, { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }); };
-    if (!/github\.io$/.test(host)) return go(rel).catch(function () { return null; });
-    // raw.githubusercontent.com/…/main/ 은 ?t= 를 붙여도 5분 동안 같은 파일을 줌(2026-11-18 확인) → 최신 커밋 번호를 물어
-    // 그 번호의 파일을 받음(번호가 바뀌면 새 주소라 바로 최신). 번호는 1분에 한 번만 물어 우편함·공지가 같이 씀.
-    // 못 물으면(횟수 제한 등) 사이트 파일(약 1분 늦음).
-    var C = root.CW || (root.CW = {}), now = Date.now();
-    if (!C.repoShaP || now - C.repoShaT > 55000) {
-      C.repoShaT = now;
-      C.repoShaP = fetch('https://api.github.com/repos/kchumm1/cat-wizard-play/commits/main?t=' + now, { cache: 'no-store', headers: { Accept: 'application/vnd.github.sha' } })
-        .then(function (r) { return r.ok ? r.text() : ''; })
-        .then(function (t) { t = (t || '').trim(); return /^[0-9a-f]{40}$/.test(t) ? t : null; })
-        .catch(function () { return null; });
-    }
-    return C.repoShaP
-      .then(function (sha) { return sha ? go('https://raw.githubusercontent.com/kchumm1/cat-wizard-play/' + sha + '/' + file) : null; })
-      .catch(function () { return null; })
-      .then(function (d) { return d || go(rel); })
-      .catch(function () { return null; });
-  }
   function fetchMail() {
     if (typeof fetch !== 'function') return;
-    getJson('mail.json').then(function (m) {
+    fetch('mail.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (m) {
       if (m && Array.isArray(m.letters)) { list = m.letters; mailCount(); if (page && page.classList.contains('on')) render(); }
     }).catch(function () {});
   }
@@ -194,7 +171,7 @@
   // tap the mailbox: it pops, the letters fan out, then the window rises (a tap skips the show)
   function openMail() {
     if (!page) build();
-    view = 'list'; tab = 'all'; open = null; render(); fetchMail();   // opening the mailbox looks for new letters right away
+    view = 'list'; tab = 'all'; open = null; render();
     page.classList.remove('fan'); void page.offsetWidth;
     page.classList.add('on', 'fan', 'rise');   // the window rises once, when it opens (not at every redraw)
     clearTimeout(page._t); page._t = setTimeout(function () { page.classList.remove('fan'); }, 1100);
@@ -203,7 +180,7 @@
   CW.mailOpen = openMail; CW.mailCount = mailCount; CW.mailFetch = fetchMail;
   CW.mailIsOpen = function () { return !!(page && page.classList.contains('on')); };
   CW.mailStart = function () {
-    fetchMail(); setInterval(function () { if (!document.hidden) fetchMail(); }, 60 * 1000);   // every minute while the game is on screen
+    fetchMail(); setInterval(fetchMail, 5 * 60 * 1000);
     document.addEventListener('visibilitychange', function () { if (!document.hidden) fetchMail(); });
   };
 })(this);
