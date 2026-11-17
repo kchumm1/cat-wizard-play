@@ -8,6 +8,23 @@
   // are kept on an even clock (next += interval), so 30 on a 60 Hz screen is every second refresh and 40 on a 120 Hz
   // screen every third.
   var IDLE_MS = 3 * 60 * 1000, SOFT = 30, SLACK = 2;
+  // the screen's refresh time from recent gaps between refreshes. Each usual screen rate is tried from the slowest up;
+  // the first one that most gaps fit (each gap a whole number of its refreshes: 1, or 2–3 for a busy frame) is the
+  // screen. The shortest gap was used before, but an iPhone's times wobble (a 120 Hz screen gave a 6 ms gap now and then
+  // and showed as 165 Hz, 2026-11-17); a stray gap or two no longer decides it. No rate fits: the middle gap.
+  var RATES = [30, 48, 50, 60, 72, 75, 90, 100, 120, 144, 165, 240];
+  function rateOf(gaps) {
+    for (var r = 0; r < RATES.length; r++) {
+      var P = 1000 / RATES[r], fit = 0;
+      for (var i = 0; i < gaps.length; i++) { var k = gaps[i] / P, n = Math.round(k); if (n >= 1 && Math.abs(k - n) < 0.12) fit++; }
+      if (fit >= gaps.length * 0.45) return RATES[r];
+    }
+    return 0;
+  }
+  function refreshOf(gaps) {
+    var h = rateOf(gaps); if (h) return 1000 / h;
+    var s = gaps.slice().sort(function (x, y) { return x - y; }); return s[s.length >> 1];
+  }
   function createFramePace() {
     var cap = 60, sheet = false, touchedAt = 0, next = 0, lastTarget = 60;
     function target(now) {
@@ -20,14 +37,13 @@
     var lastRaw = 0, vs = 1000 / 60, seen = 0, gaps = [];
     function shouldDraw(now) {
       if (!touchedAt) touchedAt = now;                       // the idle clock starts when the game starts
-      // the screen's own refresh time: the shortest of the last 90 gaps between refreshes (a busy frame makes a gap
-      // two or three refreshes long, never shorter). A turn may come up to half a refresh early, so a little timing
-      // noise does not push a frame to the next refresh.
+      // the screen's own refresh time, from the last 90 gaps between refreshes (refreshOf). A turn may come up to half a
+      // refresh early, so a little timing noise does not push a frame to the
+      // next refresh.
       var raw = now - lastRaw; lastRaw = now;
       if (raw > 3 && raw < 60) {
         seen++; gaps.push(raw); if (gaps.length > 90) gaps.shift();
-        var lo = gaps[0]; for (var gi = 1; gi < gaps.length; gi++) if (gaps[gi] < lo) lo = gaps[gi];
-        vs = lo;
+        if (seen < 30 || seen % 10 === 0) vs = refreshOf(gaps);
       }
       SLACK = vs * 0.5;
       var t = target(now);
@@ -52,7 +68,7 @@
       hz: function () {
         if (seen < 30) return 0;
         var f = 1000 / vs, best = 60;
-        [30, 48, 50, 60, 72, 75, 90, 100, 120, 144, 165, 240].forEach(function (h) { if (Math.abs(h - f) < Math.abs(best - f)) best = h; });
+        RATES.forEach(function (h) { if (Math.abs(h - f) < Math.abs(best - f)) best = h; });
         return best;
       },
       shouldDraw: shouldDraw
