@@ -62,6 +62,7 @@
   function detailHtml(n) {
     var V = n.view && CW.noticePage && CW.noticePage[n.view];
     special = V ? V(n) : null;
+    if (special && special.bare) return '<div class="nzw nzone nzv nzbare ' + special.cls + '"><div class="nzvbody">' + special.html + '</div></div>';   // its own head and close (확률표 시안)
     if (special) return '<div class="nzw nzone nzv ' + special.cls + '">' + head('') + '<div class="nzvbody">' + special.html + '</div>' +
       '<button class="nzback" data-nzback><span>목록으로</span></button></div>';
     var body = String(n.text || '').split(/\n\s*\n/).map(function (p) { return '<p>' + esc(p.trim()).replace(/\n/g, '<br>') + '</p>'; }).join('');

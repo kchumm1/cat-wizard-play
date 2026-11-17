@@ -1084,12 +1084,14 @@
         if (g.daily) lines.push('<i class="gem"></i> 다이아 ' + fmt(g.daily.gems) + '개씩 ' + g.daily.days + '일');
         if (g.gems) lines.push('<i class="gem"></i> 다이아 ' + fmt(g.gems));
         if (g.goldMin) lines.push('<i class="coin"></i> 골드 ' + gh(CW.goldPerSecond(s) * 60 * g.goldMin) + ' (사냥 ' + (g.goldMin >= 60 ? g.goldMin / 60 + '시간' : g.goldMin + '분') + '치)');
-        if (g.potionMin) lines.push('물약 3종 ' + (g.potionMin >= 60 ? g.potionMin / 60 + '시간' : g.potionMin + '분'));
-        if (g.pulls) lines.push('장비 뽑기 ' + g.pulls + '번 (다이아 안 씀)');
-        (g.runes || []).forEach(function (x) { lines.push('<b style="color:' + hc(x.grade) + '">' + hn(x.grade) + '</b> 룬 ' + x.n + '개'); });   // 겨울 패키지 (2026-11-17)
+        // marks for potions, pulls, runes and sigils too (2026-11-17, the user: 마크로, 물약도 그림으로 — js/notice-pages.js giveIco)
+        var gi = function (k, gr) { return CW.giveIco ? '<i class="pkmi">' + CW.giveIco(k, gr) + '</i>' : ''; };
+        if (g.potionMin) lines.push(gi('potion') + '물약 3종 ' + (g.potionMin >= 60 ? g.potionMin / 60 + '시간' : g.potionMin + '분'));
+        if (g.pulls) lines.push(gi('pull') + '장비 뽑기 ' + g.pulls + '번 (다이아 안 씀)');
+        (g.runes || []).forEach(function (x) { lines.push(gi('rune', x.grade) + '<b style="color:' + hc(x.grade) + '">' + hn(x.grade) + '</b> 룬 ' + x.n + '개'); });   // 겨울 패키지 (2026-11-17)
         if (g.runeStone) lines.push(CW.ICO.cur('rune') + ' 룬석 ' + fmt(g.runeStone));
         if (g.mana) lines.push(CW.ICO.cur('mana') + ' 마력석 ' + fmt(g.mana));
-        (g.sigils || []).forEach(function (x) { lines.push('<b style="color:' + hc(x.grade) + '">' + hn(x.grade) + '</b> 신성력 ' + x.n + '개'); });
+        (g.sigils || []).forEach(function (x) { lines.push(gi('sigil', x.grade) + '<b style="color:' + hc(x.grade) + '">' + hn(x.grade) + '</b> 신성력 ' + x.n + '개'); });
         if (g.sigilStone) lines.push(CW.ICO.cur('sigil') + ' 신성석 ' + fmt(g.sigilStone));
         return lines.join(' · ');
       };
@@ -1116,7 +1118,7 @@
         if (sec[0] === 'winter') {   // a frosty showcase with falling snow (2026-11-17, the user: 애니메이션화해서 보기 좋게)
           var dleft = Math.max(0, Math.ceil((Date.parse(list[0].until + 'T23:59:59+09:00') - Date.now()) / 864e5));
           var flakes = ''; for (var fi = 0; fi < 16; fi++) flakes += '<i style="--x:' + ((fi * 37) % 100) + '%;--d:' + (5 + (fi * 7) % 6) + 's;--w:' + (-((fi * 13) % 9)) + 's;--z:' + (0.5 + (fi % 4) * 0.25) + '"></i>';
-          return '<div class="wpk"><div class="wsnow" aria-hidden="true">' + flakes + '</div><div class="wpkhead"><b>겨울 신규 냥법사</b><span>처음 오신 냥법사님께 · 각 1번</span><em>D-' + dleft + '</em></div>' +
+          return '<div class="wpk"><div class="wsnow" aria-hidden="true">' + flakes + '</div><div class="wpkhead" style="background-image:url(' + (CW.ART_BASE || 'art/') + 'ui-winter-banner.webp)"><b>겨울 신규 냥법사</b><span>처음 오신 냥법사님께 · 각 1번</span><em>D-' + dleft + '</em></div>' +
             '<div class="packs winter">' + list.map(packRow).join('') + '</div><p class="wpknote">룬은 3차, 신성력은 5차 전직 후 장착할 수 있어요 (가방에 보관)</p></div>';
         }
         return '<div class="subh">' + sec[1] + '</div><div class="packs">' + list.map(packRow).join('') + '</div>';

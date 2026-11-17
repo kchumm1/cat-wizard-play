@@ -13,83 +13,98 @@
   function sound() { var g = root.GAME; if (g && g.G && g.G.sound) g.G.sound('click'); }
 
   // ------------------------------------------------------------------ 확률표
-  function bars(row, grades) {
-    var max = Math.max.apply(null, row.concat([1]));
-    return '<div class="rtbars">' + grades.map(function (g, i) {
-      var v = row[i] || 0;
-      return '<div class="rtbar' + (v ? '' : ' zero') + '" style="--c:' + g.color + ';--k:' + i + '"><i class="rtg">' + g.name + '</i>' +
-        '<span class="rttrack"><b style="width:' + (v ? Math.max(2.5, v / max * 100) : 0) + '%"></b></span><em>' + pct(v) + '</em></div>';
-    }).join('') + '</div>';
-  }
-  function costLine(cost, unit) {
-    return '<div class="rtcost">' + Object.keys(cost).map(function (k) { return '<span><b>' + k + '회</b><i class="gem"></i>' + n(cost[k]) + '</span>'; }).join('') + (unit ? '<small>' + unit + '</small>' : '') + '</div>';
-  }
-  function gearPart(lv) {
-    var GA = D().gacha, s = S(), my = s && CW.gachaLevel ? CW.gachaLevel(s.pulls || 0) : 1;
-    if (!lv) lv = my;
-    var chips = GA.levels.map(function (from, i) {
-      var l = i + 1;
-      return '<button class="rtlv' + (l === lv ? ' on' : '') + (l === my ? ' me' : '') + '" data-rtlv="' + l + '"><b>Lv.' + l + '</b><small>' + n(from) + '회~</small>' + (l === my ? '<i>내 레벨</i>' : '') + '</button>';
+  // 2026-11-17 시안 (art-src/ai-review/2026-11-17-rates-design, the user: 이 확률표로 바꾸고 확률표만 쓰고, 200회 전설 확정 문구는
+  // 빼고, 지금 뽑기 확률 그대로): a letter-paper page — the mail cat over an airmail banner, envelope tabs, a 뽑기 레벨
+  // stepper (장비), a ring-bound note with a gem stamp per grade, the green ribbon. The pictures are cut from the design
+  // (tools/cut-rates.py, art/rt-*.webp); every word and number is written here from DATA.
+  // stamp (rt-st-<n>) and bar colour for each grade name; 고대·천상 (runes, sigils) are a near stamp re-tinted
+  var GRADE_LOOK = { '일반': [0, '#a3a3a3'], '고급': [1, '#a2ca7d'], '희귀': [2, '#70bcfd'], '영웅': [3, '#c691d7'], '전설': [4, '#ffb356'], '신화': [5, '#f489a4'],
+    '고대': [4, '#d2ad6c', 'sepia(.55) saturate(.8) brightness(.95)'], '태초': [6, '#4bcbc4'], '불멸': [7, '#fbc749'], '천상': [3, '#e48cf0', 'hue-rotate(28deg) saturate(1.35)'],
+    '혼돈': [8, '#a77ae0'], '멸망': [9, '#ef7b72'] };
+  function A() { return CW.ART_BASE || 'art/'; }
+  function rows(list, top) {
+    var max = top || Math.max.apply(null, list.map(function (r) { return r.v; }).concat([0.0001]));
+    return list.map(function (r, i) {
+      return '<div class="rt2row" style="--c:' + r.c + ';--k:' + i + '"><span class="rt2st">' + r.ico + '</span><b>' + esc(r.name) + '</b>' +
+        '<span class="rt2bar"><i style="width:' + Math.max(2.2, r.v / max * 100) + '%"></i></span><em>' + pct(r.v) + '</em></div>';
     }).join('');
-    return '<p class="rtlead">뽑을수록 <b>뽑기 레벨</b>이 올라 높은 등급이 잘 나와요.<br>레벨을 눌러 확률을 비교해 보세요.</p>' +
-      '<div class="rtlvs">' + chips + '</div>' +
-      '<div class="rtcard"><div class="rtcap">뽑기 Lv.' + lv + ' · 등급별 확률</div>' + bars(GA.table[lv - 1], D().grades) + '</div>' +
-      '<ul class="rtrules"><li><b>천장</b> ' + GA.pity + '번 안에 전설 등급 이상이 꼭 나와요.</li>' +
-      '<li><b>10회</b> 뽑으면 희귀 이상 1개, <b>100회 이상</b>은 영웅 이상 1개 보장.</li>' +
-      '<li>장비 부위 ' + D().slots.length + '곳은 모두 같은 확률이에요.</li>' +
-      '<li>등급 안의 단계(Ⅰ~Ⅳ)는 Ⅰ로 나와요. 같은 장비 ' + D().bagConf.mergeCount + '개로 다음 단계!</li></ul>' + costLine(GA.cost);
   }
-  function hiPart(name, C, extra) {
-    return '<p class="rtlead">' + name + ' 소환은 <b>언제나 같은 확률</b>이에요.</p>' +
-      '<div class="rtcard"><div class="rtcap">' + name + ' 소환 · 등급별 확률</div>' + bars(C.summonTable, D().hiGrades) + '</div>' +
-      '<ul class="rtrules">' + extra + '</ul>' + costLine(C.summon);
-  }
-  function relicPart() {
-    var C = D().relicSummon, all = D().relics, dv = all.filter(function (r) { return r.divine; }), nm = all.filter(function (r) { return !r.divine; });
-    var each = function (list, total) {
-      return list.map(function (r) { return '<div class="rtrel"><span class="rtri">' + (ico('relic', r.id) || r.icon) + '</span><b>' + esc(r.name) + '</b><em>' + pct(total / list.length) + '</em></div>'; }).join('');
-    };
-    return '<p class="rtlead">유물은 <b>신화 유물 ' + pct(C.divineRate * 100) + '</b>, 일반 유물 ' + pct((1 - C.divineRate) * 100) + '이에요.<br>같은 묶음 안에서는 모두 같은 확률이에요.</p>' +
-      '<div class="rtcard"><div class="rtcap gold">신화 유물 · ' + dv.length + '종</div><div class="rtrels">' + each(dv, C.divineRate * 100) + '</div></div>' +
-      '<div class="rtcard"><div class="rtcap">일반 유물 · ' + nm.length + '종</div><div class="rtrels">' + each(nm, (1 - C.divineRate) * 100) + '</div></div>' +
-      '<ul class="rtrules"><li>같은 유물이 나오면 그 유물 레벨이 1 올라요.</li><li>최고 레벨(일반 ' + C.maxLv + ', 신화 ' + C.divineMaxLv + ')이면 다이아 ' + C.refund + '개로 돌려받아요.</li></ul>' + costLine(C.cost);
+  function gradeRows(row, grades) {
+    return grades.map(function (g, i) {
+      var L = GRADE_LOOK[g.name] || [0, g.color];
+      return { v: row[i] || 0, name: g.name, c: L[1], ico: '<img src="' + A() + 'rt-st-' + L[0] + '.webp" alt="" draggable="false"' + (L[2] ? ' style="filter:' + L[2] + '"' : '') + '>' };
+    }).filter(function (r) { return r.v > 0; });   // only the grades that can come
   }
   var RT = [['gear', '장비'], ['rune', '룬'], ['sigil', '신성력'], ['relic', '유물']];
-  function ratesBody(tab, lv) {
-    var body = tab === 'rune' ? hiPart('룬', D().runeConf, '<li>룬 종류는 지금 열린 룬 중에서 정해져요.</li><li>' + D().runeConf.unlockTier + '차 전직부터 소환할 수 있어요.</li><li>가방이 꽉 차면 그 룬은 룬석으로 바뀌어요.</li>')
-      : tab === 'sigil' ? hiPart('신성력', D().sigilConf, '<li>옵션은 지금 열린 옵션 중에서 같은 확률로 정해져요.</li><li>' + D().sigilConf.unlockTier + '차 전직부터 소환할 수 있어요.</li><li>품질(0~100%)은 따로 무작위예요.</li>')
-      : tab === 'relic' ? relicPart() : gearPart(lv);
-    return '<div class="rtpane" data-rtpane="' + tab + '">' + body + '</div>';
+  var FOOT = { gear: '선택한 레벨 기준 확률이에요', rune: '언제나 같은 확률이에요', sigil: '언제나 같은 확률이에요', relic: '묶음 안에서는 같은 확률이에요' };
+  function myLevel() { var s = S(); return s && CW.gachaLevel ? CW.gachaLevel(s.pulls || 0) : 1; }
+  function lvRow(lv) {
+    var from = D().gacha.levels[lv - 1], top = D().gacha.levels.length;
+    return '<div class="rt2lv"><b>뽑기 레벨</b><span class="rt2sel"><button data-rtstep="-1" aria-label="이전 레벨"' + (lv <= 1 ? ' disabled' : '') + '></button>' +
+      '<span>Lv.' + lv + '</span><button data-rtstep="1" aria-label="다음 레벨"' + (lv >= top ? ' disabled' : '') + '></button></span>' +
+      '<i class="rt2bar0"></i><em>' + (from ? '누적 ' + n(from) + '회부터' : '처음부터') + '</em></div>';
+  }
+  function cardHtml(tab, lv) {
+    var D0 = D(), body;
+    if (tab === 'relic') {
+      var C = D0.relicSummon, nN = D0.relics.filter(function (r) { return !r.divine; }).length, top = (1 - C.divineRate) * 100 / nN, rel = function (list, total) {
+        return rows(list.map(function (r) { return { v: total / list.length, name: r.name, c: r.divine ? '#fbc749' : '#c691d7', ico: ico('relic', r.id) || r.icon }; }), top);   // one scale for both groups
+      };
+      body = '<h5>신화 유물 · ' + pct(C.divineRate * 100) + '</h5>' + rel(D0.relics.filter(function (r) { return r.divine; }), C.divineRate * 100) +
+        '<h5>일반 유물 · ' + pct((1 - C.divineRate) * 100) + '</h5>' + rel(D0.relics.filter(function (r) { return !r.divine; }), (1 - C.divineRate) * 100);
+    } else {
+      var row = tab === 'gear' ? D0.gacha.table[lv - 1] : (tab === 'rune' ? D0.runeConf : D0.sigilConf).summonTable;
+      body = '<h5>등급별 등장 확률</h5>' + rows(gradeRows(row, tab === 'gear' ? D0.grades : D0.hiGrades));
+    }
+    return '<div class="rt2card' + (tab === 'relic' ? ' relic' : '') + '">' + body + '</div>';
   }
   function rates() {
-    var html = '<div class="rtwrap"><div class="rthero"><span class="rtdice"><i></i><i></i><i></i></span><div><b>뽑기 확률표</b><small>모든 확률은 게임 속 값 그대로예요</small></div></div>' +
-      '<div class="rttabs" role="tablist">' + RT.map(function (t, i) { return '<button role="tab" data-rttab="' + t[0] + '" aria-selected="' + !i + '">' + t[1] + '</button>'; }).join('') + '</div>' +
-      '<div class="rtscroll">' + ratesBody('gear') + '</div>' +
-      '<button class="nzgo2" data-nzjump="gacha"><span>뽑기 하러 가기</span></button></div>';
-    return { html: html, cls: 'nzrates', init: function (el) {
-      var tab = 'gear';
+    var tab = 'gear', lv = myLevel();
+    var html = '<div class="rt2">' +
+      '<div class="rt2head"><img src="' + A() + 'rt-head.webp" alt="" draggable="false"><b>뽑기 확률표</b><small>어떤 선물이 기다릴까요?</small><button class="rt2x" data-nzx aria-label="닫기"></button></div>' +
+      '<div class="rt2tabs" role="tablist">' + RT.map(function (t, i) { return '<button role="tab" data-rttab="' + t[0] + '" aria-selected="' + !i + '"><span>' + t[1] + '</span></button>'; }).join('') + '</div>' +
+      '<div class="rt2lvslot">' + lvRow(lv) + '</div>' +
+      '<div class="rt2scroll">' + cardHtml(tab, lv) + '</div>' +
+      '<div class="rt2foot"><img src="' + A() + 'rt-foot.webp" alt="" draggable="false"><button data-nzjump="gacha"><span>뽑기 하러 가기</span></button><p>' + FOOT.gear + '</p></div></div>';
+    return { html: html, cls: 'nzrates2', bare: true, init: function (el) {
+      var sc = el.querySelector('.rt2scroll'), slot = el.querySelector('.rt2lvslot'), foot = el.querySelector('.rt2foot p');
+      function draw() { sc.innerHTML = cardHtml(tab, lv); slot.innerHTML = tab === 'gear' ? lvRow(lv) : ''; slot.classList.toggle('off', tab !== 'gear'); foot.textContent = FOOT[tab]; }
       el.addEventListener('click', function (e) {
-        var t = e.target.closest('[data-rttab]'), l = e.target.closest('[data-rtlv]'), sc = el.querySelector('.rtscroll');
-        if (t) { tab = t.dataset.rttab; sound(); el.querySelectorAll('[data-rttab]').forEach(function (b) { b.setAttribute('aria-selected', b === t); }); sc.innerHTML = ratesBody(tab); sc.scrollTop = 0; }
-        else if (l) { sound(); var keep = el.querySelector('.rtlvs').scrollLeft; sc.querySelector('.rtpane').outerHTML = ratesBody('gear', +l.dataset.rtlv); el.querySelector('.rtlvs').scrollLeft = keep; }
+        var t = e.target.closest('[data-rttab]'), st = e.target.closest('[data-rtstep]');
+        if (t && t.dataset.rttab !== tab) { tab = t.dataset.rttab; sound(); el.querySelectorAll('[data-rttab]').forEach(function (b) { b.setAttribute('aria-selected', b === t); }); draw(); sc.scrollTop = 0; }
+        else if (st && !st.disabled) { lv = Math.max(1, Math.min(D().gacha.levels.length, lv + (+st.dataset.rtstep))); sound(); draw(); }
       });
-      var me = el.querySelector('.rtlv.me'); if (me) { var box = el.querySelector('.rtlvs'); box.scrollLeft = Math.max(0, me.offsetLeft - box.clientWidth / 2 + me.offsetWidth / 2); }
     } };
   }
 
   // ------------------------------------------------------------------ 겨울 신규 패키지
+  // one mark per kind of thing a package gives: the same pictures the game shows for them elsewhere
+  function giveIco(kind, grade) {
+    var I = CW.ICO || {}, D0 = D(), A = CW.ART_BASE || 'art/', gc = grade !== undefined && D0.hiGrades[grade] ? D0.hiGrades[grade].color : '#fff';
+    if (kind === 'gem') return '<i class="gem"></i>';
+    if (kind === 'gold') return '<i class="coin"></i>';
+    if (kind === 'pull') return '<img class="ico pic" src="' + A + 'ui-gear-summon.webp" alt="" draggable="false">';
+    if (kind === 'potion') return (I.misc && I.misc('potion', 'rage')) || '';
+    if (kind === 'mana' || kind === 'runeStone' || kind === 'sigilStone') return (I.cur && I.cur({ mana: 'mana', runeStone: 'rune', sigilStone: 'sigil' }[kind])) || '';
+    // 룬·신성력: one clean picture, no frame or plate (2026-11-17, the user: 룬하고 신성력 그림 깔끔하게) — the 룬 shortcut's
+    // rune, and the plain sigil gem of that grade
+    if (kind === 'rune') return '<img class="ico pic" src="' + A + 'ic-rune.webp" alt="" draggable="false">';
+    if (kind === 'sigil') return '<img class="ico pic" src="' + A + 'sg-paw-' + Math.max(0, Math.min(10, grade || 0)) + '.webp" alt="" draggable="false">';
+    return '';
+  }
+  CW.giveIco = giveIco;
   function giveList(g) {
     var D0 = D(), hn = function (x) { return '<b style="color:' + D0.hiGrades[x].color + '">' + D0.hiGrades[x].name + '</b>'; }, out = [];
-    if (g.gems) out.push(['💎', '다이아 ' + n(g.gems)]);
-    if (g.pulls) out.push(['🎰', '장비 뽑기 ' + g.pulls + '번']);
-    if (g.goldMin) out.push(['💰', '골드 (사냥 ' + (g.goldMin >= 60 ? g.goldMin / 60 + '시간' : g.goldMin + '분') + '치)']);
-    if (g.potionMin) out.push(['🧪', '물약 3종 ' + g.potionMin / 60 + '시간']);
-    if (g.mana) out.push(['🔷', '마력석 ' + n(g.mana)]);
-    (g.runes || []).forEach(function (x) { out.push(['🔮', hn(x.grade) + ' 룬 ' + x.n + '개']); });
-    if (g.runeStone) out.push(['🪨', '룬석 ' + n(g.runeStone)]);
-    (g.sigils || []).forEach(function (x) { out.push(['💠', hn(x.grade) + ' 신성력 ' + x.n + '개']); });
-    if (g.sigilStone) out.push(['✨', '신성석 ' + n(g.sigilStone)]);
-    return out.map(function (x, i) { return '<li style="--k:' + i + '"><i>' + x[0] + '</i><span>' + x[1] + '</span></li>'; }).join('');
+    if (g.gems) out.push([giveIco('gem'), '다이아 ' + n(g.gems)]);
+    if (g.pulls) out.push([giveIco('pull'), '장비 뽑기 ' + g.pulls + '번']);
+    if (g.goldMin) out.push([giveIco('gold'), '골드 (사냥 ' + (g.goldMin >= 60 ? g.goldMin / 60 + '시간' : g.goldMin + '분') + '치)']);
+    if (g.potionMin) out.push([giveIco('potion'), '물약 3종 ' + g.potionMin / 60 + '시간']);
+    if (g.mana) out.push([giveIco('mana'), '마력석 ' + n(g.mana)]);
+    (g.runes || []).forEach(function (x) { out.push([giveIco('rune', x.grade), hn(x.grade) + ' 룬 ' + x.n + '개']); });
+    if (g.runeStone) out.push([giveIco('runeStone'), '룬석 ' + n(g.runeStone)]);
+    (g.sigils || []).forEach(function (x) { out.push([giveIco('sigil', x.grade), hn(x.grade) + ' 신성력 ' + x.n + '개']); });
+    if (g.sigilStone) out.push([giveIco('sigilStone'), '신성석 ' + n(g.sigilStone)]);
+    return out.map(function (x, i) { return '<li style="--k:' + i + '"><i class="wpi">' + x[0] + '</i><span>' + x[1] + '</span></li>'; }).join('');
   }
   function pack() {
     var list = D().packs.filter(function (p) { return p.cat === 'winter'; }), s = S();
@@ -103,7 +118,7 @@
         '<ul>' + giveList(p.give) + '</ul></div>';
     }).join('');
     var html = '<div class="wpwrap"><div class="wsnow" aria-hidden="true">' + flakes + '</div>' +
-      '<div class="wphero"><span class="wpman">⛄</span><b>겨울 신규 냥법사</b><small>처음 오신 냥법사님을 위한 겨울 선물 · 각 1번' + (m ? ' · ' + (+m[2]) + '월 ' + (+m[3]) + '일까지' : '') + '</small></div>' +
+      '<div class="wphero" style="background-image:url(' + (CW.ART_BASE || 'art/') + 'ui-winter-banner.webp)"><b>겨울 신규<br>냥법사</b><small>새로 온 냥법사님 겨울 선물<br>각 1번' + (m ? ' · ' + (+m[2]) + '월 ' + (+m[3]) + '일까지' : '') + '</small></div>' +
       '<div class="wpscroll">' + cards + '<p class="wpnote">룬은 3차, 신성력은 5차 전직부터 장착할 수 있어요.<br>그 전에는 가방에 잘 보관돼요.</p></div>' +
       '<button class="nzgo2 ice" data-nzjump="packs"><span>패키지 보러 가기</span></button></div>';
     return { html: html, cls: 'nzpack' };
@@ -139,7 +154,7 @@
         '<p class="gbtip">가지고만 있어도 보유 효과가 붙어요. 버리지 말고 합쳐요!</p>' },
       { ch: '5장', t: '뽑기', art: med(ico('tab', 'gacha'), '#ff9ec7'), body:
         '<p><b>다이아</b>로 장비를 뽑아요. 많이 뽑을수록 <b>뽑기 레벨</b>이 올라 좋은 등급이 잘 나와요.</p>' +
-        '<ul class="gbul"><li>' + D0.gacha.pity + '번 안에 전설 이상 보장</li><li>10회·100회·500회 묶음이 더 싸요</li><li>유물·룬·신성력 소환도 여기서</li></ul>' +
+        '<ul class="gbul"><li>10회·100회·500회 묶음이 더 싸요</li><li>유물·룬·신성력 소환도 여기서</li></ul>' +
         '<p class="gbtip">정확한 확률은 공지의 <b>「뽑기 확률표」</b>에서 볼 수 있어요.</p>' },
       { ch: '6장', t: '던전', art: med(ico('tab', 'dungeon'), '#b4a2ff'), body:
         '<p>' + D0.dungeonConf.unlockTier + '차 전직부터 열려요. 던전마다 <b>하루 입장권 ' + D0.dungeonConf.tickets + '장</b>, 30초 동안 싸워요.</p>' +
@@ -170,9 +185,8 @@
   }
   function pageHtml(p, i, total, P) {
     var num = '<i class="gbnum">' + (i + 1) + '</i>';
-    if (p.cover) return '<div class="gbpage gbcover"><div class="gbcv"><span class="gbstar s1"></span><span class="gbstar s2"></span><span class="gbstar s3"></span>' +
-      '<span class="gbcrest">' + ico('tab', 'skill') + '</span><small>냥법사 모험 안내서</small><b>처음 만나는<br>냥법사</b><em>밀어서 넘겨 보세요</em><i class="gbswipe"></i></div></div>';
-    if (p.back) return '<div class="gbpage gbcover gbback"><div class="gbcv"><span class="gbcrest">' + ico('tab', 'battle') + '</span><b>즐거운 모험<br>되세요!</b><small>모르는 게 생기면 언제든<br>이 안내서를 다시 펼쳐 보세요</small>' +
+    if (p.cover) return '<div class="gbpage gbcover" style="background-image:url(' + (CW.ART_BASE || 'art/') + 'ui-guide-cover.webp)"><div class="gbcv"><small>냥법사 모험 안내서</small><b>처음 만나는<br>냥법사</b><em>밀어서 넘겨 보세요</em><i class="gbswipe"></i></div></div>';
+    if (p.back) return '<div class="gbpage gbcover gbback" style="background-image:url(' + (CW.ART_BASE || 'art/') + 'ui-guide-cover.webp)"><div class="gbcv"><b>즐거운 모험<br>되세요!</b><small>모르는 게 생기면 언제든<br>이 안내서를 다시 펼쳐 보세요</small>' +
       '<button class="gbagain" data-gbgo="0">처음으로</button></div></div>';
     if (p.toc) return '<div class="gbpage"><div class="gbin"><div class="gbch">차례</div><h4>무엇이 궁금하세요?</h4><div class="gbtoc">' +
       P.map(function (x, k) { return x.t ? '<button data-gbgo="' + k + '"><i>' + x.ch + '</i><span>' + x.t + '</span><em>' + (k + 1) + '</em></button>' : ''; }).join('') + '</div></div>' + num + '</div>';
