@@ -699,12 +699,12 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
 
   // ---- 운영 편의 (2026-11-18)
   // 빠른 시작 틀: 숫자는 여기서 마음대로 고치면 돼요
-  var HI = '안녕하세요, 냥법사님!\n\n';
+  var HI = '안녕하세요, 냥법사님.\n\n';
   var PRESETS = [
-    { name: '🛠 점검 보상', gold: '1000만', gems: 300, title: '점검 보상 선물', text: HI + '점검 동안 기다려 주셔서 정말 고마워요.\n불편했을 시간을 작은 선물로 채워 드릴게요.\n\n더 편안하고 안정적인 모험이 되도록\n계속 노력할게요.\n오늘도 즐거운 모험 되세요!' },
-    { name: '🙇 사과 보상', gold: '1억', gems: 1000, title: '사과의 선물', text: HI + '모험 중에 불편을 드려서 진심으로 미안해요.\n마음을 담아 작은 선물을 준비했어요.\n\n같은 일이 없도록 꼼꼼히 고치고 있어요.\n이해해 주셔서 고마워요.' },
-    { name: '🎉 이벤트 선물', gold: '', gems: 500, title: '이벤트 선물', text: HI + '이벤트에 함께해 주셔서 고마워요.\n약속드린 선물을 우편함으로 보내요.\n\n앞으로도 즐거운 이벤트로 찾아올게요.\n새로운 모험도 함께해 주세요!' },
-    { name: '🐾 신규 환영', gold: '500만', gems: 200, title: '환영 선물', text: HI + '냥법사의 세계에 오신 걸 환영해요.\n첫 모험을 응원하는 선물을 준비했어요.\n\n천천히, 즐겁게 모험해 보세요.\n멋진 마법사가 되길 응원할게요!' }
+    { name: '🛠 점검 보상', gold: '1000만', gems: 300, title: '점검 보상 안내', sub: '점검 보상을 보내 드립니다', text: HI + '안정적인 서비스를 위한 점검 동안 기다려 주셔서 진심으로 감사드립니다.\n불편을 드린 점 양해 부탁드리며, 점검 보상을 보내 드립니다.\n\n앞으로도 더 쾌적한 모험을 즐기실 수 있도록\n최선을 다하겠습니다.\n감사합니다.' },
+    { name: '🙇 사과 보상', gold: '1억', gems: 1000, title: '사과의 말씀', sub: '사과의 뜻을 담은 보상을 보내 드립니다', text: HI + '이용 중 불편을 드려 진심으로 사과드립니다.\n작은 정성이지만 사과의 뜻을 담아 보상을 보내 드립니다.\n\n같은 문제가 생기지 않도록\n꼼꼼히 살피고 개선하겠습니다.\n너그러운 이해에 감사드립니다.' },
+    { name: '🎉 이벤트 선물', gold: '', gems: 500, title: '이벤트 보상 안내', sub: '이벤트 선물을 보내 드립니다', text: HI + '이벤트에 참여해 주셔서 감사합니다.\n약속드린 이벤트 선물을 보내 드립니다.\n\n앞으로도 즐거운 이벤트로 찾아뵙겠습니다.\n냥법사와 함께 즐거운 모험 이어 가세요!' },
+    { name: '🐾 신규 환영', gold: '500만', gems: 200, title: '환영 선물', sub: '환영 선물을 보내 드립니다', text: HI + '냥법사의 세계에 오신 것을 환영합니다.\n첫 모험을 응원하는 마음을 담아 선물을 보내 드립니다.\n\n천천히, 즐겁게 모험해 보세요.\n멋진 마법사가 되시기를 응원하겠습니다.' }
   ];
   var NZP = [
     { name: '🛠 점검 안내', tag: '점검', title: '점검 안내', text: '점검 시간: \n점검 내용: \n보상: \n\n불편을 드려 죄송해요.' },
@@ -718,7 +718,7 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
     list.forEach(function (p) { var b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = p[0]; b.onclick = function () { on(p[1]); }; box.appendChild(b); });
   }
   function dayOf(n) { return n == null ? '' : CW.kstDay(Date.now(), n); }
-  chipBar($('presetBar'), PRESETS.map(function (p) { return [p.name, p]; }), function (p) { clearGift(); $('gold').value = p.gold; $('gems').value = p.gems || ''; $('mTitle').value = p.title; $('mText').value = p.text; preview(); say('sendMsg', '「' + p.title + '」 편지가 써졌어요. 확인하고 보내세요.', 'ok'); });
+  chipBar($('presetBar'), PRESETS.map(function (p) { return [p.name, p]; }), function (p) { clearGift(); $('gold').value = p.gold; $('gems').value = p.gems || ''; $('mTitle').value = p.title; $('mText').value = p.text; $('sub').value = p.sub; subTouched = true; preview(); say('sendMsg', '「' + p.title + '」 편지가 써졌어요. 확인하고 보내세요.', 'ok'); });
   chipBar($('dayChips'), DAYS, function (n) { $('until').value = dayOf(n); fire('until'); });
   chipBar($('nzDayChips'), DAYS, function (n) { $('nzUntil').value = dayOf(n); });
   $('pids').addEventListener('input', function () {
