@@ -244,6 +244,18 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
 }
 @media (min-width:1700px){.gcol .grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media (min-width:1360px) and (max-width:1599px){.gcol #presetBar{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* 보내기 전 확인 창: 실제로 받을 편지 글을 그대로 보여 줌 */
+.ask{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));background:rgba(5,3,14,.72);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.ask.hide{display:none}
+.ask-box{width:100%;max-width:560px;max-height:100%;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line2);border-radius:20px;box-shadow:0 18px 50px rgba(0,0,0,.5);overflow:hidden}
+.ask-box>h3{margin:0;padding:18px 20px 6px;font-size:19px;font-weight:800}
+.ask-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:6px 20px 4px}
+.ask-meta{margin:0 0 12px;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:15px}
+.ask-meta dt{color:var(--soft);font-weight:700}.ask-meta dd{margin:0;font-weight:700;word-break:break-all}
+.ask-btns{display:flex;gap:10px;padding:14px 20px 18px;border-top:1px solid var(--line)}
+.ask-btns button{flex:1;min-height:50px;border-radius:14px;font:inherit;font-size:17px;font-weight:800;cursor:pointer;border:1px solid var(--line2);background:var(--sunk);color:var(--ink)}
+.ask-btns .yes{flex:1.4;border:0;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent3))}
+@media (max-width:480px){.ask{align-items:flex-end;padding-bottom:max(10px,env(safe-area-inset-bottom))}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
@@ -701,12 +713,15 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
     var f = form(), err = CW.mailCheck(f); if (err) return say('sendMsg', err, 'bad');
     var l = CW.mailMake(f);
     var who = l.to === 'all' ? '모두' : l.to.join(', ');
-    if (!confirm('보낼까요?\n받는 사람: ' + who + '\n선물: ' + CW.mailRewardText(l) + '\n받을 수 있는 날: ' + (l.from || l.date) + ' ~ ' + (l.until || '계속'))) return;
-    $('send').disabled = true; say('sendMsg', '보내는 중…');
+    $('send').disabled = true;
+    askLetter(l, f.title.trim() || '모험 응원 선물', f.text.trim() || CW.GIFT_TEXT, who).then(function (ok) {
+    if (!ok) { $('send').disabled = false; return; }
+    say('sendMsg', '보내는 중…');
     save(function (doc) { return CW.mailAdd(doc, l); }, '운영자 편지: ' + l.sub)
       .then(function (doc) { say('sendMsg', '보냈어요! 게임이 켜져 있어도 1분 안에 우편함에 도착해요.', 'ok'); $('gold').value = ''; $('gems').value = ''; $('pids').value = ''; document.querySelectorAll('#curBox input,#potBox input,#tkBox input').forEach(function (x) { x.value = ''; }); items = []; drawItems(); subTouched = false; $('sub').value = ''; setMailText(); preview(); draw(doc); })
       .catch(function (e) { say('sendMsg', '못 보냈어요: ' + e.message, 'bad'); })
       .then(function () { $('send').disabled = false; });
+    });
   };
 
   // ---- list (2026-11-18: 진행 중·예정·끝남 표시, 걸러 보기, 다시 쓰기)
@@ -935,6 +950,23 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
     b.appendChild(t); b.appendChild(d); b.onclick = on; box.appendChild(b); return b;
   }
   function hmLock(on) { hmBusy = on; [].forEach.call($('hmLetters').children, function (x) { x.disabled = on; }); }
+  // 보내기 전에 받는 사람이 볼 편지(제목·내용·선물)를 그대로 보여 주고 묻기 (2026-11-18, 형: 머라고 편지를 보내는지 알 수가 없잖아)
+  function askLetter(l, title, text, who) {
+    return new Promise(function (done) {
+      var box = $('ask'), p = $('askLetter'); p.textContent = '';
+      $('askWho').textContent = who; $('askDays').textContent = (l.from || l.date) + ' ~ ' + (l.until || '계속');
+      var b = document.createElement('b'); b.textContent = title; p.appendChild(b);
+      p.appendChild(document.createTextNode(text));
+      var s = document.createElement('div'); s.className = 'sign'; s.textContent = '냥법사 운영팀 드림'; p.appendChild(s);
+      var g = document.createElement('div'); g.className = 'gift'; g.textContent = '선물: ' + CW.mailRewardText(l); p.appendChild(g);
+      box.querySelector('.ask-scroll').scrollTop = 0; box.classList.remove('hide'); document.body.style.overflow = 'hidden';
+      function end(v) { box.classList.add('hide'); document.body.style.overflow = ''; $('askYes').onclick = $('askNo').onclick = box.onclick = null; document.removeEventListener('keydown', key); done(v); }
+      function key(e) { if (e.key === 'Escape') end(false); }
+      $('askYes').onclick = function () { end(true); }; $('askNo').onclick = function () { end(false); };
+      box.onclick = function (e) { if (e.target === box) end(false); };
+      document.addEventListener('keydown', key); $('askYes').focus();
+    });
+  }
   function quickSend(p) {
     if (hmBusy) return;
     if (!token()) { say('hmMsg', '먼저 열쇠를 저장해 주세요.', 'bad'); setTab('key'); return; }
@@ -942,12 +974,15 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
     var f = { toAll: hmWho === 'all', toText: to.join(', '), gold: p.gold, gems: p.gems, give: {}, from: CW.kstDay(), until: CW.kstDay(Date.now(), 30), sub: p.sub, title: p.title, text: p.text };
     var err = CW.mailCheck(f); if (err) return say('hmMsg', err, 'bad');
     var l = CW.mailMake(f), who = l.to === 'all' ? '모두' : l.to.join(', ');
-    if (!confirm('이 편지를 바로 보낼까요?\n「' + p.title + '」\n받는 사람: ' + who + '\n선물: ' + CW.mailRewardText(l) + '\n받을 수 있는 날: ' + (l.from || l.date) + ' ~ ' + (l.until || '계속'))) return;
-    hmLock(true); say('hmMsg', '보내는 중…');
+    hmLock(true);
+    askLetter(l, p.title, p.text, who).then(function (ok) {
+    if (!ok) { hmLock(false); return; }
+    say('hmMsg', '보내는 중…');
     save(function (doc) { return CW.mailAdd(doc, l); }, '운영자 편지: ' + l.sub)
       .then(function (doc) { say('hmMsg', '「' + p.title + '」 편지를 ' + who + '에게 보냈어요! 게임이 켜져 있어도 1분 안에 우편함에 도착해요.', 'ok'); draw(doc); })
       .catch(function (e) { say('hmMsg', '못 보냈어요: ' + e.message, 'bad'); })
       .then(function () { hmLock(false); });
+    });
   }
   PRESETS.forEach(function (p) {
     var gift = []; if (p.gold) gift.push('골드 ' + p.gold); if (p.gems) gift.push('다이아 ' + p.gems + '개');
@@ -965,5 +1000,15 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
   if (token()) load().then(function (cur) { draw(cur.doc); }).catch(function (e) { say('listMsg', e.message, 'bad'); });
 })();
 </script>
+<div class="ask hide" id="ask" role="dialog" aria-modal="true" aria-labelledby="askT">
+  <div class="ask-box">
+    <h3 id="askT">이 편지를 보낼까요?</h3>
+    <div class="ask-scroll">
+      <dl class="ask-meta"><dt>받는 사람</dt><dd id="askWho"></dd><dt>받을 수 있는 날</dt><dd id="askDays"></dd></dl>
+      <div class="letter" id="askLetter"></div>
+    </div>
+    <div class="ask-btns"><button type="button" id="askNo">취소</button><button type="button" class="yes" id="askYes">보내기</button></div>
+  </div>
+</div>
 </body>
 </html>
