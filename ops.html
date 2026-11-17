@@ -68,6 +68,8 @@ button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
   .panel>.ph,.panel>.stats{grid-column:1/-1}
   .panel>.listcard{position:sticky;top:24px;max-height:calc(100vh - 48px);overflow-y:auto}
 }
+.panel.home.on{max-width:760px}
+@media (min-width:1360px){.panel.home.on{display:flex;flex-direction:column;align-items:stretch;max-width:760px}}
 @media (min-width:1500px){body{font-size:17px}}
 
 /* 카드 */
@@ -199,6 +201,32 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
 @media (pointer:coarse),(max-width:699px){.pidbtns button{min-height:44px;padding:0 12px;font-size:15px}}
 .pidrow.on .chk{background:linear-gradient(135deg,var(--accent),var(--accent3));border-color:transparent}
 .pidrow.on .chk::after{content:'✓';color:#fff;font-size:17px;font-weight:800;line-height:1}
+/* 홈: 큰 버튼 카드 */
+.qgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.qbtn{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;min-height:92px;padding:12px 14px;border:1.5px solid var(--line2);border-radius:16px;background:var(--sunk);color:var(--ink);font:inherit;text-align:left;cursor:pointer;transition:border-color .15s,background .15s}
+.qbtn:hover{border-color:var(--accent2);background:var(--accent-soft)}
+.qbtn:active{transform:translateY(1px)}
+.qbtn:disabled{opacity:.5;cursor:default}
+.qbtn b{font-size:17px;font-weight:800;line-height:1.3}
+.qbtn small{font-size:13px;color:var(--soft);font-weight:600;line-height:1.4}
+.panel.home.on{max-width:760px}
+#hmWho button{white-space:nowrap;padding:8px 2px;font-size:15px}
+@media (max-width:480px){.tabs button{font-size:15px;padding:8px 2px}.tabs .n{margin-left:4px;padding:0 5px;min-width:20px}}
+/* 공지·편지: 목록 두 개를 한 묶음으로 / 선물: 더 넣기 접기 */
+.jumps{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.jumps a{flex:1 1 auto;text-align:center;text-decoration:none;color:var(--ink2);font-weight:700;font-size:15px;padding:9px 14px;min-height:44px;display:grid;place-items:center;border-radius:999px;background:var(--card);border:1px solid var(--line2)}
+@media (min-width:1360px){.jumps{display:none}}
+.jumps a:hover{border-color:var(--accent2);background:var(--accent-soft)}
+#noticeBox,#sentBox,#nlistBox{scroll-margin-top:150px}
+@media (min-width:960px){#noticeBox,#sentBox,#nlistBox{scroll-margin-top:24px}}
+.colr{display:flex;flex-direction:column;gap:16px;min-width:0}
+.card .stats{margin-top:12px;gap:8px}.card .stat{padding:8px 10px;border-radius:12px;box-shadow:none}.card .stat b{font-size:22px}.card .stat span{font-size:12px}
+.gifts{margin-top:20px}
+.gifts>.grp{margin-top:14px;padding:16px 16px 18px;border:1px solid var(--line);border-radius:16px;background:var(--sunk)}
+.gifts>.grp:first-child{margin-top:0}
+.gifts .grid input{background:var(--card)}
+.gifts input[type=text],.gifts input[type=number]{background:var(--card)}
+@media (max-width:480px){.tabs .n{display:none}}
 #qrBox{text-align:center;margin-top:14px}
 #qr{display:inline-block;background:#fff;padding:12px;border-radius:14px;line-height:0}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
@@ -210,20 +238,46 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
     <h1 class="brand"><span class="logo">🐱</span><span>냥법사 운영실<small>편지 · 공지 관리</small></span></h1>
     <div class="tools"><button type="button" class="keychip off" id="keyChip">열쇠 없음</button><button type="button" class="theme" id="theme" aria-label="밝게·어둡게 바꾸기">☀️</button></div>
     <nav class="tabs" id="tabs" aria-label="메뉴">
-      <button type="button" data-tab="mail" class="on">✉️ 편지<span class="n" id="nMail">-</span></button>
-      <button type="button" data-tab="notice">📢 공지<span class="n" id="nNotice">-</span></button>
+      <button type="button" data-tab="home" class="on">🏠 홈</button>
+      <button type="button" data-tab="board">📮 편지·공지<span class="n" id="nBoard">-</span></button>
+      <button type="button" data-tab="gift">🎁 선물</button>
       <button type="button" data-tab="key">🔑 열쇠</button>
     </nav>
+    <i hidden id="nMail">0</i><i hidden id="nNotice">0</i>
   </div>
 </header>
 
 <main class="page">
-  <div class="panel on" id="p-mail">
-    <div class="ph"><h1>편지 보내기</h1><p>선물을 담은 편지를 보내요. 보내면 게임이 켜져 있어도 1분 안에 우편함에 도착해요.</p></div>
-    <div class="stats" id="mailStats"></div>
+  <div class="panel home on" id="p-home">
+    <div class="ph"><h1>홈</h1><p>자주 쓰는 편지는 버튼 한 번으로 바로 보내요. 공지는 틀을 채워서 열어 드려요.</p></div>
+
+    <section class="card" id="homeMail">
+      <h2><span class="ic">⚡</span>빠른 편지</h2>
+      <p class="sub">받는 사람을 고르고 편지를 누르면, 확인 창이 뜬 뒤 바로 보내져요.</p>
+      <div class="grp first">
+        <h3>받는 사람</h3>
+        <div class="seg" id="hmWho"></div>
+        <p class="hint" id="hmWhoRead"></p>
+      </div>
+      <div class="grp">
+        <h3>보낼 편지</h3>
+        <div class="qgrid" id="hmLetters"></div>
+        <div class="msg" id="hmMsg"></div>
+      </div>
+    </section>
+
+    <section class="card" id="homeNotice">
+      <h2><span class="ic">📢</span>빠른 공지</h2>
+      <p class="sub">공지는 내용이 매번 달라서, 누르면 틀이 채워진 공지 쓰기 화면이 열려요.</p>
+      <div class="qgrid" id="hmNotices"></div>
+    </section>
+  </div>
+
+  <div class="panel home" id="p-gift">
+    <div class="ph"><h1>선물 보내기</h1><p>받는 사람(우편번호)과 아이템, 골드·재화를 골라 보내요.</p></div>
 
     <section class="card" id="mailBox">
-      <h2><span class="ic">✉️</span>새 편지</h2>
+      <h2><span class="ic">🎁</span>선물 편지</h2>
       <p class="sub">모두에게, 또는 정해진 사람에게 보내요.</p>
 
       <div class="grp first">
@@ -246,6 +300,20 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
       </div>
 
       <div class="grp">
+        <h3>아이템</h3>
+        <div class="itemAdd">
+          <label for="itType" class="small" style="margin-top:0">종류</label>
+          <select id="itType" aria-label="아이템 종류"><option value="gear">장비</option><option value="runes">룬</option><option value="sigils">신성력</option><option value="relics">유물</option><option value="costumes">코스튬</option></select>
+          <div id="itOpts" class="row wrap"></div>
+          <div class="row"><div id="itNBox"><label for="itN" class="small">개수</label><input id="itN" type="number" inputmode="numeric" min="1" step="1" value="1"></div>
+            <div><button type="button" class="btn add" id="itAdd">아이템 넣기</button></div></div>
+          <p class="hint" id="itHint"></p>
+          <ul class="items" id="itList"></ul>
+        </div>
+      </div>
+
+      <div class="gifts" id="moreGift">
+        <div class="grp">
         <h3>골드와 다이아</h3>
         <div class="row stack-sm">
           <div>
@@ -276,18 +344,6 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
         <p class="why">매일 3장과 따로 쌓여요.</p>
         <div class="grid" id="tkBox"></div>
       </div>
-
-      <div class="grp">
-        <h3>아이템</h3>
-        <div class="itemAdd">
-          <label for="itType" class="small" style="margin-top:0">종류</label>
-          <select id="itType" aria-label="아이템 종류"><option value="gear">장비</option><option value="runes">룬</option><option value="sigils">신성력</option><option value="relics">유물</option><option value="costumes">코스튬</option></select>
-          <div id="itOpts" class="row wrap"></div>
-          <div class="row"><div id="itNBox"><label for="itN" class="small">개수</label><input id="itN" type="number" inputmode="numeric" min="1" step="1" value="1"></div>
-            <div><button type="button" class="btn add" id="itAdd">아이템 넣기</button></div></div>
-          <p class="hint" id="itHint"></p>
-          <ul class="items" id="itList"></ul>
-        </div>
       </div>
 
       <div class="grp">
@@ -319,18 +375,12 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
       </div>
     </section>
 
-    <section class="card listcard" id="sentBox">
-      <h2><span class="ic">📬</span>보낸 편지</h2>
-      <div class="chips" id="mailChips" style="margin-top:10px"></div>
-      <ul class="list" id="list"><li><span class="t"><small>열쇠를 저장하면 목록이 보여요.</small></span></li></ul>
-      <button class="btn ghost" id="reload">목록 새로 보기</button>
-      <div class="msg" id="listMsg"></div>
-    </section>
+    
   </div>
 
-  <div class="panel" id="p-notice">
-    <div class="ph"><h1>공지 올리기</h1><p>올리면 게임 공지판에 1분 안에 떠요. 점검·업데이트·이벤트를 알려요.</p></div>
-    <div class="stats" id="nzStats"></div>
+  <div class="panel" id="p-board">
+    <div class="ph"><h1>편지 · 공지 관리</h1><p>공지를 올리고, 보낸 편지와 올린 공지를 한곳에서 지우거나 다시 써요.</p>
+      <div class="jumps"><a href="#noticeBox">새 공지 쓰기</a><a href="#sentBox">보낸 편지</a><a href="#nlistBox">올린 공지</a></div></div>
 
     <!-- 공지 (2026-11-16, js/notice.js): notice.json on the site, shown under the mailbox in the game -->
     <section class="card" id="noticeBox">
@@ -375,13 +425,25 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
       </div>
     </section>
 
-    <section class="card listcard" id="nlistBox">
+    <div class="colr">
+    <section class="card" id="sentBox">
+      <h2><span class="ic">📬</span>보낸 편지</h2>
+      <div class="stats" id="mailStats"></div>
+      <div class="chips" id="mailChips" style="margin-top:10px"></div>
+      <ul class="list" id="list"><li><span class="t"><small>열쇠를 저장하면 목록이 보여요.</small></span></li></ul>
+      <button class="btn ghost" id="reload">목록 새로 보기</button>
+      <div class="msg" id="listMsg"></div>
+    </section>
+
+    <section class="card" id="nlistBox">
       <h2><span class="ic">📋</span>올린 공지</h2>
+      <div class="stats" id="nzStats"></div>
       <div class="chips" id="nzChips" style="margin-top:10px"></div>
       <ul class="list" id="nzList"><li><span class="t"><small>열쇠를 저장하면 목록이 보여요.</small></span></li></ul>
       <button class="btn ghost" id="nzReload">목록 새로 보기</button>
       <div class="msg" id="nzListMsg"></div>
     </section>
+    </div>
   </div>
 
   <div class="panel solo" id="p-key">
@@ -462,22 +524,23 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
 
   // ---- token
   // ---- 탭 (편지 · 공지 · 열쇠)
+  function boardN() { $('nBoard').textContent = (+$('nMail').textContent || 0) + (+$('nNotice').textContent || 0); }
   var TABKEY = 'cw-ops-tab';
   function setTab(t) {
     [].forEach.call(document.querySelectorAll('#tabs button'), function (b) { b.classList.toggle('on', b.dataset.tab === t); });
-    ['mail', 'notice', 'key'].forEach(function (n) { $('p-' + n).classList.toggle('on', n === t); });
+    ['home', 'gift', 'board', 'key'].forEach(function (n) { $('p-' + n).classList.toggle('on', n === t); });
     try { localStorage.setItem(TABKEY, t); } catch (e) {}
     window.scrollTo(0, 0);
   }
   $('tabs').onclick = function (e) { var b = e.target.closest('button'); if (b) setTab(b.dataset.tab); };
   $('keyChip').onclick = function () { setTab('key'); };
-  (function () { var t = ''; try { t = localStorage.getItem(TABKEY) || ''; } catch (e) {} if (t && $('p-' + t)) setTab(t); })();
+  
 
   function showKey() { var on = !!token(); $('keyOn').classList.toggle('hide', !on); $('keyOff').classList.toggle('hide', on); var c = $('keyChip'); c.textContent = on ? '열쇠 저장됨' : '열쇠 없음'; c.className = 'keychip ' + (on ? 'on' : 'off'); if (!on) setTab('key'); }
   $('keySave').onclick = function () {
     var t = $('key').value.trim(); if (!t) return say('keyMsg', '열쇠를 붙여 넣어 주세요.', 'bad');
     try { localStorage.setItem(KEY, t); } catch (e) { return say('keyMsg', '이 브라우저에 저장할 수 없어요(개인 정보 보호 모드?).', 'bad'); }
-    $('key').value = ''; showKey(); setTab('mail'); say('keyMsg', '확인하는 중…');
+    $('key').value = ''; showKey(); setTab('home'); say('keyMsg', '확인하는 중…');
     load().then(function (cur) { say('keyMsg', '열쇠가 잘 맞아요.', 'ok'); draw(cur.doc); })
       .catch(function (e) { say('keyMsg', e.message, 'bad'); });
   };
@@ -651,7 +714,7 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
     lastMail = doc;
     var ul = $('list'); ul.textContent = '';
     var letters = ((doc && doc.letters) || []).map(function (l) { return { l: l, st: stateOf(l.from || l.date, l.until) }; });
-    $('nMail').textContent = letters.length;
+    $('nMail').textContent = letters.length; boardN();
     var c = counts(letters); statCards($('mailStats'), c); filterChips($('mailChips'), c, lf, function (k) { lf = k; draw(lastMail); });
     var shown = letters.filter(function (x) { return lf === 'all' || x.st === lf; });
     if (!shown.length) { var e = document.createElement('li'); e.innerHTML = '<span class="t empty"></span>'; e.firstChild.textContent = letters.length ? '이 상태의 편지가 없어요.' : '편지가 없어요.'; ul.appendChild(e); return; }
@@ -697,7 +760,7 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
     lastNotice = doc;
     var ul = $('nzList'); ul.textContent = '';
     var all = ((doc && doc.notices) || []).map(function (n) { return { n: n, st: stateOf(n.from || n.date, n.until) }; });
-    $('nNotice').textContent = all.length;
+    $('nNotice').textContent = all.length; boardN();
     var c = counts(all); statCards($('nzStats'), c); filterChips($('nzChips'), c, nf, function (k) { nf = k; nzDraw(lastNotice); });
     var shown = all.filter(function (x) { return nf === 'all' || x.st === nf; });
     if (!shown.length) { var e = document.createElement('li'); e.innerHTML = '<span class="t empty"></span>'; e.firstChild.textContent = all.length ? '이 상태의 공지가 없어요.' : '공지가 없어요.'; ul.appendChild(e); return; }
@@ -731,7 +794,7 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
     { name: '🐾 신규 환영', gold: '500만', gems: 200, title: '환영 선물', sub: '환영 선물을 보내 드립니다', text: HI + '냥법사의 세계에 오신 것을 환영합니다.\n첫 모험을 응원하는 마음을 담아 선물을 보내 드립니다.\n\n천천히, 즐겁게 모험해 보세요.\n멋진 마법사가 되시기를 응원하겠습니다.' }
   ];
   var NZP = [
-    { name: '🛠 점검 안내', tag: '점검', title: '점검 안내', text: '점검 시간: \n점검 내용: \n보상: \n\n불편을 드려 죄송해요.' },
+    { name: '🛠 점검 안내', tag: '점검', title: '점검 안내', text: '점검 시간: \n점검 내용: \n보상: \n\n이용에 불편을 드려 죄송합니다.' },
     { name: '🆕 업데이트', tag: '업데이트', title: '업데이트 안내', text: '새로 생긴 것\n- \n- \n\n고쳐진 것\n- ' },
     { name: '🎉 이벤트', tag: '이벤트', title: '이벤트 안내', text: '기간: \n내용: \n받는 곳: 우편함' },
     { name: '📢 일반 공지', tag: '공지', title: '', text: '' }
@@ -742,7 +805,7 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
     list.forEach(function (p) { var b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = p[0]; b.onclick = function () { on(p[1]); }; box.appendChild(b); });
   }
   function dayOf(n) { return n == null ? '' : CW.kstDay(Date.now(), n); }
-  chipBar($('presetBar'), PRESETS.map(function (p) { return [p.name, p]; }), function (p) { clearGift(); $('gold').value = p.gold; $('gems').value = p.gems || ''; $('mTitle').value = p.title; $('mText').value = p.text; $('sub').value = p.sub; subTouched = true; preview(); say('sendMsg', '「' + p.title + '」 편지가 써졌어요. 확인하고 보내세요.', 'ok'); });
+  chipBar($('presetBar'), PRESETS.map(function (p) { return [p.name, p]; }), function (p) { clearGift(); $('gold').value = p.gold; $('gems').value = p.gems || ''; $('mTitle').value = p.title; $('mText').value = p.text; $('sub').value = p.sub; subTouched = true; openMore(); preview(); say('sendMsg', '「' + p.title + '」 편지가 써졌어요. 확인하고 보내세요.', 'ok'); });
   chipBar($('dayChips'), DAYS, function (n) { $('until').value = dayOf(n); fire('until'); });
   chipBar($('nzDayChips'), DAYS, function (n) { $('nzUntil').value = dayOf(n); });
   $('pids').addEventListener('input', function () {
@@ -752,13 +815,14 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
   function clearGift() {
     ['gold', 'gems', 'pids'].forEach(function (id) { $(id).value = ''; });
     document.querySelectorAll('#curBox input,#potBox input,#tkBox input').forEach(function (x) { x.value = ''; });
-    items = []; drawItems(); subTouched = false; $('sub').value = '';
+    items = []; drawItems(); subTouched = false; $('sub').value = ''; $('moreGift').open = false;
     $('from').value = CW.kstDay(); $('until').value = CW.kstDay(Date.now(), 30); setMailText();
   }
+  function openMore() { var any = $('gold').value || $('gems').value || [].some.call(document.querySelectorAll('#curBox input,#potBox input,#tkBox input'), function (x) { return x.value; }); $('moreGift').open = !!any; }
   function setMailText(t, x) { $('mTitle').value = t || '모험 응원 선물'; $('mText').value = x || CW.GIFT_TEXT; }
   $('mailReset').onclick = function () { clearGift(); preview(); say('sendMsg', ''); };
   function reuseLetter(l) {
-    setTab('mail'); clearGift();
+    setTab('gift'); clearGift();
     var all = l.to === 'all'; toAll = all;
     [].forEach.call($('toSeg').children, function (x) { x.classList.toggle('on', x.dataset.to === (all ? 'all' : 'pid')); });
     $('pidBox').classList.toggle('hide', all); $('pids').value = Array.isArray(l.to) ? l.to.join(', ') : '';
@@ -770,7 +834,7 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
       else if (Array.isArray(v)) v.forEach(function (o) { items.push(Object.assign({ t: k }, o)); });
       else { var el2 = $('cur-' + k); if (el2) el2.value = v; }
     });
-    setMailText(l.title, l.text); drawItems(); preview();
+    setMailText(l.title, l.text); drawItems(); openMore(); preview();
     say('sendMsg', '「' + (l.sub || l.title) + '」 내용을 불러왔어요. 고쳐서 새로 보내세요.', 'ok');
   }
   // 공지
@@ -789,7 +853,7 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
   $('nzPin').addEventListener('change', nzPv); $('nzTag').addEventListener('click', nzPv);
   $('nzReset').onclick = function () { setNzTag('공지'); $('nzTitle').value = ''; $('nzText').value = ''; $('nzPin').checked = false; $('nzFrom').value = CW.kstDay(); $('nzUntil').value = ''; nzPv(); say('nzMsg', ''); };
   function reuseNotice(n) {
-    setTab('notice'); setNzTag(CW.noticeTag(n)); $('nzTitle').value = n.title || ''; $('nzText').value = n.text || ''; $('nzPin').checked = !!n.pin;
+    setTab('board'); setNzTag(CW.noticeTag(n)); $('nzTitle').value = n.title || ''; $('nzText').value = n.text || ''; $('nzPin').checked = !!n.pin;
     $('nzFrom').value = CW.kstDay(); $('nzUntil').value = ''; nzPv();
     say('nzMsg', '「' + n.title + '」 내용을 불러왔어요. 고쳐서 새로 올리세요.', 'ok');
   }
@@ -833,6 +897,48 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
   $('pids').addEventListener('input', markMy); markMy();
   // 「우편번호」를 누르면 비어 있을 때 저장해 둔 2개가 한 번에 선택돼요(빼고 싶으면 그 줄만 다시 누르기)
   $('toSeg').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b && b.dataset.to === 'pid' && !pidList().length) $('pidAll').click(); });
+
+  // ---- 홈 (2026-11-18, the user: 메인에서 바로 보낼 수 있게): 자주 쓰는 편지는 한 번에, 공지는 틀을 채워 열기
+  var hmWho = 'all', hmBusy = false;
+  var WHOS = [['all', '모두', []], ['p0', MY_PIDS[0][1], [MY_PIDS[0][0]]], ['p1', MY_PIDS[1][1], [MY_PIDS[1][0]]], ['both', '둘 다', [MY_PIDS[0][0], MY_PIDS[1][0]]]];
+  function hmTo() { return WHOS.filter(function (w) { return w[0] === hmWho; })[0][2]; }
+  function hmRead() { var t = hmTo(); $('hmWhoRead').textContent = hmWho === 'all' ? '게임을 하는 모두에게 보내요.' : t.join(', ') + ' 에게만 보내요.'; }
+  WHOS.forEach(function (w) {
+    var b = document.createElement('button'); b.type = 'button'; b.textContent = w[1]; b.dataset.who = w[0]; if (w[0] === hmWho) b.className = 'on';
+    b.onclick = function () { hmWho = w[0]; [].forEach.call($('hmWho').children, function (x) { x.classList.toggle('on', x === b); }); hmRead(); };
+    $('hmWho').appendChild(b);
+  });
+  hmRead();
+  function qbtn(box, title, desc, on) {
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'qbtn';
+    var t = document.createElement('b'); t.textContent = title; var d = document.createElement('small'); d.textContent = desc;
+    b.appendChild(t); b.appendChild(d); b.onclick = on; box.appendChild(b); return b;
+  }
+  function hmLock(on) { hmBusy = on; [].forEach.call($('hmLetters').children, function (x) { x.disabled = on; }); }
+  function quickSend(p) {
+    if (hmBusy) return;
+    if (!token()) { say('hmMsg', '먼저 열쇠를 저장해 주세요.', 'bad'); setTab('key'); return; }
+    var to = hmTo();
+    var f = { toAll: hmWho === 'all', toText: to.join(', '), gold: p.gold, gems: p.gems, give: {}, from: CW.kstDay(), until: CW.kstDay(Date.now(), 30), sub: p.sub, title: p.title, text: p.text };
+    var err = CW.mailCheck(f); if (err) return say('hmMsg', err, 'bad');
+    var l = CW.mailMake(f), who = l.to === 'all' ? '모두' : l.to.join(', ');
+    if (!confirm('이 편지를 바로 보낼까요?\n「' + p.title + '」\n받는 사람: ' + who + '\n선물: ' + CW.mailRewardText(l) + '\n받을 수 있는 날: ' + (l.from || l.date) + ' ~ ' + (l.until || '계속'))) return;
+    hmLock(true); say('hmMsg', '보내는 중…');
+    save(function (doc) { return CW.mailAdd(doc, l); }, '운영자 편지: ' + l.sub)
+      .then(function (doc) { say('hmMsg', '「' + p.title + '」 편지를 ' + who + '에게 보냈어요! 게임이 켜져 있어도 1분 안에 우편함에 도착해요.', 'ok'); draw(doc); })
+      .catch(function (e) { say('hmMsg', '못 보냈어요: ' + e.message, 'bad'); })
+      .then(function () { hmLock(false); });
+  }
+  PRESETS.forEach(function (p) {
+    var gift = []; if (p.gold) gift.push('골드 ' + p.gold); if (p.gems) gift.push('다이아 ' + p.gems + '개');
+    qbtn($('hmLetters'), p.name, gift.join(' · '), function () { quickSend(p); });
+  });
+  NZP.forEach(function (p) {
+    qbtn($('hmNotices'), p.name, p.tag + ' 틀 채워서 쓰기', function () {
+      setTab('board'); setNzTag(p.tag); $('nzTitle').value = p.title; $('nzText').value = p.text; nzPv();
+      say('nzMsg', '「' + p.name.replace(/^\S+\s/, '') + '」 틀을 채웠어요. 내용을 고쳐서 올리세요.', 'ok');
+    });
+  });
 
   showKey();
   if (token()) load(NZ).then(function (cur) { nzDraw(cur.doc); }).catch(function (e) { say('nzListMsg', e.message, 'bad'); });
