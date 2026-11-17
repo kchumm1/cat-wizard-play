@@ -166,6 +166,8 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
 @media (min-width:600px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (min-width:1280px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .grid label{margin:0 0 4px;font-size:14px;font-weight:700}
+.grid>div{display:flex;flex-direction:column}
+.grid>div>label{flex:1;display:flex;align-items:flex-end;line-height:1.3}
 .itemAdd{border:1.5px solid var(--line);border-radius:14px;padding:14px;background:var(--sunk)}
 .itemAdd select,.itemAdd input{background:var(--card)}
 .row.wrap{flex-wrap:wrap;margin-top:6px;gap:0 12px}.row.wrap>*{flex:1 1 calc(50% - 6px)}
@@ -701,8 +703,8 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
   // 빠른 시작 틀: 숫자는 여기서 마음대로 고치면 돼요
   var HI = '안녕하세요, 냥법사님.\n\n';
   var PRESETS = [
-    { name: '🛠 점검 보상', gold: '1000만', gems: 300, title: '점검 보상 안내', sub: '점검 보상을 보내 드립니다', text: HI + '안정적인 서비스를 위한 점검 동안 기다려 주셔서 진심으로 감사드립니다.\n불편을 드린 점 양해 부탁드리며, 점검 보상을 보내 드립니다.\n\n앞으로도 더 쾌적한 모험을 즐기실 수 있도록\n최선을 다하겠습니다.\n감사합니다.' },
-    { name: '🙇 사과 보상', gold: '1억', gems: 1000, title: '사과의 말씀', sub: '사과의 뜻을 담은 보상을 보내 드립니다', text: HI + '이용 중 불편을 드려 진심으로 사과드립니다.\n작은 정성이지만 사과의 뜻을 담아 보상을 보내 드립니다.\n\n같은 문제가 생기지 않도록\n꼼꼼히 살피고 개선하겠습니다.\n너그러운 이해에 감사드립니다.' },
+    { name: '🛠 점검 보상', gold: '1000만', gems: 300, title: '점검 보상 안내', sub: '점검 보상을 보내 드립니다', text: HI + '안정적인 서비스를 위한 점검 동안 기다려 주셔서 진심으로 감사드립니다.\n불편을 드린 점 양해 부탁드리며, 점검 보상을 보내 드립니다.\n\n앞으로도 더 쾌적한 모험을 즐기실 수 있도록 최선을 다하겠습니다.\n감사합니다.' },
+    { name: '🙇 사과 보상', gold: '1억', gems: 1000, title: '사과의 말씀', sub: '사과의 뜻을 담은 보상을 보내 드립니다', text: HI + '이용 중 불편을 드려 진심으로 사과드립니다.\n작은 정성이지만 사과의 뜻을 담아 보상을 보내 드립니다.\n\n같은 문제가 생기지 않도록 꼼꼼히 살피고 개선하겠습니다.\n너그러운 이해에 감사드립니다.' },
     { name: '🎉 이벤트 선물', gold: '', gems: 500, title: '이벤트 보상 안내', sub: '이벤트 선물을 보내 드립니다', text: HI + '이벤트에 참여해 주셔서 감사합니다.\n약속드린 이벤트 선물을 보내 드립니다.\n\n앞으로도 즐거운 이벤트로 찾아뵙겠습니다.\n냥법사와 함께 즐거운 모험 이어 가세요!' },
     { name: '🐾 신규 환영', gold: '500만', gems: 200, title: '환영 선물', sub: '환영 선물을 보내 드립니다', text: HI + '냥법사의 세계에 오신 것을 환영합니다.\n첫 모험을 응원하는 마음을 담아 선물을 보내 드립니다.\n\n천천히, 즐겁게 모험해 보세요.\n멋진 마법사가 되시기를 응원하겠습니다.' }
   ];
