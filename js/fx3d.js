@@ -554,8 +554,16 @@
     // a foam puff: cream, its shaded side pale blue, a few blue flecks
     'if(kind>2.5&&kind<3.5){c=mix(vec3(0.66,0.82,0.95),cream,smoothstep(0.0,0.7,lam));c=mix(c,vec3(0.72,0.86,0.96),smoothstep(0.55,0.75,fb(vP*20.0+vec3(sd)))*0.5);vec3 Rf=reflect(-normalize(vV),normalize(vN));c+=vec3(1.0)*pow(max(dot(Rf,normalize(vec3(0.25,0.7,0.65))),0.0),24.0)*0.5;}' +
     // the bubble (glass of water): clear teal in the middle, deep at its rim, white arcs of light
-    'else if(kind>1.5&&kind<2.5){float rm=pow(1.0-f,1.5);a*=0.3+0.7*rm;c=mix(vec3(0.62,0.9,0.95),vec3(0.06,0.32,0.6),smoothstep(0.25,0.8,rm));' +
-    'c=mix(c,line,smoothstep(0.86,0.95,rm));float arc=dot(N,normalize(vec3(-0.5,0.65,0.55)));c=mix(c,cream,(smoothstep(0.86,0.9,arc)-smoothstep(0.95,0.98,arc)+step(0.985,arc))*0.95);a=max(a,step(0.86,arc)*vX.x);}' +
+    // (9th, 2026-11-17, the user: 물방울 감옥이 이상한 그림체 — 갇힌 느낌으로) a clear glossy ball of water the monster shows
+    // through: almost clear in the middle, sky blue thickening toward its rim with a thin blue edge, light rippling
+    // through it, a big soft window of light high on the left, a little one beside it, and the light bounced up at the
+    // bottom right — no dark rim (it read as a dark ball)
+    'else if(kind>1.5&&kind<2.5){float rm=pow(1.0-f,1.6);a*=0.14+0.72*smoothstep(0.08,0.85,rm);' +
+    'c=mix(vec3(0.8,0.96,1.0),vec3(0.34,0.7,0.98),smoothstep(0.1,0.75,rm));c=mix(c,vec3(0.17,0.48,0.88),smoothstep(0.84,0.97,rm));' +
+    'float cs=fb(vec3(vP.x*2.6+uTime*0.5,vP.y*2.6-uTime*0.8,vP.z*2.6+sd));c+=vec3(0.9,1.0,1.0)*smoothstep(0.62,0.78,cs)*0.22;a=max(a,smoothstep(0.62,0.78,cs)*0.3*vX.x);' +
+    'float arc=dot(N,normalize(vec3(-0.5,0.62,0.6))),arc2=dot(N,normalize(vec3(-0.15,0.35,0.92))),bo=dot(N,normalize(vec3(0.55,-0.55,0.6)));' +
+    'float hl=smoothstep(0.88,0.93,arc)+smoothstep(0.985,0.993,arc2)*0.9,bl=smoothstep(0.62,0.92,rm)*smoothstep(0.45,0.85,bo)*0.45;' +
+    'c=mix(c,vec3(1.0),clamp(hl+bl,0.0,1.0));a=max(a,clamp(hl,0.0,1.0)*0.95*vX.x);a=max(a,bl*0.8*vX.x);}' +
     // (6th, 2026-11-17, the user: 파도랑 스킬들이 너무 그림같이 보인다) water with volume rather than a drawing: the bands
     // and the foam with soft edges and no navy lines inside, smooth light, deeper where you look through it (thick) and
     // brighter at its thin edges, the sky in it and hard sun glints
@@ -1774,10 +1782,13 @@
       // the 11th-tier water (js/mesh-water.js): drawn by FS_BM.water (no picture), swaying (VS_BMW), grown by k
       waveSheet: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 6, line: 0x245f9e, lineW: 0.015, order: 6.6 },
       waterRing: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 12, line: 0x245f9e, lineW: 0.015, order: 6.6 },
-      waterColumn: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 40, line: 0x245f9e, lineW: 0.015, order: 6.6 },
-      splashCrown: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 60, line: 0x245f9e, lineW: 0.011, order: 6.62 },
       // (no outline shell: through the clear bubble its back would show as a dark ball — the shader darkens its rim instead)
-      waterBubble: { fs: 'water', vs: 'water', line: null, cap: 4, order: 6.66 },
+      waterBubble: { fs: 'water', vs: 'water', line: null, cap: 12, order: 6.66 },
+      // (9th, 2026-11-17: 물방울 감옥 bursts, 물폭발 a jet that shoots up and blows apart at the top)
+      waterGeyser: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 40, line: 0x245f9e, lineW: 0.012, order: 6.6 },
+      waterRays: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 12, line: 0x245f9e, lineW: 0.008, order: 6.63 },
+      waterFountain: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 40, line: 0x245f9e, lineW: 0.008, order: 6.63 },
+      waterMound: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 40, line: 0x245f9e, lineW: 0.012, order: 6.58 },
       fallStream: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 4, line: 0x245f9e, lineW: 0.0175, order: 6.6 },
       waterBlob: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 360, line: 0x245f9e, lineW: 0.007, order: 6.64 },
       foamPuff: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 360, line: 0x245f9e, lineW: 0.006, order: 6.65 },
