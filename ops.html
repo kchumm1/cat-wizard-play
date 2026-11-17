@@ -13,7 +13,8 @@
 :root[data-theme=light]{--bg:#eceaf8;--side:#fbfaff;--card:#fff;--sunk:#f4f2fc;--ink:#191232;--ink2:#3a3260;--soft:#5f5688;--line:#dbd6ee;--line2:#c3bbe2;--gold:#8f5a00;--accent:#5a44d8;--accent3:#9b3fc7;--accent2:#4a35c0;--accent-soft:#e9e5fb;--accent-ink:#fff;--bad:#b3261e;--bad-soft:#fde9e7;--ok:#13703c;--ok-soft:#e1f5ea;--warn:#8f5a00;--glow1:rgba(90,68,216,.10);--glow2:rgba(155,63,199,.06);--shadow:0 1px 2px rgba(40,30,90,.08),0 8px 24px rgba(40,30,90,.07)}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-body{margin:0;background-color:var(--bg);background-image:radial-gradient(900px 520px at 90% -8%,var(--glow1),transparent 62%),radial-gradient(760px 520px at -8% 38%,var(--glow2),transparent 62%);background-attachment:fixed;color:var(--ink);font:16px/1.6 -apple-system,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;padding-bottom:calc(36px + env(safe-area-inset-bottom))}
+body{margin:0;background-color:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;padding-bottom:calc(36px + env(safe-area-inset-bottom))}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(900px 520px at 90% -8%,var(--glow1),transparent 62%),radial-gradient(760px 520px at -8% 38%,var(--glow2),transparent 62%);transform:translateZ(0)}
 button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 :focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
 
@@ -530,7 +531,7 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
     [].forEach.call(document.querySelectorAll('#tabs button'), function (b) { b.classList.toggle('on', b.dataset.tab === t); });
     ['home', 'gift', 'board', 'key'].forEach(function (n) { $('p-' + n).classList.toggle('on', n === t); });
     try { localStorage.setItem(TABKEY, t); } catch (e) {}
-    window.scrollTo(0, 0);
+    document.documentElement.style.scrollBehavior = 'auto'; window.scrollTo(0, 0); document.documentElement.style.scrollBehavior = '';
   }
   $('tabs').onclick = function (e) { var b = e.target.closest('button'); if (b) setTab(b.dataset.tab); };
   $('keyChip').onclick = function () { setTab('key'); };
