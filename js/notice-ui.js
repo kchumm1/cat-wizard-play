@@ -35,10 +35,12 @@
   function fetchNotice() {
     if (typeof fetch !== 'function') return;
     fetch('notice.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
-      if (d && Array.isArray(d.notices)) { list = d.notices; noticeDot(); if (page && page.classList.contains('on')) render(); }
+      if (d && Array.isArray(d.notices)) { list = d.notices.filter(forMe); noticeDot(); if (page && page.classList.contains('on')) render(); }
     }).catch(function () {});
   }
 
+  // only: 'owner' — a notice for 형꺼 only (체험판 has no 패키지 part, js/friend.js), not shown to friends at all
+  function forMe(n) { return !(n && n.only === 'owner' && CW.FRIEND); }
   function tagHtml(n) { var t = CW.noticeTag(n); return '<i class="nztag ' + TAGC[t] + '">' + t + '</i>'; }
   function listHtml() {
     var s = state(), all = shown(), unread = CW.noticeUnread(s, list).length;
@@ -55,7 +57,13 @@
     return '<div class="nzhead"><span class="nzhorn">' + horn() + '</span><b>공지사항</b>' + (badge ? '<i class="nzcount">' + badge + '</i>' : '') +
       '<button class="nzx" data-nzx aria-label="닫기"></button></div>';
   }
+  // a notice with view (js/notice-pages.js): its own drawn page instead of the paper
+  var special = null;
   function detailHtml(n) {
+    var V = n.view && CW.noticePage && CW.noticePage[n.view];
+    special = V ? V(n) : null;
+    if (special) return '<div class="nzw nzone nzv ' + special.cls + '">' + head('') + '<div class="nzvbody">' + special.html + '</div>' +
+      '<button class="nzback" data-nzback><span>목록으로</span></button></div>';
     var body = String(n.text || '').split(/\n\s*\n/).map(function (p) { return '<p>' + esc(p.trim()).replace(/\n/g, '<br>') + '</p>'; }).join('');
     return '<div class="nzw nzone">' + head('') +
       '<div class="nzpaper"><div class="nzrow">' + tagHtml(n) + '<em>' + esc(n.date || '') + '</em></div><h3>' + esc(n.title) + '</h3><i class="nzline"></i>' +
@@ -63,12 +71,13 @@
       '<button class="nzback" data-nzback><span>목록으로</span></button></div>';
   }
   function render() {
+    if (CW.noticePageOff) CW.noticePageOff();
     var n = open && shown().filter(function (x) { return x.id === open; })[0];
-    if (view === 'one' && n) { G().G.readNotice(n); page.querySelector('.nzstage').innerHTML = detailHtml(n); }
+    if (view === 'one' && n) { G().G.readNotice(n); page.querySelector('.nzstage').innerHTML = detailHtml(n); if (special && special.init) special.init(page.querySelector('.nzvbody')); }
     else { view = 'list'; page.querySelector('.nzstage').innerHTML = listHtml(); }
     noticeDot();
   }
-  function close() { page.classList.remove('on', 'pop', 'rise'); }
+  function close() { page.classList.remove('on', 'pop', 'rise'); if (CW.noticePageOff) CW.noticePageOff(); }
   function build() {
     page = document.createElement('div'); page.id = 'noticebox'; page.setAttribute('role', 'dialog'); page.setAttribute('aria-label', '공지사항');
     page.innerHTML = '<div class="nzpop" aria-hidden="true"><span class="nzbig">' + horn() + '</span><i class="nzring a"></i><i class="nzring b"></i><i class="nzring c"></i></div><div class="nzstage"></div>';
@@ -78,6 +87,8 @@
       if (t === page || t.closest('[data-nzx]')) { g.G.sound('click'); close(); return; }
       if (t.closest('.nzpop')) { page.classList.remove('pop'); return; }
       var op = t.closest('[data-nzopen]'); if (op) { g.G.sound('click'); open = op.dataset.nzopen; view = 'one'; render(); page.querySelector('.nzw').classList.add('turn'); return; }
+      var jp = t.closest('[data-nzjump]');   // 공지 → 뽑기 / 더보기 패키지 (js/ui.js)
+      if (jp) { g.G.sound('click'); close(); if (jp.dataset.nzjump === 'packs' && CW.openPacks) CW.openPacks(); else if (jp.dataset.nzjump === 'gacha' && CW.openGachaTab) CW.openGachaTab(); return; }
       if (t.closest('[data-nzback]')) { g.G.sound('click'); view = 'list'; render(); return; }
     });
   }

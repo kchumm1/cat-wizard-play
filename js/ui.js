@@ -1086,6 +1086,7 @@
         if (g.goldMin) lines.push('<i class="coin"></i> 골드 ' + gh(CW.goldPerSecond(s) * 60 * g.goldMin) + ' (사냥 ' + (g.goldMin >= 60 ? g.goldMin / 60 + '시간' : g.goldMin + '분') + '치)');
         if (g.potionMin) lines.push('물약 3종 ' + (g.potionMin >= 60 ? g.potionMin / 60 + '시간' : g.potionMin + '분'));
         if (g.pulls) lines.push('장비 뽑기 ' + g.pulls + '번 (다이아 안 씀)');
+        (g.runes || []).forEach(function (x) { lines.push('<b style="color:' + hc(x.grade) + '">' + hn(x.grade) + '</b> 룬 ' + x.n + '개'); });   // 겨울 패키지 (2026-11-17)
         if (g.runeStone) lines.push(CW.ICO.cur('rune') + ' 룬석 ' + fmt(g.runeStone));
         if (g.mana) lines.push(CW.ICO.cur('mana') + ' 마력석 ' + fmt(g.mana));
         (g.sigils || []).forEach(function (x) { lines.push('<b style="color:' + hc(x.grade) + '">' + hn(x.grade) + '</b> 신성력 ' + x.n + '개'); });
@@ -1106,9 +1107,19 @@
         }
         return '<div class="pack"><div class="picon">' + mi('pack', p) + '</div><div class="info"><div class="name">' + p.name + (times && !p.limit && !p.give.daily ? ' <span class="lv">' + times + '회 수령</span>' : '') + '</div><div class="desc">' + packLines(p.give) + '</div>' + extra + '</div>' + btn + '</div>';
       };
-      var SECTIONS = [['daily', '매일 다이아'], ['grow', '성장'], ['gear', '장비 뽑기'], ['tier', '전직 축하 (한 번만)'], ['rune', '룬·신성력']];
-      var packs = '<h3>패키지</h3><div class="notice">' + (CW.FRIEND ? '체험판: 다이아·패키지 수령을 지원하지 않아요.' : '<b>연습용 패키지</b><br>실제 결제 없이 구성품을 즉시 받아요.') + '</div>' + gems + SECTIONS.map(function (sec) {
-        return '<div class="subh">' + sec[1] + '</div><div class="packs">' + DATA.packs.filter(function (p) { return p.cat === sec[0]; }).map(packRow).join('') + '</div>';
+      // 2026-11-17 (the user): 연습용 패키지 글 빼고, 다이아·매일 다이아·성장(골드 꾸러미·마력석 꾸러미)만 두고 룬·장비 뽑기는 빼 —
+      // packages marked off stay in DATA for old saves; 겨울 신규 냥법사 comes first while its season lasts (packOpen 'over')
+      var SECTIONS = [['winter', '❄️ 겨울 신규 냥법사 (한 번만)'], ['daily', '매일 다이아'], ['grow', '성장'], ['tier', '전직 축하 (한 번만)']];
+      var packs = '<h3>패키지</h3>' + gems + SECTIONS.map(function (sec) {
+        var list = DATA.packs.filter(function (p) { return p.cat === sec[0] && !p.off && CW.packOpen(s, p.id) !== 'over'; });
+        if (!list.length) return '';
+        if (sec[0] === 'winter') {   // a frosty showcase with falling snow (2026-11-17, the user: 애니메이션화해서 보기 좋게)
+          var dleft = Math.max(0, Math.ceil((Date.parse(list[0].until + 'T23:59:59+09:00') - Date.now()) / 864e5));
+          var flakes = ''; for (var fi = 0; fi < 16; fi++) flakes += '<i style="--x:' + ((fi * 37) % 100) + '%;--d:' + (5 + (fi * 7) % 6) + 's;--w:' + (-((fi * 13) % 9)) + 's;--z:' + (0.5 + (fi % 4) * 0.25) + '"></i>';
+          return '<div class="wpk"><div class="wsnow" aria-hidden="true">' + flakes + '</div><div class="wpkhead"><b>겨울 신규 냥법사</b><span>처음 오신 냥법사님께 · 각 1번</span><em>D-' + dleft + '</em></div>' +
+            '<div class="packs winter">' + list.map(packRow).join('') + '</div><p class="wpknote">룬은 3차, 신성력은 5차 전직 후 장착할 수 있어요 (가방에 보관)</p></div>';
+        }
+        return '<div class="subh">' + sec[1] + '</div><div class="packs">' + list.map(packRow).join('') + '</div>';
       }).join('');
       var st = s.settings;
       // 화면 성능 (2026-11-17, 발열): everything about how hard the screen works, in one group (화질, 화면 빈도, 절전, 안티앨리어싱)
@@ -1664,6 +1675,9 @@
       else { gearSub = q; openTab('gear'); }
     });
     $('pre').addEventListener('click', function (e) { var b = e.target.closest('[data-pre]'); if (!b) return; G.switchPreset(+b.dataset.pre); G.sound('click'); toast('스킬 프리셋 ' + (+b.dataset.pre + 1) + ' 적용'); slots(); if (tab === 'skill') renderPanel(true); });
+    // 공지에서 바로 가기 (2026-11-17, js/notice-pages.js): 더보기 → 패키지, 뽑기
+    CW.openPacks = function () { moreSub = 1; openTab('more'); };
+    CW.openGachaTab = function () { openTab('gacha'); };
     function openTab(name) {
       if (name === 'gacha') ghdSeen = null;
       if (name === 'more' && tab !== 'more') tierAnim = true;   // 전직 cards slide in when 더보기 opens

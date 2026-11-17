@@ -197,26 +197,33 @@
     // on one curve — 0.30 a won at 1,200원 rising to 0.42 at 119,000원 (bigger buys a little kinder), rounded.
     // 마력석 (mana) packages are new: 꾸러미 ≈ 60 stage-boss wins at 6-x, 상자 ≈ 400.
     packs: [
+      // 겨울 신규 냥법사 (2026-11-17, the user: 곧 겨울, 신규로 오는 사람들을 위한 패키지 — 있는 것들 조합해서): once each, until
+      // the end of February (until, KST). Gems stay on the shop curve; the rest (pulls, gold, potions, mana, runes, sigils —
+      // the user: 겨울 패키지에 신성력하고 룬도) is the bonus. Runes and sigils wait in their bags until 3차 / 5차 opens them.
+      { id: 'winterS', cat: 'winter', name: '첫눈 선물', won: 1200, icon: '❄️', limit: 1, until: '2027-02-28', give: { gems: 480, pulls: 10, goldMin: 60, runes: [{ grade: 2, n: 1 }], sigils: [{ grade: 2, n: 1 }] } },
+      { id: 'winterM', cat: 'winter', name: '눈사람 성장 상자', won: 9900, icon: '⛄', limit: 1, until: '2027-02-28', give: { gems: 4000, pulls: 30, goldMin: 300, potionMin: 180, runes: [{ grade: 3, n: 2 }], runeStone: 1500, sigils: [{ grade: 3, n: 2 }] } },
+      { id: 'winterL', cat: 'winter', name: '겨울왕국 대모험', won: 29900, icon: '🎄', limit: 1, until: '2027-02-28', give: { gems: 12000, pulls: 100, goldMin: 600, potionMin: 360, mana: 100000, runes: [{ grade: 4, n: 2 }], runeStone: 5000, sigils: [{ grade: 4, n: 2 }], sigilStone: 3000 } },
+      // off: kept for old saves and tests, not shown in 더보기 (2026-11-17, the user: 성장은 골드 꾸러미·마력석 꾸러미만, 룬하고 장비 뽑기는 빼)
       { id: 'dailyGem', cat: 'daily', name: '매일 다이아 7일', won: 6900, icon: '📅', give: { daily: { days: 7, gems: 340 } } },
       { id: 'goldS', cat: 'grow', name: '골드 꾸러미', won: 3300, icon: '💰', give: { goldMin: 120, gems: 1100 } },
-      { id: 'goldL', cat: 'grow', name: '골드 금고', won: 12000, icon: '💰', give: { goldMin: 600, gems: 4500 } },
-      { id: 'potion', cat: 'grow', name: '물약 꾸러미', won: 4900, icon: '🧪', give: { potionMin: 120, gems: 1700 } },
-      { id: 'grow', cat: 'grow', name: '성장 한 번에', won: 15000, icon: '🎁', give: { goldMin: 300, potionMin: 180, gems: 5500 } },
+      { id: 'goldL', off: true, cat: 'grow', name: '골드 금고', won: 12000, icon: '💰', give: { goldMin: 600, gems: 4500 } },
+      { id: 'potion', off: true, cat: 'grow', name: '물약 꾸러미', won: 4900, icon: '🧪', give: { potionMin: 120, gems: 1700 } },
+      { id: 'grow', off: true, cat: 'grow', name: '성장 한 번에', won: 15000, icon: '🎁', give: { goldMin: 300, potionMin: 180, gems: 5500 } },
       { id: 'manaS', cat: 'grow', name: '마력석 꾸러미', won: 5900, icon: '🔷', give: { mana: 30000, gems: 2000 } },
-      { id: 'manaL', cat: 'grow', name: '마력석 상자', won: 33000, icon: '🔷', give: { mana: 200000, gems: 13000 } },
-      { id: 'gear10', cat: 'gear', name: '장비 뽑기 10번', won: 3300, icon: '🎰', give: { pulls: 10, gems: 1100 } },
-      { id: 'gear30', cat: 'gear', name: '장비 뽑기 30번', won: 8900, icon: '🎰', give: { pulls: 30, gems: 3100 } },
-      { id: 'gear100', cat: 'gear', name: '장비 뽑기 100번', won: 27000, icon: '🎰', give: { pulls: 100, gems: 10300 } },
+      { id: 'manaL', off: true, cat: 'grow', name: '마력석 상자', won: 33000, icon: '🔷', give: { mana: 200000, gems: 13000 } },
+      { id: 'gear10', off: true, cat: 'gear', name: '장비 뽑기 10번', won: 3300, icon: '🎰', give: { pulls: 10, gems: 1100 } },
+      { id: 'gear30', off: true, cat: 'gear', name: '장비 뽑기 30번', won: 8900, icon: '🎰', give: { pulls: 30, gems: 3100 } },
+      { id: 'gear100', off: true, cat: 'gear', name: '장비 뽑기 100번', won: 27000, icon: '🎰', give: { pulls: 100, gems: 10300 } },
       { id: 'tier5', cat: 'tier', name: '5차 전직 축하', won: 9900, icon: '🎉', need: { tier: 5 }, limit: 1, give: { gems: 3500, runeStone: 3000 } },
       { id: 'tier8', cat: 'tier', name: '8차 전직 축하', won: 19900, icon: '🎉', need: { tier: 8 }, limit: 1, give: { gems: 7400, sigils: [{ grade: 4, n: 2 }], sigilStone: 5000 } },
       { id: 'tier10', cat: 'tier', name: '나무 전직 축하', won: 29900, icon: '🌳', need: { tier: 10 }, limit: 1, give: { gems: 11500, runeStone: 10000, sigils: [{ grade: 6, n: 1 }] } },
-      { id: 'runeS', cat: 'rune', name: '룬석 꾸러미', won: 5900, icon: '🔮', give: { runeStone: 1500, gems: 2000 } },
-      { id: 'runeL', cat: 'rune', name: '룬 승급 상자', won: 33000, icon: '🔮', give: { runeStone: 12000, gems: 13000 } },
-      { id: 'sigilA', cat: 'rune', name: '신성력 전설 패키지', won: 12000, icon: '💠', give: { sigils: [{ grade: 3, n: 3 }], sigilStone: 2000, gems: 4500 } },
-      { id: 'sigilB', cat: 'rune', name: '신성력 고대 패키지', won: 33000, icon: '💠', give: { sigils: [{ grade: 5, n: 2 }, { grade: 4, n: 2 }], sigilStone: 8000, gems: 13000 } },
-      { id: 'sigilC', cat: 'rune', name: '신성력 불멸 패키지', won: 59000, icon: '💠', give: { sigils: [{ grade: 7, n: 1 }, { grade: 6, n: 2 }], sigilStone: 20000, gems: 24000 } },
-      { id: 'sigilD', cat: 'rune', name: '신성력 멸망 패키지', won: 119000, icon: '💠', give: { sigils: [{ grade: 10, n: 1 }, { grade: 8, n: 2 }], sigilStone: 60000, gems: 50000 } },
-      { id: 'mixed', cat: 'rune', name: '룬·신성력 성장 세트', won: 22000, icon: '🎁', give: { runeStone: 5000, sigils: [{ grade: 4, n: 1 }], sigilStone: 5000, gems: 8300 } }
+      { id: 'runeS', off: true, cat: 'rune', name: '룬석 꾸러미', won: 5900, icon: '🔮', give: { runeStone: 1500, gems: 2000 } },
+      { id: 'runeL', off: true, cat: 'rune', name: '룬 승급 상자', won: 33000, icon: '🔮', give: { runeStone: 12000, gems: 13000 } },
+      { id: 'sigilA', off: true, cat: 'rune', name: '신성력 전설 패키지', won: 12000, icon: '💠', give: { sigils: [{ grade: 3, n: 3 }], sigilStone: 2000, gems: 4500 } },
+      { id: 'sigilB', off: true, cat: 'rune', name: '신성력 고대 패키지', won: 33000, icon: '💠', give: { sigils: [{ grade: 5, n: 2 }, { grade: 4, n: 2 }], sigilStone: 8000, gems: 13000 } },
+      { id: 'sigilC', off: true, cat: 'rune', name: '신성력 불멸 패키지', won: 59000, icon: '💠', give: { sigils: [{ grade: 7, n: 1 }, { grade: 6, n: 2 }], sigilStone: 20000, gems: 24000 } },
+      { id: 'sigilD', off: true, cat: 'rune', name: '신성력 멸망 패키지', won: 119000, icon: '💠', give: { sigils: [{ grade: 10, n: 1 }, { grade: 8, n: 2 }], sigilStone: 60000, gems: 50000 } },
+      { id: 'mixed', off: true, cat: 'rune', name: '룬·신성력 성장 세트', won: 22000, icon: '🎁', give: { runeStone: 5000, sigils: [{ grade: 4, n: 1 }], sigilStone: 5000, gems: 8300 } }
     ],
     // the three star items (staff, cape, charm): level with gold, stars from boss shards
     divine: [

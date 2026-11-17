@@ -7,9 +7,10 @@
   function packSigils(p) { return (p.give.sigils || []).reduce(function (a, x) { return a + x.n; }, 0); }
   function daily(state) { if (!state.dailyGems) state.dailyGems = { left: 0, last: '' }; return state.dailyGems; }
   // 'ok', or why it cannot be bought now: 'tier' (that job is not reached yet), 'limit' (bought as often as it can be),
-  // 'daily' (the daily gems still have days left), 'none' (no such package)
+  // 'daily' (the daily gems still have days left), 'over' (its season ended), 'none' (no such package)
   function packOpen(state, id) {
     var p = packById(id); if (!p) return 'none';
+    if (p.until && new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10) > p.until) return 'over';   // 겨울 패키지: its season is over
     if (p.need && p.need.tier && (state.tier || 1) < p.need.tier) return 'tier';
     if (p.limit && ((state.packs || {})[id] || 0) >= p.limit) return 'limit';
     if (p.give.daily && daily(state).left > 0) return 'daily';
@@ -30,6 +31,13 @@
     }
     if (g.pulls) { var GA = mod('./gacha.js'), cost = GA.gachaCost(g.pulls); state.gems += cost; got.gear = GA.pull(state, g.pulls, rng) || []; }
     if (g.daily) { var dd = daily(state); dd.left = g.daily.days; dd.total = g.daily.days; dd.gems = g.daily.gems; dd.last = ''; dd.hide = ''; }
+    // rune items (겨울 패키지, 2026-11-17): a kind that can drop now (or, before any is open, a plain one); a full bag gives the
+    // rune stones it would dismantle into, like a summon
+    (g.runes || []).forEach(function (x) { for (var i = 0; i < x.n; i++) {
+      var R = mod('./runes.js'), pool = R.runePool(state); if (!pool.length) pool = DATA.runes.filter(function (k) { return !k.awaken && k.crit === undefined; });
+      var k = pool[Math.min(pool.length - 1, Math.floor((rng || Math.random)() * pool.length))], it = R.runeAdd(state, k.id, x.grade);
+      if (it) (got.runes = got.runes || []).push(it); else state.runeStone = (state.runeStone || 0) + DATA.runeConf.dismantleBase[x.grade];
+    } });
     if (g.runeStone) state.runeStone = (state.runeStone || 0) + g.runeStone;
     if (g.mana) state.mana = (state.mana || 0) + g.mana;   // 마력석 packages (2026-11-15)
     (g.sigils || []).forEach(function (x) { for (var i = 0; i < x.n; i++) got.push(S.addSigil(state, x.grade, rng)); });
