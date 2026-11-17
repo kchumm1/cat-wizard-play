@@ -215,11 +215,13 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
 
       <div class="grp">
         <h3>누구에게</h3>
-        <div class="seg" id="toSeg"><button type="button" data-to="all" class="on">모두</button><button type="button" data-to="pid">우편번호</button></div>
+        <div class="seg" id="toSeg"><button type="button" data-to="all" class="on">모두</button><button type="button" data-to="pid">우편번호</button><button type="button" data-to="mine">내 기기 2개</button></div>
         <div id="pidBox" class="hide">
           <label for="pids">우편번호 (여러 명이면 쉼표로)</label>
           <input id="pids" type="text" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="AB12CD34">
           <p class="hint" id="pidHint">우편번호는 게임 우편함 화면에 보여요.</p>
+          <label class="small">저장해 둔 내 우편번호 (누르면 넣고 빼요)</label>
+          <div class="chips" id="myPids"></div>
         </div>
       </div>
 
@@ -738,7 +740,7 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
   function reuseLetter(l) {
     setTab('mail'); clearGift();
     var all = l.to === 'all'; toAll = all;
-    [].forEach.call($('toSeg').children, function (x) { x.classList.toggle('on', (x.dataset.to === 'all') === all); });
+    [].forEach.call($('toSeg').children, function (x) { x.classList.toggle('on', x.dataset.to === (all ? 'all' : 'pid')); });
     $('pidBox').classList.toggle('hide', all); $('pids').value = Array.isArray(l.to) ? l.to.join(', ') : '';
     var g = CW.mailGold(l); $('gold').value = g > 0 ? CW.countText(g) : ''; $('gems').value = +l.gems > 0 ? l.gems : '';
     var G = (CW.giftOf ? CW.giftOf(l) : {});
@@ -780,6 +782,23 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
     b.textContent = d.dataset.theme === 'light' ? '🌙' : '☀️';
     b.onclick = function () { var t = d.dataset.theme === 'light' ? 'night' : 'light'; d.dataset.theme = t; try { localStorage.setItem('cw-ops-theme', t); } catch (e) {} b.textContent = t === 'light' ? '🌙' : '☀️'; };
   })();
+
+  // 내 우편번호 (2026-11-18, the user: 내 핸드폰이랑 홈페이지 우편번호를 기록해 두고 바로 보낼 수 있게, 이 2개만):
+  // 나중에 서버가 생겨도 이 두 개로 바로 보내 보기 쉽게 한곳에 적어 둠. 바꿀 때는 여기만 고치면 돼요.
+  var MY_PIDS = ['KNPQDWDD', 'XDMCRFAY'];
+  function pidList() { return $('pids').value.toUpperCase().split(/[\s,;·]+/).filter(Boolean); }
+  function setPids(a) { $('pids').value = a.join(', '); fire('pids'); markMy(); }
+  function markMy() { var cur = pidList(); [].forEach.call($('myPids').children, function (b) { b.classList.toggle('on', b.dataset.pids.split(',').every(function (p) { return cur.indexOf(p) >= 0; })); }); }
+  MY_PIDS.concat([MY_PIDS.join(',')]).forEach(function (p, k) {
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.dataset.pids = p; b.textContent = k < MY_PIDS.length ? p : '둘 다';
+    b.onclick = function () {
+      var want = p.split(','), cur = pidList(), has = want.every(function (x) { return cur.indexOf(x) >= 0; });
+      setPids(has ? cur.filter(function (x) { return want.indexOf(x) < 0; }) : cur.concat(want.filter(function (x) { return cur.indexOf(x) < 0; })));
+    };
+    $('myPids').appendChild(b);
+  });
+  $('pids').addEventListener('input', markMy);
+  $('toSeg').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b && b.dataset.to === 'mine') setPids(MY_PIDS); });
 
   showKey();
   if (token()) load(NZ).then(function (cur) { nzDraw(cur.doc); }).catch(function (e) { say('nzListMsg', e.message, 'bad'); });
