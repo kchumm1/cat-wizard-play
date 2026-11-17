@@ -713,8 +713,8 @@
       // a little smaller, mostly at high upgrade (2026-11-17 user: '연쇄번개 크기 사알짝만 줄이자' → '레벨 50기준이야'):
       // x0.95 at +0, x0.82 at +50 (the bolts grow with the upgrade through c.s; the picture is already capped)
       // capped like the 3D skills (2026-11-17, user's phone at tier 9+ +50: '많이 큰데' — c.s reached 3.5, 4.5 in a surge;
-      // tried 1.5 / 2.0 / 2.2 / 2.5 at tier 11 +50, the user chose 2.5); c.s itself is lowered so the hit flash, ring and picture shrink too
-      var cs = Math.min(2.5, c.s * (0.95 - 0.0026 * Math.min(50, c.lv))); c.s = cs;
+      // tried 1.5 / 2.0 / 2.2 / 2.5 at tier 11 +50, the user chose 2.5, then 2.0 on the phone); c.s itself is lowered so the hit flash, ring and picture shrink too
+      var cs = Math.min(2.0, c.s * (0.95 - 0.0026 * Math.min(50, c.lv))); c.s = cs;
       var prev = function () { return sc.heroPaw(); };
       list.forEach(function (mob, i) {
         var from = prev, to = function () { return sc.mobPos(mob); };
