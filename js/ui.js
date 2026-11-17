@@ -377,6 +377,39 @@
       // 오팔 (2026-11-16): 세 신기를 전시대에 나란히 (셋 다 늘 효과가 있음), 고른 것 하나만 아래에서 설명·강화.
       // 고르기는 보기만 바꾼다 — 장착·효과 끄기 없음. 레벨(골드)과 별(조각) 두 길을 각각 지금→다음으로.
       if (!selDivine || !DATA.divine.some(function (x) { return x.id === selDivine; })) selDivine = DATA.divine[0].id;
+      // 오팔 2판 (2026-11-17, 사용자 삼신기 부품·시안): 성운 창 + 받침대 위 세 신기 + 이름 알약·Lv·별 → 상세 상자(그림 칸·이름·효과 알약)
+      // → 레벨업(골드)·별 강화(신기 조각) 두 패널. 모양은 js/opal-divine.js, 그림은 tools/import-divine-parts.py.
+      if (CW.opalDivine) {
+        var dvv = '<div class="dvw"><div class="dvv"><i class="dvv-halo"></i><i class="dvv-neb"></i><i class="dvv-rim"></i>' + DATA.divine.map(function (it, k) {
+          var d = D[it.id] || { lv: 0, star: 0 };
+          return '<button class="dvs dvs' + k + (it.id === selDivine ? ' sel' : '') + (d.lv && open ? '' : ' sleep') + '" data-dvsel="' + it.id + '" aria-label="' + it.name + '">' +
+            '<i class="dvs-ped"></i><i class="dvs-sp"></i><span class="dvs-fig dv-' + it.id + '"></span><b class="dvs-name">' + it.name + '</b>' +
+            '<small class="dvs-lv">Lv.' + d.lv + '</small><span class="dvs-st"><i></i>' + d.star + ' / ' + C.starMax + '</span></button>';
+        }).join('') + '</div></div>';
+        var dvd = DATA.divine.filter(function (it) { return it.id === selDivine; }).map(function (it) {
+          var d = D[it.id] || { lv: 0, star: 0 }, cost = CW.divineUpCost(d.lv, s), sc = CW.starCost(d.star);
+          var val = d.lv ? it.per * d.lv * (1 + C.starBonus * d.star) : 0;
+          var lvMax = d.lv >= C.maxLv, stMax = d.star >= C.starMax;
+          var lvOff = !open || s.gold < cost || lvMax, stOff = !open || !d.lv || D.shards < sc || stMax;
+          var nextLv = it.per * (d.lv + 1) * (1 + C.starBonus * d.star), nextSt = it.per * d.lv * (1 + C.starBonus * (d.star + 1));
+          return '<div class="dvd' + (open ? '' : ' none') + '" data-opfx="dvs:' + it.id + '" data-opdur=".7">' +
+            '<span class="dvd-pic' + (d.lv && open ? '' : ' sleep') + '" data-opfx="dv:' + it.id + '" data-opdur=".3"><span class="dvs-fig dv-' + it.id + '"></span></span><i class="dvd-bar"></i>' +
+            '<b class="dvd-name">' + it.name + ' <small data-opv="dv:' + it.id + '">Lv.' + d.lv + '</small></b>' +
+            '<p class="dvd-eff"><i></i>' + (d.lv ? bonusText(it.stat, val) : (STAT_KO[it.stat] || it.stat) + ' 증가') + '</p>' +
+            '<div class="dvd-low">' +
+              '<div class="dvp"><button class="dvp-btn pri' + (lvOff ? ' off' : '') + '" data-dlv="' + it.id + '"><i></i>' + (lvMax ? '최대 레벨' : d.lv ? '레벨업' : '깨우기') + '<i></i></button>' +
+                '<small class="dvp-cap">' + (open ? '골드로 레벨 성장' : C.unlockTier + '차 전직 후 해금') + '</small>' +
+                '<span class="dvp-line">' + (lvMax ? 'Lv.' + d.lv + ' <b>+' + pct(val) + '</b>' : 'Lv.' + d.lv + '<em>→</em>Lv.' + (d.lv + 1) + ' <b>+' + pct(nextLv) + '</b>') + '</span>' +
+                '<span class="dvp-cost' + (open && !lvMax && s.gold < cost ? ' lack' : '') + '"><i class="coin2"></i>' + (lvMax ? '<b class="gn">최대</b>' : gh(cost)) + '</span></div>' +
+              '<div class="dvp"><button class="dvp-btn sec' + (stOff ? ' off' : '') + '" data-dstar="' + it.id + '"><i></i>' + (stMax ? '최대 별' : '별 강화') + '<i></i></button>' +
+                '<small class="dvp-cap">' + (open ? '신기 조각으로 별 성장' : C.unlockTier + '차 전직 후 해금') + '</small>' +
+                '<span class="dvp-line">' + (stMax ? '<i class="st"></i>' + d.star + ' <b>+' + pct(val) + '</b>' : '<i class="st"></i>' + d.star + '<em>→</em><i class="st"></i>' + (d.star + 1) + (d.lv ? ' <b>+' + pct(nextSt) + '</b>' : '')) + '</span>' +
+                '<span class="dvp-cost' + (open && !stMax && D.shards < sc ? ' lack' : '') + '"><i class="gem2"></i><b class="gn">' + (stMax ? '최대' : fmt(sc)) + '</b><small>보유 ' + fmt(D.shards) + '</small></span></div>' +
+            '</div></div>';
+        }).join('');
+        return '<h3 class="ophide">별의 삼신기</h3>' + dvv + dvd +
+          '<p class="dvnote">신기 조각 · 일반 보스 ' + C.shardBoss + '개 / 지역 보스 ' + C.shardRegion + '개</p>';
+      }
       var stands = '<div class="dvstands"><i class="ns-neb"></i>' + (CW.opalUI ? CW.opalUI.starSvg(2) : '') + DATA.divine.map(function (it) {
         var d = D[it.id] || { lv: 0, star: 0 };
         return '<button class="dvstand' + (it.id === selDivine ? ' sel' : '') + (d.lv ? '' : ' sleep') + '" data-dvsel="' + it.id + '"><span class="dv-fig">' + mi('divine', it) + '<i></i></span><b>' + it.name + '</b><small>Lv.' + d.lv + ' · ★' + d.star + '</small></button>';
@@ -1378,7 +1411,7 @@
     function fitNarrow() {
       if (!panel) return;
       var on = !!panel.querySelector(':scope > .skw, :scope > .skd, :scope > .mcwrap');
-      var stg = !on && !!panel.querySelector(':scope > .ruw, :scope > .sgw');   // 룬·신성력 (2026-11-17): 시안 좌표로 짠 무대만 줄이고 아래 글·목록은 그대로
+      var stg = !on && !!panel.querySelector(':scope > .ruw, :scope > .sgw, :scope > .dvw');   // 룬·신성력 (2026-11-17): 시안 좌표로 짠 무대만 줄이고 아래 글·목록은 그대로
       var cs = getComputedStyle(panel), cw = panel.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
       var k = (on || stg) && cw > 200 && cw < 352 ? cw / 359 : 1;   // 390폭(안쪽 358.4)은 그대로 — 1~2px 넘침은 그림 여백이라 잘려도 됨
       panel.classList.toggle('opz', on && k < 1); panel.style.setProperty('--opz', k.toFixed(4));

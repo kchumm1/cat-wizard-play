@@ -5,7 +5,7 @@
 //                                         paw for attack, skill and boss damage; a small corner mark still tells the stat.
 //   runes     art/rn-<id>-<1..3>          stone frame for 일반~전설, hexagon for 신화~불멸, gold for 천상~멸망
 //   relics    art/rl-<id>
-//   삼신기    art/dv-<id>-<1..3>          grows with stars: 0~6★, 7~13★, 14~20★
+//   삼신기    art/dv2-<id>                one picture (2026-11-17 user parts, tools/import-divine-parts.py); stars only add glow (s2 7~13★, s3 14~20★)
 // Loaded after js/art-icons.js; anything without a picture keeps its drawn icon.
 (function (root) {
   var CW = root.CW, I = CW.ICO, K = I.kit, D = CW.DATA, B = CW.ART_BASE || 'art/';
@@ -117,7 +117,8 @@
   }
   I.misc = function (cat, id) {
     if (cat === 'relic' && RELICS.indexOf(id) >= 0) return pic('rl-' + id, 'imisc p-relic');
-    if (cat === 'divine' && DIVINE.indexOf(id) >= 0) return pic('dv-' + id + '-' + divineStep(id), 'imisc p-divine');
+    // 2026-11-17 사용자 삼신기 부품: 새 원화 한 장(art/dv2-<id>, tools/import-divine-parts.py)을 모든 자리에 — 별 단계는 빛으로만 (s2·s3)
+    if (cat === 'divine' && DIVINE.indexOf(id) >= 0) return pic('dv2-' + id, 'imisc p-divine s' + divineStep(id), 'object-fit:contain');
     return misc0(cat, id);
   };
 
