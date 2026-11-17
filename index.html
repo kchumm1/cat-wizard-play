@@ -2896,8 +2896,10 @@ html.fullh #chestfx{position:absolute;bottom:auto;height:var(--apph)}
   /* left column: 지도 · 룬 · 신성력 · 도감 · 우편함 · 공지 · 방치, all seven always in reach */
   #quick{left:calc(var(--el) + 6px)!important;right:auto!important;top:calc(var(--st) + 6px)!important;bottom:calc(var(--sb) + 6px);width:calc(var(--qw) - 8px);display:flex;flex-direction:column;justify-content:space-between;align-items:center;gap:0!important}
   #quick button{width:48px!important;padding:3px 0 2px!important;border-radius:13px!important}
-  #quick i,#quick i .ico{width:22px!important;height:22px!important}
-  #quick span{font-size:10px!important;line-height:1.1}
+  /* (형 2026-11-18, 갤럭시 가로: 주소창이 보이면 높이가 300쯤 → 여덟 칸이 넘쳐 방치가 잘림) the pictures and names follow the
+     screen's height: 22px / 10px from 360 up, down to 15px / 8.5px, so all eight stay in the column */
+  #quick i,#quick i .ico{width:clamp(15px,6.1vh,22px)!important;height:clamp(15px,6.1vh,22px)!important}
+  #quick span{font-size:clamp(8.5px,2.8vh,10px)!important;line-height:1.1}
   /* top band: profile · stage · wallet on one line, the boss bar and 보스 도전 under the stage */
   /* (형 2026-11-17, 실제 아이폰: 상단바가 위에 너무 붙어 있고 보스 도전은 떨어져 있다) the band starts a little lower, so
      the difficulty badge over the stage bar (엘리멘탈 …) is clear of the screen's top; the profile and the wallet span
@@ -2928,8 +2930,8 @@ html.fullh #chestfx{position:absolute;bottom:auto;height:var(--apph)}
   html.notchR #tabs{top:6px;bottom:6px;border-radius:20px!important;padding-top:calc(var(--st) + 6px)!important;padding-bottom:calc(var(--sb) + 2px)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.28),0 6px 18px rgba(40,20,100,.4)!important}
   #tabs button{min-height:0;padding:0!important}
   /* a thin column (형: 가로모드는 화면을 더 넓게 보는 거니까 좀 더 줄이고): smaller pictures, names and halo */
-  #tabs button img.ico,#tabs button svg{width:25px!important;height:25px!important}
-  #tabs button span{font-size:10px!important;line-height:1.15!important;margin-top:1px}
+  #tabs button img.ico,#tabs button svg{width:clamp(18px,7vh,25px)!important;height:clamp(18px,7vh,25px)!important}
+  #tabs button span{font-size:clamp(8.5px,2.8vh,10px)!important;line-height:1.15!important;margin-top:1px}
   #tabs button[aria-selected=true]::before{width:36px!important;height:36px!important;margin-left:-18px!important}
   /* menu heads made thin (형: 머리 부분이 커서 훈련 목록이 2~3줄만): the title line, the ×1/×10/×100 row and the sub-tabs
      at the bottom; the 길게 누르면 연속 강화 hint goes (it is in 성장 가이드 too) */
@@ -2959,6 +2961,34 @@ html.fullh #chestfx{position:absolute;bottom:auto;height:var(--apph)}
   #sheet#sheet #panel:has(> .gchest) > .pulls .pull span{font-size:14px!important;line-height:1.2!important;margin:0!important}
   #sheet#sheet #panel:has(> .gchest) > .pulls .pull small{font-size:11.5px!important;line-height:1.2!important;margin:0!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
   #sheet#sheet#sheet #panel{padding-top:6px!important;margin-top:0!important}
+  /* 전직 list: the condition line ("어드밴스 10-31 보스 깨기") ran out of its row by 8px and was cut with …; a little smaller
+     writing and no pill in front of it (the drawer is only 390px wide) */
+  #panel .tjcond{font-size:12px!important;gap:4px}
+  #panel .tjcond i{padding:2px 5px 1px;font-size:10px}
+  /* 룬 stage: each orb is its own stacking layer, so the orb drawn after a neighbour covered the neighbour's name ribbon
+     ("공명 기" cut off): the layers are flattened and only the ribbon and the level stay on top */
+  /* 특성: "누적 포인트 0/8 · 계정 Lv.120" — the account level got a white pill of its own (a rule meant for another row) that
+     sat on top of the line's writing; it is plain writing again */
+  #sheet.opal#sheet.opal .tlink.tnw .treq em{background:none!important;padding:0!important;box-shadow:none!important;border:0!important;border-radius:0!important;font:inherit!important;color:#9a5a3a!important;margin-left:3px!important}
+  /* 뽑기 결과: one to four cards stood at the left of a five-column grid while the buttons under them were centred; they
+     now stand in the middle, the same size as the cards of a full row */
+  .cards:has(.gcard:last-child:nth-child(-n+4)){display:flex;justify-content:center}
+  .cards:has(.gcard:last-child:nth-child(-n+4)) .gcard{flex:none;width:calc((min(420px,100%) - 24px) / 5)}
+  /* 설정: "다른 기기로 진행 옮기기" had its two buttons beside the text, which left a column so thin the title broke inside a
+     word ("옮 / 기기"); the buttons go under the text, side by side, and the lines break between words only */
+  #sheet#sheet #panel .row:has(> .sbtns){flex-wrap:wrap!important}
+  #sheet#sheet #panel .row:has(> .sbtns) > .info{flex:1 1 100%!important}
+  #sheet#sheet #panel .row:has(> .sbtns) > .sbtns{flex:1 1 100%!important;display:flex!important;gap:8px}
+  #sheet#sheet #panel .row:has(> .sbtns) > .sbtns .btn{flex:1 1 0;min-width:0}
+  #sheet #panel .row .name,#sheet #panel .row .desc{word-break:keep-all}
+  /* 안내·확인 창 (진행 불러오기 …): the box was taller than the screen and its buttons (취소 · 불러오기) sat below the fold; it is
+     tighter, the code field shorter, and the buttons stay at the bottom edge while the rest scrolls */
+  #modalCard.guide-card{padding:14px 18px 0!important;max-height:calc(100dvh - 20px)!important}
+  #modalCard.guide-card h2{margin-bottom:4px}
+  #modalCard.guide-card .codebox{min-height:56px!important;height:56px;margin:4px 0}
+  #modalCard.guide-card .btns{position:sticky;bottom:0;margin:0!important;padding:8px 0 14px;background:none}
+  #sheet .run{z-index:auto!important}
+  #sheet .run-anc,#sheet .run-lv{z-index:6!important}
   #sheet#sheet#sheet .ophead{margin:0 0 6px!important}
   #sheet#sheet#sheet .mulpick button{height:25px!important;font-size:14px!important}
   #sheet#sheet#sheet #opTabs{padding:3px 10px calc(var(--sb) + 3px)!important}
@@ -3014,6 +3044,7 @@ html.fullh #chestfx{position:absolute;bottom:auto;height:var(--apph)}
 /* a small phone on its side (iPhone SE, 667 wide: the drawer is 320): the 뽑기 level chips and the pull buttons' lines
    are made smaller still so nothing runs into anything and all five buttons stay on the first screen */
 @media (orientation:landscape) and (min-aspect-ratio:6/5) and (max-width:740px){
+  #panel .tjcond i{display:none}
   #panel:has(> .gchest){grid-template-columns:minmax(0,1fr) 62px}
   #panel:has(> .gchest) > .gchest{height:62px!important}
   #panel:has(> .gchest) .gh2 .ghchips{gap:4px!important}

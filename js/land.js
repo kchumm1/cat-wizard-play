@@ -22,7 +22,18 @@
     var so = root.screen && root.screen.orientation, a = so && so.angle;
     return a === 90 ? 'L' : a === 270 ? 'R' : '';
   }
-  function markNotch() { var s = CW.isLand() ? notchSide() : ''; de.classList.toggle('notchL', s === 'L'); de.classList.toggle('notchR', s === 'R'); }
+  // An iPhone with a notch keeps a safe gap at BOTH sides when held sideways. A Galaxy (Android) has no such gap (none in
+  // the browser, one narrow side for the camera hole in a full-screen app), so the "column at the very edge / floating
+  // rounded column" treatment made for the iPhone's round corners stays off there: both ways of holding it look the same
+  // (형 2026-11-18, 갤럭시 안드로이드 가로).
+  function twoGaps() {
+    var d = document.body || de, p = document.createElement('div');
+    p.style.cssText = 'position:fixed;left:0;top:0;visibility:hidden;pointer-events:none;padding:0 env(safe-area-inset-right,0px) 0 env(safe-area-inset-left,0px)';
+    d.appendChild(p);
+    var cs = getComputedStyle(p), ok = parseFloat(cs.paddingLeft) > 0 && parseFloat(cs.paddingRight) > 0;
+    d.removeChild(p); return ok;
+  }
+  function markNotch() { var s = CW.isLand() && twoGaps() ? notchSide() : ''; de.classList.toggle('notchL', s === 'L'); de.classList.toggle('notchR', s === 'R'); }
   function tell() { var on = CW.isLand(); de.classList.toggle('land', on); markNotch(); fns.forEach(function (f) { try { f(on); } catch (e) { /* one listener's trouble is not the others' */ } }); fit(); }
   if (mq) { if (mq.addEventListener) mq.addEventListener('change', tell); else if (mq.addListener) mq.addListener(tell); }
   de.classList.toggle('land', CW.isLand()); markNotch();

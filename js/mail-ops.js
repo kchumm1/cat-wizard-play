@@ -76,9 +76,9 @@
     var g = parseGold(f.gold), stamp = new Date(now + 9 * 3600e3).toISOString().replace(/[-:T]/g, '').slice(0, 14);
     var l = {
       id: 'gift-' + stamp + '-' + Math.random().toString(36).slice(2, 6),
-      title: String(f.title || '').trim().slice(0, 30) || '모험 응원 선물',
+      title: '모험 응원 선물',
       sub: String(f.sub || '').trim() || rewardSub(g, f.gems, f.give),
-      text: String(f.text || '').replace(/\r\n/g, '\n').trim().slice(0, 800) || GIFT_TEXT,
+      text: GIFT_TEXT,
       sign: '냥법사 운영팀 드림',
       sender: '운영팀',
       date: kstDay(now),
