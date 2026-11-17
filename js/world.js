@@ -267,7 +267,7 @@
     // drifting particles
     function build(r, regionData, quality, backdrop) {
       disposeAll(); built = r;
-      var spec = REGIONS[r % REGIONS.length], P = spec.P, R = rng(97 + r * 131), low = quality === 'low';
+      var spec = REGIONS[(regionData.look !== undefined ? regionData.look : r) % REGIONS.length], P = spec.P, R = rng(97 + r * 131), low = quality === 'low';
       var sky = new T.Color(regionData.sky), fogCol = new T.Color(P.g0).lerp(sky, 0.35);
       if (backdrop) { scene.background = null; scene.fog = null; }
       else {

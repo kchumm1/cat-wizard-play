@@ -15,6 +15,14 @@
     return state.sigil;
   }
   function sigilOpen(state) { return (state.tier || 1) >= C.unlockTier; }
+  // 신성석 a boss gives (0 before 신성력 opens): + balance.runeStoneRegionStep a region, × the difficulty's gemMul
+  function sigilStoneForBoss(state, regionBoss, stage) {
+    if (!sigilOpen(state)) return 0;
+    var D = DATA.difficulties && DATA.difficulties[state.diff || 0];
+    var r = Math.floor(Math.max(0, stage === undefined ? state.stage || 0 : stage) / 31), k = (1 + (DATA.balance.runeStoneRegionStep || 0) * r) * ((D && D.gemMul) || 1);
+    return Math.round((regionBoss ? C.regionStone : C.bossStone) * k);
+  }
+  function addSigilStone(state, n) { if (n > 0) box(state).stone += n; return n; }
   function sigilById(state, id) { var it = box(state).items; for (var i = 0; i < it.length; i++) if (it[i].id === id) return it[i]; return null; }
   function statDef(stat) { for (var i = 0; i < DATA.sigilStats.length; i++) if (DATA.sigilStats[i].stat === stat) return DATA.sigilStats[i]; return DATA.sigilStats[0]; }
   function isAwaken(it) { return !!(it && statDef(it.stat).awaken); }
@@ -78,7 +86,11 @@
     var aw = isAwaken(it);
     var others = box(state).items.filter(function (x) { return x !== it && x.grade === it.grade && isAwaken(x) === aw && free(state, x); }).sort(function (a, c) { return a.q - c.q; }).slice(0, 2);
     if (others.length < 2) return null;
-    remove(state, it.id); others.forEach(function (x) { remove(state, x.id); });
+    // 천상·혼돈·멸망 may fail (DATA.fuseConf, js/runes.js fuseRoll): then the one it was started from stays, the other two go
+    var roll = (isNode ? require('./runes.js') : root.CW).fuseRoll(state, 'sigil', it.grade + 1, rng);
+    others.forEach(function (x) { remove(state, x.id); });
+    if (!roll.ok) return { fail: true, kept: it, grade: it.grade + 1, rate: roll.rate, next: roll.next };
+    remove(state, it.id);
     return addSigil(state, it.grade + 1, rng, aw);
   }
   function sigilLvCost(lv) { return Math.ceil(C.lvCostBase * Math.pow(C.lvCostGrowth, lv)); }
@@ -101,12 +113,13 @@
     return out;
   }
   // awaken: summon awakened sigils instead (only once 오메가 is open)
-  function sigilSummon(state, n, rng, awaken) {
+  // dust: pay with 신성력 가루 instead of diamonds (2026-11-17, not for awakened ones), the same price and odds
+  function sigilSummon(state, n, rng, awaken, dust) {
     rng = rng || Math.random;
-    var cost = C.summon[n]; if (!cost || !(state.gems >= cost) || !sigilOpen(state)) return null;
+    var cur = dust && !awaken ? 'sigilDust' : 'gems', cost = C.summon[n]; if (!cost || !((state[cur] || 0) >= cost) || !sigilOpen(state)) return null;
     if (box(state).items.length + n > C.cap) return null;
     if (awaken && !pool(state, true).length) return null;
-    state.gems -= cost;
+    state[cur] -= cost;
     var out = []; for (var i = 0; i < n; i++) out.push(addSigil(state, rollGrade(C.summonTable, rng), rng, awaken));
     return out;
   }
@@ -163,7 +176,7 @@
     if (state.sigil.lv) b.finalPct = (b.finalPct || 0) + state.sigil.lv * C.lvFinal;
     return b;
   }
-  return { sigilOpen: sigilOpen, sigilById: sigilById, equipped: equipped, sigilAwakened: awakened, sigilIsAwaken: isAwaken, isEquipped: isEquipped, qualityName: qualityName, sigilValue: sigilValue, addSigil: addSigil,
+  return { sigilOpen: sigilOpen, sigilStoneForBoss: sigilStoneForBoss, addSigilStone: addSigilStone, sigilById: sigilById, equipped: equipped, sigilAwakened: awakened, sigilIsAwaken: isAwaken, isEquipped: isEquipped, qualityName: qualityName, sigilValue: sigilValue, addSigil: addSigil,
     sigilSlots: sigilSlots, sigilEquip: sigilEquip, sigilUnequip: sigilUnequip, sigilSet: sigilSet, sigilLock: sigilLock, sigilDismantle: sigilDismantle,
     sigilDismantleAll: sigilDismantleAll, sigilFuse: sigilFuse, sigilLvCost: sigilLvCost, sigilLvUp: sigilLvUp, sigilDrop: sigilDrop, sigilSummon: sigilSummon, sigilCraft: sigilCraft,
     sigilPool: pool, sigilShardsOf: shardsOf,

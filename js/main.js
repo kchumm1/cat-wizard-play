@@ -62,7 +62,7 @@
     if (artFail[id] || (CW.MON_ART || []).indexOf(id) < 0) return art[fallback] || null;
     needArt(id); return null;
   }
-  function regionArt(r) { var R = DATA.regions[r]; return R ? R.monsters.concat(R.minis || [], [R.boss.art]) : []; }
+  function regionArt(r) { var R = CW.regionAt(state.diff, r); return R ? R.monsters.concat(R.minis || [], [R.boss.art]) : []; }
   // wide pictures (crabs, turtles, snakes) are drawn a little shorter so every monster takes about the same room
   function fitHeight(a, h) { return a.aspect > 1.05 ? h / Math.pow(a.aspect, 0.45) : h; }
   var VIEW_IDS = ['hero-v0', 'hero-v1', 'hero-v2', 'hero-v3'];
@@ -120,11 +120,14 @@
 
   // ---------- stage & region ----------
   function syncRegion() {
-    var r = CW.stageInfo(state.stage).region;
-    if (r === region) return;
-    region = r; var R = DATA.regions[r];
+    // the sky world's regions are scene regions 10-19 (하늘 세계, 2026-11-17)
+    var r = CW.stageInfo(state.stage).region, key = CW.sceneRegion(state.diff, r);
+    if (key === region) return;
+    // into the other world: its little ones are another kind, so the old ones run off (하늘 세계 졸개, 2026-11-17)
+    if (region >= 0 && (region >= 10) !== (key >= 10) && sc.minions) sc.minions.scatter();
+    region = key; var R = CW.regionAt(state.diff, r);
     regionArt(r).concat(regionArt(r + 1)).forEach(needArt);
-    sc.setRegion(r, R); fx.setRegion(R); fx.setBright(isBright(R));
+    sc.setRegion(key, R); fx.setRegion(R); fx.setBright(isBright(R));
     if (ready) ui.banner(R.name);
   }
   function aliveMobs() { return sc.mobs().filter(function (m) { return m.alive; }); }
@@ -152,7 +155,7 @@
     kindTurn = (kindTurn + 1) % R.monsters.length;
   }
   function spawnNormal() {
-    var info = CW.stageInfo(state.stage), R = DATA.regions[info.region];
+    var info = CW.stageInfo(state.stage), R = CW.regionAt(state.diff, info.region);
     if (!waveKinds.length || R.monsters.indexOf(waveKinds[0]) < 0) pickKinds(R);
     var id = waveKinds[Math.floor(Math.random() * waveKinds.length)], a = mobArt(id, R.monsters[0]); if (!a) return;
     var r = Math.random(), entry = r < 0.6 ? 'run' : r < 0.85 ? 'leap' : 'drop';
@@ -162,15 +165,17 @@
   // they bring nothing and count for nothing. Their pictures are fetched once, the first time any are wanted.
   // Size: about 80 % of a monster (2026-11-17, the user: 키우되 몬스터의 80% — they were about 55 %; as big as a monster
   // they would be taken for the ones that count)
-  var minionArt = {}, minionLoad = null;
+  // each world's own kinds (하늘 세계 2026-11-17), fetched the first time that world wants one
+  var minionArt = {}, minionLoad = {};
   function minionPick() {
-    if (!minionLoad) minionLoad = CW.loadArt(CW.MINION_KINDS.map(function (k) { return k.id; })).then(function (m) { minionArt = m; });
-    var k = CW.pickMinionKind(minionArt), a = k && minionArt[k.id];
+    var w = CW.worldOf(state.diff);
+    if (!minionLoad[w]) minionLoad[w] = CW.loadArt(CW.minionKinds(w).map(function (k) { return k.id; })).then(function (m) { Object.assign(minionArt, m); });
+    var k = CW.pickMinionKind(minionArt, null, w), a = k && minionArt[k.id];
     return a ? { art: a, height: fitHeight(a, 0.72 + Math.random() * 0.11), fly: !!k.fly } : null;
   }
   var mins = sc.minions;
   function startBoss() {
-    var info = CW.stageInfo(state.stage), R = DATA.regions[info.region];
+    var info = CW.stageInfo(state.stage), R = CW.regionAt(state.diff, info.region);
     if (mins) mins.scatter();
     clearField(false);
     var sb = CW.stageBoss(state.stage, state.diff || 0), a = mobArt(sb.art, R.boss.art) || mobArt(R.boss.art);
@@ -228,7 +233,7 @@
     if (CW.dexRecord(state, id, null, Date.now()) !== 'new') return;
     var r = state.dex[id].r;
     if (CW.dexDot) CW.dexDot(true);
-    if (CW.dexRegion(state, r).done) { refreshStats(); ui.toast(DATA.regions[r].name + ' 도감 완성! ' + CW.dexBonusText()); }
+    if (CW.dexRegion(state, r).done) { refreshStats(); ui.toast(CW.dexRegionData(r).name + ' 도감 완성! ' + CW.dexBonusText()); }
   }
   function onDeath(mob, skill) {
     sc.killMob(mob, skill.color, mob.boss);
@@ -246,6 +251,9 @@
     smallKills++;
     if (smallKills < CROWD) return;
     smallKills = 0;
+    // a field kill brings the two dusts (2026-11-17: no diamonds in the field, they come from bosses)
+    var r0 = Math.floor(state.runeDust || 0), s0 = Math.floor(state.sigilDust || 0), dz = CW.addKillDust(state); if (CW.idleNote) CW.idleNote(dz);
+    gained.runeDust = (gained.runeDust || 0) + Math.floor(state.runeDust) - r0; gained.sigilDust = (gained.sigilDust || 0) + Math.floor(state.sigilDust) - s0;
     var r = CW.onKill(state);
     if (r) onStageMoved(r);
   }
@@ -257,6 +265,7 @@
     var bx = CW.bossXp(state) * st.xpMul, shards = CW.addShards(state, CW.stageInfo(stage).isRegionBoss);
     var mana = Math.round(CW.manaForBoss(stage, CW.stageInfo(stage).isRegionBoss) * CW.diffOf(state).gemMul); state.mana = (state.mana || 0) + mana;
     var isRB = CW.stageInfo(stage).isRegionBoss, rstone = CW.runeStoneForBoss(state, isRB); state.runeStone = (state.runeStone || 0) + rstone;
+    var sstone = CW.addSigilStone(state, CW.sigilStoneForBoss(state, isRB, stage)); if (sstone) gained.sigilStone = (gained.sigilStone || 0) + sstone;
     var sigs = CW.sigilDrop(state, isRB), runeGot = CW.runeDrop(state, isRB);
     gained.gold += gold; gained.gems += gems; gained.xp += bx;
     if (CW.idleNote) CW.idleNote({ kill: 1, gold: gold, xp: bx, rune: rstone });
@@ -267,7 +276,7 @@
     sc.slowmo(0.7, 0.3); snd.play('win'); sc.heroCheer(1.5);
     if (mana) gained.more.push({ t: '마력석 +' + CW.fmt(mana), c: '#8fd8ff' });
     if (shards) gained.more.push({ t: '신기 조각 +' + shards, c: '#ffd24a' });
-    if (rstone) gained.more.push({ t: '룬석 +' + rstone, c: '#d8b8ff' });
+    if (rstone) gained.runeStone = (gained.runeStone || 0) + rstone;   // shown with its picture (ui gainLog)
     if (sigs.length) gained.more.push({ t: '신성력 ' + sigs.map(function (x) { return DATA.grades[x.grade].name; }).join('·'), c: '#8ff59a' });
     if (runeGot.length) gained.more.push({ t: '룬 ' + runeGot.map(function (x) { return DATA.hiGrades[x.grade].name + ' ' + CW.runeById(x.kind).name; }).join('·'), c: '#c9a8ff' });
     if (runeGot.overflow) gained.more.push({ t: '룬 가방이 꽉 차 룬석 +' + CW.fmt(runeGot.overflow), c: '#c9a8ff' });
@@ -275,7 +284,7 @@
     if (res.tierUp) pendingTier.push({ tier: res.tierUp, at: 1.1 });
     if (res.final) setTimeout(function () {
       var nd = res.unlocked !== null && res.unlocked !== undefined ? DATA.difficulties[res.unlocked] : null;
-      ui.modal('<h2>늑대 왕 토벌 완료</h2><p class="guide-lead">' + CW.diffOf(state).name + ' 난이도를 완료했어요.</p>' + (nd ? '<div class="guide-section"><h3>다음 난이도 해금 · <strong>' + nd.name + '</strong></h3><p>몬스터와 보스가 더 강해지고 등장 수가 늘어요.</p></div>' : '<div class="guide-section"><p>원하는 지역에서 계속 사냥할 수 있어요.</p></div>'),
+      ui.modal('<h2>' + CW.regionAt(state.diff, 9).boss.name + ' 토벌 완료</h2><p class="guide-lead">' + CW.diffOf(state).name + ' 난이도를 완료했어요.</p>' + (nd ? '<div class="guide-section"><h3>다음 난이도 해금 · <strong>' + nd.name + '</strong></h3><p>몬스터와 보스가 더 강해지고 등장 수가 늘어요.</p></div>' : '<div class="guide-section"><p>원하는 지역에서 계속 사냥할 수 있어요.</p></div>'),
         nd ? [{ label: '나중에' }, { label: nd.name + ' 도전', pri: true, fn: function () { G.setDifficulty(res.unlocked); } }] : [{ label: '확인', pri: true }], { variant: 'guide' });
     }, 1400);
     castT = Math.max(castT, 0.9); restT = 1.1;
@@ -315,7 +324,7 @@
     nowSlot = rot.index();
     var tg = pickTargets(s); if (tg[0]) sc.heroFaceTo(tg[0].x, tg[0].z);
     // mana surge: when the gauge is full this cast hits far harder and is drawn bigger
-    var surge = CW.surgeTick(state, st), weak = CW.isWeak(s, CW.regionOf(state));
+    var surge = CW.surgeTick(state, st), weak = CW.isWeak(s, CW.regionOf(state), state.diff);
     if (surge) { sc.shake(0.3); sc.flash('rgba(190,140,255,0.32)', 0.22); }
     fx.cast(s, state.tier, tg, onHit(s, (surge ? st.surgeMul : 1) * (weak ? st.weakMul : 1)), st.speedMul, CW.skillLevel(state, s.id) + (surge ? 30 : 0));
     ui.surgeGauge(state.surge || 0, DATA.surgeConf.charge);
@@ -327,7 +336,7 @@
   var dun = null;
   function dunDef(kind) { for (var i = 0; i < DATA.dungeons.length; i++) if (DATA.dungeons[i].id === kind) return DATA.dungeons[i]; return null; }
   function spawnDun() {
-    var info = CW.stageInfo(Math.max(0, state.best)), R = DATA.regions[info.region];
+    var info = CW.stageInfo(Math.max(0, state.best)), R = CW.regionAt(state.diff, info.region);
     var did = R.monsters[Math.floor(Math.random() * R.monsters.length)], a = mobArt(did, R.monsters[0]); if (!a) return;
     var hp = CW.stageMonsterHp({ stage: Math.max(0, state.best), diff: state.diff || 0 }) / CW.DUN_CROWD * 0.6;
     sc.spawnMob({ art: a, id: did, tint: dun.kind === 'gold' ? 0xffd84a : dun.kind === 'rune' ? 0xc49bff : 0x8ff0ff, height: fitHeight(a, 0.88 + Math.random() * 0.14), hp: hp, entry: Math.random() < 0.7 ? 'run' : 'leap' });
@@ -338,7 +347,7 @@
     if (!CW.useTicket(state, kind, Date.now())) return 'ticket';
     clearField(true); restT = 0;
     dun = { kind: kind, t: def.time, kills: 0, dmg: 0, golem: null, sp: 0.3, def: def };
-    var R0 = DATA.regions[CW.stageInfo(Math.max(0, state.best)).region]; needArt('b47');
+    var R0 = CW.regionAt(state.diff, CW.stageInfo(Math.max(0, state.best)).region); needArt('b47');
     if (kind === 'mana') {
       var g = mobArt('b47', R0.boss.art) || mobArt(R0.boss.art);
       if (g) dun.golem = sc.spawnMob({ art: g, height: fitHeight(g, 2.3), hp: 1e300, boss: true, name: '마력 골렘' });
@@ -467,8 +476,8 @@
     runeLock: function (id) { var ok = CW.runeLock(state, id); if (ok) save(); return ok; },
     runeDismantle: function (id) { var n = CW.runeDismantle(state, id); if (n) { refreshStats(); save(); } return n; },
     runeDismantleAll: function () { var n = CW.runeDismantleAll(state); if (n) { refreshStats(); snd.play('win'); save(); } return n; },
-    runeFuse: function (id) { var it = CW.runeFuse(state, id); if (it) { refreshStats(); snd.play('win'); save(); } return it; },
-    runeSummon: function (n, group) { var r = CW.runeSummon(state, n, undefined, group); if (r) { refreshStats(); snd.play('pull'); save(); } return r; },
+    runeFuse: function (id) { var it = CW.runeFuse(state, id); if (it) { refreshStats(); if (!it.fail) snd.play('win'); save(); } return it; },
+    runeSummon: function (n, group, dust) { var r = CW.runeSummon(state, n, undefined, group, dust); if (r) { refreshStats(); snd.play('pull'); save(); } return r; },
     runeEquipBest: function () { CW.runeEquipBest(state); refreshStats(); save(); },
     sigilSet: function (i) { var ok = CW.sigilSet(state, i); if (ok) { refreshStats(); save(); } return ok; },
     sigilEquipToggle: function (id) {
@@ -479,8 +488,8 @@
     sigilLock: function (id) { var ok = CW.sigilLock(state, id); if (ok) save(); return ok; },
     sigilDismantle: function (id) { var n = CW.sigilDismantle(state, id); if (n) { refreshStats(); save(); } return n; },
     sigilDismantleAll: function () { var n = CW.sigilDismantleAll(state); if (n) { refreshStats(); snd.play('win'); save(); } return n; },
-    sigilFuse: function (id) { var it = CW.sigilFuse(state, id); if (it) { refreshStats(); snd.play('win'); save(); } return it; },
-    sigilSummon: function (n, awaken) { var r = CW.sigilSummon(state, n, undefined, awaken); if (r) { refreshStats(); snd.play('pull'); save(); } return r; },
+    sigilFuse: function (id) { var it = CW.sigilFuse(state, id); if (it) { refreshStats(); if (!it.fail) snd.play('win'); save(); } return it; },
+    sigilSummon: function (n, awaken, dust) { var r = CW.sigilSummon(state, n, undefined, awaken, dust); if (r) { refreshStats(); snd.play('pull'); save(); } return r; },
     // 각성 제작 (2026-11-16): 각성 파편 → one awakened rune / sigil of the chosen kind
     runeCraft: function (kind) { var r = CW.runeCraft(state, kind); if (r) { refreshStats(); snd.play('pull'); save(); } return r; },
     sigilCraft: function (stat) { var r = CW.sigilCraft(state, stat); if (r) { refreshStats(); snd.play('pull'); save(); } return r; },
@@ -656,7 +665,7 @@
       try {
         updateCoins(rdt);
         lookT -= rdt; if (lookT <= 0) { lookT = 0.25; applyLook(); }
-        gained.t += rdt; if (gained.t >= 1) { ui.gainLog(gained); gained.gold = gained.xp = gained.gems = gained.dmg = 0; gained.t = 0; gained.more.length = 0; }
+        gained.t += rdt; if (gained.t >= 1) { ui.gainLog(gained); gained.gold = gained.xp = gained.gems = gained.dmg = gained.runeDust = gained.sigilDust = gained.runeStone = gained.sigilStone = 0; gained.t = 0; gained.more.length = 0; }
         uiT += rdt; panelT += rdt; saveT += rdt;
         if (uiT > 0.1) { uiT = 0; CW.setGoldScale(CW.capGold(state)); ui.hud(); if (nowSlot !== lastSlot) { lastSlot = nowSlot; ui.slots(); } }
         if (panelT > 0.3) { panelT = 0; ui.renderPanel(); }
@@ -673,7 +682,7 @@
     begun = true;   // (모험 시작 pressed: an owed job celebration may play — state.tierShow)
     var r = CW.offlineReward(state, Date.now());
     if (r.seconds < 60) { ui.showDaily(true); return; }
-    state.gold += r.gold; state.gems += r.gems; CW.setGoldScale(CW.capGold(state)); var lv = CW.gainXp(state, r.xp || 0); r.levels = lv.levels; if (lv.levels) refreshStats(); save();
+    state.gold += r.gold; state.gems += r.gems; state.runeDust = (state.runeDust || 0) + (r.runeDust || 0); state.sigilDust = (state.sigilDust || 0) + (r.sigilDust || 0); CW.setGoldScale(CW.capGold(state)); var lv = CW.gainXp(state, r.xp || 0); r.levels = lv.levels; if (lv.levels) refreshStats(); save();
     ui.showOffline(r, function () { ui.showDaily(true); });
   }
   document.addEventListener('visibilitychange', function () {

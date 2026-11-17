@@ -14,7 +14,7 @@
         catEye: 0, manaBurst: 0, resonance: 0, rift: 0, arcane: 0, judge: 0, origin: 0, haste: 0, doomClaw: 0, elemRule: 0 },
       slots: ['starShot', 'magicClaw', 'furBomb', 'sparkRing'], skillLv: {}, relics: {}, preset: 0, presets: [null, null, null],
       costume: { owned: { basic: 1 }, wear: 'basic' },
-      talents: {}, marks: {}, rank: 0, circle: 0, mana: 0, runes: {}, runeGrade: {}, runeStone: 0, awakenShard: 0, packs: {}, dailyGems: { left: 0, last: '' }, sigil: { items: [], seq: 0, sets: [[], [], []], aw: [null, null], cur: 0, lv: 0, stone: 0 }, alch: { brews: 0, until: {} }, codex: {}, dungeon: { day: '', used: {}, best: {}, bonus: {} },
+      talents: {}, marks: {}, rank: 0, circle: 0, mana: 0, runes: {}, runeGrade: {}, runeStone: 0, runeDust: 0, sigilDust: 0, awakenShard: 0, packs: {}, dailyGems: { left: 0, last: '' }, sigil: { items: [], seq: 0, sets: [[], [], []], aw: [null, null], cur: 0, lv: 0, stone: 0 }, alch: { brews: 0, until: {} }, codex: {}, dungeon: { day: '', used: {}, best: {}, bonus: {} },
       divine: { staff: { lv: 0, star: 0 }, robe: { lv: 0, star: 0 }, charm: { lv: 0, star: 0 }, shards: 0 },
       inv: [], bag: {}, equip: { hat: null, staff: null, robe: null, belt: null, necklace: null, ear: null, ring: null },
       pulls: 0, pity: 0, uidSeq: 0, firstBuy: {}, firstClear: {}, dex: {},
@@ -87,9 +87,24 @@
     sec = Math.max(0, Math.min(DATA.balance.offlineCapSec, isFinite(sec) ? sec : 0));
     if (sec < 1) return { seconds: 0, gold: 0, gems: 0, xp: 0 };
     var gold = econ.goldPerSecond(state) * sec * DATA.balance.offlineRate;
-    var gems = Math.floor(sec / 1800) * (1 + Math.floor(Math.max(0, state.best) / 31));
+    // no diamonds while away any more (2026-11-17): the two dusts instead (DATA.balance.dust)
+    var gems = 0, dust = Math.floor(sec / 1800) * DATA.balance.dust.awayPer30 * dustScale(state), sp = dustSpecial(Math.floor(Math.max(0, state.best || 0) / 31));
     var xp = econ.killsPerSecond(state) * sec * DATA.balance.offlineRate * lvl.killXp(state) * (econ.stats(state).xpMul || 1) * DATA.balance.killPay;
-    return { seconds: sec, gold: gold, gems: gems, xp: xp };
+    return { seconds: sec, gold: gold, gems: gems, xp: xp, runeDust: dust * sp.rune, sigilDust: dust * sp.sigil };
+  }
+  // the dusts grow with the region reached and the difficulty (as boss diamonds do)
+  function dustScale(state) {
+    var D = DATA.difficulties && DATA.difficulties[state.diff || 0];
+    return (1 + Math.floor(Math.max(0, state.best || 0) / 31)) * ((D && D.gemMul) || 1);
+  }
+  // region r (0-9, either world) is good for 룬 가루 when even, 신성력 가루 when odd: the multipliers for each
+  function dustSpecial(r) { var m = DATA.balance.dust.specialMul || 1, rune = (r % 2) === 0; return { key: rune ? 'rune' : 'sigil', rune: rune ? m : 1, sigil: rune ? 1 : m }; }
+  // a stage kill in the field: both dusts (the region's specialty more), kept with fractions so slow kills still add up
+  function addKillDust(state, n) {
+    var a = (n || 1) * DATA.balance.dust.killPer * dustScale(state), sp = dustSpecial(Math.floor(Math.max(0, state.stage || 0) / 31));
+    var out = { runeDust: a * sp.rune, sigilDust: a * sp.sigil };
+    state.runeDust = (state.runeDust || 0) + out.runeDust; state.sigilDust = (state.sigilDust || 0) + out.sigilDust;
+    return out;
   }
   function buy(state, i) {
     var p = DATA.shop[i]; if (!p) return 0;
@@ -97,5 +112,5 @@
     state.firstBuy[i] = true; state.gems += n;
     return n;
   }
-  return { newState: newState, save: save, load: load, exportCode: exportCode, importCode: importCode, clearSave: clear, offlineReward: offlineReward, buy: buy };
+  return { newState: newState, save: save, load: load, exportCode: exportCode, importCode: importCode, clearSave: clear, offlineReward: offlineReward, addKillDust: addKillDust, dustScale: dustScale, dustSpecial: dustSpecial, buy: buy };
 });

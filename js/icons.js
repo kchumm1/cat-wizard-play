@@ -214,7 +214,9 @@
     sigil: function () { return sh('M32 4L56 32 32 60 8 32Z', '#5fd2ff') + hl('M32 12L18 32h14z', '#e2f8ff') + sh(star(32, 32, 9, 3.6, 4), '#fff', 2); },
     mana: function () { return sh('M32 4C44 20 52 30 52 40a20 20 0 0 1-40 0C12 30 20 20 32 4Z', '#4f9bff') + hl('M24 30c-4 6-5 12-2 17c-1-7 1-11 6-17z', '#d6ebff'); }
   };
-  function cur(k) { return svg(CUR[k](), 'icur'); }
+  // 룬석 · 신성석 are the user's pictures (2026-11-17, art/ic-runestone.webp, ic-sigilstone.webp); the others stay drawn
+  var CUR_PIC = { rune: 'ic-runestone', sigil: 'ic-sigilstone' };
+  function cur(k) { return CUR_PIC[k] ? '<img class="ico icur" src="' + ((root.CW && root.CW.ART_BASE) || 'art/') + CUR_PIC[k] + '.webp" alt="" draggable="false">' : svg(CUR[k](), 'icur'); }
 
   CW.ICO = { kit: { sh: sh, hl: hl, ln: ln, circ: circ, star: star, spark: spark, O: O, lite: lite, dark: dark, STAFF: STAFF }, skill: skill, rune: rune, sigil: sigil, gear: gear, cur: cur, svg: svg };
 })(this);

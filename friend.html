@@ -723,6 +723,8 @@ details.fold>summary{cursor:pointer;font:700 13px var(--body);opacity:.7;padding
 .dgo{display:block;width:100%;margin:0 0 10px}
 /* the map (stage panel): the whole picture, a button on each island */
 .wmap{position:relative;width:100%;aspect-ratio:382/492;max-width:420px;margin:2px auto 10px;border-radius:18px;background:url(art/ui-map.webp) 0 0/100% 100% no-repeat;box-shadow:0 0 0 2px var(--ol),0 4px 0 var(--ol)}
+/* 하늘 세계 (2026-11-17): the sky world's own map (the user's picture, 764x984 for sharp phones) */
+.wmap.sky{background-image:url(art/ui-map-sky.webp)}
 .wisle{position:absolute;width:30%;height:21%;transform:translate(-50%,-70%);background:none;border:0;padding:0;-webkit-tap-highlight-color:transparent}
 .wmedal{position:absolute;width:9.4%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:url(art/ui-map-open.webp) 50% 50%/100% 100% no-repeat;pointer-events:none}
 .wmedal.shut{background-image:url(art/ui-map-lock.webp)}
@@ -1656,6 +1658,8 @@ html.fullh #idlebox{position:absolute;bottom:auto;height:var(--apph)}
 #idlebox .idtime{text-align:center;font-size:14px;opacity:.75;margin-bottom:6px}
 #idlebox .idrow{display:flex;justify-content:space-between;align-items:baseline;font-size:16px;padding:3px 0}
 #idlebox .idrow b{font-weight:400;font-size:19px}
+/* the marks before each line (2026-11-17, the user: 골드랑 경험치 마크도 방치에) */
+#idlebox .idrow span{display:inline-flex;align-items:center;gap:7px}#idlebox .idrow span .coin,#idlebox .idrow span .xpdot,#idlebox .idrow span i.dusti,#idlebox .idrow span .icur{display:inline-block;flex:none;width:20px!important;height:20px!important;vertical-align:middle}
 #idlebox .idshoot{position:absolute;right:12%;top:16%;width:80px;height:2px;background:linear-gradient(90deg,#fff,transparent);opacity:0;transform:rotate(-25deg);pointer-events:none}
 #idlebox .idshoot.go{animation:idShoot 1s ease-out}
 @keyframes idShoot{0%{opacity:1;translate:0 0}100%{opacity:0;translate:-140px 64px}}
@@ -2022,6 +2026,31 @@ html.fullh #idlebox{position:absolute;bottom:auto;height:var(--apph)}
 .weakon{display:inline-flex;align-items:center;height:18px;padding:0 7px;margin-right:6px;border-radius:9px;font:800 11px/1 var(--body);font-style:normal;color:#fff;background:#d4543a}
 .skrow .skel{display:flex;flex-wrap:wrap;align-items:center;gap:4px 0;margin-top:3px}
 .elgood{display:inline-flex;align-items:center;height:18px;padding:0 6px;margin-right:4px;border-radius:9px;font:700 11px/1 var(--body);color:#6b5642;background:#F3E8D3}.elgood.now{color:#fff;background:#b5523a}
+.elworld{display:inline-flex;align-items:center;height:18px;padding:0 6px;margin:0 4px 0 2px;border-radius:9px;font:800 10px/1 var(--body);color:#fff;background:#8a74c9}
+/* 룬 가루 · 신성력 가루 (2026-11-17): the user's icons — the violet heap with the rune crystal, the green heap with the gold star */
+i.dusti{position:static!important;display:inline-block!important;flex:none;width:18px;height:18px;vertical-align:-4px;background:url(art/ic-rune-dust.webp) 50% 50%/contain no-repeat!important;box-shadow:none!important;border-radius:0}
+i.dusti.ds{background-image:url(art/ic-sigil-dust.webp)!important}
+/* 룬석 (the user's picture, art/ic-runestone.webp) and the map's field box (2026-11-17) */
+i.runestone{display:inline-block;flex:none;width:18px;height:18px;vertical-align:-4px;background:url(art/ic-runestone.webp) 50% 50%/contain no-repeat}
+i.sigilstone{display:inline-block;flex:none;width:18px;height:18px;vertical-align:-4px;background:url(art/ic-sigilstone.webp) 50% 50%/contain no-repeat}
+/* 룬석·신성석 pictures in costs and boxes a little bigger than the drawn icons were (the user: 살짝 키우자) */
+img.icur{width:19px!important;height:19px!important;vertical-align:-5px!important;object-fit:contain}#gainlog img.icur{width:17px!important;height:17px!important}
+.fuse-p{display:block;margin-top:1px;font:800 10.5px/1.1 var(--body);color:#c4485f}
+#sheet .srow .srew i.sigilstone{width:15px;height:15px}
+.rchip{position:relative}.rchip i.dusti{position:absolute!important;right:-3px;bottom:-4px;width:14px;height:14px}
+.fbox{display:flex;flex-direction:column;gap:5px;margin:4px 2px 2px;padding:9px 11px;border-radius:14px;background:rgba(255,255,255,.75);box-shadow:inset 0 0 0 1px rgba(120,90,160,.18);font:600 12.5px var(--body);color:#5b4a7a}
+.fb-h{font:800 13px var(--body);color:#4a3a6a}.fb-i{display:flex;align-items:center;gap:5px;flex-wrap:wrap}.fb-i b{color:#3b2d60}.fb-i small{color:#8a7aa6;font-weight:600}
+.fb-i em{margin-left:auto;padding:1px 7px;border-radius:9px;background:#ffe27a;color:#7a4a00;font:800 11px var(--body);font-style:normal}.fb-i.sp{color:#3b2d60}
+/* the map rows (2026-11-17, the user: 줄칸 간격 넓이 다 맞춰): two fixed columns in every row — gold | xp, then 룬 가루 | 신성력 가루
+   (a boss: 룬석 | -), then HP across — so each kind sits in the same place down the list */
+#sheet .srow .srews{grid-template-columns:var(--rc1,64px) var(--rc2,64px)!important;column-gap:8px!important;row-gap:3px}
+#sheet .srow .srews .srew{min-width:0}
+.srew.dz{color:#7a6a96}.srew.dz i.dusti{width:15px;height:15px}.srew.dz.sp{font-weight:900;color:#3b2d60}
+#sheet .srow .srew i.runestone{width:15px;height:15px}
+.rsum-dust{margin-top:8px;padding-top:8px;border-top:1px dashed rgba(120,90,160,.3)}
+.rsd-h{display:flex;align-items:center;gap:5px;margin:0 2px 6px;font:700 13px var(--body);color:#5b4a7a}.rsd-h b{margin-left:auto;font:800 13px var(--body);color:#6a4fb0}
+.rsb.dst .rsb-c .dusti{margin-right:3px}
+.awdust{display:flex;justify-content:center;gap:14px;margin:8px 0 2px;font:700 13px var(--body);color:#5b4a7a}.awdust b{color:#6a4fb0;margin-left:2px}.awdust .dusti{margin-right:3px}
 /* 냥법사 기록 (2026-11-15, js/ui.js openStats): the user's picture. Places and sizes are the picture's own (1024 wide), written
    in cqw of the column: picture px / 10.24. The top is art/prof-top.webp with the real name and numbers written on it. */
 #prof{position:fixed;inset:0;z-index:19;display:none;background:#f7efe9;color:#2b201d;font-family:var(--body)}
@@ -2134,6 +2163,7 @@ html.fullh #prof{position:absolute;bottom:auto;height:var(--apph)}
 #dex .dxtabs span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 clamp(14px,4.4vw,19px) var(--body);color:#5b3b55}
 #dex .dxtabs .on span{color:#fff}
 #dex .dxreg h4{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;margin:14px 2px 6px;font:700 16px var(--body)}
+#dex .dxworld{margin:22px 2px 2px;padding-top:12px;border-top:2px dashed rgba(120,90,160,.35);font:800 18px var(--body);color:#6a4fb0;text-align:center}
 #dex .dxrc{font-size:14px;color:#8a6a80}
 #dex .dxrb,#dex .dxdone{flex-basis:100%;font:500 12px var(--body);color:#9a7f90}
 #dex .dxdone{color:#b8862a;font-weight:700}
@@ -2176,7 +2206,9 @@ html.fullh #prof{position:absolute;bottom:auto;height:var(--apph)}
 /* stage list (2026-11-15): the monster's name beside its picture (the same names as the monster codex). Every row has the
    same columns: stage, picture and 이동 fixed, the rewards as wide as the widest in the list (ui.js fitStageRows sets
    --srw), so they sit against 이동 and the name takes what is left, two lines at most */
-#sheet .srow{grid-template-columns:58px 44px minmax(0,1fr) var(--srw,max-content) 30px;column-gap:7px;padding-left:10px;padding-right:10px}
+/* every column as wide as what it holds (the same in every row, measured by ui.js fitStageRows), and the room left over
+   shared out evenly between them, so all the gaps are equal (2026-11-17, the user: 줄칸 간격 넓이 다시 재서 완벽하게) */
+#sheet .srow{grid-template-columns:var(--sgw,40px) 38px var(--snw,minmax(0,1fr)) var(--srw,max-content) var(--sow,26px);justify-content:space-between;column-gap:6px;padding-left:12px;padding-right:12px}
 #sheet .srow .srews{grid-template-columns:max-content max-content;column-gap:8px}
 #sheet .srow .snm{min-width:0;display:flex;flex-direction:column;justify-content:center;gap:1px}
 #sheet .srow .snm small{font:400 10.5px/1.2 var(--display);opacity:.75}
@@ -2196,7 +2228,7 @@ html.fullh #prof{position:absolute;bottom:auto;height:var(--apph)}
 #sheet .slist.tight .srews{column-gap:5px}
 #sheet .slist.tight .hpbox{font-size:10.5px;padding:0 6px 0 4px;gap:3px}
 #sheet .slist.tight .srew .coin{width:14px;height:14px}#sheet .slist.tight .srew .xpdot{width:13px;height:13px}
-#sheet .slist.tighter .srow{grid-template-columns:48px 38px minmax(0,1fr) var(--srw,max-content) 26px;column-gap:5px;padding-left:8px;padding-right:8px}
+#sheet .slist.tighter .srow{grid-template-columns:var(--sgw,36px) 36px var(--snw,minmax(0,1fr)) var(--srw,max-content) var(--sow,24px);justify-content:space-between;column-gap:5px;padding-left:8px;padding-right:8px}
 #sheet .slist.tighter .smon img{width:36px;height:36px}
 #sheet .slist.tighter .srews{column-gap:4px}
 #sheet .slist.tighter .hpbox{padding:0 5px 0 3px}
@@ -2403,6 +2435,26 @@ body{font-family:'Noto Sans KR',"Malgun Gothic","Apple SD Gothic Neo",system-ui,
 /* 뽑기 메뉴 바탕을 성운으로 (2026-11-16, the user: 여기 배경도 성운으로, 색깔이 너무 튄다): 마나서클 성운 그림 위에 어두운 막,
    칸·버튼은 반투명 유리(흰 글씨)로 성운이 비쳐 보이게. ui.js openTab 이 뽑기일 때 #sheet 에 .neb */
 #sheet.cream.neb{background:linear-gradient(180deg,rgba(26,16,70,.42),rgba(18,10,52,.62)),url(art/mn-neb-fill.webp) 50% 40%/cover;background-color:#2a2160}
+/* 스테이지 선택 (2026-11-17, the user: 지도 뒷배경에 이거 깔아줘): the violet cloud sky, title in white; the rows and boxes keep their own light cards */
+#sheet.cream.stg{background:linear-gradient(180deg,rgba(26,16,70,.25),rgba(18,10,52,.35)),url(art/ui-stage-bg.webp) 50% 0/cover;background-color:#3a2a80}
+#sheet.cream.stg .sheet-head b{color:#fff;text-shadow:0 1px 3px rgba(20,10,60,.7)}
+#sheet.cream.stg .dnote{color:#f2eaff}
+/* 스테이지 선택 glass (2026-11-17, the user: 크림색 빼고 투명하게 — 지역 번호·스테이지 줄, 닫기 색칠 덜 됨): every cream card becomes clear
+   glass over the sky, text in white */
+#sheet.cream.stg #panel .rchip,#sheet.cream.stg #panel .srow,#sheet.cream.stg #panel .fbox,#sheet.cream.stg #panel .dsel,#sheet.cream.stg #sheetClose{background:rgba(255,255,255,.13)!important;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.32),0 6px 14px -8px rgba(10,5,40,.55)!important;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:0!important}
+#sheet.cream.stg #panel .rchip{color:#fff!important;text-shadow:0 1px 2px rgba(20,10,60,.6)}
+#sheet.cream.stg #panel .rchip.on{background:linear-gradient(180deg,rgba(255,229,138,.9),rgba(255,190,46,.85))!important;color:#3a2400!important;text-shadow:none;box-shadow:0 0 0 2px #fff!important}
+#sheet.cream.stg #panel .srow.boss{background:linear-gradient(90deg,rgba(255,120,190,.28),rgba(255,255,255,.12))!important}
+#sheet.cream.stg #panel .srow.here{box-shadow:inset 0 0 0 2px #ffd84a,0 0 12px rgba(255,216,74,.45)!important}
+#sheet.cream.stg #panel .srow,#sheet.cream.stg #panel .srow .sname,#sheet.cream.stg #panel .srow .snm,#sheet.cream.stg #panel .srow .snm b,#sheet.cream.stg #panel .srow .srew,#sheet.cream.stg #panel .srow .sgo,#sheet.cream.stg #panel .fbox,#sheet.cream.stg #panel .fb-h,#sheet.cream.stg #panel .fb-i,#sheet.cream.stg #panel .fb-i b{color:#fff!important;text-shadow:0 1px 2px rgba(20,10,60,.55)}
+#sheet.cream.stg #panel .srow.boss .snm small,#sheet.cream.stg #panel .srow.boss .snm b{color:#ffd6f0!important}
+#sheet.cream.stg #panel .fb-i small,#sheet.cream.stg #panel .srew.dz{color:#e6dcff!important}#sheet.cream.stg #panel .srew.dz.sp{color:#fff!important}
+#sheet.cream.stg #panel .fb-i em{text-shadow:none}
+#sheet.cream.stg #panel .hpbox{background:rgba(255,255,255,.16)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)!important;color:#fff!important}
+#sheet.cream.stg #panel .dsel b{color:#ffe58a!important;text-shadow:0 1px 3px rgba(20,10,60,.7)}
+#sheet.cream.stg #sheetClose{color:#fff!important;text-shadow:0 1px 2px rgba(20,10,60,.6)}
+#sheet.cream.stg{box-shadow:0 -14px 30px rgba(4,6,20,.55)!important;border:0!important}
+#sheet.cream.stg #panel .srow .sname small{color:#bfe9ff!important;text-shadow:0 1px 2px rgba(10,20,60,.8)}
 #sheet.cream.neb .sheet-head::before{background:rgba(255,255,255,.35)}
 #sheet.cream.neb .sheet-head b{color:#fff;text-shadow:0 1px 3px rgba(20,10,60,.7)}
 #sheet.cream.neb #panel h3{color:#fff;text-shadow:0 1px 3px rgba(20,10,60,.7)}

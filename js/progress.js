@@ -3,6 +3,12 @@
   var DATA = (isNode ? require('./data.js') : root.CW).DATA;
   var LAST = 309;
 
+  // which world a difficulty is in (2026-11-17): 0 = the first (DATA.regions, 꽃밭 to 마왕성), 1 = the sky (DATA.skyRegions)
+  function worldOf(diff) { var D = DATA.difficulties && DATA.difficulties[diff || 0]; return (D && D.world) || 0; }
+  function regionsOf(diff) { return worldOf(diff) === 1 && DATA.skyRegions ? DATA.skyRegions : DATA.regions; }
+  function regionAt(diff, r) { return regionsOf(diff)[r]; }
+  // the scene's region number: the sky regions are 10-19, so going from 마왕성 to 구름 섬 builds a new field
+  function sceneRegion(diff, r) { return r + 10 * worldOf(diff); }
   function stageLabel(i) { return (Math.floor(i / 31) + 1) + '-' + (i % 31 + 1); }
   function stageInfo(i) {
     var num = i % 31 + 1;
@@ -13,7 +19,7 @@
   // the boss of a boss stage: the region boss at 31, the region's minis in turn at 5, 10, … 30.
   // A region has up to 8 minis but only six boss stages, so each difficulty starts six further on (diff 0 shows 1-6, diff 1 shows 7, 8, 1, ...).
   function stageBoss(i, diff) {
-    var info = stageInfo(i), R = DATA.regions[info.region]; if (!info.isBoss || !R) return null;
+    var info = stageInfo(i), R = regionAt(diff, info.region); if (!info.isBoss || !R) return null;
     if (info.isRegionBoss) return { art: R.boss.art, name: R.boss.name, region: true };
     var list = R.minis || [], id = list[(info.num / 5 - 1 + 6 * (diff || 0)) % list.length];
     var BEST = (isNode ? require('./bestiary.js') : root.CW).BESTIARY || {};
@@ -122,5 +128,5 @@
     state.farming = state.stage <= state.best;
     return true;
   }
-  return { clearKey: clearKey, setDifficulty: setDifficulty, stageLabel: stageLabel, stageInfo: stageInfo, stageBoss: stageBoss, isTierTrial: isTierTrial, lateTier: lateTier, tierNeed: tierNeed, tierGoal: tierGoal, onKill: onKill, onBossResult: onBossResult, retryBoss: retryBoss, onHidden: onHidden, goStage: goStage, LAST_STAGE: LAST };
+  return { worldOf: worldOf, regionsOf: regionsOf, regionAt: regionAt, sceneRegion: sceneRegion, clearKey: clearKey, setDifficulty: setDifficulty, stageLabel: stageLabel, stageInfo: stageInfo, stageBoss: stageBoss, isTierTrial: isTierTrial, lateTier: lateTier, tierNeed: tierNeed, tierGoal: tierGoal, onKill: onKill, onBossResult: onBossResult, retryBoss: retryBoss, onHidden: onHidden, goStage: goStage, LAST_STAGE: LAST };
 });

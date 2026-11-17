@@ -304,6 +304,13 @@
       }).join('') + '</div>';
     }
     // 다이아 소환 버튼 한 칸 (유물·신성력·각성 공용): 가운데에 「N회」, 아래 다이아 값. 모자라면 값만 빨갛게(.off)
+    // 룬 가루 · 신성력 가루로 만들기 (2026-11-17): the same 5회·10회 at the same price, paid in dust (field hunting and time away)
+    function dustRow(kind, have, attr, costs, lock) {
+      return '<div class="rsum-dust"><div class="rsd-h"><i class="dusti ' + (kind === 'rune' ? 'dr' : 'ds') + '"></i><span>' + (kind === 'rune' ? '룬 가루' : '신성력 가루') + '로 만들기</span><b>' + fmt(Math.floor(have)) + '</b></div>' +
+        '<div class="rsum-btns n2">' + [5, 10].map(function (m) {
+          return '<button class="rsb dst' + (m === 10 ? ' big' : '') + (lock ? ' lock' : '') + (have < costs[m] ? ' off' : '') + '" ' + attr + '="' + m + '"><span class="rsb-n"><b>' + m + '</b>회</span><span class="rsb-c"><i class="dusti ' + (kind === 'rune' ? 'dr' : 'ds') + '"></i>' + fmt(costs[m]) + '</span></button>';
+        }).join('') + '</div></div>';
+    }
     function summonBtn(n, cost, attr, big) {
       return '<button class="rsb' + (big ? ' big' : '') + (G.state.gems < cost ? ' off' : '') + '" ' + attr + '="' + n + '"><span class="rsb-n"><b>' + n + '</b>회</span><span class="rsb-c"><i class="gem"></i>' + fmt(cost) + '</span></button>';
     }
@@ -623,7 +630,8 @@
       // 룬 소환 (사용자 「룬뽑기 깔끔하게」): 상자 하나 — 제목 + 계열(전체·확률·피해) + 5회·10회
       // 소환 카드 (2026-11-17, 사용자: 룬도 소환하는 부분 이쁘게) — 유물·신성력과 같은 .opcard, 오른쪽 위에 계열 고르기
       var pulls = '<div class="opcard rsum rnsum"><div class="opcard-h"><b>룬 소환</b><div class="rsseg" role="tablist" aria-label="소환 계열">' + [['all', '전체'], ['rate', '확률'], ['dmg', '피해']].map(function (g) { return '<button role="tab" aria-selected="' + (rnGroup === g[0]) + '" data-rgrp="' + g[0] + '">' + g[1] + '</button>'; }).join('') + '</div></div>' +
-        '<div class="rsum-btns n2">' + [5, 10].map(function (m) { return summonBtn(m, RC.summon[m], 'data-rsum', m === 10).replace('class="rsb', 'class="rsb' + (open ? '' : ' lock')); }).join('') + '</div></div>';
+        '<div class="rsum-btns n2">' + [5, 10].map(function (m) { return summonBtn(m, RC.summon[m], 'data-rsum', m === 10).replace('class="rsb', 'class="rsb' + (open ? '' : ' lock')); }).join('') + '</div>' +
+        dustRow('rune', s.runeDust || 0, 'data-rdsum', RC.summon, !open) + '</div>';
       return stage + eff + nx + det + strip + pulls + awakenBox('rune');
     }
     // 룬 보관함: 위에 「‹ 룬」 돌아가기·보유 수, 추천 장착·일괄 분해, 종류 탭, 전체 칸. 고르면 아래 고정 칸에 상세(강화·장착·잠금·분해·합성)
@@ -634,7 +642,7 @@
         var same = bag.items.filter(function (x) { return x !== it && x.kind === it.kind && x.grade === it.grade && !x.lock && !CW.runeIsWorn(s, x.id); }).length;
         dockHtml = '<div class="dockbox rdock rd2" style="--gc:' + hc(it.grade) + '">' + dockX('rn') + runeHead(s, it, minLv) + runeCmp(s, it) +
           '<div class="rdbtns">' + runeUpBtn(s, it, open) + runeEqBtn(s, it) + runeLockBtn(it) + '</div>' +
-          '<div class="rdbtns two"><button class="btn' + (freeIt ? '' : ' off') + '" data-rdis="' + it.id + '">분해 ' + CW.ICO.cur('rune') + fmt(CW.runeDismantleValue(it)) + '</button><button class="btn' + (same >= 2 && !top && freeIt ? '' : ' off') + '" data-rfuse="' + it.id + '">합성 ' + Math.min(3, same + 1) + '/3</button></div>' +
+          '<div class="rdbtns two"><button class="btn' + (freeIt ? '' : ' off') + '" data-rdis="' + it.id + '">분해 ' + CW.ICO.cur('rune') + fmt(CW.runeDismantleValue(it)) + '</button><button class="btn' + (same >= 2 && !top && freeIt ? '' : ' off') + '" data-rfuse="' + it.id + '">합성 ' + Math.min(3, same + 1) + '/3' + fuseTag(s, 'rune', it.grade + 1, top) + '</button></div>' +
           (top ? '' : '<span class="note">합성 · 같은 종류·등급 3개 → ' + hn(it.grade + 1) + '</span>') + '</div>';
       }
       var have = {}; bag.items.forEach(function (x) { have[x.kind] = 1; });
@@ -644,10 +652,10 @@
         '<div class="rsacts"><button class="btn" data-act="rbest">추천 장착</button><button class="btn" data-act="rdisall">일괄 분해<small>잠금·장착 제외</small></button></div>' +
         filt + '<div class="rsgrid inv">' + (inv || '<p class="note">아직 보유한 룬이 없어요.<br>보스 처치나 소환으로 획득할 수 있어요.</p>') + '</div>';
     }
-    function showRunes(list) {
+    function showRunes(list, dust) {
       var best = Math.max.apply(null, list.map(function (x) { return x.grade; }));
       modal('<h2 style="color:' + hc(best) + '">' + (best >= 5 ? hn(best) + ' 룬 획득' : '룬 ' + list.length + '개 획득') + '</h2><div class="sggrid got rsgot">' + list.slice().sort(function (a, c) { return c.grade - a.grade; }).map(function (x) { return runeCell(G.state, x); }).join('') + '</div>',
-        [{ label: '확인' }, { label: '다시 소환', pri: true, fn: function () { var r = G.runeSummon(list.length, rnGroup); if (!r) toast('소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showRunes(r); renderPanel(true); hud(); } } }]);
+        [{ label: '확인' }, { label: dust ? '다시 만들기' : '다시 소환', pri: true, fn: function () { var r = G.runeSummon(list.length, rnGroup, dust); if (!r) toast(dust ? '만들 수 없어요. 룬 가루와 가방 여유 공간을 확인해 주세요.' : '소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showRunes(r, dust); renderPanel(true); hud(); } } }]);
     }
     function sgCell(it, eqd, curId) {
       var nm = STAT_KO[it.stat] || it.stat;
@@ -681,6 +689,8 @@
         : '<button class="btn' + (on ? ' on' : '') + '" data-sgeq="' + sel.id + '">' + (on ? '해제' : '장착') + '</button>';
     }
     function sigilLockBtn(sel, short) { return '<button class="btn rdlock' + (sel.lock ? ' on' : '') + '" data-sglock="' + sel.id + '" aria-pressed="' + !!sel.lock + '"><i class="rlk"></i>' + (sel.lock ? (short ? '잠김' : '잠금 풀기') : '잠금') + '</button>'; }
+    // 천상·혼돈·멸망 fusions: their chance now (with the 천장) under the 합성 word; nothing when it always works
+    function fuseTag(s, kind, g, top) { var r = top ? 1 : CW.fuseRate(s, kind, g); return r < 1 ? '<small class="fuse-p">성공 ' + Math.round(r * 100) + '%</small>' : ''; }
     function sigilFuseOk(s, sel) { var same = s.sigil.items.filter(function (x) { return x !== sel && x.grade === sel.grade && !x.lock && !CW.isEquipped(s, x.id); }).length; return { same: same, ok: same >= 2 && sel.grade < DATA.hiGrades.length - 1 && !sel.lock && !CW.isEquipped(s, sel.id) }; }
     function sigilUpBtn(s) {
       var C = DATA.sigilConf, b = s.sigil, lvCost = CW.sigilLvCost(b.lv);
@@ -719,7 +729,8 @@
       var line = wornS.concat(strong.filter(function (x) { return !CW.isEquipped(s, x.id); })).map(function (x) { return sgCell(x, CW.isEquipped(s, x.id), curId); }).join('');
       var strip = (line ? '<div class="rsstrip">' + line + '</div>' : '<p class="rsempty">아직 보유한 신성력이 없어요</p>');
       // 소환 카드 (2026-11-17, 사용자: 신성력 소환도 유물처럼 딱 가운데·줄맞춤 칸맞춤) — 유물 소환과 같은 .opcard/.rsb
-      var pulls = '<div class="opcard rsum sgsum"><div class="opcard-h"><b>신성력 소환</b></div><div class="rsum-btns n2">' + [5, 10].map(function (m) { return summonBtn(m, C.summon[m], 'data-sgsum', m === 10); }).join('') + '</div></div>';
+      var pulls = '<div class="opcard rsum sgsum"><div class="opcard-h"><b>신성력 소환</b></div><div class="rsum-btns n2">' + [5, 10].map(function (m) { return summonBtn(m, C.summon[m], 'data-sgsum', m === 10); }).join('') + '</div>' +
+        dustRow('sigil', G.state.sigilDust || 0, 'data-sgdsum', C.summon, false) + '</div>';
       return stage + head + det + btns + strip + pulls + awakenBox('sigil');
     }
     // 신성력 보관함: 「‹ 신성력」·보유 수, 레벨 효과·장착 효과, 추천 장착·일괄 분해, 등급 탭, 전체 칸. 고르면 아래 고정 칸에 상세
@@ -728,7 +739,7 @@
       if (sel) {
         var fz = sigilFuseOk(s, sel);
         dockHtml = '<div class="sgsel dockbox sd2" style="--gc:' + hc(sel.grade) + '">' + dockX('sg') + sigilHead(sel) + sigilCmp(s, sel, sum) +
-          '<div class="rdbtns">' + sigilEqBtn(s, sel) + sigilLockBtn(sel) + '<button class="btn' + (fz.ok ? '' : ' off') + '" data-sgfuse="' + sel.id + '">합성 ' + Math.min(3, fz.same + 1) + '/3</button><button class="btn' + (sel.lock || CW.isEquipped(s, sel.id) ? ' off' : '') + '" data-sgdis="' + sel.id + '">분해</button></div>' +
+          '<div class="rdbtns">' + sigilEqBtn(s, sel) + sigilLockBtn(sel) + '<button class="btn' + (fz.ok ? '' : ' off') + '" data-sgfuse="' + sel.id + '">합성 ' + Math.min(3, fz.same + 1) + '/3' + fuseTag(s, 'sigil', sel.grade + 1, sel.grade >= DATA.hiGrades.length - 1) + '</button><button class="btn' + (sel.lock || CW.isEquipped(s, sel.id) ? ' off' : '') + '" data-sgdis="' + sel.id + '">분해</button></div>' +
           (sel.grade < DATA.hiGrades.length - 1 ? '<span class="note">합성 · 같은 등급 3개 → ' + hn(sel.grade + 1) + '</span>' : '') + '</div>';
       }
       // a crit option counts up to critConf.caps.sigil for its tier (2026-11-16): the list says when the rest is wasted
@@ -746,10 +757,10 @@
         '<div class="rsacts"><button class="btn" data-act="sgbest">추천 장착</button><button class="btn" data-act="sgdisall">일괄 분해<small>잠금·장착 제외</small></button></div>' +
         filt + '<div class="rsgrid inv">' + (inv || '<p class="note">아직 보유한 신성력이 없어요.<br>보스 처치나 소환으로 획득할 수 있어요.</p>') + '</div>';
     }
-    function showSigils(list, fromPack) {
+    function showSigils(list, fromPack, dust) {
       var best = Math.max.apply(null, list.map(function (x) { return x.grade; }));
       modal('<h2 style="color:' + hc(best) + '">' + (best >= 5 ? hn(best) + ' 신성력 획득' : '신성력 ' + list.length + '개 획득') + '</h2><div class="sggrid got rsgot">' + list.slice().sort(function (a, c) { return c.grade - a.grade; }).map(function (it) { return sgCell(it, false); }).join('') + '</div>',
-        fromPack ? [{ label: '확인', pri: true }] : [{ label: '확인' }, { label: '다시 소환', pri: true, fn: function () { var r = G.sigilSummon(list.length); if (!r) toast('소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showSigils(r); hud(); } } }]);
+        fromPack ? [{ label: '확인', pri: true }] : [{ label: '확인' }, { label: dust ? '다시 만들기' : '다시 소환', pri: true, fn: function () { var r = G.sigilSummon(list.length, false, dust); if (!r) toast(dust ? '만들 수 없어요. 신성력 가루와 가방 여유 공간을 확인해 주세요.' : '소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showSigils(r, false, dust); renderPanel(true); hud(); } } }]);
     }
     function showRelics(list) {
       var shown = list.slice().sort(function (a, b) { return (CW.relicById(b.id).divine ? 1 : 0) - (CW.relicById(a.id).divine ? 1 : 0); });
@@ -803,15 +814,15 @@
     // ---------- HUD ----------
     var lastPlace = '', lastSub = null;
     function hud() {
-      var s = G.state, info = CW.stageInfo(s.stage), R = DATA.regions[info.region];
-      var mark = CW.ICO.region ? CW.ICO.region(info.region) : '';   // the region's own little mark (design-cream.js)
+      var s = G.state, info = CW.stageInfo(s.stage), R = CW.regionAt(s.diff, info.region), sr = CW.sceneRegion(s.diff, info.region);
+      var mark = CW.ICO.region ? CW.ICO.region(sr) : '';   // the region's own little mark (design-cream.js)
       var pn = (s.diff ? '<u>' + CW.diffOf(s).name + '</u>' : '') + '<span class="rmark">' + mark + '</span><b data-t="' + R.name + '">' + R.name + '</b><i>' + CW.stageLabel(s.stage) + '</i>';
       if (pn !== lastPlace) {
         lastPlace = pn; $('placeName').innerHTML = pn;
         // the clock area above the home-screen app takes the colour of this region's field, and the field fades from it
         // (tools/build-site.cjs): the phone paints that area in the page's theme colour
         if (CW.ICO.regionTop) {
-          var capc = CW.ICO.regionTop(info.region), tc = document.querySelector('meta[name="theme-color"]');
+          var capc = sr < 10 ? CW.ICO.regionTop(info.region) : '#' + ('00000' + R.sky.toString(16)).slice(-6), tc = document.querySelector('meta[name="theme-color"]');
           document.documentElement.style.setProperty('--capc', capc);
           if (tc && !document.documentElement.classList.contains('profon')) tc.setAttribute('content', capc);
         }
@@ -925,9 +936,15 @@
     // the regions a skill's element is strong in (the regions weak to it); the one the player is in now is marked
     function strongIn(el, s) {
       if (el === 'all') return '<span class="elgood">모든 지역</span>';
-      var now = CW.regionOf(s), names = [];
-      DATA.regions.forEach(function (R, i) { if ((R.weak || []).indexOf(el) >= 0) names.push('<span class="elgood' + (i === now ? ' now' : '') + '">' + R.name + '</span>'); });
-      return names.join('');
+      // both worlds (하늘 세계 2026-11-17, the user: 하늘 지역 약점도 지금처럼 스킬에 나오게): the first world's regions, then
+      // the sky's after a small tag; the region the player is in now is marked in its own world only
+      var now = CW.regionOf(s), w = CW.worldOf(s.diff), out = '';
+      [DATA.regions, DATA.skyRegions || []].forEach(function (list, wi) {
+        var names = [];
+        list.forEach(function (R, i) { if ((R.weak || []).indexOf(el) >= 0) names.push('<span class="elgood' + (wi === w && i === now ? ' now' : '') + '">' + R.name + '</span>'); });
+        if (names.length) out += (wi ? '<span class="elworld">하늘</span>' : '') + names.join('');
+      });
+      return out;
     }
     function skillPanel() {
       var s = G.state;
@@ -962,7 +979,7 @@
           : '<button class="b see" data-skd="' + sk.id + '">보기</button>' +
             (at >= 0 ? '<button class="b out" data-unslot="' + at + '">' + (at + 1) + '번 빼기</button>' : '<button class="b put' + (selSlot >= 0 ? ' long' : '') + '" data-eq="' + sk.id + '">' + (selSlot >= 0 ? (selSlot + 1) + '번에 넣기' : '넣기') + '</button>') +
             '<button class="b up' + (max || s.gold < cost ? ' off' : '') + (max ? ' max' : '') + '" data-sup="' + sk.id + '" title="' + (max ? '최대 강화' : '강화 · 골드 ' + fmtG(cost)) + '">' + (max ? '최대' : '강화') + '</button>';
-        return '<div class="skr' + (locked ? ' lock' : '') + (at >= 0 ? ' eq' : '') + '"><span class="tile' + (CW.ICO.skillArt && CW.ICO.skillArt(sk.id) ? '' : ' oldt') + '" data-opfx="sk:' + sk.id + '" data-opdur=".3">' + skIco(sk, 'ti') + (CW.isWeak(sk, CW.regionOf(s)) ? '<em class="wk" title="지금 지역에서 약점 피해 ×' + weakX(s) + '">약점</em>' : '') + '</span>' +
+        return '<div class="skr' + (locked ? ' lock' : '') + (at >= 0 ? ' eq' : '') + '"><span class="tile' + (CW.ICO.skillArt && CW.ICO.skillArt(sk.id) ? '' : ' oldt') + '" data-opfx="sk:' + sk.id + '" data-opdur=".3">' + skIco(sk, 'ti') + (CW.isWeak(sk, CW.regionOf(s), s.diff) ? '<em class="wk" title="지금 지역에서 약점 피해 ×' + weakX(s) + '">약점</em>' : '') + '</span>' +
           '<span class="nm">' + sk.name + ' <b data-opv="sk:' + sk.id + '">' + (locked ? '' : '+' + lv) + '</b></span>' + chip + '<span class="how">' + (sk.how || '') + '</span><i class="dv"></i><span class="bs">' + btns + '</span></div>';
       };
       // 차수마다 작은 이름 줄 + 그 차수 스킬. 10차는 나무로 바뀌어 형꺼에만 (2026-11-16, the user: 10차 나무로, 친구꺼는 10차 올리지 말고)
@@ -1008,7 +1025,7 @@
       var head = '<div class="skd-h"><i></i><b>강화 1회 효과</b><i></i></div>';
       var up = '<div class="skd-up"><span class="org' + (lv >= 9 ? ' long' : '') + '">' + (max ? '+' + lv + ' <small>최대</small>' : '+' + lv + ' <em>→</em> <b>+' + (lv + 1) + '</b>') + '</span><i class="br"></i>' +
         '<p class="r1"><i></i>이 스킬 피해 <b>+' + Math.round(B.skillLvBonus * 100) + '%</b></p><p class="r2"><i></i>모든 스킬 피해 <b>+' + pct(B.skillOwnedPer) + '</b></p></div>';
-      var weakNow = CW.isWeak(sk, CW.regionOf(s));
+      var weakNow = CW.isWeak(sk, CW.regionOf(s), s.diff);
       var reg = '<button class="skd-reg' + (skRegOpen ? ' on' : '') + '" data-skreg><i></i>유리한 지역 보기</button>' +
         (skRegOpen ? '<div class="skd-regs"><span class="rl">' + strongIn(sk.el, s) + '</span><small>' + (sk.el === 'all' ? '모든 지역에서 약점 피해 ×' + weakX(s) : weakNow ? '지금 지역에서 약점 피해 ×' + weakX(s) : '이 지역들에서 약점 피해 ×' + weakX(s)) + '</small></div>' : '');
       var first = s.slots.indexOf(null), target = selSlot >= 0 ? selSlot : first >= 0 ? first : s.slots.length - 1;
@@ -1204,29 +1221,45 @@
     // lock. LOCKS: the centre of each painted lock, in % of the picture (measured by matching the lock; the castle, the
     // 10th, has none painted, so the lock medal art/ui-map-lock.webp is put on it while it is closed).
     var LOCKS = [[19.63, 18.09], [50.79, 16.87], [82.72, 24.19], [18.32, 40.45], [49.21, 39.63], [81.94, 45.93], [18.32, 65.04], [49.48, 65.04], [79.58, 70.93], [62.8, 88.0]];
+    // what opens a locked difficulty: the last boss of the difficulty before (늑대 왕, then 신들의 왕 in the sky world)
+    function diffLockText(d) { return '이전 난이도 10-31의 ' + CW.regionAt(d - 1, 9).boss.name + ' 처치 시 해금'; }
+    // 하늘 세계 (2026-11-17): the user's sky map (art/ui-map-sky.webp, art-src/sky-20261117/E-sky-map.webp), 1 at the bottom
+    // left up to the throne on top; no locks are painted, so every island gets its medal (open or locked) from the code.
+    var LOCKS_SKY = [[17.2, 81.9], [48.4, 80.8], [81.0, 81.5], [81.9, 58.3], [48.4, 58.3], [17.2, 58.7], [17.2, 34.8], [50.2, 34.8], [82.4, 35.5], [50.2, 14.1]];
     function worldMap(d, open, frontier, here) {
-      var hereR = here >= 0 ? CW.stageInfo(here).region : -1;
-      return '<div class="wmap">' + LOCKS.map(function (p, i) {
+      var hereR = here >= 0 ? CW.stageInfo(here).region : -1, sky = CW.worldOf(d) === 1;
+      return '<div class="wmap' + (sky ? ' sky' : '') + '">' + (sky ? LOCKS_SKY : LOCKS).map(function (p, i) {
         var on = open && i * 31 <= frontier, at = 'left:' + p[0] + '%;top:' + p[1] + '%';
         // the island goes to the furthest stage reached in it that is not a boss (x-29), or the front line in it
         var dest = Math.min(frontier, i * 31 + 28);
-        var medal = on ? '<i class="wmedal' + (i === hereR ? ' cur' : '') + '" style="' + at + '"></i>' : i === 9 ? '<i class="wmedal shut" style="' + at + '"></i>' : '';
-        return medal + '<button class="wisle" style="' + at + '" aria-label="' + DATA.regions[i].name + '" ' +
+        var medal = on ? '<i class="wmedal' + (i === hereR ? ' cur' : '') + '" style="' + at + '"></i>' : i === 9 || sky ? '<i class="wmedal shut" style="' + at + '"></i>' : '';
+        return medal + '<button class="wisle" style="' + at + '" aria-label="' + CW.regionAt(d, i).name + '" ' +
           (on ? 'data-sgo="' + dest + '" data-sd="' + d + '"' : 'data-wlock="' + (open ? i : -1) + '"') + '></button>';
       }).join('') + '</div>';
+    }
+    // the region's dusts for half an hour of hunting (at the kill cap) and for half an hour away, its specialty marked
+    function fieldBox(d, R) {
+      var B = DATA.balance.dust, sp = CW.dustSpecial(R), D = DATA.difficulties[d] || {}, sc = (1 + R) * (D.gemMul || 1);
+      var play = 2880 * B.killPer * sc, away = B.awayPer30 * sc, rs = CW.runeStoneForBoss({ tier: 99, diff: d }, true, R * 31);
+      var item = function (k, nm, m) { return '<span class="fb-i' + (sp.key === k ? ' sp' : '') + '"><i class="dusti ' + (k === 'rune' ? 'dr' : 'ds') + '"></i>' + nm + ' <b>' + fmt(Math.round(play * m)) + '</b><small>방치 ' + fmt(Math.round(away * m)) + '</small>' + (sp.key === k ? '<em>×' + B.specialMul + ' 잘 나와요</em>' : '') + '</span>'; };
+      return '<div class="fbox"><div class="fb-h">필드 사냥 30분</div>' + item('rune', '룬 가루', sp.rune) + item('sigil', '신성력 가루', sp.sigil) +
+        '<span class="fb-i rs"><i class="runestone"></i>룬석 <b>보스 ' + fmt(CW.runeStoneForBoss({ tier: 99, diff: d }, false, R * 31)) + ' · 지역 보스 ' + fmt(rs) + '</b></span>' +
+        '<span class="fb-i rs"><i class="sigilstone"></i>신성석 <b>보스 ' + fmt(CW.sigilStoneForBoss({ tier: 99, diff: d }, false, R * 31)) + ' · 지역 보스 ' + fmt(CW.sigilStoneForBoss({ tier: 99, diff: d }, true, R * 31)) + '</b></span></div>';
     }
     function stagePanel() {
       var s = G.state, d = selDiff < 0 ? (s.diff || 0) : selDiff, R = selRegion < 0 ? CW.stageInfo(s.stage).region : selRegion;
       var best = d === (s.diff || 0) ? s.best : ((s.diffBest || {})[d] ? s.diffBest[d].best : -1), frontier = Math.min(309, best + 1), here = d === (s.diff || 0) ? s.stage : -1;
-      var st = CW.stats(s), reg = DATA.regions[R], open = d <= (s.diffUnlocked || 0);
+      var st = CW.stats(s), reg = CW.regionAt(d, R), open = d <= (s.diffUnlocked || 0);
       var head = '<div class="dsel"><button class="btn" data-dsel="-1" aria-label="이전 난이도">◀</button><b>' + DATA.difficulties[d].name + (open ? '' : ' (잠김)') + '</b><button class="btn" data-dsel="1" aria-label="다음 난이도">▶</button></div>' +
         // only when the difficulty is locked: what opens it (2026-11-15: the 보스 체력/몬스터/다이아 line and the help lines were taken out)
-        (open ? '' : '<div class="note dnote">이전 난이도 10-31의 늑대 왕 처치 시 해금</div>') +
+        (open ? '' : '<div class="note dnote">' + diffLockText(d) + '</div>') +
         (open ? '<button class="btn pri dgo" data-sgo="' + frontier + '" data-sd="' + d + '">' + (d === (s.diff || 0) ? '도전 중인 판으로' : DATA.difficulties[d].name + ' 도전 중인 판으로') + ' (' + CW.stageLabel(frontier) + ')</button>' : '') +
         worldMap(d, open, frontier, here) +
-        '<div class="rsel">' + DATA.regions.map(function (r, i) { return '<button class="rchip' + (i === R ? ' on' : '') + (i * 31 > frontier ? ' lock' : '') + '" data-rsel="' + i + '">' + (i + 1) + '</button>'; }).join('') + '</div>' +
+        '<div class="rsel">' + CW.regionsOf(d).map(function (r, i) { return '<button class="rchip' + (i === R ? ' on' : '') + (i * 31 > frontier ? ' lock' : '') + '" data-rsel="' + i + '">' + (i + 1) + '<i class="dusti ' + (CW.dustSpecial(i).key === 'rune' ? 'dr' : 'ds') + '"></i></button>'; }).join('') + '</div>' +
+        // what hunting here gives besides gold and xp (2026-11-17, the user: 지도에 룬석·가루 얼마나 나오는지, 잘 나오는 지역 표시)
+        fieldBox(d, R) +
         '<div style="height:8px"></div>';
-      var rows = '';
+      var rows = '', dz = CW.dustSpecial(R); dz.play = 2880 * DATA.balance.dust.killPer * (1 + R) * ((DATA.difficulties[d] || {}).gemMul || 1);
       for (var n = 0; n < 31; n++) {
         var i = R * 31 + n, info = CW.stageInfo(i), lock = !open || i > frontier, tmp = { stage: i, diff: d, up: s.up };
         var res = { id: info.isBoss ? CW.stageBoss(i, d).art : reg.monsters[(n * 5) % reg.monsters.length], tint: null };
@@ -1241,6 +1274,9 @@
           '<span class="smon">' + (img ? '<img src="' + img + '" alt="" style="' + (res.tint ? 'filter:hue-rotate(' + (R * 36) + 'deg)' : '') + '">' : '') + '</span>' +
           '<span class="snm">' + (kind ? '<small>' + kind + '</small>' : '') + '<b>' + mname + '</b></span>' +
           '<span class="srews"><span class="srew"><i class="coin"></i>' + gh(rw.gold) + '</span><span class="srew"><b class="xpdot"></b>' + fmt(rw.xp) + '</span>' +
+          (info.isBoss ? '<span class="srew"><i class="runestone"></i>' + fmt(CW.runeStoneForBoss({ tier: 99, diff: d }, info.isRegionBoss, i)) + '</span><span class="srew"><i class="sigilstone"></i>' + fmt(CW.sigilStoneForBoss({ tier: 99, diff: d }, info.isRegionBoss, i)) + '</span>'
+            // field rows: both dusts for half an hour of hunting here (the user: 일반 필드 사냥 줄에도 가루 표시), the region's specialty bold
+            : '<span class="srew dz' + (dz.key === 'rune' ? ' sp' : '') + '"><i class="dusti dr"></i>' + fmt(Math.round(dz.play * dz.rune)) + '</span><span class="srew dz' + (dz.key === 'sigil' ? ' sp' : '') + '"><i class="dusti ds"></i>' + fmt(Math.round(dz.play * dz.sigil)) + '</span>') +
           '<span class="srew muted hp"><b class="hpdot"></b><span class="hpbox"><b class="hpheart"></b>HP ' + CW.fmtHp(rw.hp) + '</span></span></span>' +
           '<span class="sgo">' + (lock ? '🔒' : i === here ? '여기' : '이동') + '</span></button>';
       }
@@ -1373,7 +1409,18 @@
     }
     function fitStageRows() {
       var list = panel.querySelector('.slist'), row = list && list.querySelector('.srow'); if (!row) return;
-      list.classList.remove('tight', 'tighter'); list.style.removeProperty('--srw');
+      list.classList.remove('tight', 'tighter'); ['--srw', '--snw', '--sgw', '--sow', '--rc1', '--rc2'].forEach(function (k) { list.style.removeProperty(k); });
+      // the widest content of a set of cells, read at its natural width
+      var natural = function (els) { var w = 0; els.forEach(function (e) { var r = document.createRange(); r.selectNodeContents(e); w = Math.max(w, r.getBoundingClientRect().width); }); return Math.ceil(w); };
+      var c1 = [], c2 = [];
+      list.querySelectorAll('.srews').forEach(function (s) { var k = 0; [].forEach.call(s.children, function (e) { if (e.classList.contains('hp')) return; (k++ % 2 ? c2 : c1).push(e); }); });
+      var rc1 = natural(c1), rc2 = natural(c2), hpw = 0;
+      list.querySelectorAll('.srews .srew.hp').forEach(function (e) { hpw = Math.max(hpw, e.scrollWidth); });
+      // the HP line spans both: when it is longer, both columns widen by the same amount (the second column does not run away)
+      var lack = Math.ceil(hpw) - (rc1 + 8 + rc2); if (lack > 0) { rc1 += Math.ceil(lack / 2); rc2 += Math.ceil(lack / 2); }
+      list.style.setProperty('--rc1', rc1 + 'px'); list.style.setProperty('--rc2', rc2 + 'px');
+      list.style.setProperty('--sgw', (natural([].slice.call(list.querySelectorAll('.sname'))) + 2) + 'px');
+      list.style.setProperty('--sow', (natural([].slice.call(list.querySelectorAll('.sgo'))) + 2) + 'px');
       var widest = function () { var w = 0; list.querySelectorAll('.srews').forEach(function (e) { e.style.width = 'max-content'; w = Math.max(w, e.getBoundingClientRect().width); e.style.width = ''; }); return Math.ceil(w); };
       var room = function () {
         var cs = getComputedStyle(row), cols = cs.gridTemplateColumns.split(' ').map(parseFloat), gap = parseFloat(cs.columnGap) || 0;
@@ -1384,6 +1431,19 @@
       if (w > room()) { list.classList.add('tight'); w = widest(); }
       if (w > room()) { list.classList.add('tighter'); w = widest(); }
       if (w) list.style.setProperty('--srw', w + 'px');
+      // the name column: as wide as the longest name of this list needs, no wider (2026-11-17, the user: 이름과 골드 사이가 너무
+      // 넓어 — 빡 줄여); what is left over goes to the right end before 이동, so the columns still line up row to row
+      var rcs = getComputedStyle(row), rcols = rcs.gridTemplateColumns.split(' ').map(parseFloat), rgap = parseFloat(rcs.columnGap) || 0;
+      var nameRoom = row.clientWidth - parseFloat(rcs.paddingLeft) - parseFloat(rcs.paddingRight) - rcols[0] - rcols[1] - rcols[3] - rcols[4] - rgap * 4, nw = 0, cv = fitStageRows.cv || (fitStageRows.cv = document.createElement('canvas').getContext('2d'));
+      // each name at its narrowest on at most two lines (split between words where the longer half is shortest)
+      list.querySelectorAll('.snm b, .snm small').forEach(function (b) {
+        var cs = getComputedStyle(b); cv.font = cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+        var words = (b.textContent || '').trim().split(/s+/), best = cv.measureText(words.join(' ')).width;
+        for (var k = 1; k < words.length; k++) best = Math.min(best, Math.max(cv.measureText(words.slice(0, k).join(' ')).width, cv.measureText(words.slice(k).join(' ')).width));
+        nw = Math.max(nw, best);
+      });
+      // never wider than before; a name that still does not fit wraps or shrinks as before
+      if (nw > 0) list.style.setProperty('--snw', Math.ceil(Math.min(nw + 2, nameRoom)) + 'px');
       var cut = function (n) { return n.scrollHeight > n.clientHeight + 1; };
       list.querySelectorAll('.snm b').forEach(function (n) { n.classList.remove('tiny', 'tiny3'); if (cut(n)) n.classList.add('tiny'); if (cut(n)) n.classList.add('tiny3'); });
     }
@@ -1566,9 +1626,9 @@
       else if (d.act === 'autoskill') { G.autoSkills(); toast('추천 스킬 4개를 배치했어요.'); renderPanel(true); slots(); }
       else if (d.dsel !== undefined) { var nd = ((selDiff < 0 ? (G.state.diff || 0) : selDiff) + +d.dsel + DATA.difficulties.length) % DATA.difficulties.length; selDiff = nd; selRegion = 0; renderPanel(true); }
       else if (d.rsel !== undefined) { selRegion = +d.rsel; renderPanel(true); }
-      else if (d.wlock !== undefined) { toast(+d.wlock < 1 ? '이 난이도는 아직 잠겨 있어요.' : DATA.regions[+d.wlock - 1].name + ' 보스 처치 시 해금'); }
+      else if (d.wlock !== undefined) { toast(+d.wlock < 1 ? '이 난이도는 아직 잠겨 있어요.' : CW.regionAt(selDiff < 0 ? (G.state.diff || 0) : selDiff, +d.wlock - 1).name + ' 보스 처치 시 해금'); }
       else if (d.sgo !== undefined) { if (G.goStageIn(+d.sd, +d.sgo)) { toast(CW.stageLabel(+d.sgo) + ' 이동 완료'); selDiff = selRegion = -1; openTab('battle'); } }
-      else if (d.diff !== undefined) { var dd = +d.diff; if (dd > G.state.diffUnlocked) toast('이전 난이도 10-31의 늑대 왕 처치 시 해금'); else confirmBox('난이도를 변경할까요?', '<b>' + DATA.difficulties[dd].name + '</b>의 진행으로 이동해요. 다른 난이도의 진행은 유지돼요.', '난이도 변경', function () { G.setDifficulty(dd); renderPanel(true); hud(); }); }
+      else if (d.diff !== undefined) { var dd = +d.diff; if (dd > G.state.diffUnlocked) toast(diffLockText(dd)); else confirmBox('난이도를 변경할까요?', '<b>' + DATA.difficulties[dd].name + '</b>의 진행으로 이동해요. 다른 난이도의 진행은 유지돼요.', '난이도 변경', function () { G.setDifficulty(dd); renderPanel(true); hud(); }); }
       else if (d.bkind) { bagKind = d.bkind; selKey = null; renderPanel(true); }
       else if (d.btr) { var eb = G.state.bag[d.btr]; if (G.transcend(d.btr)) { toast('초월 성공 · ' + CW.gearName(d.btr) + ' ★' + G.state.bag[d.btr].star); banner('초월 성공!'); } else toast(!eb ? '아직 획득하지 않은 장비예요.' : (eb.star || 0) >= DATA.bagConf.starMax ? '최고 초월에 도달했어요.' : eb.lv < CW.maxLevel(d.btr, eb.star) ? '최대 레벨까지 강화해 주세요.' : eb.n <= CW.transcendCost(G.state, d.btr).copies ? '같은 장비가 더 필요해요.' : '골드가 부족해요.'); renderPanel(true); hud(); }
       else if (d.brew) { if (G.brew(d.brew) && (!CW.opalUI || (CW.opalUI.fx('brew'), CW.opalUI.fx('brew:' + d.brew), 1))) toast(CW.potionById(d.brew).name + ' 제작 완료'); else toast('골드가 부족해요.'); renderPanel(true); hud(); }
@@ -1577,7 +1637,7 @@
       else if (d.reqp) { var res0 = CW.runeResonance(G.state); if (G.runeEquipToggle(d.reqp) === 'full') toast('룬 슬롯이 가득 찼어요. 기존 룬을 해제한 뒤 장착해 주세요.'); else { var res1 = CW.runeResonance(G.state); if (res1 < res0) toast('룬 공명 ' + res0 + '단계 → ' + res1 + '단계 · 장착한 룬 중 가장 낮은 레벨 기준이에요.'); } renderPanel(true); }
       else if (d.rlock) { G.runeLock(d.rlock); renderPanel(true); }
       else if (d.rdis) { var rn = G.runeDismantle(d.rdis); if (rn) { toast('룬석 +' + fmt(rn)); selRune = null; } else toast('장착 중이거나 잠긴 룬은 분해할 수 없어요.'); renderPanel(true); }
-      else if (d.rfuse) { var rf = G.runeFuse(d.rfuse); if (rf) { selRune = rf.id; if (CW.opalUI) { CW.opalUI.fx('rc:' + rf.id); CW.opalUI.fx('ru:' + rf.id); } toast('룬 합성 완료 · ' + hn(rf.grade) + ' ' + CW.runeById(rf.kind).name); banner(hn(rf.grade) + ' 룬!'); } else toast('합성하려면 같은 종류·등급의 룬 3개가 필요해요.'); renderPanel(true); }
+      else if (d.rfuse) { var rf = G.runeFuse(d.rfuse); if (rf && rf.fail) { selRune = rf.kept.id; toast('합성 실패 · ' + hn(rf.kept.grade) + ' 룬 1개 남음 · 다음 ' + Math.round(rf.next * 100) + '%'); } else if (rf) { selRune = rf.id; if (CW.opalUI) { CW.opalUI.fx('rc:' + rf.id); CW.opalUI.fx('ru:' + rf.id); } toast('룬 합성 완료 · ' + hn(rf.grade) + ' ' + CW.runeById(rf.kind).name); banner(hn(rf.grade) + ' 룬!'); } else toast('합성하려면 같은 종류·등급의 룬 3개가 필요해요.'); renderPanel(true); }
       else if (d.rsum) { var rs = G.runeSummon(+d.rsum, rnGroup); if (!rs) toast('소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showRunes(rs); renderPanel(true); hud(); } }
       else if (d.rkf) { rnFilter = d.rkf; renderPanel(true); }
       else if (d.rgrp) { rnGroup = d.rgrp; renderPanel(true); }
@@ -1603,7 +1663,9 @@
       else if (d.sgeq) { var r5 = G.sigilEquipToggle(d.sgeq); if (r5 && r5 !== 'full' && CW.opalUI) CW.opalUI.fx('sg:' + d.sgeq); if (r5 === 'full') toast('신성력 슬롯이 가득 찼어요. 신성력 레벨을 올리면 슬롯이 늘어나요.'); renderPanel(true); }
       else if (d.sglock) { G.sigilLock(d.sglock); renderPanel(true); }
       else if (d.sgdis) { var n5 = G.sigilDismantle(d.sgdis); toast(n5 ? '신성석 +' + n5 : '장착 중이거나 잠긴 신성력은 분해할 수 없어요.'); renderPanel(true); }
-      else if (d.sgfuse) { var f5 = G.sigilFuse(d.sgfuse); if (f5) { selSigil = f5.id; if (CW.opalUI) { CW.opalUI.fx('rc:' + f5.id); CW.opalUI.fx('sg:' + f5.id); } toast('신성력 합성 완료 · ' + hn(f5.grade)); } else toast('장착하지 않고 잠기지 않은 같은 등급 3개가 필요해요.'); renderPanel(true); }
+      else if (d.sgfuse) { var f5 = G.sigilFuse(d.sgfuse); if (f5 && f5.fail) { selSigil = f5.kept.id; toast('합성 실패 · ' + hn(f5.kept.grade) + ' 신성력 1개 남음 · 다음 ' + Math.round(f5.next * 100) + '%'); } else if (f5) { selSigil = f5.id; if (CW.opalUI) { CW.opalUI.fx('rc:' + f5.id); CW.opalUI.fx('sg:' + f5.id); } toast('신성력 합성 완료 · ' + hn(f5.grade)); } else toast('장착하지 않고 잠기지 않은 같은 등급 3개가 필요해요.'); renderPanel(true); }
+      else if (d.rdsum) { var rd = G.runeSummon(+d.rdsum, rnGroup, true); if (!rd) toast('만들 수 없어요. 룬 가루와 가방 여유 공간을 확인해 주세요.'); else { showRunes(rd, true); renderPanel(true); hud(); } }
+      else if (d.sgdsum) { var sd = G.sigilSummon(+d.sgdsum, false, true); if (!sd) toast('만들 수 없어요. 신성력 가루와 가방 여유 공간을 확인해 주세요.'); else { showSigils(sd, false, true); renderPanel(true); hud(); } }
       else if (d.sgsum) { var g5 = G.sigilSummon(+d.sgsum); if (!g5) toast('소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showSigils(g5); renderPanel(true); hud(); } }
       else if (d.act === 'sgbest') { G.sigilEquipBest(); toast('추천 신성력을 장착했어요.'); renderPanel(true); }
       else if (d.act === 'sgdisall') { confirmBox('신성력을 일괄 분해할까요?', '장착하지 않고 잠기지 않은 신성력을 모두 신성석으로 바꿔요.<br>분해한 신성력은 되돌릴 수 없어요.', '신성력 분해', function () { var n6 = G.sigilDismantleAll(); toast(n6 ? '신성석 +' + fmt(n6) : '분해할 신성력이 없어요.'); renderPanel(true); }, { variant: 'danger' }); }
@@ -1696,7 +1758,8 @@
       var open = name !== 'battle';
       $('sheet').classList.toggle('on', open); $('sheet').classList.toggle('tall', name !== 'more' && name !== 'gacha'); G.setSheet(open);
       $('sheet').classList.toggle('neb', name === 'gacha' || name === 'dungeon' || name === 'more');   // 뽑기·던전·더보기는 성운 바탕 (2026-11-16, the user: 색깔이 너무 튄다 / 여기랑 더보기 란도, 배경을)
-      $('sheet').classList.toggle('opal', name === 'up' || name === 'gear' || name === 'skill');   // 오팔 연구소 메뉴 (js/ui-opal.js, 2026-11-16)
+      $('sheet').classList.toggle('opal', name === 'up' || name === 'gear' || name === 'skill');
+      $('sheet').classList.toggle('stg', name === 'stage');   // 스테이지 선택: the user's violet cloud sky behind it (2026-11-17)   // 오팔 연구소 메뉴 (js/ui-opal.js, 2026-11-16)
       if (open) { skDetail = null; $('sheetTitle').innerHTML = ((CW.ICO.misc && CW.ICO.misc('tab', name)) || (name === 'stage' ? CW.ICO.misc('quick', 'map') : '')) + TITLES[name]; panel.scrollTop = 0; renderPanel(true); }
     }
     $('tabs').addEventListener('click', function (e) {
@@ -1725,18 +1788,19 @@
         '<div class="awbody"><div class="awbadge">오프라인 보상</div><h2>돌아왔어요!</h2><p>냥법사가 보상을 모았어요</p>' +
         '<div class="awtime"><i></i>' + h + '시간 ' + m + '분' + (r.seconds >= DATA.balance.offlineCapSec ? ' · 최대 8시간' : '') + '</div>' +
         '<div class="awtiles' + (r.xp ? '' : ' one') + '">' + tile('gold', 'ui-away-coin.webp', '골드', gh(r.gold), 'g') + (r.xp ? tile('xp', 'ui-away-star.webp', '경험치', fmt(r.xp), 'x') : '') + '</div>' +
+        (r.runeDust ? '<div class="awdust"><span><i class="dusti dr"></i>룬 가루 <b data-to="rd">+' + fmt(r.runeDust) + '</b></span><span><i class="dusti ds"></i>신성력 가루 <b data-to="sd">+' + fmt(r.sigilDust) + '</b></span></div>' : '') +
         (r.levels ? '<div class="offlv">레벨 ' + r.levels + ' 올랐어요!</div>' : '') + '</div>',
         [{ label: '<i class="awstar"></i>보상 받기', pri: true, fn: onClose }]);
       var card = $('modalCard'); card.classList.add('away');
       // count up: the shown number grows from 0 to the real amount (same words as gh / fmt at every step)
-      var vals = { g: r.gold || 0, x: r.xp || 0 }, show = { g: gh, x: fmt }, t0 = performance.now(), DUR = 900, DELAY = 350;
+      var vals = { g: r.gold || 0, x: r.xp || 0, rd: r.runeDust || 0, sd: r.sigilDust || 0 }, show = { g: gh, x: fmt, rd: fmt, sd: fmt }, t0 = performance.now(), DUR = 900, DELAY = 350;
       var still = root.matchMedia && root.matchMedia('(prefers-reduced-motion:reduce)').matches;
       if (still) return;
-      card.querySelectorAll('.awt b[data-to]').forEach(function (el) { el.innerHTML = '+' + show[el.dataset.to](0); });
+      card.querySelectorAll('.awt b[data-to], .awdust b[data-to]').forEach(function (el) { el.innerHTML = '+' + show[el.dataset.to](0); });
       (function step(now) {
         if ($('modal').hidden || !card.classList.contains('away')) return;
         var k = Math.max(0, Math.min(1, (now - t0 - DELAY) / DUR)), e = 1 - Math.pow(1 - k, 3);
-        card.querySelectorAll('.awt b[data-to]').forEach(function (el) { var to = el.dataset.to; el.innerHTML = '+' + show[to](k >= 1 ? vals[to] : vals[to] * e); });
+        card.querySelectorAll('.awt b[data-to], .awdust b[data-to]').forEach(function (el) { var to = el.dataset.to; el.innerHTML = '+' + show[to](k >= 1 ? vals[to] : vals[to] * e); });
         if (k < 1) requestAnimationFrame(step);
       })(t0);
     }
@@ -1840,6 +1904,11 @@
       if (g.gold > 0) add.push('<i class="coin"></i>골드 +' + gh(g.gold));
       if (g.xp > 0) add.push('<b class="xpdot"></b>경험치 +' + fmt(g.xp));
       if (g.gems > 0) add.push('<i class="gem"></i>다이아 +' + fmt(g.gems));
+      // field kills: each dust on its own line (the user: 붙이지 말고 따로따로), shown when a whole one more is reached
+      if (g.runeStone > 0) add.push('<i class="runestone"></i>룬석 +' + fmt(g.runeStone));
+      if (g.sigilStone > 0) add.push('<i class="sigilstone"></i>신성석 +' + fmt(g.sigilStone));
+      if (g.runeDust > 0) add.push('<i class="dusti dr"></i>룬 가루 +' + fmt(g.runeDust));
+      if (g.sigilDust > 0) add.push('<i class="dusti ds"></i>신성력 가루 +' + fmt(g.sigilDust));
       (g.more || []).forEach(function (m) { add.push('<b class="gdot" style="background:' + m.c + '"></b>' + m.t); });
       if (!add.length) return;
       logLines = add.concat(logLines).slice(0, Math.max(4, add.length));

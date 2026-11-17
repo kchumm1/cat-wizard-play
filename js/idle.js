@@ -8,10 +8,10 @@
     [200, 240], [190, 170], [228, 222], [246, 176], [228, 140], [110, 90], [150, 90]];
   var IDLE_LINES = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 0], [7, 8], [8, 9], [9, 10], [10, 11], [11, 12], [12, 6], [11, 13], [13, 14], [14, 15]];
   function num(x) { return typeof x === 'number' && isFinite(x) && x > 0 ? x : 0; }
-  function idleTally(now) { return { start: now, at: now, acc: 0, kill: 0, gold: 0, xp: 0, rune: 0, lastKill: -Infinity, stars: 0, cycles: 0 }; }
+  function idleTally(now) { return { start: now, at: now, acc: 0, kill: 0, gold: 0, xp: 0, rune: 0, runeDust: 0, sigilDust: 0, lastKill: -Infinity, stars: 0, cycles: 0 }; }
   function idleAdd(t, r, now) {
     if (!t || !r) return;
-    t.kill += num(r.kill); t.gold += num(r.gold); t.xp += num(r.xp); t.rune += num(r.rune);
+    t.kill += num(r.kill); t.gold += num(r.gold); t.xp += num(r.xp); t.rune += num(r.rune); t.runeDust += num(r.runeDust); t.sigilDust += num(r.sigilDust);
     if (num(r.kill)) t.lastKill = now;
   }
   // { lit: stars newly lit, round: true when the 18th was lit (the count starts over at 0) }

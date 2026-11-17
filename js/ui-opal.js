@@ -1458,6 +1458,12 @@
     '#sheet.opal#sheet.opal#sheet.opal .rdup.two{flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:4px!important;padding:0 6px!important;min-height:44px!important;line-height:1!important;overflow:hidden}',
     '#sheet.opal#sheet.opal#sheet.opal .rdup.two .t{display:block;font:800 14px/1 var(--body)!important;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}',
     '#sheet.opal#sheet.opal#sheet.opal .rdup.two .c{display:inline-flex!important;align-items:center;justify-content:center;gap:3px!important;font:800 12px/1 var(--body)!important;font-variant-numeric:tabular-nums;opacity:.95}#sheet.opal#sheet.opal#sheet.opal .rdup.two .c .ico{width:13px!important;height:13px!important;flex:none}',
+    // 룬석·신성석 are the user's pictures (2026-11-17): a little bigger than the drawn icons so they read (the user: 살짝 키우자)
+    '#sheet.opal#sheet.opal#sheet.opal#sheet.opal img.icur{width:16px!important;height:16px!important;flex:none;object-fit:contain}',
+    // in the two-line buttons (강화 / 레벨업): the cost line as tall as the picture, a little air between it and the number, so it sits in the middle
+    '#sheet.opal#sheet.opal#sheet.opal#sheet.opal .rdup.two .c{gap:4px!important;line-height:16px!important;height:16px}#sheet.opal#sheet.opal#sheet.opal#sheet.opal .rdup.two{row-gap:2px!important;gap:2px!important}',
+    // 강화 · 레벨업: the cost beside the word on one line (2026-11-17, the user: 강화 밑으로 말고 옆으로); 승급 keeps two lines (its grade name is long)
+    '#sheet.opal#sheet.opal#sheet.opal#sheet.opal .rdup.two[data-rune],#sheet.opal#sheet.opal#sheet.opal#sheet.opal .rdup.two[data-sglv]{flex-direction:row!important;gap:7px!important}#sheet.opal#sheet.opal#sheet.opal#sheet.opal .rdup.two[data-rune] .c,#sheet.opal#sheet.opal#sheet.opal#sheet.opal .rdup.two[data-sglv] .c{font-size:13px!important}',
     // 각성 카드: 작은 소제목 · 파편 상자(왼쪽 보유 / 오른쪽 제작 값) · 제작 버튼 같은 크기 칸
     '#sheet.opal#sheet.opal#sheet.opal .aw-tag{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;background:#f3ecfb;box-shadow:inset 0 0 0 1px #ddd0f0;font:700 11.5px/1 var(--body);color:#6b5a96;white-space:nowrap}',
     '#sheet.opal#sheet.opal#sheet.opal .awcard .rsgrid.aw{margin:0 0 4px}',

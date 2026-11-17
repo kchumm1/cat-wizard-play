@@ -101,14 +101,31 @@
   function free(state, it) { return !!it && !it.lock && !isWorn(state, it.id); }
   function remove(state, id) { var b = runeBag(state); b.items = b.items.filter(function (x) { return x.id !== id; }); b.eq = b.eq.map(function (x) { return x === id ? null : x; }); b.aw = b.aw.map(function (x) { return x === id ? null : x; }); }
   // the chosen rune plus the two lowest-level free ones of the same kind and grade become one rune of the next grade
-  function runeFuse(state, id) {
+  // the chance to fuse into grade g now (kind: 'rune' or 'sigil'), with the 천장 of failures in a row
+  function fuseRate(state, kind, g) {
+    var F = DATA.fuseConf, b = F && F.rate[g]; if (b === undefined) return 1;
+    var p = ((state.fusePity || {})[kind] || {})[g] || 0;
+    return Math.min(1, b + p * (F.pityStep[g] || 0));
+  }
+  // one try: { ok, rate (this try), next (the next try's) }; a failure counts toward the 천장, a success resets it
+  function fuseRoll(state, kind, g, rng) {
+    var r = fuseRate(state, kind, g), ok = r >= 1 || (rng || Math.random)() < r;
+    var P = state.fusePity || (state.fusePity = {}), K = P[kind] || (P[kind] = {});
+    if (DATA.fuseConf && DATA.fuseConf.rate[g] !== undefined) K[g] = ok ? 0 : (K[g] || 0) + 1;
+    return { ok: ok, rate: r, next: fuseRate(state, kind, g) };
+  }
+  // a failure keeps the rune it was started from (level and all) and returns { fail, kept, grade, rate, next }; the other two go
+  function runeFuse(state, id, rng) {
     var it = runeItem(state, id); if (!free(state, it) || it.grade >= TOP) return null;
     var others = runeBag(state).items.filter(function (x) { return x !== it && x.kind === it.kind && x.grade === it.grade && free(state, x); })
       .sort(function (a, c) { return a.lv - c.lv; }).slice(0, 2);
     if (others.length < 2) return null;
-    var back = 0; [it].concat(others).forEach(function (x) { back += spentOn(x); });
+    var roll = fuseRoll(state, 'rune', it.grade + 1, rng);
+    var back = 0; (roll.ok ? [it].concat(others) : others).forEach(function (x) { back += spentOn(x); });
     state.runeStone = (state.runeStone || 0) + Math.floor(back / 2);
-    remove(state, it.id); others.forEach(function (x) { remove(state, x.id); });
+    others.forEach(function (x) { remove(state, x.id); });
+    if (!roll.ok) return { fail: true, kept: it, grade: it.grade + 1, rate: roll.rate, next: roll.next };
+    remove(state, it.id);
     return runeAdd(state, it.kind, it.grade + 1);
   }
   function spentOn(it) { var spent = 0; for (var l = 0; l < it.lv; l++) spent += runeCost(l); return spent; }
@@ -155,12 +172,13 @@
   }
   function runeGive(state, n, rng) { rng = rng || Math.random; var out = []; out.overflow = 0; for (var i = 0; i < n; i++) rollRune(state, dropTable(state), rng, out); return out; }
   // group: undefined / 'all' (every open kind), 'rate' or 'dmg' (only the crit runes of that kind, 2026-11-16)
-  function runeSummon(state, n, rng, group) {
+  // dust: pay with 룬 가루 instead of diamonds (2026-11-17), the same price and odds
+  function runeSummon(state, n, rng, group, dust) {
     rng = rng || Math.random;
-    var cost = C.summon[n]; if (!cost || !(state.gems >= cost) || !runeOpen(state)) return null;
+    var cur = dust ? 'runeDust' : 'gems', cost = C.summon[n]; if (!cost || !((state[cur] || 0) >= cost) || !runeOpen(state)) return null;
     if (runeBag(state).items.length + n > C.cap) return null;
     if (group && group !== 'all' && !runePool(state, group).length) return null;
-    state.gems -= cost;
+    state[cur] -= cost;
     var out = []; out.overflow = 0; for (var i = 0; i < n; i++) rollRune(state, C.summonTable, rng, out, group);
     return out;
   }
@@ -188,7 +206,14 @@
     var min = Infinity; worn.forEach(function (it) { min = Math.min(min, it.lv); });
     return Math.floor(min / C.resEvery);
   }
-  function runeStoneForBoss(state, regionBoss) { return runeOpen(state) ? (regionBoss ? C.regionStone : C.bossStone) : 0; }
+  // a little more the further the region (balance.runeStoneRegionStep a region) and × the difficulty's gemMul, as boss
+  // diamonds (2026-11-17, the user: 지역 25% 그대로 + 난이도 배율)
+  function runeStoneForBoss(state, regionBoss, stage) {
+    if (!runeOpen(state)) return 0;
+    var D = DATA.difficulties && DATA.difficulties[state.diff || 0];
+    var r = Math.floor(Math.max(0, stage === undefined ? state.stage || 0 : stage) / 31), k = (1 + (DATA.balance.runeStoneRegionStep || 0) * r) * ((D && D.gemMul) || 1);
+    return Math.round((regionBoss ? C.regionStone : C.bossStone) * k);
+  }
   function runeStats(state) {
     var b = {};
     runeEquipped(state).forEach(function (it) { var v = runeValue(it), k = runeById(it.kind); if (v && k && !k.awaken && kindOpen(state, k.id)) b[k.stat] = (b[k.stat] || 0) + v; });
@@ -201,6 +226,6 @@
   }
   return { runeById: runeById, runeOpen: runeOpen, runeBag: runeBag, runeItem: runeItem, runeIsWorn: isWorn, runeCraft: runeCraft, runeShardsOf: shardsOf, runeEquipped: runeEquipped, runeAwakened: runeAwakened, runeIsAwaken: isAwaken, runeCompare: runeCompare, runeSwap: runeSwap, runeCap: runeCap, runeCost: runeCost,
     runeGradeCost: runeGradeCost, runeValue: runeValue, runePower: runePower, runeAdd: runeAdd, runeEquip: runeEquip, runeUnequip: runeUnequip, runeEquipBest: runeEquipBest, runeUseful: runeUseful,
-    runeLock: runeLock, runeUp: runeUp, runeGradeUp: runeGradeUp, runeFuse: runeFuse, runeDismantleValue: runeDismantleValue, runeDismantle: runeDismantle,
+    runeLock: runeLock, runeUp: runeUp, runeGradeUp: runeGradeUp, runeFuse: runeFuse, fuseRate: fuseRate, fuseRoll: fuseRoll, runeDismantleValue: runeDismantleValue, runeDismantle: runeDismantle,
     runeDismantleAll: runeDismantleAll, runeDrop: runeDrop, runeGive: runeGive, runeSummon: runeSummon, runePool: runePool, runeKindOpen: kindOpen, runeResonance: runeResonance, runeStoneForBoss: runeStoneForBoss, runeStats: runeStats };
 });

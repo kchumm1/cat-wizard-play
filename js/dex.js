@@ -6,11 +6,14 @@
   var DATA = (isNode ? require('./data.js') : root.CW).DATA;
   function prog() { return isNode ? require('./progress.js') : root.CW; }
 
+  // the codex's regions: the first world's ten (0-9), then the sky world's (10-19, 하늘 세계 2026-11-17)
+  function dexRegions() { return DATA.regions.concat(DATA.skyRegions || []); }
+  function dexRegionData(r) { return dexRegions()[r]; }
   var ORDER = null, INDEX = null;
   function dexOrder() {
     if (ORDER) return ORDER;
     ORDER = []; INDEX = {};
-    DATA.regions.forEach(function (R, r) {
+    dexRegions().forEach(function (R, r) {
       var add = function (id, kind) { if (INDEX[id]) return; INDEX[id] = ORDER.length + 1; ORDER.push({ id: id, no: ORDER.length + 1, region: r, kind: kind }); };
       (R.monsters || []).forEach(function (id) { add(id, 'monster'); });
       (R.minis || []).forEach(function (id) { add(id, 'mini'); });
@@ -45,7 +48,7 @@
   }
   function dexStats(state) {
     var b = (DATA.dexConf && DATA.dexConf.regionBonus) || {}, n = 0, r = {};
-    for (var i = 0; i < DATA.regions.length; i++) if (dexRegion(state, i).done) n++;
+    for (var i = 0; i < dexRegions().length; i++) if (dexRegion(state, i).done) n++;
     for (var k in b) r[k] = b[k] * n;
     return r;
   }
@@ -58,9 +61,9 @@
       var best = df === (state.diff || 0) ? state.best : ((state.diffBest || {})[df] || {}).best;
       if (!(best >= 0)) continue;
       for (var i = 0; i <= best && i <= P.LAST_STAGE; i++) {
-        var info = P.stageInfo(i), R = DATA.regions[info.region]; if (!R) continue;
-        if (!info.isBoss) { R.monsters.forEach(function (id) { put(id, info.region); }); continue; }
-        var sb = P.stageBoss(i, df); if (sb) put(sb.art, info.region);
+        var info = P.stageInfo(i), R = P.regionAt(df, info.region), dr = P.sceneRegion(df, info.region); if (!R) continue;
+        if (!info.isBoss) { R.monsters.forEach(function (id) { put(id, dr); }); continue; }
+        var sb = P.stageBoss(i, df); if (sb) put(sb.art, dr);
       }
     }
     state.dexBackfill = 1;
@@ -69,14 +72,19 @@
   // where an undiscovered entry shows up; for a mini, the first difficulty whose boss stages bring it
   function dexHint(state, id) {
     var e = entry(id); if (!e) return null;
-    var diff = null;
+    var diff = null, P = prog(), sky = e.region >= 10, slot = e.region % 10;
     if (e.kind === 'mini') {
-      var P = prog(), diffs = (DATA.difficulties || [0]).length;
-      for (var df = 0; df < diffs && diff === null; df++)
-        for (var k = 1; k <= 6; k++) { var sb = P.stageBoss(e.region * 31 + k * 5 - 1, df); if (sb && sb.art === id) { diff = df; break; } }
+      var diffs = (DATA.difficulties || [0]).length;
+      for (var df = 0; df < diffs && diff === null; df++) {
+        if (P.worldOf(df) !== (sky ? 1 : 0)) continue;
+        for (var k = 1; k <= 6; k++) { var sb = P.stageBoss(slot * 31 + k * 5 - 1, df); if (sb && sb.art === id) { diff = df; break; } }
+      }
+    } else if (sky) {
+      // the sky world's monsters and bosses: from 에테르, its first difficulty
+      for (var d2 = 0; d2 < (DATA.difficulties || []).length; d2++) if (P.worldOf(d2) === 1) { diff = d2; break; }
     }
     return { region: e.region, diff: diff, diffOpen: diff === null || diff <= (state.diffUnlocked || 0) };
   }
   return { dexOrder: dexOrder, dexRecord: dexRecord, dexSeen: dexSeen, dexSeenAll: dexSeenAll, dexBonusText: dexBonusText, dexHasNew: dexHasNew, dexRegion: dexRegion, dexStats: dexStats,
-    dexBackfill: dexBackfill, dexHint: dexHint };
+    dexBackfill: dexBackfill, dexHint: dexHint, dexRegions: dexRegions, dexRegionData: dexRegionData };
 });

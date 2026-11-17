@@ -24,13 +24,23 @@
   // ---------- difficulty: each one continues the growth curve past 10-31 and multiplies bosses ----------
   var SPAN = 310;
   function diffOf(state) { return (DATA.difficulties && DATA.difficulties[state.diff || 0]) || { hpMul: 1, bossMul: 1, gemMul: 1, extraMobs: 0 }; }
-  function stageMonsterHp(state, i) { i = i === undefined ? state.stage || 0 : i; return cap(monsterHp(i + SPAN * (state.diff || 0)) * diffOf(state).hpMul); }
+  // 체력 곡선 (2026-11-17, the user: 곡선 새로 짜): through 루나틱 every stage is × hpGrowth (1.12) as before, so one difficulty is
+  // ~1e15 harder than the last — more than a player can grow from 어드밴스 on. From there each difficulty d has its own stage growth
+  // (balance.diffGrowth[d]); the curve stays continuous, only gentler. curveMul = new health / the old one, for monsters and bosses.
+  function curveMul(d, i) {
+    var G = B.diffGrowth; if (!G || !d) return 1;
+    var g0 = Math.log(B.hpGrowth), lg = 0;
+    for (var k = 0; k < d; k++) lg += SPAN * Math.log(G[k] || B.hpGrowth);
+    lg += i * Math.log(G[d] || B.hpGrowth);
+    return Math.exp(lg - (SPAN * d + i) * g0);
+  }
+  function stageMonsterHp(state, i) { i = i === undefined ? state.stage || 0 : i; return cap(monsterHp(i + SPAN * (state.diff || 0)) * diffOf(state).hpMul * curveMul(state.diff || 0, i)); }
   // diffWallBoost[d - 1][r] (2026-11-16, 크리티컬 정비): each harder difficulty's region walls are raised on their own, from
   // that difficulty's own simulated play (tools/crit-walls.cjs), not copied from 일반
   function stageBossHp(state, i) {
     i = i === undefined ? state.stage || 0 : i;
     var d = state.diff || 0, hp = d ? bossHp(i, B.diffWallMul, (B.diffWallBoost && B.diffWallBoost[d - 1]) || null) : bossHp(i);
-    return cap(hp * Math.pow(B.hpGrowth, SPAN * d) * diffOf(state).bossMul);
+    return cap(hp * Math.pow(B.hpGrowth, SPAN * d) * diffOf(state).bossMul * curveMul(d, i));
   }
   // Gold a monster gives. On a harder difficulty (2026-11-14) at most 1/goldCapKills of the player's next attack level:
   // gold grows ×1.2 a stage, and sweeping the easy first stages of a new difficulty gave hundreds of attack levels in a
@@ -209,7 +219,9 @@
   }
   // element weakness: is this skill's element one the region is weak to? (tier-9 skills carry every element)
   function regionOf(state) { return Math.max(0, Math.min(DATA.regions.length - 1, Math.floor(Math.max(0, state.stage || 0) / 31))); }
-  function isWeak(skill, region) { var R = DATA.regions[region]; return !!(skill && R && R.weak && (skill.el === 'all' || R.weak.indexOf(skill.el) >= 0)); }
+  // diff: the difficulty (its world's regions — 하늘 세계 2026-11-17); left out = the first world
+  function regionsFor(diff) { var D = DATA.difficulties && DATA.difficulties[diff || 0]; return D && D.world === 1 && DATA.skyRegions ? DATA.skyRegions : DATA.regions; }
+  function isWeak(skill, region, diff) { var R = regionsFor(diff)[region]; return !!(skill && R && R.weak && (skill.el === 'all' || R.weak.indexOf(skill.el) >= 0)); }
   // mana surge: the gauge fills with every cast; at full the cast is a surge. Returns true when this cast surges.
   function surgeTick(state, st) {
     var g = (state.surge || 0) + (st.surgeRate || 1);
@@ -218,7 +230,7 @@
   }
   // the average boost a surge gives over many casts
   function surgeFactor(st) { return 1 + (st.surgeMul - 1) * Math.min(1, (st.surgeRate || 1) / DATA.surgeConf.charge); }
-  function weakFactor(state, st, skill) { return isWeak(skill, regionOf(state)) ? st.weakMul : 1; }
+  function weakFactor(state, st, skill) { return isWeak(skill, regionOf(state), state.diff) ? st.weakMul : 1; }
   // tiers 1..10: crit, super, ultra, hyper, mega, ultimate, alpha, omega, eternal, genesis
   function tierRates(st) { return TIERS.map(function (t) { return st[t.rate] || 0; }); }
   function tierDmgs(st) { return TIERS.map(function (t, i) { return st[t.dmg] || (i ? B[t.dmg] : B.critDmgBase); }); }
@@ -321,7 +333,10 @@
   // scale is set so the next attack level reads about 10^atkShownLog(p): 1조 early (no scale while it is cheaper), 100조 at
   // the end.
   // Between records it only grows, and only when that price would pass a tenth of the cap.
-  function atkShownLog(p) { var end = SPAN * ((DATA.difficulties && DATA.difficulties.length) || 1) - 1; return 12 + 2 * Math.min(1, p / end); }
+  // end = the last stage of the first world's five difficulties (하늘 세계 2026-11-17: the sky world stays at 100조, so the
+  // numbers a player sees do not move when the five sky difficulties are added)
+  var SHOWN_DIFFS = 5;
+  function atkShownLog(p) { var end = SPAN * SHOWN_DIFFS - 1; return 12 + 2 * Math.min(1, p / end); }
   function goldScale(state) {
     var p = progressIndex(state), price = atkPrice(state);
     if (state.goldScaleP !== p || !(state.goldScale2 > 0)) { state.goldScale2 = Math.max(1, price / Math.pow(10, atkShownLog(p))); state.goldScaleP = p; }
@@ -341,7 +356,7 @@
     return cap(killsPerSecond(state, st) * stageGold(state, undefined, st.goldMul) * st.goldMul * B.killPay);
   }
   return {
-    stageMonsterHp: stageMonsterHp, stageBossHp: stageBossHp, stageGold: stageGold, diffOf: diffOf,
+    stageMonsterHp: stageMonsterHp, stageBossHp: stageBossHp, curveMul: curveMul, stageGold: stageGold, diffOf: diffOf,
     monsterHp: monsterHp, bossHp: bossHp, monsterGold: monsterGold, bossGems: bossGems,
     critTierOpen: critTierOpen, tierRates: tierRates, tierDmgs: tierDmgs,
     isWeak: isWeak, regionOf: regionOf, surgeTick: surgeTick, surgeFactor: surgeFactor, weakFactor: weakFactor, upgradeBonus: upgradeBonus, bonusBySource: bonusBySource, upgradeCostN: upgradeCostN, tryUpgradeN: tryUpgradeN, upgradeOpen: upgradeOpen, upgradeNeed: upgradeNeed, rollCrit: rollCrit, critFactor: critFactor, upgradeCost: upgradeCost, tryUpgrade: tryUpgrade, stats: stats, overInfo: overInfo, hitDamage: hitDamage,

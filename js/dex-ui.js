@@ -34,7 +34,7 @@
     order.forEach(function (e) { if (s.dex && s.dex[e.id]) have++; });
     var pct = Math.floor(have / order.length * 100);
     var bonusTxt = CW.dexBonusText(), anyNew = CW.dexHasNew(s);
-    var groups = DATA.regions.map(function (R, r) {
+    var groups = CW.dexRegions().map(function (R, r) {
       var list = order.filter(function (e) {
         if (e.region !== r) return false;
         var got = !!(s.dex && s.dex[e.id]);
@@ -42,7 +42,8 @@
       });
       if (!list.length) return '';
       var g = CW.dexRegion(s, r);
-      return '<section class="dxreg' + (g.done ? ' done' : '') + '"><h4><span class="dxrn">' + esc(R.name) + '</span><span class="dxrc">' + g.have + ' / ' + g.total + '</span>' +
+      // the sky world's regions start under their own heading (하늘 세계, 2026-11-17)
+      return (r === 10 ? '<h3 class="dxworld">하늘 세계</h3>' : '') + '<section class="dxreg' + (g.done ? ' done' : '') + '"><h4><span class="dxrn">' + esc(R.name) + '</span><span class="dxrc">' + g.have + ' / ' + g.total + '</span>' +
         (g.done ? '<span class="dxdone">완성 · ' + bonusTxt + '</span>' : '<span class="dxrb">다 채우면 ' + bonusTxt + '</span>') + '</h4>' +
         '<div class="dxgrid">' + list.map(function (e) { return card(s, e); }).join('') + '</div></section>';
     }).join('');
@@ -86,7 +87,7 @@
   function showInfo(id) {
     var s = CW.dexState(), got = s.dex && s.dex[id];
     if (got && got.n) { CW.dexSeen(s, id); dexDot(CW.dexHasNew(s)); }
-    var h = CW.dexHint(s, id), url = 'url(' + A() + id + '.webp)', R = DATA.regions[got ? got.r : h.region] || {};
+    var h = CW.dexHint(s, id), url = 'url(' + A() + id + '.webp)', R = CW.dexRegionData(got ? got.r : h.region) || {};
     var where = '';
     if (!got) {
       where = esc(R.name || '') + '에서 나와요';

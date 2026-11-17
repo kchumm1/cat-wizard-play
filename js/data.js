@@ -31,7 +31,15 @@
       { name: '슬레이어 킹', hpMul: 2, bossMul: 30, extraMobs: 2, gemMul: 2 },
       { name: '루나틱', hpMul: 4, bossMul: 900, extraMobs: 4, gemMul: 3 },
       { name: '어드밴스', hpMul: 8, bossMul: 27000, extraMobs: 6, gemMul: 4 },
-      { name: '엘리멘탈', hpMul: 16, bossMul: 810000, extraMobs: 8, gemMul: 5 }
+      { name: '엘리멘탈', hpMul: 16, bossMul: 810000, extraMobs: 8, gemMul: 5 },
+      // the second world (2026-11-17, the user: 엘리멘탈까지는 마왕성, 그다음부터는 완전 다른 지역 → 하늘 위 신들의 세계):
+      // world 1 = DATA.skyRegions. The numbers go on by the same rule (health ×2, bosses ×30, diamonds +1); the crowd stays
+      // at eight more (phones heat up — docs/superpowers/specs/2026-11-17-sky-world-design.md)
+      { name: '에테르', hpMul: 32, bossMul: 24300000, extraMobs: 8, gemMul: 6, world: 1 },
+      { name: '아크', hpMul: 64, bossMul: 729000000, extraMobs: 8, gemMul: 7, world: 1 },
+      { name: '헤븐', hpMul: 128, bossMul: 21870000000, extraMobs: 8, gemMul: 8, world: 1 },
+      { name: '세라핀', hpMul: 256, bossMul: 656100000000, extraMobs: 8, gemMul: 9, world: 1 },
+      { name: '디바인', hpMul: 512, bossMul: 19683000000000, extraMobs: 8, gemMul: 10, world: 1 }
     ],
     tiers: [
       { name: '견습 냥법사', skill: null, aura: 0 },
@@ -337,6 +345,10 @@
     ],
     // each rune has a grade (hiGrades): the level cap is lvPerGrade × (grade + 1), promoting needs the cap and rune stones,
     // and each grade adds gradeStep to the rune's effect
+    // 합성 확률 (2026-11-17, the user: 천상 50 · 혼돈 20 · 멸망 10, 실패하면 합성하려던 것 1개만 돌려주기, 천장 보험): fusing INTO these grades
+    // (DATA.hiGrades index) of runes and sigils may fail; below 천상 it always works. Each failure in a row adds pityStep to the next
+    // try (천상 100 % after 5, 혼돈 after 10, 멸망 after 18), kept apart for runes and sigils and for each grade; a success resets it.
+    fuseConf: { rate: { 8: 0.5, 9: 0.2, 10: 0.1 }, pityStep: { 8: 0.1, 9: 0.08, 10: 0.05 } },
     runeConf: { unlockTier: 3, costBase: 3, costGrowth: 1.045, lvPerGrade: 20, gradeStep: 0.25, gradeCostBase: 150, gradeCostGrowth: 2.4,
       resEvery: 10, resFinal: 0.15, bossStone: 1, regionStone: 6, dungeonPerKill: 0.6,
       // rune items (2026-11-14): seven slots, a bag, drops, summons; three of a kind and grade fuse into the next grade
@@ -364,6 +376,9 @@
     // critRate/critDmg: an awakened option = base × (1 + step × grade) × (0.85 + 0.15 × quality); awakenSlots: its own slots
     sigilConf: { unlockTier: 5, cap: 150, awakenSlots: 2, critRate: { base: 0.015, step: 0.25 }, critDmg: { base: 0.025, step: 0.6 }, slotsBase: 4, slotsPer: 10, slotsMax: 20, lvCostBase: 20, lvCostGrowth: 1.09, lvFinal: 0.04, lvMax: 300,
       dropRate: 0.3, regionDrops: 2, summon: { 5: 200, 10: 380 },
+      // 신성석 from bosses (2026-11-17, the user: 보스한테 룬석 + 신성석도 — 강화할 때 필요): as rune stones, +25 % a region × the
+      // difficulty's gemMul; twice the rune stones (more pushed the 일반 final boss too early, tests/balance)
+      bossStone: 2, regionStone: 12,
       gradeMul: [1, 2.2, 4.8, 10, 22, 48, 100, 210, 450, 950, 2000], stones: [2, 5, 12, 30, 75, 180, 420, 1000, 2400, 5600, 13000],
       dropTable: [[70, 25, 5, 0, 0, 0, 0, 0, 0, 0, 0], [50, 32, 14, 4, 0, 0, 0, 0, 0, 0, 0], [35, 33, 20, 9, 3, 0, 0, 0, 0, 0, 0], [25, 30, 25, 13, 6, 1, 0, 0, 0, 0, 0]],
       summonTable: [40, 32, 18, 7, 2.4, 0.5, 0.1, 0, 0, 0, 0] },
@@ -498,6 +513,8 @@
       startGems: 300,
       killsPerStage: 10,
       hpBase: 30, hpGrowth: 1.12, regionStep: 1, bossMul: 9, regionBossMul: 22,
+      // each difficulty's own stage growth from 어드밴스 on (economy.js curveMul; null = hpGrowth); set by tools/sky-curve.cjs
+      diffGrowth: [null, null, null, null, null, null, null, null, null, null],
       // difficulty modes keep the walls they had before 초월 (2026-11-14)
       diffWallMul: [1,19169.38,5566798.08,22820341.73,178880696.24,1691557414.71,8489733214.33,95531878018.25,176986468430.32,294004021895.86],
       wallMul: [1,18089.69,10335053.86,96503451.56,762058875.2,1750507849.35,12374981423.27,359382769354.56,247984443986.51,710772058448.84], wallShare: 0.7,
@@ -508,7 +525,7 @@
       // the player with little gear or the one who buys packages would get there later. 엘리멘탈 and 루나틱 7지역 / 어드밴스
       // 6지역부터는 no simulated player got there in a year (or the one that did would have been later), so they take an
       // earlier region's raise.
-      diffWallBoost: [[528.4,609.7,935.4,1472.5,1601.3,1611.6,1438,1198.6,1124.1,1122.9],[1122.9,1123,1123,1123,1098.3,1336.1,850,850,850,850],[850,850,850,850,850,850,850,850,850,850],[850,850,850,850,850,850,850,850,850,850]],
+      diffWallBoost: [[528.4,609.7,935.4,1472.5,1601.3,1611.6,1438,1198.6,1124.1,1122.9],[1122.9,1123,1123,1123,1098.3,1336.1,850,850,850,850],[850,850,850,850,850,850,850,850,850,850],[850,850,850,850,850,850,850,850,850,850],[850,850,850,850,850,850,850,850,850,850],[850,850,850,850,850,850,850,850,850,850],[850,850,850,850,850,850,850,850,850,850],[850,850,850,850,850,850,850,850,850,850],[850,850,850,850,850,850,850,850,850,850]],
       goldBase: 3, goldGrowth: 1.2,
       // on a harder difficulty a monster gives at most 1/goldCapKills of the next attack level (economy.js stageGold);
       // 400 until 2026-11-15 (the user: 골드 버는 게 너무 약하다 — with four at a time and killPay that was ~2000 kills a level)
@@ -521,6 +538,14 @@
       goldPerLevel: 0.03, masteryPerLevel: 0.06,
       gap: 0.25, freezeTaken: 1.3, shockBonus: 1.25,
       offlineRate: 0.5, offlineCapSec: 8 * 3600,
+      // 룬 가루 · 신성력 가루 (2026-11-17, the user: 필드 사냥과 방치는 다이아 대신 가루, 모아서 룬·신성력을 만들게 — 보스는 다이아 그대로):
+      // each of the two dusts, per stage kill in the field and per 30 min away, × (1 + region) × the difficulty's gemMul.
+      // Playing pays twice what being away does (the user: 4배 말고 2배): 30 min at the kill cap ≈ 2880 stage kills × 1/1440 = 2.
+      // the region's specialty (2026-11-17, the user: 잘 나오는 지역도 표시 — 라이트 유저는 그 지역에서 파밍): regions 1, 3, 5 … are good
+      // for 룬 가루, 2, 4, 6 … for 신성력 가루, in both worlds; there that dust comes specialMul times
+      dust: { killPer: 1 / 1440, awayPer30: 1, specialMul: 2 },
+      // boss rune stones (runeConf.bossStone / regionStone) grow this much per region (the user: 지역이 올라갈수록 조금 더)
+      runeStoneRegionStep: 0.25,
       gearMainBase: { critRate: 0.003, atk: 0.03, atkPct: 0.02, goldMul: 0.03, skillDmg: 0.02, critDmg: 0.05, speedBoss: 0.006 },
       gearLevelPerLv: 0.12, enhanceBase: 200, enhanceGrowth: 1.6,
       mergeCount: 5,
@@ -532,6 +557,27 @@
       levelMax: 800, levelXpBase: 40, levelXpPow: 2, levelXpStage: 1.004, levelXpPerDiff: 100, levelAtk: 0.004, levelBossXp: 30, levelGems: 20
     }
   };
+  // 하늘 세계 (2026-11-17): the ten regions of the second world, on the difficulties with world: 1. Same slots as DATA.regions
+  // (stages 0-309, walls by slot). Until the user's pictures come (docs/하늘세계-GPT-그림-문구.md) each one borrows the
+  // monsters and minis of a first-world region of a like mood (from) and the picture of its boss; the boss has its own name.
+  // monsters: the region's own (h01-), once their sheet is in.
+  // A region without its bg picture keeps the drawn ground, in its own colours.
+  DATA.skyRegions = [
+    { name: '구름 섬', bg: 'bg-sky1', sky: 0xcfeaff, ground: 0xbfe6a8, accent: 0x9fd8ff, weak: ['paw', 'bolt', 'fire'], from: 0, boss: '구름 거인 양', bossArt: 'b81', monsters: ['h01', 'h02', 'h03', 'h04', 'h05', 'h06', 'h07', 'h08', 'h09', 'h10'], minis: ['b91', 'b92', 'b93', 'b94', 'b95'] },
+    { name: '무지개 폭포', bg: 'bg-sky2', sky: 0xbde8ff, ground: 0x8fc8e0, accent: 0xff9fe0, weak: ['bolt', 'wood'], from: 5, boss: '무지개 용', bossArt: 'b82', monsters: ['h11', 'h12', 'h13', 'h14', 'h15', 'h16', 'h17', 'h18', 'h19', 'h20'], minis: ['b96', 'b97', 'b98', 'b99', 'b100'] },
+    { name: '바람의 계곡', bg: 'bg-sky3', sky: 0xa8d0d0, ground: 0x8a9aa0, accent: 0x7fe0c8, weak: ['ice', 'moon'], from: 2, boss: '폭풍 그리핀 왕', bossArt: 'b83', monsters: ['h21', 'h22', 'h23', 'h24', 'h25', 'h26', 'h27', 'h28', 'h29', 'h30'], minis: ['b101', 'b102', 'b103', 'b104', 'b105'] },
+    { name: '천둥 구름', bg: 'bg-sky4', sky: 0x23203f, ground: 0x3a3560, accent: 0xffe14a, weak: ['wood', 'void'], from: 1, boss: '천둥 신수', bossArt: 'b84', monsters: ['h31', 'h32', 'h33', 'h34', 'h35', 'h36', 'h37', 'h38', 'h39', 'h40'], minis: ['b106', 'b107', 'b108', 'b109', 'b110'] },
+    { name: '천공 도서관', bg: 'bg-sky5', sky: 0x3a2a40, ground: 0x6a4a32, accent: 0xffd27a, weak: ['fire', 'sun', 'water'], from: 6, boss: '금지된 책의 마도사', bossArt: 'b85', monsters: ['h41', 'h42', 'h43', 'h44', 'h45', 'h46', 'h47', 'h48', 'h49', 'h50'], minis: ['b111', 'b112', 'b113', 'b114', 'b115'] },
+    { name: '시계탑', bg: 'bg-sky6', sky: 0xffcf9a, ground: 0x9a6a3a, accent: 0xffa040, weak: ['ice', 'bolt', 'water'], from: 7, boss: '시간의 태엽 기사', bossArt: 'b86', monsters: ['h51', 'h52', 'h53', 'h54', 'h55', 'h56', 'h57', 'h58', 'h59', 'h60'], minis: ['b116', 'b117', 'b118', 'b119', 'b120'] },
+    { name: '별의 정원', bg: 'bg-sky7', sky: 0x141a3a, ground: 0x24305a, accent: 0xc8b8ff, weak: ['sun', 'fire'], from: 8, boss: '별을 먹는 거대 나방', bossArt: 'b87', monsters: ['h61', 'h62', 'h63', 'h64', 'h65', 'h66', 'h67', 'h68', 'h69', 'h70'], minis: ['b121', 'b122', 'b123', 'b124', 'b125'] },
+    { name: '천사의 성채', bg: 'bg-sky8', sky: 0xfff1d8, ground: 0xd8c8a0, accent: 0xffd84a, weak: ['void', 'moon'], from: 3, boss: '대천사 사자 기사', bossArt: 'b88', monsters: ['h71', 'h72', 'h73', 'h74', 'h75', 'h76', 'h77', 'h78', 'h79', 'h80'], minis: ['b126', 'b127', 'b128', 'b129', 'b130'] },
+    { name: '심판의 다리', bg: 'bg-sky9', sky: 0x4a2030, ground: 0x6a5048, accent: 0xff7a4a, weak: ['ice', 'star'], from: 4, boss: '심판의 거인', bossArt: 'b89', monsters: ['h81', 'h82', 'h83', 'h84', 'h85', 'h86', 'h87', 'h88', 'h89', 'h90'], minis: ['b131', 'b132', 'b133', 'b134', 'b135'] },
+    { name: '신들의 왕좌', bg: 'bg-sky10', sky: 0x1a1438, ground: 0x2c2450, accent: 0xffd84a, weak: ['void', 'wood', 'star'], from: 9, boss: '신들의 왕', bossArt: 'b90', monsters: ['h91', 'h92', 'h93', 'h94', 'h95', 'h96', 'h97', 'h98', 'h99', 'h100'], minis: ['b136', 'b137', 'b138', 'b139', 'b140'] }
+  ].map(function (s) {
+    var F = DATA.regions[s.from];
+    return { name: s.name, bg: s.bg, sky: s.sky, ground: s.ground, accent: s.accent, weak: s.weak, world: 1, look: s.from,
+      monsters: (s.monsters || F.monsters).slice(), minis: (s.minis || F.minis).slice(), boss: { art: s.bossArt || F.boss.art, name: s.boss } };
+  });
   // awakened runes: their stat and per-level effect come from the tier (critTiers) and runeConf.critPer
   DATA.runes.forEach(function (r) {
     if (!r.awaken) return;

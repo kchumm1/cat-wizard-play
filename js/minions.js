@@ -28,9 +28,16 @@
     { id: 'mn01', name: '얼음 꼬마' }, { id: 'mn02', name: '꼬마 유령', fly: true }, { id: 'mn03', name: '불꽃 꼬마' },
     { id: 'mn04', name: '꼬마 박쥐', fly: true }, { id: 'mn05', name: '꼬마 해골' }, { id: 'mn06', name: '꼬마 멧돼지' }
   ];
-  // one of the loaded kinds at random (rand() in 0..1); null while none is loaded yet
-  function pickKind(loaded, rand) {
-    var ok = KINDS.filter(function (k) { return loaded[k.id]; });
+  // 하늘 세계 (2026-11-17, the user: 하늘 지역 졸개들도 다 바꾸자, 조합이 이상해): the sky world has six of its own
+  // (art/ms01..06.webp from the user's GPT pictures, docs/하늘세계-GPT-그림-문구.md F). Until they are in, the sky shows none.
+  var KINDS_SKY = [
+    { id: 'ms01', name: '꼬마 구름' }, { id: 'ms02', name: '꼬마 천사 방울', fly: true }, { id: 'ms03', name: '꼬마 번개 구름' },
+    { id: 'ms04', name: '꼬마 별', fly: true }, { id: 'ms05', name: '꼬마 깃털 새', fly: true }, { id: 'ms06', name: '꼬마 태엽 인형' }
+  ];
+  function kindsOf(world) { return world === 1 ? KINDS_SKY : KINDS; }
+  // one of the loaded kinds of this world at random (rand() in 0..1); null while none is loaded yet
+  function pickKind(loaded, rand, world) {
+    var ok = kindsOf(world).filter(function (k) { return loaded[k.id]; });
     if (!ok.length) return null;
     return ok[Math.min(ok.length - 1, Math.floor((rand || Math.random)() * ok.length))];
   }
@@ -139,6 +146,6 @@
     }
     return { setWant: setWant, update: update, hitArea: hitArea, scatter: scatter, clear: clear, count: function () { return list.length; }, list: function () { return list; } };
   }
-  CW.minionCap = minionCap; CW.createMinions = createMinions; CW.minionInReach = inReach; CW.MINION_KINDS = KINDS; CW.pickMinionKind = pickKind;
-  if (typeof module !== 'undefined' && module.exports) module.exports = { minionCap: minionCap, createMinions: createMinions, inReach: inReach, KINDS: KINDS, pickKind: pickKind };
+  CW.minionCap = minionCap; CW.createMinions = createMinions; CW.minionInReach = inReach; CW.MINION_KINDS = KINDS; CW.minionKinds = kindsOf; CW.pickMinionKind = pickKind;
+  if (typeof module !== 'undefined' && module.exports) module.exports = { minionCap: minionCap, createMinions: createMinions, inReach: inReach, KINDS: KINDS, KINDS_SKY: KINDS_SKY, kindsOf: kindsOf, pickKind: pickKind };
 })(this);

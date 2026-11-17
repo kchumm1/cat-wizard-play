@@ -28,9 +28,10 @@
       '<div class="idwrap">' + skySvg() + '<div class="idname">냥법사자리 · <span data-id="n">0</span>/' + CW.IDLE_STARS.length + '</div>' +
       '<div class="idnums"><div class="idtime" data-id="t">방치 중 · 0분</div>' +
       '<div class="idrow"><span>처치</span><b data-id="kill">0마리</b></div>' +
-      '<div class="idrow"><span>골드</span><b data-id="gold">+0</b></div>' +
-      '<div class="idrow"><span>룬석</span><b data-id="rune">+0</b></div>' +
-      '<div class="idrow"><span>경험치</span><b data-id="xp">+0</b></div></div></div>' +
+      '<div class="idrow"><span><i class="coin"></i>골드</span><b data-id="gold">+0</b></div>' +
+      '<div class="idrow"><span><i class="dusti dr"></i>룬 가루</span><b data-id="rdust">+0</b></div>' +
+      '<div class="idrow"><span><i class="dusti ds"></i>신성력 가루</span><b data-id="sdust">+0</b></div>' +
+      '<div class="idrow"><span><i class="xpdot"></i>경험치</span><b data-id="xp">+0</b></div></div></div>' +
       '<div class="idhint"><i></i>위로 쓸어 올려서 돌아가기</div>';
     document.body.appendChild(box);
     swipe();
@@ -46,7 +47,9 @@
     set('t', '방치 중 · ' + CW.idleTimeText((now - tally.start) / 1000));
     set('kill', CW.fmt(tally.kill) + '마리');
     set('gold', '+' + CW.fmtGold(tally.gold));
-    set('rune', '+' + CW.fmt(tally.rune));
+    // dusts come in small parts: one decimal while under 100 so the line moves from the first kills
+    var dz = function (v) { return '+' + (v < 100 ? (Math.floor(v * 10) / 10).toFixed(1) : CW.fmt(Math.floor(v))); };
+    set('rdust', dz(tally.runeDust)); set('sdust', dz(tally.sigilDust));
     set('xp', '+' + CW.fmt(tally.xp));
   }
   function tick() {
