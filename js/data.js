@@ -355,7 +355,7 @@
     runeConf: { unlockTier: 3, costBase: 3, costGrowth: 1.045, lvPerGrade: 20, gradeStep: 0.25, gradeCostBase: 150, gradeCostGrowth: 2.4,
       resEvery: 10, resFinal: 0.15, bossStone: 1, regionStone: 6, dungeonPerKill: 0.6,
       // rune items (2026-11-14): seven slots, a bag, drops, summons; three of a kind and grade fuse into the next grade
-      slots: 7, awakenSlots: 2, cap: 100, critPer: { rate: 0.00025, dmg: 0.0005 }, dropRate: 0.25, regionDrops: 2, dungeonPerRune: 20,
+      slots: 7, awakenSlots: 2, cap: 300, critPer: { rate: 0.00025, dmg: 0.0005 }, dropRate: 0.25, regionDrops: 2, dungeonPerRune: 20,
       summon: { 5: 200, 10: 380 }, summonTable: [40, 32, 18, 7, 2.4, 0.5, 0.1, 0, 0, 0, 0],
       dropTable: [[70, 25, 5, 0, 0, 0, 0, 0, 0, 0, 0], [50, 32, 14, 4, 0, 0, 0, 0, 0, 0, 0], [35, 33, 20, 9, 3, 0, 0, 0, 0, 0, 0], [25, 30, 25, 13, 6, 1, 0, 0, 0, 0, 0]],
       dismantleBase: [10, 24, 58, 138, 332, 796, 1911, 4586, 11007, 26417, 63400] },
@@ -377,7 +377,7 @@
       { stat: 'genesisRate', crit: 10, kind: 'rate', awaken: true, icon: '🌅' }, { stat: 'genesisDmg', crit: 10, kind: 'dmg', awaken: true, icon: '🌞' }
     ],
     // critRate/critDmg: an awakened option = base × (1 + step × grade) × (0.85 + 0.15 × quality); awakenSlots: its own slots
-    sigilConf: { unlockTier: 5, cap: 150, awakenSlots: 2, critRate: { base: 0.015, step: 0.25 }, critDmg: { base: 0.025, step: 0.6 }, slotsBase: 4, slotsPer: 10, slotsMax: 20, lvCostBase: 20, lvCostGrowth: 1.09, lvFinal: 0.04, lvMax: 300,
+    sigilConf: { unlockTier: 5, cap: 300, awakenSlots: 2, critRate: { base: 0.015, step: 0.25 }, critDmg: { base: 0.025, step: 0.6 }, slotsBase: 4, slotsPer: 10, slotsMax: 20, lvCostBase: 20, lvCostGrowth: 1.09, lvFinal: 0.04, lvMax: 300,
       dropRate: 0.3, regionDrops: 2, summon: { 5: 200, 10: 380 },
       // 신성석 from bosses (2026-11-17, the user: 보스한테 룬석 + 신성석도 — 강화할 때 필요): as rune stones, +25 % a region × the
       // difficulty's gemMul; twice the rune stones (more pushed the 일반 final boss too early, tests/balance)

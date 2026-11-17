@@ -627,8 +627,8 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
     lb.className = 'small'; lb.htmlFor = id; lb.textContent = label; s.id = id; options.forEach(function (o) { s.appendChild(opt(o[0], o[1])); });
     d.appendChild(lb); d.appendChild(s); $('itOpts').appendChild(d); return s;
   }
-  var HINT = { gear: '장비 가방에 바로 들어가요. 잠재 3줄을 고르면 최상급(레전더리)으로 들어가고, 그 장비에 있던 잠재는 바뀌어요.', runes: '룬 가방(100칸)에 Lv.0으로 들어가요. 자리가 모자라면 정리한 뒤에 받을 수 있어요.',
-    sigils: '신성력 가방(150칸)에 들어가요. 고른 능력, 품질은 언제나 최상급이에요. (각성)은 각성 칸에 껴요.', relics: '하나에 레벨 +1(소환과 같아요). 최대 레벨을 넘는 만큼은 다이아로 돌려줘요.',
+  var HINT = { gear: '장비 가방에 바로 들어가요. 잠재 3줄을 고르면 최상급(레전더리)으로 들어가고, 그 장비에 있던 잠재는 바뀌어요.', runes: '룬 가방(300칸)에 Lv.0으로 들어가요. 자리가 모자라면 정리한 뒤에 받을 수 있어요.',
+    sigils: '신성력 가방(300칸)에 들어가요. 고른 능력, 품질은 언제나 최상급이에요. (각성)은 각성 칸에 껴요.', relics: '하나에 레벨 +1(소환과 같아요). 최대 레벨을 넘는 만큼은 다이아로 돌려줘요.',
     costumes: '없는 코스튬은 Lv.1로 생기고, 이미 있으면 레벨 +1이에요.' };
   function itForm() { try { itForm0(); } catch (e) { $('itOpts').textContent = ''; $('itHint').textContent = '아이템 목록을 못 불러왔어요. 화면을 새로고침(Ctrl+F5)해 주세요. (' + e.message + ')'; $('itHint').style.color = 'var(--bad)'; } }
   function itForm0() {
@@ -1005,7 +1005,7 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
 // 사이트는 이 파일을 10분 동안 같은 판으로 내주므로, 열 때 최신 파일을 직접 받아 판 번호가 다르면 새 주소로 다시 염.
 // 판을 고치면 아래 V를 바꿀 것.
 (function () {
-  var V = '2026-11-18-3', el = document.getElementById('opsVer');
+  var V = '2026-11-18-4', el = document.getElementById('opsVer');
   if (el) el.textContent = '· 판 ' + V.slice(5);
   if (typeof fetch !== 'function') return;
   fetch('ops.html?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) {

@@ -1820,7 +1820,7 @@
       if (a.nodeType !== b.nodeType || a.nodeName !== b.nodeName || (a.nodeType === 1 && a.classList.contains('opfx'))) { a.parentNode.replaceChild(b, a); return; }   // 반응 중인 것은 새로 (움직임 다시 시작)
       if (a.nodeType !== 1) { if (a.nodeValue !== b.nodeValue) a.nodeValue = b.nodeValue; return; }
       var i, at;
-      for (i = a.attributes.length - 1; i >= 0; i--) { at = a.attributes[i].name; if (!b.hasAttribute(at)) a.removeAttribute(at); }
+      for (i = a.attributes.length - 1; i >= 0; i--) { at = a.attributes[i].name; if (!b.hasAttribute(at) && !(at === 'style' && a._cwPh)) a.removeAttribute(at); }   // 보관함 격자의 --ph는 남김 (지웠다 넣으면 300칸 스타일을 두 번 다시 계산)
       for (i = 0; i < b.attributes.length; i++) { at = b.attributes[i]; if (a.getAttribute(at.name) !== at.value) a.setAttribute(at.name, at.value); }
       morphKids(a, b);
     }
@@ -1869,7 +1869,9 @@
       var soft = (softRender || !force || (opTabs && !opTabs.hidden && opTabs.querySelector(':scope > .subtabs'))) && panel.firstChild && softPrep(html);
       var y = panel.scrollTop; if (soft) morphKids(panel, soft); else panel.innerHTML = html; if (panel.scrollTop !== y) panel.scrollTop = y; lastPanel = key;
       var phv = (-(Date.now() % 60000) / 1000).toFixed(2) + 's';   // 계속 도는 움직임(마나서클·연금술)은 시계에 맞춰 이어서
-      panel.querySelectorAll('.mcv, .alchhead.anw, .pgrid.anw, .ruv, .sgv, .rsgrid, .rsstrip').forEach(function (e) { e.style.setProperty('--ph', phv); });
+      // 룬·신성력 보관함(최대 300칸, 2026-11-18): 칸을 누를 때 남아 있는 격자에 새 시간값을 넣으면 칸 전체 스타일을 다시 계산해 폰에서 느려짐
+      // → 그대로 남은 격자는 처음 값을 다시 씀(같은 값이면 다시 계산 안 함), 새로 만든 격자만 지금 시간값
+      panel.querySelectorAll('.mcv, .alchhead.anw, .pgrid.anw, .ruv, .sgv, .rsgrid, .rsstrip').forEach(function (e) { if (!e.classList.contains('rsgrid') && !e.classList.contains('rsstrip')) { e.style.setProperty('--ph', phv); return; } if (!e._cwPh) e._cwPh = phv; e.style.setProperty('--ph', e._cwPh); });
       if (ghdPlay) { ghdPlay = false; var ghd = panel.querySelector('.ghd'); if (ghd) { ghd.style.setProperty('--from', ghdFrom + '%'); ghd.classList.add('play'); } }
       keepCircle(); if (tab === 'stage') fitStageRows(); if (tab === 'up') { fitGrowNames(); fitAlch(); } if (tab === 'gear') fitGear(); if (tab === 'skill') fitSkillRows();
       fitNarrow();
@@ -1884,7 +1886,8 @@
       // 특성 상세 칸 효과 줄: 길면 글씨를 10.5px 까지 줄이고, 그래도 넘치면 두 줄 (조건 줄은 숨김)
       var tef = ohd && ohd.querySelector('.tieff');
       [tef, ohd && ohd.querySelector('.tinote')].forEach(function (el) { if (!el) return; el.style.fontSize = ''; var full = el.scrollWidth, room = el.clientWidth; if (full > room + 0.5) el.style.fontSize = Math.max(9, parseFloat(getComputedStyle(el).fontSize) * (room - 1) / full).toFixed(2) + 'px'; });   // 한 줄 그대로, 글자만 줄임
-      if (stb) { var stSel = stb.querySelector('[aria-selected="true"]'); if (stSel) $('sheetTitle').textContent = stSel.textContent; }
+      // 제목은 바뀔 때만 넣음: 같은 글자를 다시 넣어도 창 전체(보관함 300칸 포함) 스타일을 다시 계산함 (2026-11-18)
+      if (stb) { var stSel = stb.querySelector('[aria-selected="true"]'); if (stSel && $('sheetTitle').textContent !== stSel.textContent) $('sheetTitle').textContent = stSel.textContent; }
       if (tab === 'skill' && $('sheet').classList.contains('opal')) { var skd = skDetail && CW.skillById(skDetail); $('sheetTitle').textContent = skd ? skd.name : TITLES.skill; }   // 승인 시안: 제목 = 지금 화면 이름 (장비 / 코스튬 …)
       // 제목이 길면(스킬 상세 「원소 합체 궁극기」 등) 「원소 합체 궁극 / 기」로 끊기던 것 (사용자 2026-11-16): 양옆 장식 선을 줄이고, 그래도 두 줄이면 글씨만 줄여 한 줄로
       (function fitTitle() {
