@@ -4,168 +4,374 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<title>냥법사 편지·공지</title>
+<meta name="color-scheme" content="dark light">
+<title>냥법사 운영실</title>
+<script>try{var t=localStorage.getItem('cw-ops-theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <style>
-:root{--bg:#f6efe2;--card:#fffaf1;--ink:#3b2a1e;--soft:#8a6f58;--line:#e3d4bd;--gold:#b7832a;--accent:#7a4bb0;--accent-ink:#fff;--bad:#b23a3a;--ok:#2f7d4f}
-@media (prefers-color-scheme:dark){:root{--bg:#1a1520;--card:#241d2c;--ink:#f1e6d6;--soft:#b9a690;--line:#3d3247;--gold:#e0b25a;--accent:#9d6fd6;--bad:#e07070;--ok:#6fc28f}}
+/* 냥법사 운영실 (2026-11-18): 별밤 성운 색, PC는 왼쪽 메뉴 + 요약 + 두 칸 관리 화면, 폰(아이폰 17 Pro 402x874 기준)은 한 칸 */
+:root{--bg:#0c0919;--side:#110d24;--card:#171230;--sunk:#0f0b21;--ink:#f8f4ff;--ink2:#dad1ef;--soft:#aa9fca;--line:#2b2452;--line2:#40387a;--gold:#ffcf5c;--accent:#6f58f5;--accent3:#b45be0;--accent2:#bcaeff;--accent-soft:#251d52;--accent-ink:#fff;--bad:#ff8f8f;--bad-soft:#3a1626;--ok:#62e3a3;--ok-soft:#10301f;--warn:#ffcf5c;--glow1:rgba(111,88,245,.28);--glow2:rgba(180,91,224,.16);--shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.28)}
+:root[data-theme=light]{--bg:#eceaf8;--side:#fbfaff;--card:#fff;--sunk:#f4f2fc;--ink:#191232;--ink2:#3a3260;--soft:#5f5688;--line:#dbd6ee;--line2:#c3bbe2;--gold:#8f5a00;--accent:#5a44d8;--accent3:#9b3fc7;--accent2:#4a35c0;--accent-soft:#e9e5fb;--accent-ink:#fff;--bad:#b3261e;--bad-soft:#fde9e7;--ok:#13703c;--ok-soft:#e1f5ea;--warn:#8f5a00;--glow1:rgba(90,68,216,.10);--glow2:rgba(155,63,199,.06);--shadow:0 1px 2px rgba(40,30,90,.08),0 8px 24px rgba(40,30,90,.07)}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;padding:16px 16px calc(24px + env(safe-area-inset-bottom))}
-main{max-width:520px;margin:0 auto}
-h1{font-size:22px;margin:4px 0 2px}
-.lead{color:var(--soft);font-size:14px;margin:0 0 16px}
-section{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
-h2{font-size:16px;margin:0 0 12px}
-label{display:block;font-size:14px;color:var(--soft);margin:12px 0 4px}
-input[type=text],input[type=password],input[type=number],input[type=date]{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px}
-.row{display:flex;gap:10px}.row>*{flex:1;min-width:0}
-input[type=date]{box-sizing:border-box;display:block;min-width:0;max-width:100%;-webkit-appearance:none;appearance:none;text-align:center}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;background-color:var(--bg);background-image:radial-gradient(900px 520px at 90% -8%,var(--glow1),transparent 62%),radial-gradient(760px 520px at -8% 38%,var(--glow2),transparent 62%);background-attachment:fixed;color:var(--ink);font:16px/1.6 -apple-system,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;padding-bottom:calc(36px + env(safe-area-inset-bottom))}
+button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+
+/* 위쪽 줄(폰) / 왼쪽 메뉴(PC) */
+.top{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:calc(10px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 10px max(16px,env(safe-area-inset-left))}
+.top-in{display:flex;align-items:center;gap:10px 12px;flex-wrap:wrap}
+.brand{font-size:19px;font-weight:800;letter-spacing:-.01em;margin:0;flex:1 1 auto;display:flex;align-items:center;gap:10px;white-space:nowrap;min-width:0}
+.logo{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent3));font-size:21px;flex:none}
+.brand small{display:block;font-weight:500;color:var(--soft);font-size:13px;line-height:1.2}
+.tools{display:flex;gap:8px;align-items:center}
+.keychip{font:inherit;font-size:14px;font-weight:700;padding:6px 12px;min-height:40px;border-radius:999px;border:1.5px solid var(--line2);background:var(--card);color:var(--soft);white-space:nowrap;cursor:pointer}
+.keychip.on{color:var(--ok);border-color:currentColor}.keychip.off{color:var(--bad);border-color:currentColor}
+.theme{font:inherit;font-size:18px;width:40px;height:40px;border-radius:50%;border:1.5px solid var(--line2);background:var(--card);cursor:pointer}
+.tabs{display:flex;gap:6px;flex:1 1 100%;order:3;padding:5px;background:var(--sunk);border:1px solid var(--line);border-radius:16px}
+.tabs button{flex:1;display:flex;align-items:center;justify-content:center;white-space:nowrap;border:0;background:transparent;color:var(--ink2);font:inherit;font-weight:700;font-size:16px;padding:8px 6px;min-height:46px;border-radius:12px;cursor:pointer;transition:background .15s,color .15s}
+.tabs button.on{background:linear-gradient(135deg,var(--accent),var(--accent3));color:#fff;font-weight:800;box-shadow:0 2px 8px rgba(111,88,245,.4)}
+.tabs .n{display:inline-block;min-width:24px;padding:0 7px;margin-left:6px;border-radius:999px;background:var(--accent-soft);color:var(--accent2);font-size:13px;line-height:24px;font-weight:800}
+.tabs button.on .n{background:rgba(255,255,255,.26);color:#fff}
+
+/* 본문 */
+.page{max-width:1560px;margin:0 auto;padding:16px max(16px,env(safe-area-inset-right)) 0 max(16px,env(safe-area-inset-left))}
+.panel{display:none;flex-direction:column;gap:16px}
+.panel.on{display:flex}
+.ph h1{font-size:24px;letter-spacing:-.02em;margin:0 0 2px}
+.ph p{margin:0;color:var(--ink2);font-size:15px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 12px;box-shadow:var(--shadow)}
+.stat b{display:block;font-size:26px;line-height:1.1;font-weight:800;letter-spacing:-.02em}
+.stat span{font-size:13px;color:var(--ink2);font-weight:600}
+.stat.on b{color:var(--ok)}.stat.soon b{color:var(--accent2)}.stat.end b{color:var(--soft)}
+@media (min-width:960px){
+  body{padding-left:272px}
+  .top{position:fixed;left:0;top:0;bottom:0;width:272px;z-index:6;background:var(--side);backdrop-filter:none;-webkit-backdrop-filter:none;border-bottom:0;border-right:1px solid var(--line);padding:28px 18px 24px;overflow-y:auto}
+  .top-in{flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:26px;min-height:100%}
+  .brand{flex:0 0 auto;font-size:21px}.logo{width:44px;height:44px;font-size:24px}.brand small{font-size:14px}
+  .tabs{order:1;flex:0 0 auto;flex-direction:column;background:transparent;border:0;padding:0;gap:8px}
+  .tabs button{justify-content:flex-start;gap:10px;padding:12px 16px;min-height:56px;font-size:18px;border-radius:14px;text-align:left}
+  .tabs button:not(.on):hover{background:var(--accent-soft)}
+  .tabs .n{margin-left:auto}
+  .tools{order:2;margin-top:auto;justify-content:space-between}
+  .keychip{flex:1;min-height:44px}
+  .page{padding:32px 40px 0}
+  .panel.on{display:grid;grid-template-columns:minmax(0,1fr) 470px;gap:22px 28px;align-items:start}
+  .panel.solo.on{grid-template-columns:minmax(0,620px)}
+  .panel>.ph,.panel>.stats{grid-column:1/-1}
+  .ph h1{font-size:30px}.ph p{font-size:16px}
+  .stats{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+  .stat{padding:16px 22px}.stat b{font-size:38px}.stat span{font-size:15px}
+  .panel>.listcard{position:sticky;top:24px;max-height:calc(100vh - 48px);overflow-y:auto}
+}
+@media (min-width:1500px){body{font-size:17px}}
+
+/* 카드 */
+section.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px 16px;box-shadow:var(--shadow);min-width:0}
+@media (min-width:960px){section.card{padding:28px 32px}}
+.card>h2{font-size:20px;margin:0 0 4px;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+.card>h2 .ic{display:inline-grid;place-items:center;width:36px;height:36px;border-radius:11px;background:var(--accent-soft);font-size:19px}
+.card>.sub{margin:0 0 6px;color:var(--soft);font-size:14px}
+
+/* 폼 */
+.grp{margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
+.grp.first{border-top:0;padding-top:0;margin-top:12px}
+.grp>h3{font-size:16px;font-weight:800;margin:0 0 4px}
+.grp>.why{font-size:14px;color:var(--soft);margin:0 0 10px}
+label{display:block;font-size:15px;font-weight:700;color:var(--ink2);margin:14px 0 6px}
+label.small{margin:10px 0 4px;font-size:14px}
+.count{float:right;font-weight:600;color:var(--soft);font-size:13px}
+input[type=text],input[type=password],input[type=number],input[type=date],select,textarea{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--sunk);border:1.5px solid var(--line2);border-radius:12px;padding:10px 14px;min-height:50px;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--accent2);box-shadow:0 0 0 3px var(--accent-soft)}
+::placeholder{color:var(--soft);opacity:.7}
+/* 숫자 칸의 위아래 화살표(스핀 버튼) 없앰: 그냥 숫자를 쳐서 넣어요 */
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;appearance:none;margin:0;display:none}
+textarea{min-height:180px;resize:vertical;line-height:1.6}
+.row{display:flex;gap:12px}.row>*{flex:1;min-width:0}
+@media (max-width:420px){.row.stack-sm{flex-direction:column;gap:0}}
+input[type=date]{display:block;min-width:0;max-width:100%;-webkit-appearance:none;appearance:none;text-align:center}
 input[type=date]::-webkit-date-and-time-value{text-align:center;margin:0}
-.row>div{min-width:0;overflow:hidden}
-.seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}
-.seg button{flex:1;border:0;background:transparent;color:var(--ink);font:inherit;padding:10px;min-height:44px}
-.seg button.on{background:var(--accent);color:var(--accent-ink);font-weight:600}
-.btn{display:block;width:100%;border:0;border-radius:12px;font:inherit;font-weight:700;padding:13px;min-height:48px;margin-top:16px;background:var(--accent);color:var(--accent-ink)}
-.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:500}
-.btn:disabled{opacity:.5}
-.hint{font-size:13px;color:var(--soft);margin:6px 0 0}
-.msg{font-size:14px;margin-top:10px;min-height:1em}.msg.bad{color:var(--bad)}.msg.ok{color:var(--ok)}
-.letter{background:var(--bg);border:1px dashed var(--line);border-radius:12px;padding:14px;font-family:"Nanum Myeongjo","AppleMyungjo","Batang",serif;white-space:pre-line;font-size:15px}
-.letter b{display:block;font-size:17px;margin-bottom:6px;font-family:inherit}
-.letter .sign{text-align:right;margin-top:8px}
-.letter .gift{margin-top:10px;color:var(--gold);font-weight:700;font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}
-.list{list-style:none;padding:0;margin:0}
-.list li{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+
+/* 고르는 버튼들 */
+.seg{display:flex;gap:6px;padding:5px;background:var(--sunk);border:1px solid var(--line);border-radius:14px}
+.seg button{flex:1;border:0;background:transparent;color:var(--ink2);font:inherit;font-weight:700;padding:8px 6px;min-height:46px;border-radius:10px;cursor:pointer;transition:background .15s,color .15s}
+.seg button.on{background:linear-gradient(135deg,var(--accent),var(--accent3));color:#fff;font-weight:800}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:inherit;font-size:15px;font-weight:700;color:var(--ink2);background:var(--sunk);border:1.5px solid var(--line2);border-radius:999px;padding:6px 14px;min-height:44px;cursor:pointer;transition:background .15s,border-color .15s}
+.chip:hover{border-color:var(--accent2);background:var(--accent-soft)}
+.chip.on{background:var(--accent-soft);border-color:var(--accent2);color:var(--accent2)}
+.chip:active{transform:translateY(1px)}
+
+/* 버튼 */
+.btn{display:block;width:100%;border:0;border-radius:14px;font:inherit;font-weight:800;font-size:17px;padding:13px;min-height:54px;margin-top:16px;background:linear-gradient(135deg,var(--accent),var(--accent3));color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(111,88,245,.35);transition:filter .15s,transform .05s}
+.btn:hover{filter:brightness(1.1)}.btn:active{transform:translateY(1px)}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line2);font-weight:700;font-size:16px;min-height:50px;margin-top:10px;box-shadow:none}
+.btn.ghost:hover{background:var(--accent-soft);filter:none}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.send{margin-top:22px;min-height:60px;font-size:19px}
+
+.hint{font-size:14px;color:var(--soft);margin:8px 0 0;line-height:1.55}
+.msg{font-size:15px;margin-top:10px;min-height:1.4em;line-height:1.5;font-weight:700}.msg.bad{color:var(--bad)}.msg.ok{color:var(--ok)}
+
+/* 편지 미리 보기 */
+.letter{background:var(--sunk);border:1.5px dashed var(--line2);border-radius:14px;padding:16px 18px;font-family:"Nanum Myeongjo","AppleMyungjo","Batang",serif;white-space:pre-line;font-size:16px;line-height:1.75}
+.letter b{display:block;font-size:18px;margin-bottom:6px;font-family:inherit}
+.letter .sign{text-align:right;margin-top:8px;color:var(--ink2)}
+.letter .gift{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line2);color:var(--gold);font-weight:800;font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;white-space:normal}
+
+/* 공지 미리 보기 */
+.npv{background:var(--sunk);border:1.5px solid var(--line2);border-radius:14px;padding:16px 18px}
+.npv .nh{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.npv .nh b{font-size:18px;flex:1 1 100%;order:3;margin-top:4px;overflow-wrap:anywhere}
+.npv .nb{white-space:pre-wrap;overflow-wrap:anywhere;margin-top:10px;color:var(--ink2);font-size:16px;line-height:1.7}
+.tg{display:inline-block;font-size:13px;font-weight:800;padding:2px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent2);line-height:1.7}
+.tg[data-t="업데이트"]{background:var(--ok-soft);color:var(--ok)}
+.tg[data-t="이벤트"]{background:rgba(255,207,92,.16);color:var(--gold)}
+.tg[data-t="점검"]{background:var(--bad-soft);color:var(--bad)}
+.tg.pin{background:transparent;border:1px solid var(--line2);color:var(--ink2)}
+
+/* 목록 */
+.list{list-style:none;padding:0;margin:12px 0 0}
+.list li{display:flex;gap:12px;align-items:flex-start;padding:14px 0;border-top:1px solid var(--line)}
 .list li:first-child{border-top:0}
-.list .t{flex:1;min-width:0}.list .t div{overflow-wrap:anywhere}
-.list small{color:var(--soft);display:block;font-size:12px}
-.list .del{border:1px solid var(--line);background:transparent;color:var(--bad);border-radius:10px;font:inherit;font-size:14px;padding:8px 12px;min-height:40px}
+.list .t{flex:1;min-width:0}.list .t .top1{overflow-wrap:anywhere;font-weight:800;font-size:16px;line-height:1.45}
+.list small{color:var(--soft);display:block;font-size:14px;margin-top:4px;line-height:1.5;overflow-wrap:anywhere}
+.acts{display:flex;flex-direction:column;gap:6px;flex:none}
+.acts button{border:1.5px solid var(--line2);background:transparent;color:var(--ink);border-radius:12px;font:inherit;font-weight:700;font-size:14px;padding:6px 12px;min-height:44px;min-width:76px;white-space:nowrap;cursor:pointer}
+.acts button:hover{background:var(--accent-soft)}
+.acts .del{color:var(--bad)}.acts .del:hover{background:var(--bad-soft)}
+.badge{display:inline-block;font-size:12px;font-weight:800;padding:1px 9px;border-radius:999px;margin-right:8px;vertical-align:1px;line-height:1.7}
+.badge.on{background:var(--ok-soft);color:var(--ok)}.badge.soon{background:var(--accent-soft);color:var(--accent2)}.badge.end{background:var(--sunk);color:var(--soft);border:1px solid var(--line)}
+.empty{color:var(--soft);font-size:15px;padding:18px 0;text-align:center}
 .hide{display:none}
-details summary{cursor:pointer;color:var(--soft);font-size:14px}
-ol.steps{padding-left:20px;font-size:14px;margin:8px 0}ol.steps li{margin:4px 0}
-/* other currencies, potions and items (2026-11-16) */
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.grid label{margin:0 0 2px;font-size:13px}
-select{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px}
-.itemAdd{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--bg)}
+
+details{margin-top:12px;background:var(--sunk);border:1px solid var(--line);border-radius:12px;padding:0 14px}
+details summary{cursor:pointer;color:var(--accent2);font-weight:800;font-size:15px;padding:12px 0;min-height:46px}
+ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.steps li{margin:6px 0}
+
+/* 선물 칸들 */
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
+@media (min-width:600px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (min-width:1280px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.grid label{margin:0 0 4px;font-size:14px;font-weight:700}
+.itemAdd{border:1.5px solid var(--line);border-radius:14px;padding:14px;background:var(--sunk)}
 .itemAdd select,.itemAdd input{background:var(--card)}
-.row.wrap{flex-wrap:wrap;margin-top:8px}.row.wrap>*{flex:1 1 45%}
-label.small{margin:8px 0 2px;font-size:13px}
-.btn.add{margin-top:27px;min-height:44px;padding:8px}
-.items{list-style:none;padding:0;margin:8px 0 0}
-.items li{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:var(--card);border:1px solid var(--line);margin-top:6px;font-size:15px}
+.row.wrap{flex-wrap:wrap;margin-top:6px;gap:0 12px}.row.wrap>*{flex:1 1 calc(50% - 6px)}
+@media (max-width:360px){.row.wrap>*{flex-basis:100%}}
+.itemAdd .row{align-items:flex-end}
+.btn.add{margin-top:0;min-height:50px;padding:8px;font-size:16px;box-shadow:none}
+.items{list-style:none;padding:0;margin:12px 0 0}
+.items li{display:flex;align-items:center;gap:8px;padding:8px 8px 8px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line);margin-top:8px;font-size:15px;font-weight:700}
 .items li span{flex:1;min-width:0;overflow-wrap:anywhere}
-textarea{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:150px;resize:vertical}
-.check{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:15px;color:var(--ink)}.check input{width:22px;height:22px}
-.items li button{border:0;background:transparent;color:var(--bad);font:inherit;font-size:20px;min-width:40px;min-height:40px}
+.items li button{border:0;background:transparent;color:var(--bad);font:inherit;font-size:24px;min-width:44px;min-height:44px;border-radius:10px;cursor:pointer}
+.check{display:flex;align-items:center;gap:12px;margin-top:14px;font-size:16px;font-weight:700;color:var(--ink);min-height:44px}.check input{width:24px;height:24px;accent-color:var(--accent);flex:none}
+
+#qrBox{text-align:center;margin-top:14px}
+#qr{display:inline-block;background:#fff;padding:12px;border-radius:14px;line-height:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
-<main>
-  <h1>냥법사 편지·공지 보내기</h1>
-  <p class="lead">보내면 사이트의 편지 목록에 들어가요. 1~2분 뒤 게임을 다시 켜면 우편함에 와 있어요.</p>
+<header class="top">
+  <div class="top-in">
+    <h1 class="brand"><span class="logo">🐱</span><span>냥법사 운영실<small>편지 · 공지 관리</small></span></h1>
+    <div class="tools"><button type="button" class="keychip off" id="keyChip">열쇠 없음</button><button type="button" class="theme" id="theme" aria-label="밝게·어둡게 바꾸기">☀️</button></div>
+    <nav class="tabs" id="tabs" aria-label="메뉴">
+      <button type="button" data-tab="mail" class="on">✉️ 편지<span class="n" id="nMail">-</span></button>
+      <button type="button" data-tab="notice">📢 공지<span class="n" id="nNotice">-</span></button>
+      <button type="button" data-tab="key">🔑 열쇠</button>
+    </nav>
+  </div>
+</header>
 
-  <section id="keyBox">
-    <h2>열쇠(토큰)</h2>
-    <div id="keyOn" class="hide"><p class="hint" style="margin:0">이 기기에 열쇠가 저장돼 있어요.</p>
-      <button class="btn" id="keyQr">다른 기기로 옮기기 (QR)</button>
-      <div id="qrBox" class="hide" style="text-align:center;margin-top:12px">
-        <div id="qr" style="display:inline-block;background:#fff;padding:12px;border-radius:12px"></div>
-        <p class="hint">폰 카메라로 찍으면 이 화면이 열리면서 열쇠가 저장돼요. 다 옮겼으면 꼭 닫으세요(QR 안에 열쇠가 들어 있어요).</p>
-        <button class="btn ghost" id="qrClose" style="margin-top:8px">QR 닫기</button>
+<main class="page">
+  <div class="panel on" id="p-mail">
+    <div class="ph"><h1>편지 보내기</h1><p>선물을 담은 편지를 보내요. 보내면 게임이 켜져 있어도 1분 안에 우편함에 도착해요.</p></div>
+    <div class="stats" id="mailStats"></div>
+
+    <section class="card" id="mailBox">
+      <h2><span class="ic">✉️</span>새 편지</h2>
+      <p class="sub">모두에게, 또는 정해진 사람에게 보내요.</p>
+
+      <div class="grp first">
+        <h3>빠른 시작</h3>
+        <p class="why">누르면 칸이 채워져요. 숫자는 고쳐 써도 돼요.</p>
+        <div class="chips" id="presetBar"></div>
       </div>
-      <button class="btn ghost" id="keyCopy">열쇠 복사 (홈 화면 앱에 붙여 넣기용)</button>
-      <button class="btn ghost" id="keyForget">열쇠 지우기</button></div>
-    <div id="keyOff">
-      <label for="key">GitHub 열쇠 붙여 넣기</label>
-      <input id="key" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_...">
-      <p class="hint">열쇠는 이 기기 안에만 저장돼요. 사이트나 게임 파일에는 들어가지 않아요.</p>
-      <details><summary>열쇠 만드는 법</summary>
-        <ol class="steps">
-          <li>github.com 로그인 → 오른쪽 위 사진 → Settings</li>
-          <li>맨 아래 Developer settings → Personal access tokens → Fine-grained tokens → Generate new token</li>
-          <li>이름은 아무거나, 기간(Expiration)은 원하는 만큼</li>
-          <li>Repository access → Only select repositories → <b>cat-wizard-play</b> 하나만</li>
-          <li>Permissions → Repository permissions → <b>Contents</b>를 Read and write</li>
-          <li>Generate token → 나온 글자를 복사해 위에 붙여 넣기</li>
-        </ol>
-      </details>
-      <button class="btn" id="keySave">열쇠 저장</button>
-    </div>
-    <div class="msg" id="keyMsg"></div>
-  </section>
 
-  <section>
-    <h2>새 편지</h2>
-    <label>받는 사람</label>
-    <div class="seg" id="toSeg"><button type="button" data-to="all" class="on">모두</button><button type="button" data-to="pid">우편번호</button></div>
-    <div id="pidBox" class="hide">
-      <label for="pids">우편번호 (여러 명이면 쉼표로)</label>
-      <input id="pids" type="text" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="AB12CD34">
-      <p class="hint">우편번호는 게임 우편함 화면에 보여요.</p>
-    </div>
-    <label for="gold">골드 (1골드 ~ 9999경)</label>
-    <input id="gold" type="text" autocomplete="off" spellcheck="false" placeholder="예: 1조 5000억 · 5000억 · 300">
-    <p class="hint" id="goldRead">경·조·억·만을 붙여 적거나 숫자만 적어도 돼요.</p>
-    <label for="gems">다이아 (개)</label>
-    <input id="gems" type="number" inputmode="numeric" min="0" step="1" placeholder="0">
-    <label>다른 재화 (개)</label>
-    <div class="grid" id="curBox"></div>
-    <label>물약 (분, 지금 남은 시간에 더해져요)</label>
-    <div class="grid" id="potBox"></div>
-    <label>던전 입장권 (장, 매일 3장과 따로 쌓여요)</label>
-    <div class="grid" id="tkBox"></div>
-    <label>아이템</label>
-    <div class="itemAdd">
-      <select id="itType" aria-label="아이템 종류"><option value="gear">장비</option><option value="runes">룬</option><option value="sigils">신성력</option><option value="relics">유물</option><option value="costumes">코스튬</option></select>
-      <div id="itOpts" class="row wrap"></div>
-      <div class="row"><div id="itNBox"><label for="itN" class="small">개수</label><input id="itN" type="number" inputmode="numeric" min="1" step="1" value="1"></div>
-        <div><button type="button" class="btn add" id="itAdd">아이템 넣기</button></div></div>
-      <p class="hint" id="itHint"></p>
-      <ul class="items" id="itList"></ul>
-    </div>
-    <div class="row">
-      <div><label for="from">받을 수 있는 첫날</label><input id="from" type="date"></div>
-      <div><label for="until">마지막 날</label><input id="until" type="date"></div>
-    </div>
-    <label for="sub">목록에 보이는 한 줄</label>
-    <input id="sub" type="text" placeholder="자동으로 채워져요">
-    <label>미리 보기</label>
-    <div class="letter" id="preview"></div>
-    <button class="btn" id="send">보내기</button>
-    <div class="msg" id="sendMsg"></div>
-  </section>
+      <div class="grp">
+        <h3>누구에게</h3>
+        <div class="seg" id="toSeg"><button type="button" data-to="all" class="on">모두</button><button type="button" data-to="pid">우편번호</button></div>
+        <div id="pidBox" class="hide">
+          <label for="pids">우편번호 (여러 명이면 쉼표로)</label>
+          <input id="pids" type="text" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="AB12CD34">
+          <p class="hint" id="pidHint">우편번호는 게임 우편함 화면에 보여요.</p>
+        </div>
+      </div>
 
-  <section>
-    <h2>보낸 편지</h2>
-    <ul class="list" id="list"><li><span class="t"><small>열쇠를 저장하면 목록이 보여요.</small></span></li></ul>
-    <button class="btn ghost" id="reload">목록 새로 보기</button>
-    <div class="msg" id="listMsg"></div>
-  </section>
+      <div class="grp">
+        <h3>골드와 다이아</h3>
+        <div class="row stack-sm">
+          <div>
+            <label for="gold">골드 (1골드 ~ 9999경)</label>
+            <input id="gold" type="text" autocomplete="off" spellcheck="false" placeholder="예: 1조 5000억 · 300">
+          </div>
+          <div>
+            <label for="gems">다이아 (개)</label>
+            <input id="gems" type="number" inputmode="numeric" min="0" step="1" placeholder="0">
+          </div>
+        </div>
+        <p class="hint" id="goldRead">경·조·억·만을 붙여 적거나 숫자만 적어도 돼요.</p>
+      </div>
 
-  <!-- 공지 (2026-11-16, js/notice.js): notice.json on the site, shown under the mailbox in the game -->
-  <section>
-    <h2>새 공지</h2>
-    <label>종류</label>
-    <div class="seg" id="nzTag"><button type="button" data-tag="공지" class="on">공지</button><button type="button" data-tag="업데이트">업데이트</button><button type="button" data-tag="이벤트">이벤트</button><button type="button" data-tag="점검">점검</button></div>
-    <label for="nzTitle">제목</label>
-    <input id="nzTitle" type="text" maxlength="40" placeholder="예: 새 전직이 열렸어요">
-    <label for="nzText">내용</label>
-    <textarea id="nzText" placeholder="줄을 바꾸면 게임에서도 줄이 바뀌고, 빈 줄은 문단을 나눠요."></textarea>
-    <label class="check"><input id="nzPin" type="checkbox"> 맨 위에 고정</label>
-    <div class="row">
-      <div><label for="nzFrom">보이는 첫날</label><input id="nzFrom" type="date"></div>
-      <div><label for="nzUntil">마지막 날(비우면 계속)</label><input id="nzUntil" type="date"></div>
-    </div>
-    <button class="btn" id="nzSend">공지 올리기</button>
-    <div class="msg" id="nzMsg"></div>
-  </section>
+      <div class="grp">
+        <h3>다른 재화 (개)</h3>
+        <div class="grid" id="curBox"></div>
+      </div>
 
-  <section>
-    <h2>올린 공지</h2>
-    <ul class="list" id="nzList"><li><span class="t"><small>열쇠를 저장하면 목록이 보여요.</small></span></li></ul>
-    <button class="btn ghost" id="nzReload">목록 새로 보기</button>
-    <div class="msg" id="nzListMsg"></div>
-  </section>
+      <div class="grp">
+        <h3>물약 (분)</h3>
+        <p class="why">지금 남은 시간에 더해져요.</p>
+        <div class="grid" id="potBox"></div>
+      </div>
+
+      <div class="grp">
+        <h3>던전 입장권 (장)</h3>
+        <p class="why">매일 3장과 따로 쌓여요.</p>
+        <div class="grid" id="tkBox"></div>
+      </div>
+
+      <div class="grp">
+        <h3>아이템</h3>
+        <div class="itemAdd">
+          <label for="itType" class="small" style="margin-top:0">종류</label>
+          <select id="itType" aria-label="아이템 종류"><option value="gear">장비</option><option value="runes">룬</option><option value="sigils">신성력</option><option value="relics">유물</option><option value="costumes">코스튬</option></select>
+          <div id="itOpts" class="row wrap"></div>
+          <div class="row"><div id="itNBox"><label for="itN" class="small">개수</label><input id="itN" type="number" inputmode="numeric" min="1" step="1" value="1"></div>
+            <div><button type="button" class="btn add" id="itAdd">아이템 넣기</button></div></div>
+          <p class="hint" id="itHint"></p>
+          <ul class="items" id="itList"></ul>
+        </div>
+      </div>
+
+      <div class="grp">
+        <h3>받을 수 있는 기간</h3>
+        <div class="row">
+          <div><label for="from">첫날</label><input id="from" type="date"></div>
+          <div><label for="until">마지막 날</label><input id="until" type="date"></div>
+        </div>
+        <div class="chips" id="dayChips" style="margin-top:10px"></div>
+        <label for="sub">목록에 보이는 한 줄</label>
+        <input id="sub" type="text" placeholder="자동으로 채워져요">
+      </div>
+
+      <div class="grp">
+        <h3>이렇게 보여요</h3>
+        <div class="letter" id="preview"></div>
+        <button class="btn send" id="send">편지 보내기</button>
+        <button class="btn ghost" id="mailReset" type="button">칸 모두 비우기</button>
+        <div class="msg" id="sendMsg"></div>
+      </div>
+    </section>
+
+    <section class="card listcard" id="sentBox">
+      <h2><span class="ic">📬</span>보낸 편지</h2>
+      <div class="chips" id="mailChips" style="margin-top:10px"></div>
+      <ul class="list" id="list"><li><span class="t"><small>열쇠를 저장하면 목록이 보여요.</small></span></li></ul>
+      <button class="btn ghost" id="reload">목록 새로 보기</button>
+      <div class="msg" id="listMsg"></div>
+    </section>
+  </div>
+
+  <div class="panel" id="p-notice">
+    <div class="ph"><h1>공지 올리기</h1><p>올리면 게임 공지판에 1분 안에 떠요. 점검·업데이트·이벤트를 알려요.</p></div>
+    <div class="stats" id="nzStats"></div>
+
+    <!-- 공지 (2026-11-16, js/notice.js): notice.json on the site, shown under the mailbox in the game -->
+    <section class="card" id="noticeBox">
+      <h2><span class="ic">📢</span>새 공지</h2>
+      <p class="sub">쓰는 대로 아래에서 게임처럼 미리 볼 수 있어요.</p>
+
+      <div class="grp first">
+        <h3>빠른 시작</h3>
+        <p class="why">누르면 종류·제목·본문 틀이 채워져요.</p>
+        <div class="chips" id="nzPresets"></div>
+      </div>
+
+      <div class="grp">
+        <h3>종류</h3>
+        <div class="seg" id="nzTag"><button type="button" data-tag="공지" class="on">공지</button><button type="button" data-tag="업데이트">업데이트</button><button type="button" data-tag="이벤트">이벤트</button><button type="button" data-tag="점검">점검</button></div>
+      </div>
+
+      <div class="grp">
+        <h3>내용</h3>
+        <label for="nzTitle" style="margin-top:0">제목 <span class="count" id="nzCount">0/40</span></label>
+        <input id="nzTitle" type="text" maxlength="40" placeholder="예: 새 전직이 열렸어요">
+        <label for="nzText">본문</label>
+        <textarea id="nzText" placeholder="줄을 바꾸면 게임에서도 줄이 바뀌고, 빈 줄은 문단을 나눠요."></textarea>
+        <label class="check"><input id="nzPin" type="checkbox"> 맨 위에 고정</label>
+      </div>
+
+      <div class="grp">
+        <h3>보이는 기간</h3>
+        <div class="row">
+          <div><label for="nzFrom">첫날</label><input id="nzFrom" type="date"></div>
+          <div><label for="nzUntil">마지막 날 (비우면 계속)</label><input id="nzUntil" type="date"></div>
+        </div>
+        <div class="chips" id="nzDayChips" style="margin-top:10px"></div>
+      </div>
+
+      <div class="grp">
+        <h3>이렇게 보여요</h3>
+        <div class="npv" id="nzPv"></div>
+        <button class="btn send" id="nzSend">공지 올리기</button>
+        <button class="btn ghost" id="nzReset" type="button">칸 모두 비우기</button>
+        <div class="msg" id="nzMsg"></div>
+      </div>
+    </section>
+
+    <section class="card listcard" id="nlistBox">
+      <h2><span class="ic">📋</span>올린 공지</h2>
+      <div class="chips" id="nzChips" style="margin-top:10px"></div>
+      <ul class="list" id="nzList"><li><span class="t"><small>열쇠를 저장하면 목록이 보여요.</small></span></li></ul>
+      <button class="btn ghost" id="nzReload">목록 새로 보기</button>
+      <div class="msg" id="nzListMsg"></div>
+    </section>
+  </div>
+
+  <div class="panel solo" id="p-key">
+    <div class="ph"><h1>열쇠</h1><p>편지·공지를 사이트에 올릴 때 쓰는 GitHub 열쇠예요. 이 기기에만 저장돼요.</p></div>
+    <section class="card" id="keyBox">
+      <h2><span class="ic">🔑</span>열쇠 (토큰)</h2>
+      <div id="keyOn" class="hide"><p class="hint" style="margin:6px 0 0">이 기기에 열쇠가 저장돼 있어요.</p>
+        <button class="btn ghost" id="keyQr">다른 기기로 옮기기 (QR)</button>
+        <div id="qrBox" class="hide">
+          <div id="qr"></div>
+          <p class="hint">폰 카메라로 찍으면 이 화면이 열리면서 열쇠가 저장돼요. 다 옮겼으면 꼭 닫으세요(QR 안에 열쇠가 들어 있어요).</p>
+          <button class="btn ghost" id="qrClose">QR 닫기</button>
+        </div>
+        <button class="btn ghost" id="keyCopy">열쇠 복사 (홈 화면 앱에 붙여 넣기용)</button>
+        <button class="btn ghost" id="keyForget">열쇠 지우기</button></div>
+      <div id="keyOff">
+        <label for="key">GitHub 열쇠 붙여 넣기</label>
+        <input id="key" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_...">
+        <p class="hint">열쇠는 이 기기 안에만 저장돼요. 사이트나 게임 파일에는 들어가지 않아요.</p>
+        <details><summary>열쇠 만드는 법</summary>
+          <ol class="steps">
+            <li>github.com 로그인 → 오른쪽 위 사진 → Settings</li>
+            <li>맨 아래 Developer settings → Personal access tokens → Fine-grained tokens → Generate new token</li>
+            <li>이름은 아무거나, 기간(Expiration)은 원하는 만큼</li>
+            <li>Repository access → Only select repositories → <b>cat-wizard-play</b> 하나만</li>
+            <li>Permissions → Repository permissions → <b>Contents</b>를 Read and write</li>
+            <li>Generate token → 나온 글자를 복사해 위에 붙여 넣기</li>
+          </ol>
+        </details>
+        <button class="btn" id="keySave">열쇠 저장</button>
+      </div>
+      <div class="msg" id="keyMsg"></div>
+    </section>
+  </div>
 </main>
 <script src="js/data.js"></script>
 <script src="js/mail-gift.js"></script>
@@ -211,11 +417,23 @@ textarea{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1p
   }
 
   // ---- token
-  function showKey() { var on = !!token(); $('keyOn').classList.toggle('hide', !on); $('keyOff').classList.toggle('hide', on); }
+  // ---- 탭 (편지 · 공지 · 열쇠)
+  var TABKEY = 'cw-ops-tab';
+  function setTab(t) {
+    [].forEach.call(document.querySelectorAll('#tabs button'), function (b) { b.classList.toggle('on', b.dataset.tab === t); });
+    ['mail', 'notice', 'key'].forEach(function (n) { $('p-' + n).classList.toggle('on', n === t); });
+    try { localStorage.setItem(TABKEY, t); } catch (e) {}
+    window.scrollTo(0, 0);
+  }
+  $('tabs').onclick = function (e) { var b = e.target.closest('button'); if (b) setTab(b.dataset.tab); };
+  $('keyChip').onclick = function () { setTab('key'); };
+  (function () { var t = ''; try { t = localStorage.getItem(TABKEY) || ''; } catch (e) {} if (t && $('p-' + t)) setTab(t); })();
+
+  function showKey() { var on = !!token(); $('keyOn').classList.toggle('hide', !on); $('keyOff').classList.toggle('hide', on); var c = $('keyChip'); c.textContent = on ? '열쇠 저장됨' : '열쇠 없음'; c.className = 'keychip ' + (on ? 'on' : 'off'); if (!on) setTab('key'); }
   $('keySave').onclick = function () {
     var t = $('key').value.trim(); if (!t) return say('keyMsg', '열쇠를 붙여 넣어 주세요.', 'bad');
     try { localStorage.setItem(KEY, t); } catch (e) { return say('keyMsg', '이 브라우저에 저장할 수 없어요(개인 정보 보호 모드?).', 'bad'); }
-    $('key').value = ''; showKey(); say('keyMsg', '확인하는 중…');
+    $('key').value = ''; showKey(); setTab('mail'); say('keyMsg', '확인하는 중…');
     load().then(function (cur) { say('keyMsg', '열쇠가 잘 맞아요.', 'ok'); draw(cur.doc); })
       .catch(function (e) { say('keyMsg', e.message, 'bad'); });
   };
@@ -358,33 +576,56 @@ textarea{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1p
     if (!confirm('보낼까요?\n받는 사람: ' + who + '\n선물: ' + CW.mailRewardText(l) + '\n받을 수 있는 날: ' + (l.from || l.date) + ' ~ ' + (l.until || '계속'))) return;
     $('send').disabled = true; say('sendMsg', '보내는 중…');
     save(function (doc) { return CW.mailAdd(doc, l); }, '운영자 편지: ' + l.sub)
-      .then(function (doc) { say('sendMsg', '보냈어요! 1~2분 뒤 게임을 다시 켜면 우편함에 와 있어요.', 'ok'); $('gold').value = ''; $('gems').value = ''; $('pids').value = ''; document.querySelectorAll('#curBox input,#potBox input,#tkBox input').forEach(function (x) { x.value = ''; }); items = []; drawItems(); subTouched = false; $('sub').value = ''; preview(); draw(doc); })
+      .then(function (doc) { say('sendMsg', '보냈어요! 게임이 켜져 있어도 1분 안에 우편함에 도착해요.', 'ok'); $('gold').value = ''; $('gems').value = ''; $('pids').value = ''; document.querySelectorAll('#curBox input,#potBox input,#tkBox input').forEach(function (x) { x.value = ''; }); items = []; drawItems(); subTouched = false; $('sub').value = ''; preview(); draw(doc); })
       .catch(function (e) { say('sendMsg', '못 보냈어요: ' + e.message, 'bad'); })
       .then(function () { $('send').disabled = false; });
   };
 
-  // ---- list
+  // ---- list (2026-11-18: 진행 중·예정·끝남 표시, 걸러 보기, 다시 쓰기)
+  var STAT = { on: '진행 중', soon: '예정', end: '끝남' }, lf = 'all', nf = 'all', lastMail = null, lastNotice = null;
+  function stateOf(from, until) { var t = CW.kstDay(); if (from && from > t) return 'soon'; if (until && until < t) return 'end'; return 'on'; }
+  function counts(arr) { var c = { all: arr.length, on: 0, soon: 0, end: 0 }; arr.forEach(function (x) { c[x.st]++; }); return c; }
+  function statCards(box, c) {
+    box.textContent = '';
+    [['on', '진행 중'], ['soon', '예정'], ['end', '끝남'], ['all', '전체']].forEach(function (p) { var d = document.createElement('div'); d.className = 'stat ' + p[0]; d.innerHTML = '<b>' + c[p[0]] + '</b><span>' + p[1] + '</span>'; box.appendChild(d); });
+  }
+  function filterChips(box, c, cur, set) {
+    box.textContent = '';
+    [['all', '전체'], ['on', '진행 중'], ['soon', '예정'], ['end', '끝남']].forEach(function (p) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'chip' + (cur === p[0] ? ' on' : ''); b.textContent = p[1] + ' ' + c[p[0]]; b.onclick = function () { set(p[0]); box.querySelectorAll('.chip').forEach(function (x) { x.classList.toggle('on', x === b); }); }; box.appendChild(b);
+    });
+  }
+  function badge(k) { var b = document.createElement('span'); b.className = 'badge ' + k; b.textContent = STAT[k]; return b; }
+  function acts(onReuse, onDel) {
+    var a = document.createElement('div'); a.className = 'acts';
+    var r = document.createElement('button'); r.type = 'button'; r.textContent = '다시 쓰기'; r.onclick = onReuse;
+    var d = document.createElement('button'); d.type = 'button'; d.className = 'del'; d.textContent = '지우기'; d.onclick = function () { onDel(d); };
+    a.appendChild(r); a.appendChild(d); return a;
+  }
   function draw(doc) {
+    lastMail = doc;
     var ul = $('list'); ul.textContent = '';
-    var letters = (doc && doc.letters) || [];
-    if (!letters.length) { var li0 = document.createElement('li'); li0.innerHTML = '<span class="t"><small>편지가 없어요.</small></span>'; ul.appendChild(li0); return; }
-    letters.forEach(function (l) {
-      var li = document.createElement('li'), t = document.createElement('span'); t.className = 't';
-      var top = document.createElement('div'); top.textContent = (l.title || '') + ' · ' + (l.sub || '');
+    var letters = ((doc && doc.letters) || []).map(function (l) { return { l: l, st: stateOf(l.from || l.date, l.until) }; });
+    $('nMail').textContent = letters.length;
+    var c = counts(letters); statCards($('mailStats'), c); filterChips($('mailChips'), c, lf, function (k) { lf = k; draw(lastMail); });
+    var shown = letters.filter(function (x) { return lf === 'all' || x.st === lf; });
+    if (!shown.length) { var e = document.createElement('li'); e.innerHTML = '<span class="t empty"></span>'; e.firstChild.textContent = letters.length ? '이 상태의 편지가 없어요.' : '편지가 없어요.'; ul.appendChild(e); return; }
+    shown.forEach(function (x) {
+      var l = x.l, li = document.createElement('li'), t = document.createElement('span'); t.className = 't';
+      var top = document.createElement('div'); top.className = 'top1'; top.appendChild(badge(x.st)); top.appendChild(document.createTextNode((l.title || '') + ' · ' + (l.sub || '')));
       var info = document.createElement('small');
       var gift = []; if (CW.mailGold(l) > 0) gift.push('골드 ' + CW.countText(CW.mailGold(l))); if (+l.gems > 0) gift.push('다이아 ' + CW.countText(l.gems) + '개');
       if (CW.giftHas(l)) gift.push(CW.giftText(l));
       info.textContent = (l.date || '') + ' · ' + (l.to === 'all' ? '모두' : (Array.isArray(l.to) ? l.to.join(', ') : '')) + (gift.length ? ' · ' + gift.join(' · ') : ' · 공지') + (l.until ? ' · ~' + l.until : '');
       t.appendChild(top); t.appendChild(info); li.appendChild(t);
-      var d = document.createElement('button'); d.className = 'del'; d.textContent = '지우기';
-      d.onclick = function () {
+      li.appendChild(acts(function () { reuseLetter(l); }, function (d) {
         if (!confirm('「' + (l.sub || l.title) + '」 편지를 지울까요?\n아직 안 받은 사람은 더 못 받아요. 이미 받은 사람의 선물은 그대로예요.')) return;
         d.disabled = true; say('listMsg', '지우는 중…');
         save(function (doc) { return CW.mailRemove(doc, l.id); }, '운영자 편지 지우기: ' + (l.sub || l.id))
           .then(function (doc) { say('listMsg', '지웠어요.', 'ok'); draw(doc); })
           .catch(function (e) { d.disabled = false; say('listMsg', '못 지웠어요: ' + e.message, 'bad'); });
-      };
-      li.appendChild(d); ul.appendChild(li);
+      }));
+      ul.appendChild(li);
     });
   }
   $('reload').onclick = function () { if (!token()) return say('listMsg', '먼저 열쇠를 저장해 주세요.', 'bad'); say('listMsg', '불러오는 중…');
@@ -403,32 +644,117 @@ textarea{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1p
     if (!confirm('공지를 올릴까요?\n[' + n.tag + '] ' + n.title + '\n보이는 날: ' + (n.from || n.date) + ' ~ ' + (n.until || '계속'))) return;
     $('nzSend').disabled = true; say('nzMsg', '올리는 중…');
     nzSave(function (doc) { return CW.noticeAdd(doc, n); }, '공지: ' + n.title)
-      .then(function (doc) { say('nzMsg', '올렸어요! 1~2분 뒤 게임을 다시 켜면 공지에 보여요.', 'ok'); $('nzTitle').value = ''; $('nzText').value = ''; $('nzPin').checked = false; $('nzUntil').value = ''; nzDraw(doc); })
+      .then(function (doc) { say('nzMsg', '올렸어요! 게임이 켜져 있어도 1분 안에 공지에 보여요.', 'ok'); $('nzTitle').value = ''; $('nzText').value = ''; $('nzPin').checked = false; $('nzUntil').value = ''; nzPv(); nzDraw(doc); })
       .catch(function (e) { say('nzMsg', '못 올렸어요: ' + e.message, 'bad'); })
       .then(function () { $('nzSend').disabled = false; });
   };
   function nzDraw(doc) {
+    lastNotice = doc;
     var ul = $('nzList'); ul.textContent = '';
-    var all = (doc && doc.notices) || [];
-    if (!all.length) { var li0 = document.createElement('li'); li0.innerHTML = '<span class="t"><small>공지가 없어요.</small></span>'; ul.appendChild(li0); return; }
-    all.forEach(function (n) {
-      var li = document.createElement('li'), t = document.createElement('span'); t.className = 't';
-      var top = document.createElement('div'); top.textContent = '[' + CW.noticeTag(n) + '] ' + (n.title || '') + (n.pin ? ' · 고정' : '');
+    var all = ((doc && doc.notices) || []).map(function (n) { return { n: n, st: stateOf(n.from || n.date, n.until) }; });
+    $('nNotice').textContent = all.length;
+    var c = counts(all); statCards($('nzStats'), c); filterChips($('nzChips'), c, nf, function (k) { nf = k; nzDraw(lastNotice); });
+    var shown = all.filter(function (x) { return nf === 'all' || x.st === nf; });
+    if (!shown.length) { var e = document.createElement('li'); e.innerHTML = '<span class="t empty"></span>'; e.firstChild.textContent = all.length ? '이 상태의 공지가 없어요.' : '공지가 없어요.'; ul.appendChild(e); return; }
+    shown.forEach(function (x) {
+      var n = x.n, li = document.createElement('li'), t = document.createElement('span'); t.className = 't';
+      var top = document.createElement('div'); top.className = 'top1'; top.appendChild(badge(x.st));
+      var tg = document.createElement('span'); tg.className = 'tg'; tg.dataset.t = CW.noticeTag(n); tg.textContent = CW.noticeTag(n); top.appendChild(tg);
+      top.appendChild(document.createTextNode(' ' + (n.title || '') + (n.pin ? ' 📌' : '')));
       var info = document.createElement('small'); info.textContent = (n.date || '') + (n.from ? ' · ' + n.from + '부터' : '') + (n.until ? ' · ~' + n.until : '');
       t.appendChild(top); t.appendChild(info); li.appendChild(t);
-      var d = document.createElement('button'); d.className = 'del'; d.textContent = '지우기';
-      d.onclick = function () {
+      li.appendChild(acts(function () { reuseNotice(n); }, function (d) {
         if (!confirm('「' + n.title + '」 공지를 지울까요?')) return;
         d.disabled = true; say('nzListMsg', '지우는 중…');
         nzSave(function (doc) { return CW.noticeRemove(doc, n.id); }, '공지 지우기: ' + n.title)
           .then(function (doc) { say('nzListMsg', '지웠어요.', 'ok'); nzDraw(doc); })
           .catch(function (e) { d.disabled = false; say('nzListMsg', '못 지웠어요: ' + e.message, 'bad'); });
-      };
-      li.appendChild(d); ul.appendChild(li);
+      }));
+      ul.appendChild(li);
     });
   }
   $('nzReload').onclick = function () { if (!token()) return say('nzListMsg', '먼저 열쇠를 저장해 주세요.', 'bad'); say('nzListMsg', '불러오는 중…');
     load(NZ).then(function (cur) { say('nzListMsg', ''); nzDraw(cur.doc); }).catch(function (e) { say('nzListMsg', e.message, 'bad'); }); };
+
+  // ---- 운영 편의 (2026-11-18)
+  // 빠른 시작 틀: 숫자는 여기서 마음대로 고치면 돼요
+  var PRESETS = [
+    { name: '🛠 점검 보상', gold: '1000만', gems: 300 },
+    { name: '🙇 사과 보상', gold: '1억', gems: 1000 },
+    { name: '🎉 이벤트 선물', gold: '', gems: 500 },
+    { name: '🐾 신규 환영', gold: '500만', gems: 200 }
+  ];
+  var NZP = [
+    { name: '🛠 점검 안내', tag: '점검', title: '점검 안내', text: '점검 시간: \n점검 내용: \n보상: \n\n불편을 드려 죄송해요.' },
+    { name: '🆕 업데이트', tag: '업데이트', title: '업데이트 안내', text: '새로 생긴 것\n- \n- \n\n고쳐진 것\n- ' },
+    { name: '🎉 이벤트', tag: '이벤트', title: '이벤트 안내', text: '기간: \n내용: \n받는 곳: 우편함' },
+    { name: '📢 일반 공지', tag: '공지', title: '', text: '' }
+  ];
+  var DAYS = [['오늘만', 0], ['7일', 7], ['14일', 14], ['30일', 30], ['계속', null]];
+  function fire(id) { $(id).dispatchEvent(new Event('input')); }
+  function chipBar(box, list, on) {
+    list.forEach(function (p) { var b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = p[0]; b.onclick = function () { on(p[1]); }; box.appendChild(b); });
+  }
+  function dayOf(n) { return n == null ? '' : CW.kstDay(Date.now(), n); }
+  chipBar($('presetBar'), PRESETS.map(function (p) { return [p.name, p]; }), function (p) { $('gold').value = p.gold; $('gems').value = p.gems || ''; fire('gold'); fire('gems'); say('sendMsg', ''); });
+  chipBar($('dayChips'), DAYS, function (n) { $('until').value = dayOf(n); fire('until'); });
+  chipBar($('nzDayChips'), DAYS, function (n) { $('nzUntil').value = dayOf(n); });
+  $('pids').addEventListener('input', function () {
+    var n = this.value.split(/[,\s]+/).filter(Boolean).length;
+    $('pidHint').textContent = n ? n + '명에게 보내요. 우편번호는 게임 우편함 화면에 보여요.' : '우편번호는 게임 우편함 화면에 보여요.';
+  });
+  function clearGift() {
+    ['gold', 'gems', 'pids'].forEach(function (id) { $(id).value = ''; });
+    document.querySelectorAll('#curBox input,#potBox input,#tkBox input').forEach(function (x) { x.value = ''; });
+    items = []; drawItems(); subTouched = false; $('sub').value = '';
+    $('from').value = CW.kstDay(); $('until').value = CW.kstDay(Date.now(), 30);
+  }
+  $('mailReset').onclick = function () { clearGift(); preview(); say('sendMsg', ''); };
+  function reuseLetter(l) {
+    setTab('mail'); clearGift();
+    var all = l.to === 'all'; toAll = all;
+    [].forEach.call($('toSeg').children, function (x) { x.classList.toggle('on', (x.dataset.to === 'all') === all); });
+    $('pidBox').classList.toggle('hide', all); $('pids').value = Array.isArray(l.to) ? l.to.join(', ') : '';
+    var g = CW.mailGold(l); $('gold').value = g > 0 ? CW.countText(g) : ''; $('gems').value = +l.gems > 0 ? l.gems : '';
+    var G = (CW.giftOf ? CW.giftOf(l) : {});
+    Object.keys(G).forEach(function (k) {
+      var v = G[k];
+      if (k === 'potions' || k === 'tickets') Object.keys(v).forEach(function (id) { var el = $((k === 'potions' ? 'pot-' : 'tk-') + id); if (el) el.value = v[id]; });
+      else if (Array.isArray(v)) v.forEach(function (o) { items.push(Object.assign({ t: k }, o)); });
+      else { var el2 = $('cur-' + k); if (el2) el2.value = v; }
+    });
+    drawItems(); preview();
+    say('sendMsg', '「' + (l.sub || l.title) + '」 내용을 불러왔어요. 고쳐서 새로 보내세요.', 'ok');
+  }
+  // 공지
+  function setNzTag(t) { nzTag = t; [].forEach.call($('nzTag').children, function (x) { x.classList.toggle('on', x.dataset.tag === t); }); }
+  function nzPv() {
+    var f = nzForm(), box = $('nzPv'); box.textContent = '';
+    var h = document.createElement('div'); h.className = 'nh';
+    var tg = document.createElement('span'); tg.className = 'tg'; tg.dataset.t = f.tag; tg.textContent = f.tag; h.appendChild(tg);
+    if (f.pin) { var p = document.createElement('span'); p.className = 'tg pin'; p.textContent = '📌 맨 위 고정'; h.appendChild(p); }
+    var b = document.createElement('b'); b.textContent = f.title || '제목이 여기에 보여요'; h.appendChild(b);
+    var x = document.createElement('div'); x.className = 'nb'; x.textContent = f.text || '내용이 여기에 보여요.';
+    box.appendChild(h); box.appendChild(x); $('nzCount').textContent = f.title.length + '/40';
+  }
+  chipBar($('nzPresets'), NZP.map(function (p) { return [p.name, p]; }), function (p) { setNzTag(p.tag); $('nzTitle').value = p.title; $('nzText').value = p.text; nzPv(); say('nzMsg', ''); });
+  ['nzTitle', 'nzText'].forEach(function (id) { $(id).addEventListener('input', nzPv); });
+  $('nzPin').addEventListener('change', nzPv); $('nzTag').addEventListener('click', nzPv);
+  $('nzReset').onclick = function () { setNzTag('공지'); $('nzTitle').value = ''; $('nzText').value = ''; $('nzPin').checked = false; $('nzFrom').value = CW.kstDay(); $('nzUntil').value = ''; nzPv(); say('nzMsg', ''); };
+  function reuseNotice(n) {
+    setTab('notice'); setNzTag(CW.noticeTag(n)); $('nzTitle').value = n.title || ''; $('nzText').value = n.text || ''; $('nzPin').checked = !!n.pin;
+    $('nzFrom').value = CW.kstDay(); $('nzUntil').value = ''; nzPv();
+    say('nzMsg', '「' + n.title + '」 내용을 불러왔어요. 고쳐서 새로 올리세요.', 'ok');
+  }
+  nzPv();
+  statCards($('mailStats'), { all: 0, on: 0, soon: 0, end: 0 }); statCards($('nzStats'), { all: 0, on: 0, soon: 0, end: 0 });
+  filterChips($('mailChips'), { all: 0, on: 0, soon: 0, end: 0 }, 'all', function () {}); filterChips($('nzChips'), { all: 0, on: 0, soon: 0, end: 0 }, 'all', function () {});
+  // 밝게 · 어둡게
+  (function () {
+    var d = document.documentElement, b = $('theme');
+    b.textContent = d.dataset.theme === 'light' ? '🌙' : '☀️';
+    b.onclick = function () { var t = d.dataset.theme === 'light' ? 'night' : 'light'; d.dataset.theme = t; try { localStorage.setItem('cw-ops-theme', t); } catch (e) {} b.textContent = t === 'light' ? '🌙' : '☀️'; };
+  })();
 
   showKey();
   if (token()) load(NZ).then(function (cur) { nzDraw(cur.doc); }).catch(function (e) { say('nzListMsg', e.message, 'bad'); });
