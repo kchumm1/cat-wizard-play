@@ -1795,6 +1795,7 @@
         var n = t.querySelector(p[0]), live = opTabs && !opTabs.hidden ? opTabs.querySelector(p[1]) : null;
         if (!n && !live) return;
         if (!n || !live || n.nodeName !== live.nodeName) { ok = false; return; }
+        if (p[0] === ':scope > .subtabs' && n.outerHTML !== live.outerHTML) { ok = false; return; }   // 하위 탭을 바꿨으면 통째로 (고른 탭 반짝임은 그때 한 번만)
         moves.push([live, n]);
       });
       if (!ok || t.childNodes.length - moves.filter(function (m) { return m[1].parentNode === t; }).length !== panel.childNodes.length) return null;
@@ -1820,7 +1821,10 @@
       if (!force && key === lastPanel) return;
       // 꾸욱 강화 중(softRender)에는 통째로 다시 만들지 않고 바뀐 글자·속성만 고침: 아이폰은 손가락이 닿은 채로 화면이 통째로 바뀌면
       // 스크롤 자리를 놓쳐 위로 올라가 버림 (사용자 2026-11-16 승급). 누르고 있는 버튼도 그대로 남는다.
-      var soft = softRender && panel.firstChild && softPrep(html);
+      // 아래 하위 탭이 있는 화면(훈련·장비)은 같은 하위 탭 안이면 0.3초 새로 그리기·누름도 글자·속성만 고침 (사용자 2026-11-17):
+      // 통째로 다시 만들면 아래 탭이 새로 붙어 고른 탭 반짝임이 계속 다시 나오고(깜빡깜빡), 연금술 등은 누를 때마다 스크롤이 살짝 밀렸음
+      // 0.3초마다 저절로 다시 그릴 때(!force)는 모든 화면(스킬·더보기 포함)에서 글자·속성만 고침 — 모양이 달라졌을 때만 통째로
+      var soft = (softRender || !force || (opTabs && !opTabs.hidden && opTabs.querySelector(':scope > .subtabs'))) && panel.firstChild && softPrep(html);
       var y = panel.scrollTop; if (soft) morphKids(panel, soft); else panel.innerHTML = html; if (panel.scrollTop !== y) panel.scrollTop = y; lastPanel = key;
       var phv = (-(Date.now() % 60000) / 1000).toFixed(2) + 's';   // 계속 도는 움직임(마나서클·연금술)은 시계에 맞춰 이어서
       panel.querySelectorAll('.mcv, .alchhead.anw, .pgrid.anw, .ruv, .sgv, .rsgrid, .rsstrip').forEach(function (e) { e.style.setProperty('--ph', phv); });
