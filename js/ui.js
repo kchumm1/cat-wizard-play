@@ -2426,7 +2426,7 @@
       }).join('');
       var srcBox = '';
       if (profSrc) {
-        var SRC = { atk: ['공격력', ['atkPct']], speed: ['공격 속도', ['speed']] }[profSrc], parts = SRC ? profParts(SRC[1], by) : '';
+        var SRC = { atk: ['공격력', ['atk', 'atkPct']], speed: ['공격 속도', ['speed']] }[profSrc], parts = SRC ? profParts(SRC[1], by) : '';
         srcBox = '<div class="pfsrc"><b>' + (SRC ? SRC[0] : '') + ' 증가 내역</b>' + (parts ? '<ul>' + parts + '</ul>' : '<p>아직 더해진 게 없어요</p>') + '</div>';
       }
       var top = '<div class="pftop"><button class="pfx" aria-label="닫기"></button>' +
@@ -2438,7 +2438,7 @@
       var titleBox = '<section class="pfbox pftbox' + (profOpen.title ? ' on' : '') + '"><button class="pfhd" data-pfsec="title" aria-expanded="' + !!profOpen.title + '"><img src="art/prof-ico-title.webp" alt="">' +
         '<b>타이틀</b><span class="pfbar"></span><span class="pfbadge">' + esc(CW.titleById(worn).name) + '</span><em>변경</em></button><div class="pfin"><div class="ttls">' + titles + '</div></div></section>';
       return top + '<div class="pfbody">' + srcBox +
-        profBox('atk', 'atk', '공격 효과', '', profRow('스킬 피해', x(st.skillDmg * st.mastery), ['skillDmg'], by) + profRow('보스 피해', x(st.bossDmg), ['bossDmg'], by) + profRow('모든 피해', x(st.finalMul), ['finalPct', 'potion'], by)) +
+        profBox('atk', 'atk', '공격 효과', '', profRow('스킬·모든 피해', x(st.skillDmg * st.mastery), ['skillDmg', 'finalPct'], by) + profRow('보스 피해', x(st.bossDmg), ['bossDmg'], by) + profRow('분노의 물약', x(st.finalMul), ['potion'], by)) +
         profBox('crit', 'crit', '크리티컬', '확률 ' + pct(st.critRate || 0) + ' · 배율 ' + x(st.critDmg || 0), '<div class="pfcols' + (overAny ? ' four' : '') + '"><span></span><em>확률</em><em>배율</em>' + (overAny ? '<em>초과 피해</em>' : '') + '</div>' + crit +
           (overAny ? '<div class="pfhint"><p class="hd">✦ 초과 피해란?</p>' +
             '<p>확률은 <b>100%</b>까지만 쓰여요. 넘은 확률 <b>1%p</b>마다 그 단계 피해가 <b>+' + DATA.critConf.overPer + '%</b> 더 붙어요.<span class="cap">최대 +' + Math.round(DATA.critConf.overMax * 100) + '%</span></p></div>' : '')) +

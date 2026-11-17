@@ -68,67 +68,67 @@
     // targets 99 = every monster on the field · splash = share of the damage for monsters standing next to the target.
     // how = one short line for the skill list. The effect for each shape is in js/fx.js (first twelve) and js/fx-more.js.
     skills: [
-      { id: 'starShot', name: '별 탄환', tier: 1, el: 'star', dur: 0.6, mult: 1.0, targets: 1, shape: 'bolt3', status: null, color: 0xfff27a, how: '별 세 발을 연달아 쏴요' },
-      { id: 'magicClaw', name: '마법 발톱', tier: 1, el: 'paw', dur: 0.55, mult: 1.1, targets: 1, shape: 'slash', status: null, color: 0xff8fd8, how: '빠르게 세 번 할퀴어요' },
-      { id: 'furBomb', name: '털뭉치 폭탄', tier: 1, el: 'paw', dur: 0.8, mult: 1.2, targets: 2, shape: 'bounceBomb', status: null, color: 0xffb36b, how: '통통 튀다가 터져요' },
-      { id: 'sparkRing', name: '반짝 고리', tier: 1, el: 'star', dur: 0.7, mult: 0.9, targets: 3, shape: 'orbitRing', status: null, color: 0x9fe8ff, how: '빛 구슬 여섯 개가 날아가요' },
-      { id: 'pawStamp', name: '젤리 발도장', tier: 1, el: 'paw', dur: 0.65, mult: 1.3, targets: 1, shape: 'stamp', status: null, color: 0xffa8c8, how: '하늘에서 큰 발바닥이 쿵 찍어요' },
-      { id: 'yarnBall', name: '실뭉치 굴리기', tier: 1, el: 'paw', dur: 0.75, mult: 0.85, targets: 4, shape: 'roll', status: null, color: 0x7fd8a0, how: '실뭉치가 몬스터 사이를 굴러다녀요' },
-      { id: 'starDust', name: '별가루 소나기', tier: 1, el: 'star', dur: 0.75, mult: 0.65, targets: 5, shape: 'sprinkle', status: null, color: 0xc8b8ff, how: '작은 별이 우수수 떨어져요' },
+      { id: 'starShot', name: '별 탄환', tier: 1, el: 'star', dur: 0.6, mult: 1, targets: 1, shape: 'bolt3', status: null, color: 0xfff27a, how: '별 세 발을 연달아 쏴요' },
+      { id: 'magicClaw', name: '마법 발톱', tier: 1, el: 'paw', dur: 0.55, mult: 1.2, targets: 1, shape: 'slash', status: null, color: 0xff8fd8, how: '빠르게 세 번 할퀴어요' },
+      { id: 'furBomb', name: '털뭉치 폭탄', tier: 1, el: 'paw', dur: 0.8, mult: 1.3, targets: 2, shape: 'bounceBomb', status: null, color: 0xffb36b, how: '통통 튀다가 터져요' },
+      { id: 'sparkRing', name: '반짝 고리', tier: 1, el: 'star', dur: 0.7, mult: 0.84, targets: 3, shape: 'orbitRing', status: null, color: 0x9fe8ff, how: '빛 구슬 여섯 개가 날아가요' },
+      { id: 'pawStamp', name: '젤리 발도장', tier: 1, el: 'paw', dur: 0.65, mult: 1.5, targets: 1, shape: 'stamp', status: null, color: 0xffa8c8, how: '하늘에서 큰 발바닥이 쿵 찍어요' },
+      { id: 'yarnBall', name: '실뭉치 굴리기', tier: 1, el: 'paw', dur: 0.75, mult: 0.77, targets: 4, shape: 'roll', status: null, color: 0x7fd8a0, how: '실뭉치가 몬스터 사이를 굴러다녀요' },
+      { id: 'starDust', name: '별가루 소나기', tier: 1, el: 'star', dur: 0.75, mult: 0.5, targets: 5, shape: 'sprinkle', status: null, color: 0xc8b8ff, how: '작은 별이 우수수 떨어져요' },
 
-      { id: 'fireball', name: '화염구', tier: 2, el: 'fire', dur: 0.75, mult: 1.7, targets: 2, shape: 'fireball', status: null, color: 0xff6a2b, how: '불덩이가 날아가 터져요' },
-      { id: 'flamePillar', name: '불기둥', tier: 2, el: 'fire', dur: 0.8, mult: 1.5, targets: 3, shape: 'pillars', status: null, color: 0xff7a2b, how: '발밑에서 불기둥이 솟아요' },
-      { id: 'flameWave', name: '불의 회오리', tier: 2, el: 'fire', dur: 0.85, mult: 1.0, targets: 99, shape: 'flameWave', status: null, color: 0xff8a3a, how: '불 회오리가 몬스터 사이를 휩쓸고 다녀요' },
-      { id: 'inferno', name: '폭염탄', tier: 2, el: 'fire', dur: 0.9, mult: 2.5, targets: 1, splash: 0.3, shape: 'inferno', status: null, color: 0xff4a1a, how: '커다란 불덩이 한 방' },
+      { id: 'fireball', name: '화염구', tier: 2, el: 'fire', dur: 0.75, mult: 2.3, targets: 2, shape: 'fireball', status: null, color: 0xff6a2b, how: '불덩이가 날아가 터져요' },
+      { id: 'flamePillar', name: '불기둥', tier: 2, el: 'fire', dur: 0.8, mult: 1.9, targets: 3, shape: 'pillars', status: null, color: 0xff7a2b, how: '발밑에서 불기둥이 솟아요' },
+      { id: 'flameWave', name: '불의 회오리', tier: 2, el: 'fire', dur: 0.85, mult: 1, targets: 99, shape: 'flameWave', status: null, color: 0xff8a3a, how: '불 회오리가 몬스터 사이를 휩쓸고 다녀요' },
+      { id: 'inferno', name: '폭염탄', tier: 2, el: 'fire', dur: 0.9, mult: 4.3, targets: 1, splash: 0.3, shape: 'inferno', status: null, color: 0xff4a1a, how: '커다란 불덩이 한 방' },
 
-      { id: 'chainLightning', name: '연쇄 번개', tier: 3, el: 'bolt', dur: 0.7, mult: 2.1, targets: 4, shape: 'chain', status: 'shock', color: 0x9fd8ff, how: '번개가 옮겨 다니고 하늘에서 또 내리쳐요' },
-      { id: 'thunderStrike', name: '벼락', tier: 3, el: 'bolt', dur: 0.8, mult: 3.1, targets: 1, splash: 0.25, shape: 'thunder', status: 'shock', color: 0xbfe4ff, how: '먹구름에서 큰 벼락 한 줄기' },
-      { id: 'stormCloud', name: '뇌우', tier: 3, el: 'bolt', dur: 0.9, mult: 1.5, targets: 99, shape: 'storm', status: 'shock', color: 0x8fc0ff, how: '번개가 몬스터마다 내리쳐요' },
-      { id: 'ballLightning', name: '구슬 번개', tier: 3, el: 'bolt', dur: 0.85, mult: 1.9, targets: 5, shape: 'orb', status: 'shock', color: 0x7fe8ff, how: '번개 구슬이 통통 튀며 지져요' },
+      { id: 'chainLightning', name: '연쇄 번개', tier: 3, el: 'bolt', dur: 0.7, mult: 3.3, targets: 4, shape: 'chain', status: 'shock', color: 0x9fd8ff, how: '번개가 옮겨 다니고 하늘에서 또 내리쳐요' },
+      { id: 'thunderStrike', name: '벼락', tier: 3, el: 'bolt', dur: 0.8, mult: 6.1, targets: 1, splash: 0.25, shape: 'thunder', status: 'shock', color: 0xbfe4ff, how: '먹구름에서 큰 벼락 한 줄기' },
+      { id: 'stormCloud', name: '뇌우', tier: 3, el: 'bolt', dur: 0.9, mult: 1.9, targets: 99, shape: 'storm', status: 'shock', color: 0x8fc0ff, how: '번개가 몬스터마다 내리쳐요' },
+      { id: 'ballLightning', name: '구슬 번개', tier: 3, el: 'bolt', dur: 0.85, mult: 2.8, targets: 5, shape: 'orb', status: 'shock', color: 0x7fe8ff, how: '번개 구슬이 통통 튀며 지져요' },
 
-      { id: 'iceStorm', name: '얼음 폭풍', tier: 4, el: 'ice', dur: 0.9, mult: 2.5, targets: 99, shape: 'blizzard', status: 'freeze', color: 0xbfefff, how: '얼음 조각이 몬스터마다 꽂혀요' },
-      { id: 'iceLance', name: '얼음 창', tier: 4, el: 'ice', dur: 0.75, mult: 3.7, targets: 1, shape: 'lance', status: 'freeze', color: 0x9fe4ff, how: '큰 얼음 창을 던져 꿰뚫어요' },
-      { id: 'frostNova', name: '서리 고리', tier: 4, el: 'ice', dur: 0.7, mult: 2.0, targets: 99, shape: 'frostRing', status: 'freeze', color: 0xd8f6ff, how: '서리가 발밑에서 화면 끝까지 퍼져요' },
-      { id: 'glacierSpikes', name: '빙하 가시', tier: 4, el: 'ice', dur: 0.85, mult: 2.9, targets: 4, shape: 'spikes', status: 'freeze', color: 0x7fd0ff, how: '땅을 타고 가시가 솟아올라요' },
+      { id: 'iceStorm', name: '얼음 폭풍', tier: 4, el: 'ice', dur: 0.9, mult: 4.3, targets: 99, shape: 'blizzard', status: 'freeze', color: 0xbfefff, how: '얼음 조각이 몬스터마다 꽂혀요' },
+      { id: 'iceLance', name: '얼음 창', tier: 4, el: 'ice', dur: 0.75, mult: 8.1, targets: 1, shape: 'lance', status: 'freeze', color: 0x9fe4ff, how: '큰 얼음 창을 던져 꿰뚫어요' },
+      { id: 'frostNova', name: '서리 고리', tier: 4, el: 'ice', dur: 0.7, mult: 3, targets: 99, shape: 'frostRing', status: 'freeze', color: 0xd8f6ff, how: '서리가 발밑에서 화면 끝까지 퍼져요' },
+      { id: 'glacierSpikes', name: '빙하 가시', tier: 4, el: 'ice', dur: 0.85, mult: 5.5, targets: 4, shape: 'spikes', status: 'freeze', color: 0x7fd0ff, how: '땅을 타고 가시가 솟아올라요' },
 
-      { id: 'meteorRain', name: '별똥별 비', tier: 5, el: 'star', dur: 0.95, mult: 3.1, targets: 99, shape: 'meteors', status: null, color: 0xffe14a, how: '떨어지는 별똥별이 전부 맞아요' },
-      { id: 'cometStrike', name: '대혜성', tier: 5, el: 'star', dur: 0.95, mult: 4.4, targets: 1, splash: 0.3, shape: 'comet', status: null, color: 0xffc84a, how: '거대한 혜성 하나가 내리꽂혀요' },
-      { id: 'starBarrage', name: '별빛 연사', tier: 5, el: 'star', dur: 0.8, mult: 3.6, targets: 3, shape: 'barrage', status: null, color: 0xfff0a0, how: '별 열두 발을 쉬지 않고 쏴요' },
-      { id: 'constellation', name: '별자리', tier: 5, el: 'star', dur: 0.9, mult: 2.7, targets: 99, shape: 'constel', status: null, color: 0xa8c8ff, how: '별을 이어 그린 뒤 한꺼번에 떨어뜨려요' },
+      { id: 'meteorRain', name: '별똥별 비', tier: 5, el: 'star', dur: 0.95, mult: 6.1, targets: 99, shape: 'meteors', status: null, color: 0xffe14a, how: '떨어지는 별똥별이 전부 맞아요' },
+      { id: 'cometStrike', name: '대혜성', tier: 5, el: 'star', dur: 0.95, mult: 11, targets: 1, splash: 0.3, shape: 'comet', status: null, color: 0xffc84a, how: '거대한 혜성 하나가 내리꽂혀요' },
+      { id: 'starBarrage', name: '별빛 연사', tier: 5, el: 'star', dur: 0.8, mult: 7.8, targets: 3, shape: 'barrage', status: null, color: 0xfff0a0, how: '별 열두 발을 쉬지 않고 쏴요' },
+      { id: 'constellation', name: '별자리', tier: 5, el: 'star', dur: 0.9, mult: 4.9, targets: 99, shape: 'constel', status: null, color: 0xa8c8ff, how: '별을 이어 그린 뒤 한꺼번에 떨어뜨려요' },
 
-      { id: 'moonLaser', name: '달빛 레이저', tier: 6, el: 'moon', dur: 0.9, mult: 3.8, targets: 99, shape: 'beam', status: null, color: 0xd8d8ff, how: '레이저를 쏘아 화면을 훑어요' },
-      { id: 'crescentWave', name: '초승달 베기', tier: 6, el: 'moon', dur: 0.75, mult: 3.4, targets: 99, shape: 'crescents', status: null, color: 0xe0d8ff, how: '커다란 초승달 칼날 세 개가 지나가요' },
-      { id: 'moonFall', name: '보름달 낙하', tier: 6, el: 'moon', dur: 1.0, mult: 5.4, targets: 1, splash: 0.35, shape: 'moonfall', status: null, color: 0xf4f0d8, how: '보름달이 떠올랐다가 내려찍어요' },
-      { id: 'moonOrbs', name: '달빛 구슬', tier: 6, el: 'moon', dur: 0.85, mult: 4.2, targets: 5, shape: 'moonOrbs', status: null, color: 0xc8c0ff, how: '작은 달 다섯 개가 빛줄기를 쏴요' },
+      { id: 'moonLaser', name: '달빛 레이저', tier: 6, el: 'moon', dur: 0.9, mult: 8.5, targets: 99, shape: 'beam', status: null, color: 0xd8d8ff, how: '레이저를 쏘아 화면을 훑어요' },
+      { id: 'crescentWave', name: '초승달 베기', tier: 6, el: 'moon', dur: 0.75, mult: 7.1, targets: 99, shape: 'crescents', status: null, color: 0xe0d8ff, how: '커다란 초승달 칼날 세 개가 지나가요' },
+      { id: 'moonFall', name: '보름달 낙하', tier: 6, el: 'moon', dur: 1.0, mult: 15, targets: 1, splash: 0.35, shape: 'moonfall', status: null, color: 0xf4f0d8, how: '보름달이 떠올랐다가 내려찍어요' },
+      { id: 'moonOrbs', name: '달빛 구슬', tier: 6, el: 'moon', dur: 0.85, mult: 9.9, targets: 5, shape: 'moonOrbs', status: null, color: 0xc8c0ff, how: '작은 달 다섯 개가 빛줄기를 쏴요' },
 
-      { id: 'solarBurst', name: '태양 폭발', tier: 7, el: 'sun', dur: 1.0, mult: 4.6, targets: 99, shape: 'flash', status: null, color: 0xffd84a, how: '빛기둥이 위에서 쏟아져 터져요' },
-      { id: 'sunSpear', name: '태양의 창', tier: 7, el: 'sun', dur: 0.85, mult: 6.6, targets: 1, shape: 'sunspear', status: null, color: 0xffc23a, how: '빛의 창이 꿰뚫고 나서 터져요' },
-      { id: 'sunArrows', name: '햇살 화살비', tier: 7, el: 'sun', dur: 0.95, mult: 4.3, targets: 99, shape: 'sunArrows', status: null, color: 0xffe07a, how: '빛 화살이 몬스터마다 꽂혀요' },
-      { id: 'coronaRing', name: '홍염 고리', tier: 7, el: 'sun', dur: 0.75, mult: 3.7, targets: 99, shape: 'corona', status: null, color: 0xff9a3a, how: '불의 고리가 화면 끝까지 퍼져요' },
+      { id: 'solarBurst', name: '태양 폭발', tier: 7, el: 'sun', dur: 1.0, mult: 11, targets: 99, shape: 'flash', status: null, color: 0xffd84a, how: '빛기둥이 위에서 쏟아져 터져요' },
+      { id: 'sunSpear', name: '태양의 창', tier: 7, el: 'sun', dur: 0.85, mult: 20, targets: 1, shape: 'sunspear', status: null, color: 0xffc23a, how: '빛의 창이 꿰뚫고 나서 터져요' },
+      { id: 'sunArrows', name: '햇살 화살비', tier: 7, el: 'sun', dur: 0.95, mult: 10, targets: 99, shape: 'sunArrows', status: null, color: 0xffe07a, how: '빛 화살이 몬스터마다 꽂혀요' },
+      { id: 'coronaRing', name: '홍염 고리', tier: 7, el: 'sun', dur: 0.75, mult: 8.1, targets: 99, shape: 'corona', status: null, color: 0xff9a3a, how: '불의 고리가 화면 끝까지 퍼져요' },
 
-      { id: 'blackHole', name: '블랙홀', tier: 8, el: 'void', dur: 1.0, mult: 5.5, targets: 99, shape: 'vortex', status: 'gather', color: 0xb04bff, how: '전부 끌어당긴 뒤 한 번에 터뜨려요' },
-      { id: 'voidRift', name: '차원 균열', tier: 8, el: 'void', dur: 0.85, mult: 5.0, targets: 99, shape: 'rift', status: null, color: 0xc86bff, how: '하늘을 찢어 열었다가 닫으며 터져요' },
-      { id: 'gravityCrush', name: '중력 붕괴', tier: 8, el: 'void', dur: 1.0, mult: 5.6, targets: 99, shape: 'crush', status: null, color: 0x9a5bff, how: '전부 띄웠다가 땅에 내리꽂아요' },
-      { id: 'darkStar', name: '암흑 별', tier: 8, el: 'void', dur: 0.95, mult: 8.0, targets: 1, splash: 0.3, shape: 'darkStar', status: null, color: 0x8a3bff, how: '어둠의 구슬이 파고들어 터져요' },
+      { id: 'blackHole', name: '블랙홀', tier: 8, el: 'void', dur: 1.0, mult: 15, targets: 99, shape: 'vortex', status: 'gather', color: 0xb04bff, how: '전부 끌어당긴 뒤 한 번에 터뜨려요' },
+      { id: 'voidRift', name: '차원 균열', tier: 8, el: 'void', dur: 0.85, mult: 13, targets: 99, shape: 'rift', status: null, color: 0xc86bff, how: '하늘을 찢어 열었다가 닫으며 터져요' },
+      { id: 'gravityCrush', name: '중력 붕괴', tier: 8, el: 'void', dur: 1.0, mult: 16, targets: 99, shape: 'crush', status: null, color: 0x9a5bff, how: '전부 띄웠다가 땅에 내리꽂아요' },
+      { id: 'darkStar', name: '암흑 별', tier: 8, el: 'void', dur: 0.95, mult: 28, targets: 1, splash: 0.3, shape: 'darkStar', status: null, color: 0x8a3bff, how: '어둠의 구슬이 파고들어 터져요' },
 
-      { id: 'elementNova', name: '원소 합체 궁극기', tier: 9, el: 'all', dur: 1.0, mult: 7, targets: 99, shape: 'nova', status: null, color: 0xffffff, how: '원소를 모아 화면 전체를 터뜨려요' },
-      { id: 'elementStorm', name: '원소 폭풍', tier: 9, el: 'all', dur: 0.9, mult: 6.3, targets: 99, shape: 'elemStorm', status: null, color: 0xffe0f0, how: '다섯 원소가 번갈아 쏟아져요' },
-      { id: 'prismBeam', name: '오색 광선', tier: 9, el: 'all', dur: 0.9, mult: 9.5, targets: 1, shape: 'prism', status: null, color: 0xfff0ff, how: '다섯 빛줄기를 한 곳에 모아 터뜨려요' },
-      { id: 'elementWheel', name: '원소의 수레바퀴', tier: 9, el: 'all', dur: 0.8, mult: 6.0, targets: 99, shape: 'wheel', status: null, color: 0xe8f0ff, how: '원소 구슬이 돌며 화면 끝까지 퍼져요' },
+      { id: 'elementNova', name: '원소 합체 궁극기', tier: 9, el: 'all', dur: 1.0, mult: 22, targets: 99, shape: 'nova', status: null, color: 0xffffff, how: '원소를 모아 화면 전체를 터뜨려요' },
+      { id: 'elementStorm', name: '원소 폭풍', tier: 9, el: 'all', dur: 0.9, mult: 19, targets: 99, shape: 'elemStorm', status: null, color: 0xffe0f0, how: '다섯 원소가 번갈아 쏟아져요' },
+      { id: 'prismBeam', name: '오색 광선', tier: 9, el: 'all', dur: 0.9, mult: 37, targets: 1, shape: 'prism', status: null, color: 0xfff0ff, how: '다섯 빛줄기를 한 곳에 모아 터뜨려요' },
+      { id: 'elementWheel', name: '원소의 수레바퀴', tier: 9, el: 'all', dur: 0.8, mult: 18, targets: 99, shape: 'wheel', status: null, color: 0xe8f0ff, how: '원소 구슬이 돌며 화면 끝까지 퍼져요' },
       // 10차 나무 (2026-11-16): the phoenix skills' places with their numbers (rootSpikes ← 불사조 날개, leafBlades ← 불꽃
       // 깃털비, flytrap ← 재탄생의 불꽃 (덩굴 조이기 until the user turned it down twice), worldTree ← 불사조 강림; old saves move over in js/state.js). Real 3D: shapes made
       // in Blender (js/mesh-wood.js), the scenes in js/fx-wood.js (docs/superpowers/specs/2026-11-16-tier10-wood-scenes.md)
-      { id: 'rootSpikes', name: '뿌리 가시', tier: 10, el: 'wood', dur: 0.9, mult: 7.9, targets: 99, shape: 'rootSpikes', status: null, color: 0x7a5230, how: '땅속을 기어간 뿌리가 몬스터마다 가시로 솟아요' },
-      { id: 'flytrap', name: '식인 꽃', tier: 10, el: 'wood', dur: 0.95, mult: 12.5, targets: 1, splash: 0.3, shape: 'flytrap', status: null, color: 0xd8283a, how: '거대한 파리지옥이 솟아 덥석 물고 씹다가 뱉어요' },
-      { id: 'leafBlades', name: '나뭇잎 칼날 폭풍', tier: 10, el: 'wood', dur: 0.95, mult: 7.6, targets: 99, shape: 'leafBlades', status: null, color: 0x3fa83a, how: '칼날 같은 잎이 소용돌이치다 쏟아져 베어요' },
-      { id: 'worldTree', name: '세계수 열매 폭탄', tier: 10, el: 'wood', dur: 1.0, mult: 8.4, targets: 99, shape: 'worldTree', status: null, color: 0x6fbf3a, how: '세계수가 솟아 금빛 열매를 떨어뜨려요' },
+      { id: 'rootSpikes', name: '뿌리 가시', tier: 10, el: 'wood', dur: 0.9, mult: 27, targets: 99, shape: 'rootSpikes', status: null, color: 0x7a5230, how: '땅속을 기어간 뿌리가 몬스터마다 가시로 솟아요' },
+      { id: 'flytrap', name: '식인 꽃', tier: 10, el: 'wood', dur: 0.95, mult: 57, targets: 1, splash: 0.3, shape: 'flytrap', status: null, color: 0xd8283a, how: '거대한 파리지옥이 솟아 덥석 물고 씹다가 뱉어요' },
+      { id: 'leafBlades', name: '나뭇잎 칼날 폭풍', tier: 10, el: 'wood', dur: 0.95, mult: 26, targets: 99, shape: 'leafBlades', status: null, color: 0x3fa83a, how: '칼날 같은 잎이 소용돌이치다 쏟아져 베어요' },
+      { id: 'worldTree', name: '세계수 열매 폭탄', tier: 10, el: 'wood', dur: 1.0, mult: 30, targets: 99, shape: 'worldTree', status: null, color: 0x6fbf3a, how: '세계수가 솟아 금빛 열매를 떨어뜨려요' },
 
       // 11차 물 (2026-11-17): about 1.09× the wood numbers; real 3D like the wood — shapes from Blender (js/mesh-water.js),
       // the scenes in js/fx-water.js. Deep sea blue with a heavy outline, never pale ice
-      { id: 'tidalWave', name: '대해일', tier: 11, el: 'water', dur: 0.9, mult: 8.6, targets: 99, shape: 'tidalWave', status: null, color: 0x2f7fe0, how: '거대한 파도가 덮쳐 부서져요' },
-      { id: 'bubblePrison', name: '물방울 감옥', tier: 11, el: 'water', dur: 0.95, mult: 13.7, targets: 1, splash: 0.3, shape: 'bubblePrison', status: null, color: 0x3fb0e8, how: '물방울에 가둬 조인 뒤 펑 터뜨려요' },
-      { id: 'waterBurst', name: '물폭발', tier: 11, el: 'water', dur: 0.95, mult: 8.3, targets: 99, shape: 'waterBurst', status: null, color: 0x2fb8d8, how: '몬스터마다 발밑에서 물기둥이 솟구쳐 터져요' },
-      { id: 'skyFalls', name: '하늘 폭포', tier: 11, el: 'water', dur: 1.0, mult: 9.2, targets: 99, shape: 'skyFalls', status: null, color: 0x1f6fd6, how: '하늘에서 폭포가 쏟아져 물벽이 퍼져요' }
+      { id: 'tidalWave', name: '대해일', tier: 11, el: 'water', dur: 0.9, mult: 31, targets: 99, shape: 'tidalWave', status: null, color: 0x2f7fe0, how: '거대한 파도가 덮쳐 부서져요' },
+      { id: 'bubblePrison', name: '물방울 감옥', tier: 11, el: 'water', dur: 0.95, mult: 66, targets: 1, splash: 0.3, shape: 'bubblePrison', status: null, color: 0x3fb0e8, how: '물방울에 가둬 조인 뒤 펑 터뜨려요' },
+      { id: 'waterBurst', name: '물폭발', tier: 11, el: 'water', dur: 0.95, mult: 30, targets: 99, shape: 'waterBurst', status: null, color: 0x2fb8d8, how: '몬스터마다 발밑에서 물기둥이 솟구쳐 터져요' },
+      { id: 'skyFalls', name: '하늘 폭포', tier: 11, el: 'water', dur: 1.0, mult: 35, targets: 99, shape: 'skyFalls', status: null, color: 0x1f6fd6, how: '하늘에서 폭포가 쏟아져 물벽이 퍼져요' }
     ],
     // relics: each copy raises the level; per = bonus per level (fractions, 0.05 = +5%)
     relics: [
@@ -541,7 +541,10 @@
       // a plain monster pays this share of its gold and experience (user 2026-11-15: too much came in) — not bosses, not dungeons
       killPay: 0.8,
       bossGemsBase: 10, bossGemsPerRegion: 6, regionBossGems: 25, firstClearMul: 2,
-      atkBase: 10, atkPerLevel: 0, atkCompound: 1.05,
+      // 체력 다시 맞추기 (2026-11-17 대미지 계산식 정비, tools/hp-rescale.cjs): [진행 위치(난이도×310+스테이지), log10 배율]
+      wallFix: [1.5,0.145,-0.356,0.018,0.906,1.11,1.038,-0.285,0.457,-0.34],   // 벽 고르게 (tools/wall-even.cjs): 일반 지역 보스 체력 log10 조정
+      hpRescale: [[0,0],[30,-1.607],[61,-0.947],[92,-1.86],[123,-2.984],[154,-4.709],[185,-5.341],[216,-7.162],[247,-8.038],[278,-8.998],[309,-9.47],[340,-9.494],[371,-9.671],[402,-10.332],[433,-11.355],[464,-12.339],[495,-13.01],[526,-13.243],[557,-14.627],[588,-14.982],[619,-15.684],[650,-15.682],[681,-15.847],[712,-16.88],[743,-18.048],[774,-17.539],[805,-19.006],[836,-19.368]],
+      atkBase: 10, atkPerLevel: 0, atkCompound: 1.035,   // 2026-11-17 (형: 공격력 레벨 살짝 완만하게): 1.05 → 1.035
       speedPerLevel: 0.01, critPerLevel: 0.005, critDmgBase: 1.5, critDmgPerLevel: 0.02,
       goldPerLevel: 0.03, masteryPerLevel: 0.06,
       gap: 0.25, freezeTaken: 1.3, shockBonus: 1.25,
@@ -562,7 +565,7 @@
       criticalPerLevel: 0.007, criticalRateBase: 1, criticalDmg: 1,   // 크리티컬 (2026-11-17): 확률 기본 100%, 피해 기본 ×1
       megaPerLevel: 0.007, ultimatePerLevel: 0.007, alphaPerLevel: 0.007, megaDmg: 6, ultimateDmg: 7, alphaDmg: 8, highDmgPerLevel: 0.05,
       omegaPerLevel: 0.007, eternalPerLevel: 0.007, genesisPerLevel: 0.007, omegaDmg: 2, eternalDmg: 2, genesisDmg: 2,
-      skillUpBase: 150, skillOwnedPer: 0.01, skillUpGrowth: 1.6, skillLvBonus: 0.1, skillMaxLv: 50,
+      skillUpBase: 150, skillOwnedPer: 0.01, skillUpGrowth: 1.6, skillLvBonus: 0.2, skillMaxLv: 50,
       levelMax: 800, levelXpBase: 40, levelXpPow: 2, levelXpStage: 1.004, levelXpPerDiff: 100, levelAtk: 0.004, levelBossXp: 30, levelGems: 20
     }
   };

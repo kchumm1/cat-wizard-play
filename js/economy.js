@@ -34,13 +34,27 @@
     lg += i * Math.log(G[d] || B.hpGrowth);
     return Math.exp(lg - (SPAN * d + i) * g0);
   }
-  function stageMonsterHp(state, i) { i = i === undefined ? state.stage || 0 : i; return cap(monsterHp(i + SPAN * (state.diff || 0)) * diffOf(state).hpMul * curveMul(state.diff || 0, i)); }
+  // 체력 다시 맞추기 (2026-11-17 대미지 계산식 정비: 크리 합 방식·% 묶기·스킬·공격력): 바뀐 대미지에 맞춰 몬스터·보스 체력에
+  // 진행 위치(난이도 × 310 + 스테이지)마다 10^(값) 을 곱함. balance.hpRescale = [[위치, log10], …] 를 이어서 그 사이는 매끄럽게
+  // (tools/hp-rescale.cjs 가 옛 게임과 새 게임의 같은 플레이어 대미지를 비교해 정함). 없으면 1
+  function hpRescale(d, i) {
+    var R = B.hpRescale; if (!R || !R.length) return 1;
+    var p = (d || 0) * SPAN + i, k = 0;
+    if (p <= R[0][0]) return Math.pow(10, R[0][1]);
+    while (k < R.length - 1 && R[k + 1][0] < p) k++;
+    if (k === R.length - 1) return Math.pow(10, R[k][1]);
+    var a = R[k], b = R[k + 1], t = (p - a[0]) / (b[0] - a[0]);
+    return Math.pow(10, a[1] + (b[1] - a[1]) * t);
+  }
+  function stageMonsterHp(state, i) { i = i === undefined ? state.stage || 0 : i; return cap(monsterHp(i + SPAN * (state.diff || 0)) * diffOf(state).hpMul * curveMul(state.diff || 0, i) * hpRescale(state.diff, i)); }
   // diffWallBoost[d - 1][r] (2026-11-16, 크리티컬 정비): each harder difficulty's region walls are raised on their own, from
   // that difficulty's own simulated play (tools/crit-walls.cjs), not copied from 일반
   function stageBossHp(state, i) {
     i = i === undefined ? state.stage || 0 : i;
     var d = state.diff || 0, hp = d ? bossHp(i, B.diffWallMul, (B.diffWallBoost && B.diffWallBoost[d - 1]) || null) : bossHp(i);
-    return cap(hp * Math.pow(B.hpGrowth, SPAN * d) * diffOf(state).bossMul * curveMul(d, i));
+    // 벽 고르게 (2026-11-17, 형: 지역마다 '조금 막힘 → 키우기 → 뚫음' 리듬이 일정하게): 일반 난이도 지역 보스에 10^(wallFix[지역])
+    if (!d && isRegionBoss(i) && B.wallFix) hp *= Math.pow(10, B.wallFix[Math.floor(i / 31)] || 0);
+    return cap(hp * Math.pow(B.hpGrowth, SPAN * d) * diffOf(state).bossMul * curveMul(d, i) * hpRescale(d, i));
   }
   // Gold a monster gives. On a harder difficulty (2026-11-14) at most 1/goldCapKills of the player's next attack level:
   // gold grows ×1.2 a stage, and sweeping the easy first stages of a new difficulty gave hundreds of attack levels in a
@@ -162,7 +176,8 @@
     var gb = gearBonus(state), ub = upgradeBonus(state);
     for (var bk in ub) if (gb[bk] !== undefined) gb[bk] += ub[bk];
     var atk = B.atkBase * (1 + u.atk * B.atkPerLevel) * Math.pow(B.atkCompound, u.atk);
-    atk = atk * (1 + gb.atk) * (1 + gb.atkPct) * (1 + B.levelAtk * ((state.level || 1) - 1));
+    // 2026-11-17 (형: 같은 종류 %끼리 더하기): 공격력 + 와 공격력 % 는 한 묶음으로 더함 (예전엔 서로 곱함)
+    atk = atk * (1 + gb.atk + gb.atkPct) * (1 + B.levelAtk * ((state.level || 1) - 1));
     var st = statsBase(state, u, gb, atk), over = {};
     Object.keys(DATA.upgrades).forEach(function (k) { var t = overTarget(k), n = overLevels(state, k); if (t && n) over[t] = (over[t] || 0) + n; });
     var TR = dep('training'), mo = TR && TR.markOver ? TR.markOver(state) : {};   // rate marks past the rank's cap
@@ -195,10 +210,11 @@
       speedMul: Math.min(2, 1 + u.speed * B.speedPerLevel + gb.speed),
       goldMul: (1 + u.gold * B.goldPerLevel + gb.goldMul) * (1 + gb.potionGold),
       mastery: 1 + u.mastery * B.masteryPerLevel,
-      skillDmg: 1 + gb.skillDmg,
+      // 2026-11-17: 모든 공격이 스킬이라 스킬 피해와 모든 피해(finalPct)는 한 묶음으로 더함 — 물약만 따로 곱함
+      skillDmg: 1 + gb.skillDmg + gb.finalPct,
       bossDmg: 1 + gb.bossDmg,
       normalDmg: 1 + gb.normalDmg,
-      finalMul: (1 + gb.finalPct) * (1 + gb.potion),
+      finalMul: 1 + gb.potion,
       weakMul: DATA.weakConf.mul * (1 + (gb.weakDmg || 0)),
       surgeMul: DATA.surgeConf.mul * (1 + (gb.surgeDmg || 0)),
       surgeRate: 1 + (gb.surgeRate || 0),
@@ -212,8 +228,7 @@
     if (o.boss) d *= st.bossDmg; else d *= st.normalDmg || 1;
     d *= st.finalMul || 1;
     var ct = o.critTier !== undefined ? o.critTier : (o.crit ? 1 : 0), dm = tierDmgs(st);
-    if (o.even) d *= evenCrit(st, ct);
-    else for (var t = 0; t < ct && t < dm.length; t++) d *= dm[t];
+    d *= critMul(dm, ct);   // o.even: 2026-11-17 부터 합 방식이라 고른 크리(눌러 펴기)가 필요 없어 같은 값
     if (o.frozen) d *= B.freezeTaken;
     if (o.shocked) d *= B.shockBonus;
     return cap(d);
@@ -242,35 +257,18 @@
     while (t < rates.length && rng() < rates[t]) t++;
     return t;
   }
-  // average damage factor from all crit tiers, from the top tier down
+  // 크리 합 방식 (2026-11-17, 형: 크리를 터진 최고 단계 배율로 — 폭발하지 않게): 터진 단계들의 (배율 - 1) 을 더함.
+  // 치명타 ×1.5 만 = ×1.5, 치명타 ×1.5 와 테라 ×3 = 1 + 0.5 + 2 = ×3.5 (예전엔 곱해서 ×4.5). 단계가 열릴 때마다 확실히 세지지만
+  // 열 단계를 다 곱해 10^7 배가 되던 일은 없음. 아래 단계 배율을 키우면 그 위 단계가 터질 때도 같이 커짐.
+  function critMul(dm, ct) { var m = 1; for (var t = 0; t < ct && t < dm.length; t++) m += dm[t] - 1; return m; }
+  // average damage factor: each tier adds (its damage - 1) whenever it is reached (the chance of reaching it × that)
   function critFactor(st) {
-    var r = tierRates(st), dm = tierDmgs(st), f = 1;
-    for (var i = r.length - 1; i >= 0; i--) f = 1 + r[i] * (dm[i] * f - 1);
+    var r = tierRates(st), dm = tierDmgs(st), f = 1, pr = 1;
+    for (var i = 0; i < r.length; i++) { pr *= r[i]; if (!pr) break; f += pr * (dm[i] - 1); }
     return f;
   }
-  // Even crits (2026-11-15). With all seven tiers the whole chain (crit…alpha) came once in ~2,600 hits but carried ~72%
-  // of the average damage, so a real 45-second boss fight got only 2-10% of the "보스" number in the stats window
-  // (measured on the user's stats: 11항하사 shown, the 6-31 crocodile with 9.3항하사 needed won ~5% of tries).
-  // In the game a hit now gets: crit and super as they are, the tiers from ultra up squeezed (their product to the
-  // power EVEN_POW), and every hit scaled so the average stays exactly critFactor(st) — the game is tuned on that average.
-  // A typical fight now lands close to it. tierDmgs/critFactor/upgrades are unchanged: raising any tier raises the average
-  // just as before. A player with only crit and super sees no change.
-  // EVEN_FROM 3 (2026-11-17): 크리티컬 went in after crit, so crit · 크리티컬 · 테라 stay as they are (was crit · super)
-  var EVEN_FROM = 3, EVEN_POW = 0.15, evenKey = '', evenTab = null;
-  function evenTable(st) {
-    var r = tierRates(st), dm = tierDmgs(st), key = r.join() + '|' + dm.join();
-    if (key === evenKey) return evenTab;
-    var pr = 1, low = 1, high = 1, E = 0, Ec = 0, comp = [];
-    for (var t = 0; t <= r.length; t++) {
-      var stop = t < r.length ? pr * (1 - r[t]) : pr, c = low * Math.pow(high, EVEN_POW);
-      E += stop * low * high; Ec += stop * c; comp.push(c);
-      if (t < r.length) { pr *= r[t]; if (t < EVEN_FROM) low *= dm[t]; else high *= dm[t]; }
-    }
-    var k = Ec > 0 ? E / Ec : 1;
-    evenKey = key; evenTab = comp.map(function (c) { return c * k; });
-    return evenTab;
-  }
-  function evenCrit(st, ct) { var tab = evenTable(st); return tab[Math.max(0, Math.min(tab.length - 1, ct | 0))]; }
+  // 고른 크리 (2026-11-15) 는 곱 방식의 큰 들쭉날쭉을 펴던 것 — 합 방식에서는 한 방의 차이가 작아 그대로 씀
+  function evenCrit(st, ct) { return critMul(tierDmgs(st), Math.max(0, Math.min(TIERS.length, ct | 0))); }
   // The boss damage a usual fight really deals per second (the middle of 151 fights of `secs` seconds, the same random
   // numbers every time so the stats window does not flicker). One crit roll a cast — a skill split in pieces rolls
   // each piece, which lands a little closer to the average, so this errs low.
@@ -360,7 +358,7 @@
   return {
     stageMonsterHp: stageMonsterHp, stageBossHp: stageBossHp, curveMul: curveMul, stageGold: stageGold, diffOf: diffOf,
     monsterHp: monsterHp, bossHp: bossHp, monsterGold: monsterGold, bossGems: bossGems,
-    critTierOpen: critTierOpen, tierRates: tierRates, tierDmgs: tierDmgs,
+    hpRescale: hpRescale, critTierOpen: critTierOpen, tierRates: tierRates, tierDmgs: tierDmgs,
     isWeak: isWeak, regionOf: regionOf, surgeTick: surgeTick, surgeFactor: surgeFactor, weakFactor: weakFactor, upgradeBonus: upgradeBonus, bonusBySource: bonusBySource, upgradeCostN: upgradeCostN, tryUpgradeN: tryUpgradeN, upgradeOpen: upgradeOpen, upgradeNeed: upgradeNeed, rollCrit: rollCrit, critFactor: critFactor, upgradeCost: upgradeCost, tryUpgrade: tryUpgrade, stats: stats, overInfo: overInfo, hitDamage: hitDamage,
     atkPrice: atkPrice, progressIndex: progressIndex, goldScale: goldScale, capGold: capGold, GOLD_MAX: GOLD_MAX, dps: dps, bossDps: bossDps, bossDpsTypical: bossDpsTypical, evenCrit: evenCrit, killsPerSecond: killsPerSecond, goldPerSecond: goldPerSecond, skillById: skillById,
     isRegionBoss: isRegionBoss, isMiniBoss: isMiniBoss
