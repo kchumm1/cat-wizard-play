@@ -51,6 +51,8 @@ self.addEventListener('fetch', (e) => {
   const req = e.request; if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin === location.origin) {
+    // 운영자 화면(ops.html)은 저장해 두지 않고 늘 새로 받음 (2026-11-18, 형: 핸드폰은 안 바뀜)
+    if (//ops.html$/.test(url.pathname)) { e.respondWith(fetch(req.url, { cache: 'no-store' }).catch(() => fetch(req))); return; }
     e.respondWith(caches.match(req, { ignoreSearch: true }).then((hit) => hit || fetch(req)));
   } else if (/cdnjs\.cloudflare\.com|fonts\.(googleapis|gstatic)\.com/.test(url.host)) {
     e.respondWith(caches.open(EXTRA).then((c) => c.match(req).then((hit) => {

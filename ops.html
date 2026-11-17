@@ -262,7 +262,7 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
 <body>
 <header class="top">
   <div class="top-in">
-    <h1 class="brand"><span class="logo">🐱</span><span>냥법사 운영실<small>편지 · 공지 관리</small></span></h1>
+    <h1 class="brand"><span class="logo">🐱</span><span>냥법사 운영실<small>편지 · 공지 관리 <span id="opsVer"></span></small></span></h1>
     <div class="tools"><button type="button" class="keychip off" id="keyChip">열쇠 없음</button><button type="button" class="theme" id="theme" aria-label="밝게·어둡게 바꾸기">☀️</button></div>
     <nav class="tabs" id="tabs" aria-label="메뉴">
       <button type="button" data-tab="home" class="on">🏠 홈</button>
@@ -998,6 +998,21 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
   showKey();
   if (token()) load(NZ).then(function (cur) { nzDraw(cur.doc); }).catch(function (e) { say('nzListMsg', e.message, 'bad'); });
   if (token()) load().then(function (cur) { draw(cur.doc); }).catch(function (e) { say('listMsg', e.message, 'bad'); });
+})();
+</script>
+<script>
+// 폰에 예전 운영자 페이지가 남아 있으면 최신 판으로 바로 바꿈 (2026-11-18, 형: 왜 핸드폰은 안 바뀌지)
+// 사이트는 이 파일을 10분 동안 같은 판으로 내주므로, 열 때 최신 파일을 직접 받아 판 번호가 다르면 새 주소로 다시 염.
+// 판을 고치면 아래 V를 바꿀 것.
+(function () {
+  var V = '2026-11-18-3', el = document.getElementById('opsVer');
+  if (el) el.textContent = '· 판 ' + V.slice(5);
+  if (typeof fetch !== 'function') return;
+  fetch('ops.html?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) {
+    var m = t.match(/var V = '(\d{4}-\d\d-\d\d-\d+)'/); if (!m || m[1] === V) return;
+    try { if (sessionStorage.getItem('cw-ops-up') === m[1]) return; sessionStorage.setItem('cw-ops-up', m[1]); } catch (e) {}
+    location.replace('ops.html?v=' + m[1] + location.hash);
+  }).catch(function () {});
 })();
 </script>
 <div class="ask hide" id="ask" role="dialog" aria-modal="true" aria-labelledby="askT">
