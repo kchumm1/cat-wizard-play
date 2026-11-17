@@ -37,9 +37,22 @@
     var rel = file + '?t=' + Date.now(), host = (root.location && root.location.hostname) || '';
     var go = function (u) { return fetch(u, { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }); };
     if (!/github\.io$/.test(host)) return go(rel).catch(function () { return null; });
-    return go('https://raw.githubusercontent.com/kchumm1/cat-wizard-play/main/' + file + '?t=' + Date.now())
+    // raw.githubusercontent.com/…/main/ 은 ?t= 를 붙여도 5분 동안 같은 파일을 줌(2026-11-18 확인) → 최신 커밋 번호를 물어
+    // 그 번호의 파일을 받음(번호가 바뀌면 새 주소라 바로 최신). 번호는 1분에 한 번만 물어 우편함·공지가 같이 씀.
+    // 못 물으면(횟수 제한 등) 사이트 파일(약 1분 늦음).
+    var C = root.CW || (root.CW = {}), now = Date.now();
+    if (!C.repoShaP || now - C.repoShaT > 55000) {
+      C.repoShaT = now;
+      C.repoShaP = fetch('https://api.github.com/repos/kchumm1/cat-wizard-play/commits/main?t=' + now, { cache: 'no-store', headers: { Accept: 'application/vnd.github.sha' } })
+        .then(function (r) { return r.ok ? r.text() : ''; })
+        .then(function (t) { t = (t || '').trim(); return /^[0-9a-f]{40}$/.test(t) ? t : null; })
+        .catch(function () { return null; });
+    }
+    return C.repoShaP
+      .then(function (sha) { return sha ? go('https://raw.githubusercontent.com/kchumm1/cat-wizard-play/' + sha + '/' + file) : null; })
+      .catch(function () { return null; })
       .then(function (d) { return d || go(rel); })
-      .catch(function () { return go(rel).catch(function () { return null; }); });
+      .catch(function () { return null; });
   }
   function fetchNotice() {
     if (typeof fetch !== 'function') return;
