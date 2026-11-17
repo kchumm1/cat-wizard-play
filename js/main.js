@@ -206,7 +206,10 @@
       if (skill.status === 'freeze') mob.frozen = Math.max(mob.frozen, mob.boss ? 0.7 : 1.5);
       if (skill.status === 'shock') mob.shocked = 2.2;
       sc.hitMob(mob, crit, (power || 1) * (1 + 0.25 * Math.max(0, ct - 1)));
-      sc.damageText(sc.mobTop(mob), CW.fmt(dmg), ct, hexCss(skill.color));
+      // water skills: the number in near white — in the skill's own blue it could not be read on the water (2026-11-17,
+      // the user: 실제로 타격하는지 모르겠다)
+      var numCol = skill.el === 'water' ? '#f4fcff' : hexCss(skill.color);
+      sc.damageText(sc.mobTop(mob), CW.fmt(dmg), ct, numCol);
       // the little ones standing near where it landed are knocked out together, with one shared burst
       if (mins && !mob.boss) {
         var mk = mins.hitArea(mob.x, mob.z, 0.8 + 0.25 * Math.min(2, power || 1));
@@ -216,7 +219,7 @@
           // "졸개도 스킬에 맞고 대미지를 몬스터 + 졸개까지 다 보여줘"); they still bring nothing and count for nothing
           mk.hits.forEach(function (h) {
             var mt = CW.rollCrit(st), md = CW.hitDamage(st, skill, { boss: false, critTier: mt, even: true }) * (frac === undefined ? 1 : frac) * (mul || 1);
-            sc.damageText(new sc.THREE.Vector3(h.x, h.y, h.z), CW.fmt(md), mt, hexCss(skill.color));
+            sc.damageText(new sc.THREE.Vector3(h.x, h.y, h.z), CW.fmt(md), mt, numCol);
           });
         }
       }

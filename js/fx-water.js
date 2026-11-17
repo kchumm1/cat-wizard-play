@@ -25,7 +25,7 @@
         // its tail streams behind it (the drop's +y)
         D.copy(v).normalize().negate(); if (D.lengthSq() > 0.5) q.setFromUnitVectors(UP, D);
         var a = Math.min(1, (L - t) / 0.15);
-        h.set(P, q, sz * (1 + 0.15 * Math.sin(t * 30)), Math.max(0, a), 1);
+        h.set(P, q, sz * (1 + 0.05 * Math.sin(t * 30)), Math.max(0, a), 1);
         if (P.y <= 0.02 && v.y < 0) { K.gRing(V(P.x, 0.03, P.z), TEAL, 0.35 * sz / 0.2, 0.25); h.kill(); return true; }
         if (t < L) return false; h.kill(); return true;
       });
@@ -100,8 +100,11 @@
       if (vy && (m.y || 0) <= 0.05) m.vy = Math.max(m.vy || 0, vy);
     }
     // (8th, the user: 좀 더 임팩트) the big moments: the camera knocked, a pale water-blue flash (not white), shock rings
-    function boom(p, size) {
-      sc.punch(0.05 * size); sc.flash('rgba(120,195,255,1)', 0.16 * size);
+    // (9th, 2026-11-17, the user: 커졌다 작아졌다 한다) the camera is knocked once in a skill, at its biggest moment (still: no
+    // knock) — a knock on every monster added up, and the whole screen zoomed in and out with each cast, more the more
+    // monsters there were
+    function boom(p, size, still) {
+      if (!still) sc.punch(0.05 * size); sc.flash('rgba(120,195,255,1)', 0.16 * size);
       K.gRing(V(p.x, 0.04, p.z), 0xd8f2ff, 3.2 * size, 0.38); K.gRing(V(p.x, 0.04, p.z), 0x7cc4ff, 2.2 * size, 0.3);
     }
     // where water stands on the ground: rings running out and a little foam, now and then (call each frame)
@@ -112,7 +115,15 @@
     // a jolt on each hit of a moving wave: shaken and knocked, but time is not held — held on every monster, the wave
     // stopped and went again as it passed a crowd (2026-11-17, the user: 파도가 뚝뚝 끊기는 느낌); it is held only at the
     // big moments (slam)
-    function tapper() { return function (t, hold, sh) { sc.shake(sh || 0.12); sc.punch(0.025); }; }
+    function tapper() { return function (t, hold, sh) { sc.shake(sh || 0.12); }; }
+    // (9th, the user: 실제로 몬스터를 타격하는지 모르겠다) the mark of a hit, drawn over the water (the water covered the
+    // monster as it was hit, and nothing showed that it had been): a white star, a ring and short streaks on the monster
+    function hitMark(m, big) {
+      var p = sc.mobPos(m), b = (big || 1) * (m.boss ? 1.5 : 1);
+      E({ sys: 'norm', pos: p, frame: 'star', color: [0xffffff, 0xd8f4ff], size: [0.4 * b, 1.25 * b], ease: 1, life: 0.2, spin: rr(-6, 6), alpha: 1 });
+      E({ sys: 'norm', pos: p, frame: 'ring', color: 0xffffff, size: [0.25 * b, 1.3 * b], ease: 1, life: 0.22, alpha: 0.95 });
+      for (var k = 0; k < 6; k++) E({ sys: 'norm', pos: p, frame: 'streak', color: k % 2 ? 0xffffff : 0xbfeaff, size: [0.14 * b, 1.1 * b], ease: 1, life: 0.16, rot: k / 6 * 3.1416 + rr(-0.15, 0.15), alpha: 0.95 });
+    }
     // the beat everything lands on: held, shaken (big: the strongest)
     function slam(power, hold) { sc.hitStop(hold); sc.shake(power); }
     function spread(list) {
@@ -130,13 +141,16 @@
       c.plain = true;
       sc.heroPose('raise', c.D(0.12), c.col);
       var H = sc.heroCenter(), B = spread(list.concat([{ x: H.x, z: H.z }])), s = cap(c, 2.6, 3.4);
-      var DEP = Math.min(7.5, Math.max(4.5, B.z1 - B.z0 + 3)), HT = 0.85 * s, cz = B.cz;
+      // (9th, the user: 커졌다 작아졌다, 타격 범위를 모르겠다) always the same wave, as deep as the whole field (js/scene.js FIELD:
+      // z -4.6 … 3.8) — it was as deep as the monsters happened to stand apart, another size at every cast, and a monster
+      // off its end was hit with no water on it
+      var DEP = 9.4, HT = 0.85 * s, cz = -0.4;
       // (design 2-tidal: a towering wave filling half the screen, coming in on a slant) it rises just inside the left side
       // (2026-11-17, the user: 타격이 잘 안 되고 파도가 중간에 멈춘다 — it eased to a stop by the last monster, and every
       // monster was hit in the first 0.13 s while the wave was still far) it rolls on at one speed from the left edge until
       // it has left the screen on the right, and a monster is hit when the wave's real front reaches it
-      var X0 = Math.min(B.x0 - 1.2, H.x - 2.4), X1 = Math.max(B.x1 + 2.4, H.x + 3.4), RISE = c.D(0.2), RUN = c.D(0.75), CRASH = c.D(0.18), t = 0, fm = 0;
-      var tap = tapper(), wave = P3.bm('waveSheet', {}), flood = P3.bm('floodSheet', {}), q = yawQ(-Math.PI / 2 - 0.3), qi = q.clone().invert(), hit = [], first = true, crashed = false, SZ = V(), FL = V(), LO = V(), LIP = V();
+      var X0 = Math.min(B.x0 - 3.0, H.x - 2.4), X1 = Math.max(B.x1 + 2.4, H.x + 3.4), RISE = c.D(0.2), RUN = c.D(0.95), CRASH = c.D(0.18), t = 0, fm = 0;
+      var tap = tapper(), wave = P3.bm('waveSheet', {}), flood = P3.bm('floodSheet', {}), q = yawQ(-Math.PI / 2 - 0.3), qi = q.clone().invert(), hit = [], first = true, crashed = false, SZ = V(), FL = V(), LO = V(), LIP = V(), HITZ = 0.85;
       // the swell gathering at the side: water welling up out of the ground in a line
       for (var i = 0; i < N(7, c); i++) foam(V(X0 + rr(-0.2, 0.3), 0, cz + rr(-DEP / 2, DEP / 2)), rr(0.9, 1.4), c.D(0.35));
       sc.shake(0.08);
@@ -167,14 +181,16 @@
           if (t < RISE || hit.indexOf(m) >= 0) return;   // (not before it has risen)
           // the monster in the wave's frame: hit once the curling front (local z -0.55 … ahead) has come over it
           LO.set(m.x - x, 0, m.z - cz).applyQuaternion(qi);
-          if (LO.z / SZ.z < -0.5) return;
+          // (9th) at the moment the lip reaches it, while it still shows in front of the water — it was hit only after the
+          // wave had covered it
+          if (LO.z / SZ.z < -HITZ) return;
           hit.push(m);
           var g = gp(m), p = sc.mobPos(m);
           splash(g, 1.6 * (m.boss ? 1.5 : 1), c.D(0.55)); claws(V(g.x, 0, g.z), N(3, c), 0.9 * (m.boss ? 1.5 : 1)); spray(V(g.x, 0.5, g.z), N(4, c), 3, 1.1); whiteSpray(V(g.x, 0.6, g.z), N(10, c), 3.2); mist(g, N(2, c), 1.2);
           // (the user: 파도가 뚝뚝 끊긴다) nothing holds time while it rolls — a slow-motion at the first monster checked it
           // mid-stride; the hold is kept for the crash
-          if (first) { first = false; sc.shake(0.36); boom(g, 1); sc.light(p, TEAL, 1.2, 0.3); } else tap(t, 0, 0.17);
-          c.hit(m, 1, 1.4); knock(m, 3.2, 0.4, 4.2);
+          if (first) { first = false; sc.shake(0.36); boom(g, 1, true); sc.light(p, TEAL, 1.2, 0.3); } else tap(t, 0, 0.17);
+          c.hit(m, 1, 1.4); hitMark(m); knock(m, 5.2, 0.4, 6.2);
         });
         if (!crashed && t >= RISE + RUN) {
           crashed = true;
@@ -189,7 +205,7 @@
         }
         // anything the wave missed is caught as it crashes
         if (crashed && down >= 1 && hit.length >= list.length) { wave.set(V(x, -10, cz), q, SZ, 0, k); }
-        if (crashed && down >= 1 && hit.length < list.length) list.forEach(function (m) { if (hit.indexOf(m) < 0) { hit.push(m); c.hit(m, 1, 1.2); } });
+        if (crashed && down >= 1 && hit.length < list.length) list.forEach(function (m) { if (hit.indexOf(m) < 0) { hit.push(m); c.hit(m, 1, 1.2); hitMark(m); } });
         if (crashed && t >= RISE + RUN + c.D(0.7)) {
           wave.kill(); flood.kill(); return true;
         }
@@ -200,9 +216,11 @@
     // ---- 2. 물방울 감옥 (one monster + 30% to those beside it): water coils up round it into a great bubble that
     // shuts it in, squeezes (the monster squashed, a small jolt), and bursts — a held beat, a hard shake, a crown of
     // water and lumps flung outward onto the monsters beside it.
+    var RING_K = 2;   // (K.gRing's size for a ring of radius 1)
     function prison(c, mob) {
       var g = gp(mob), p = sc.mobPos(mob), big = (mob.boss ? 1.6 : 1) * Math.min(1.3, c.s / 3), R = 0.95 * big;
       var COIL = c.D(0.28), SHUT = c.D(0.36), POP = c.D(0.66), t = 0, popped = false, squeezed = false;
+      var REACH = 1.8;   // how far the burst reaches the monsters beside it (30%)
       var bub = P3.bm('waterBubble', {}), ring = P3.bm('splashCrown', {}), base = P3.bm('waterRing', {}), q = yawQ(rr(0, 6.3)), coil = [];
       for (var i = 0; i < 6; i++) coil.push({ h: P3.bm('waterBlob', {}), a: i / 6 * 6.283, y0: rr(0, 0.15) });
       foam(g, 0.9 * big, COIL + 0.1);
@@ -220,24 +238,30 @@
         // the bubble: shuts round it, then squeezes (wobbling smaller), then bursts
         if (t >= SHUT && !popped) {
           var u = ease3((t - SHUT) / c.D(0.08)), sq = (t - SHUT) / (POP - SHUT);
-          var squash = 1 - 0.16 * ease(sq) + 0.05 * Math.sin(t * 40) * sq;
+          var squash = 1 - 0.16 * ease(sq) + 0.02 * Math.sin(t * 40) * sq;
           bub.set(V(pc.x, Math.max(0, pc.y - R), pc.z), q, V(2 * R * u * squash * (1 + 0.06 * sq), 2 * R * u * squash, 2 * R * u * squash * (1 + 0.06 * sq)), 1, 0);
           // the wave of water wrapped round its foot (design 3-bubble), turning
-          base.set(V(pc.x, 0, pc.z), yawQ(t * 4), V(R * 1.05 * u, 0.55 * big, R * 0.95 * u), 1, 1);
+          // (9th, the user: 타격 범위를 모르겠다) and it runs out along the ground, a low ring of water, to as far as the burst
+          // will reach the monsters beside it — it was a ring round the bubble only, and nothing showed how far 30% went
+          var out = R * 1.05 + (REACH - R * 1.05) * ease(sq * 1.4);
+          base.set(V(pc.x, 0, pc.z), yawQ(t * 4), V(out * u, (0.55 - 0.25 * ease(sq * 1.4)) * big, out * u), 1, 1);
           if (mob.alive && !mob.boss) { mob.pull = g.x; mob.pullZ = g.z; }
           if (!squeezed && sq > 0.5) { squeezed = true; sc.shake(0.12); c.hit(mob, 0.2, 0.05); whiteSpray(V(pc.x, pc.y + R * 0.6, pc.z), N(6, c), 1.6); }
         }
         if (!popped && t >= POP) {
           popped = true; if (mob.pull !== undefined) { mob.pull = undefined; mob.pullZ = undefined; } bub.kill(); base.kill(); coil.forEach(function (o) { o.h.kill(); }); ring.kill();
-          slam(0.46, 0.13); sc.climax(0.55, 0.2); boom(g, 1.3); sc.light(pc, TEAL, 1.4, 0.3);
+          slam(0.46, 0.13); sc.climax(0.55, 0.2); boom(g, 1.3, c.copy > 0); sc.light(pc, TEAL, 1.4, 0.3);
           splash(g, 2.6 * big, c.D(0.7));
           var cr = P3.bm('splashCrown', {}), ct = 0;
           tick(function (dt2) { ct += dt2; var k = ease3(ct / c.D(0.14)); cr.set(V(g.x, 0, g.z), q, 2.4 * big * (1 + 0.3 * ct), Math.max(0, 1 - ct / c.D(0.5)), k); if (ct < c.D(0.5)) return false; cr.kill(); return true; });
           blobs(V(pc.x, pc.y, pc.z), N(7, c), 4.2, 1.0, 0.7); claws(V(g.x, 0, g.z), N(9, c), 1.7 * big, c.D(0.5)); spray(V(pc.x, pc.y, pc.z), N(10, c), 4, 1.5); whiteSpray(V(pc.x, pc.y, pc.z), N(22, c), 4.2); mist(g, N(3, c), 1.8 * big);
           for (var f = 0; f < N(6, c); f++) foam(V(g.x, pc.y * 0.6, g.z), rr(0.8, 1.2), c.D(0.6), V(rr(-3, 3), rr(1.5, 3), rr(-2, 2)));
           wet(g, 2.2 * big, c.D(1.6));
-          c.hit(mob, 0.8, 2.0); knock(mob, 0, 0, 9);
-          c.splash(mob, 1.8, 0.9);
+          c.hit(mob, 0.8, 2.0); hitMark(mob, 1.3); knock(mob, 0, 0, 9);
+          // the ones beside it: marked as they are hit, thrown outward
+          if (c.sk.splash) sc.mobs().forEach(function (o) { if (o.alive && o !== mob && (o.x - mob.x) * (o.x - mob.x) + (o.z - mob.z) * (o.z - mob.z) < REACH * REACH) { hitMark(o, 0.75); var dx = o.x - mob.x, dz = o.z - mob.z, dl = Math.sqrt(dx * dx + dz * dz) || 1; knock(o, dx / dl * 3, dz / dl * 2.4, 4); } });
+          K.gRing(V(mob.x, 0.04, mob.z), 0xffffff, REACH * RING_K, 0.3);
+          c.splash(mob, REACH, 0.9);
           return true;
         }
         return false;
@@ -260,8 +284,9 @@
       var BOIL = c.D(0.14), ERUPT = c.D(0.46), HOLD = c.D(0.3), FALL = c.D(0.25), s = cap(c, 2.6, 3.4);
       after(BOIL, function () { sc.shake(0.06); });
       list.forEach(function (m, i) {
-        // (a crowd of columns would wall the screen in: thinner as there are more of them)
-        var g = gp(m), big = (m.boss ? 1.5 : 1) * s / 3 * Math.min(1, Math.max(0.6, 7 / list.length)), t = 0, col = null, cap_ = [], crown = null, erupted = false, q = yawQ(rr(0, 6.3)), bub = 0;
+        // (a crowd of columns would wall the screen in: thin ones — (9th, the user: 커졌다 작아졌다) one size always; they
+        // were thinner the more monsters there were, another size at every cast)
+        var g = gp(m), big = (m.boss ? 1.5 : 1) * s / 3 * 0.8, t = 0, col = null, cap_ = [], crown = null, erupted = false, q = yawQ(rr(0, 6.3)), bub = 0;
         wet(g, 1.4 * big, ERUPT + HOLD + FALL);
         tick(function (dt) {
           t += dt;
@@ -270,13 +295,15 @@
             bub += dt * 22;
             while (bub >= 1) { bub -= 1; var a = rr(0, 6.283), r = rr(0.1, 0.5) * big; foam(V(g.x + Math.cos(a) * r, 0, g.z + Math.sin(a) * r * 0.8), rr(0.45, 0.8) * big, c.D(0.25)); }
           }
+          // (9th) under where the monster stands now, not where it stood when the spell was cast
+          if (!erupted && m.alive) g = gp(m);
           if (!erupted && t >= ERUPT) {
             erupted = true; col = P3.bm('waterColumn', {});
             if (!i) { slam(0.44, 0.11); sc.climax(0.55, 0.18); boom(g, 1.2); } else K.gRing(V(g.x, 0.04, g.z), 0xd8f2ff, 2.0 * big, 0.32);
             cap_ = []; for (var cf = 0; cf < 4; cf++) cap_.push({ h: P3.bm('foamPuff', {}), a: cf / 4 * 6.283 + rr(-0.3, 0.3), r: cf ? 0.28 : 0, s: rr(1.3, 1.7) });
             splash(g, 1.8 * big, c.D(0.55)); claws(V(g.x, 0, g.z), N(4, c), 0.55 * big); whiteSpray(V(g.x, 0.3, g.z), N(8, c), 3.4); mist(g, 1, 1.0 * big);
             after(c.D(0.08), function () { claws(V(g.x, 2.2 * big, g.z), N(5, c), 0.55 * big, c.D(0.45)); });
-            c.hit(m, 1, 1.6); knock(m, 0, 0, 9.5);
+            c.hit(m, 1, 1.6); hitMark(m); knock(m, 0, 0, 9.5);
           }
           if (erupted) {
             var e = t - ERUPT, up = ease3(e / c.D(0.1)), sink = Math.max(0, (e - HOLD) / FALL);
@@ -302,8 +329,9 @@
       if (!(CW.fxOff && CW.fxOff.dim)) sc.dim(0.2, c.D(1.3));
       var B = spread(list), G = V(B.cx, 0, B.cz), s = cap(c, 2.6, 3.4), SKY = 5.4;
       var OPEN = c.D(0.22), POUR = c.D(0.1), LAND = OPEN + POUR, RUN = c.D(0.42), GONE = c.D(1.0), t = 0;
-      var far = 0; list.forEach(function (m) { far = Math.max(far, Math.hypot(m.x - G.x, (m.z - G.z) / 0.8)); });
-      var tap = tapper(), swept = [], whirl = P3.bm('waterSwirl', {}), fall = P3.bm('fallStream', {}), wall = null, pool = null, landed = false, hit = [], flip = new T.Quaternion().setFromAxisAngle(new T.Vector3(1, 0, 0), Math.PI);
+      // (9th, the user: 커졌다 작아졌다) the wall runs out to the same size every time (wider only if a monster stands further off)
+      var far = 3.2; list.forEach(function (m) { far = Math.max(far, Math.hypot(m.x - G.x, (m.z - G.z) / 0.8)); });
+      var SKYLEAD = 0.3, tap = tapper(), swept = [], whirl = P3.bm('waterSwirl', {}), fall = P3.bm('fallStream', {}), wall = null, pool = null, landed = false, hit = [], flip = new T.Quaternion().setFromAxisAngle(new T.Vector3(1, 0, 0), Math.PI);
       tick(function (dt) {
         t += dt;
         // the whirl in the sky: opening, turning
@@ -333,10 +361,11 @@
           // and behind it the whirlpool fills: its surface rises over the monsters' feet (they stand in the water)
           pool.set(V(G.x, 0.02 + 0.3 * Math.min(1, e * 2) * (1 - dz), G.z), yawQ(-t * 3), V(R * 0.98, 0.6, R * 0.78), Math.max(0, 1 - dz), 1);
           list.forEach(function (m) {
-            if (hit.indexOf(m) >= 0 || Math.hypot(m.x - G.x, (m.z - G.z) / 0.8) > R) return;
+            // (9th) as the wall's outer face reaches it, while it still shows — it was hit once it was inside the water
+            if (hit.indexOf(m) >= 0 || Math.hypot(m.x - G.x, (m.z - G.z) / 0.8) > R + SKYLEAD) return;
             hit.push(m); var g = gp(m);
             splash(g, 1.5 * (m.boss ? 1.5 : 1), c.D(0.5)); claws(V(g.x, 0, g.z), N(3, c), 0.55); spray(V(g.x, 0.4, g.z), N(4, c), 3, 1.1); whiteSpray(V(g.x, 0.5, g.z), N(8, c), 3);
-            tap(t, 0.035, 0.16); c.hit(m, 1, 1.8);
+            tap(t, 0.035, 0.16); c.hit(m, 1, 1.8); hitMark(m);
             // engulfed: foam churning round it
             for (var fo = 0; fo < N(5, c); fo++) { var fa = fo / 5 * 6.283 + rr(-0.3, 0.3); foam(V(g.x + Math.cos(fa) * 0.45, 0.25, g.z + Math.sin(fa) * 0.35), rr(0.9, 1.3), c.D(0.5), V(Math.cos(fa) * 1.2, rr(1, 2), Math.sin(fa) * 1)); }
             if (m.alive && !m.boss) swept.push({ m: m, t0: t, a: Math.atan2((m.z - G.z) / 0.8, m.x - G.x), r: Math.hypot(m.x - G.x, (m.z - G.z) / 0.8) });
@@ -352,7 +381,7 @@
           // the mist that lingers, drifting
           if (Math.random() < dt * 14) E({ sys: 'gnorm', pos: V(G.x + rr(-2, 2), 0.3, G.z + rr(-1.5, 1.5)), vel: V(rr(-0.3, 0.3), rr(0.2, 0.5), 0), frame: 'smoke', color: 0xbfe6f5, size: [0.8, 1.8], ease: 1, life: 1.2, alpha: 0.35, fadeIn: 0.15, fadeOut: 0.6 });
           if (dz >= 1) {
-            list.forEach(function (m) { if (hit.indexOf(m) < 0) { hit.push(m); c.hit(m, 1, 1.4); } });
+            list.forEach(function (m) { if (hit.indexOf(m) < 0) { hit.push(m); c.hit(m, 1, 1.4); hitMark(m); } });
             swept.forEach(function (o) { if (o.m.pull !== undefined) { o.m.pull = undefined; o.m.pullZ = undefined; } }); swept.length = 0;
             whirl.kill(); fall.kill(); wall.kill(); pool.kill(); return true;
           }
