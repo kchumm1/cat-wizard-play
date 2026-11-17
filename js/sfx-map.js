@@ -14,7 +14,8 @@
     solarBurst: { hit: ['bigboom', 'fire'] }, sunSpear: { cast: 'beam', hit: ['boom'] }, sunArrows: { hit: ['zap'] }, coronaRing: { cast: 'whoosh', hit: ['fire'] },
     blackHole: { cast: 'hum', hit: ['bigboom'] }, voidRift: { cast: 'hum', hit: ['boom'] }, gravityCrush: { hit: ['bigboom', 'thud'] }, darkStar: { hit: ['boom'] },
     elementNova: { hit: ['bigboom', 'fire'] }, elementStorm: { hit: ['fire', 'ice', 'bolt'] }, prismBeam: { cast: 'beam', hit: ['bigboom'] }, elementWheel: { hit: ['fire', 'ice', 'bolt', 'water'] },
-    rootSpikes: { hit: ['thud', 'shatter'] }, flytrap: { cast: 'thud', hit: ['punch', 'thud', 'boom'] }, leafBlades: { cast: 'whoosh', hit: ['claw'] }, worldTree: { hit: ['thud', 'boom'] }
+    rootSpikes: { hit: ['thud', 'shatter'] }, flytrap: { cast: 'thud', hit: ['punch', 'thud', 'boom'] }, leafBlades: { cast: 'whoosh', hit: ['claw'] }, worldTree: { hit: ['thud', 'boom'] },
+    tidalWave: { cast: 'whoosh', hit: ['water', 'boom'] }, bubblePrison: { hit: ['water', 'punch', 'boom'] }, waterBurst: { hit: ['thud', 'water', 'boom'] }, skyFalls: { cast: 'whoosh', hit: ['water', 'boom', 'thud'] }
   };
   // the plain hit and kill sounds (they replaced the synth tick and beep)
   var BASIC = { hit: 'tap', kill: 'pop' };

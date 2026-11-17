@@ -16,7 +16,7 @@
     mark: { mStar: 'mark-star', mClaw: 'mark-claw', mMoon: 'mark-moon', mComet: 'mark-comet', mCrown: 'mark-crown', mBook: 'mark-book', mArcane: 'pk-mark-mArcane', mJudge: 'pk-mark-mJudge' },
     // packages that only had an emoji (2026-11-15 pack); names, prices and contents stay in js/data.js
     pack: { dailyGem: 'pk-pack-dailyGem', goldS: 'pk-pack-goldS', goldL: 'pk-pack-goldL', potion: 'pk-pack-potion', grow: 'pk-pack-grow',
-      gear10: 'pk-pack-gear10', gear30: 'pk-pack-gear30', gear100: 'pk-pack-gear100', tier5: 'pk-pack-tier5', tier8: 'pk-pack-tier8', tier10: 'pk-pack-tier10', manaS: 'currency-mana', manaL: 'currency-mana',
+      gear10: 'pk-pack-gear10', gear30: 'pk-pack-gear30', gear100: 'pk-pack-gear100', tier5: 'pk-pack-tier5', tier8: 'pk-pack-tier8', tier10: 'pk-pack-tier10', tier11: 'pk-pack-tier11', manaS: 'currency-mana', manaL: 'currency-mana',
       winterS: 'pk-pack-winterS', winterM: 'pk-pack-winterM', winterL: 'pk-pack-winterL' },   // 겨울 신규 냥법사 (2026-11-17, GPT 그림)
     potion: { rage: 'potion-rage', luck: 'potion-luck', wisdom: 'potion-wisdom' },
     cur: { mana: 'currency-mana' },

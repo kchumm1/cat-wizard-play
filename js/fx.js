@@ -1272,6 +1272,7 @@
       dustCol: function () { return dustCol; } };
     if (CW.fxMore) CW.fxMore(KIT, S);
     if (CW.fxWood) CW.fxWood(KIT, S);   // 10차 나무 (js/fx-wood.js)
+    if (CW.fxWater) CW.fxWater(KIT, S);   // 11차 물 (js/fx-water.js)
     // 1차 스킬 7개는 3D 몸으로 (js/fx-tier1.js)
     if (CW.fxTier1) CW.fxTier1(KIT, S);
     // the legendary beasts (js/fx-beasts.js): their own flights, updated and cleared with the rest

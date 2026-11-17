@@ -33,12 +33,27 @@
     return 'next';
   }
   // the job a region boss leads to: regions 1-8 -> jobs 2-9 on any difficulty; the 10th job (wood since 2026-11-16) is the
-  // boss of 5-31 on 루나틱 (difficulty 2, 2026-11-14); 9-31 and the last boss lead to none (yet)
+  // boss of 5-31 on 루나틱 (difficulty 2, 2026-11-14), the 11th (water, 2026-11-17) its last boss (10-31); 9-31 leads to none
   var TIER10 = { diff: 2, region: 4 };
+  // the 11th job, water (2026-11-17): the boss of 10-31 on 루나틱
+  var TIER11 = { diff: 2, region: 9 };
+  var LATE = { 10: TIER10, 11: TIER11 };
   function trialTier(i, diff) {
     var info = stageInfo(i); if (!info.isRegionBoss) return 0;
     if ((diff || 0) === TIER10.diff && info.region === TIER10.region) return root.CW && root.CW.FRIEND ? 0 : 10; // 체험판: no 10th job (js/friend.js)
+    if ((diff || 0) === TIER11.diff && info.region === TIER11.region) return root.CW && root.CW.FRIEND ? 0 : 11;
     return info.region < 8 ? info.region + 2 : 0;
+  }
+  // a save on the 10th job that already beat the boss leading to the 11th (2026-11-17, the user: 불러올 때 11차 주기):
+  // that boss is the last stage of its difficulty and cannot be fought again, so the job comes when the save is loaded.
+  // Returns the new tier (and sets it) or null. friend: the 체험판 never gets it (js/friend.js)
+  function lateTier(state, friend) {
+    if (friend || !state || state.tier !== 10) return null;
+    var boss = TIER11.region * 31 + 30, d = TIER11.diff;
+    var best = (state.diff || 0) === d ? state.best : (state.diffBest && state.diffBest[d] && state.diffBest[d].best);
+    if (!(best >= boss)) return null;
+    // tierShow: the celebration is owed (kept in the save until it has played — js/main.js doTierUp clears it)
+    state.tier = 11; state.tierShow = 11; return 11;
   }
   // a job trial: beating this boss would still raise the tier (shown as "전직 시험"; once the job is reached it is a
   // plain region boss). diff: the difficulty asked about (the map shows others than the one being played)
@@ -47,8 +62,8 @@
   function tierNeed(n) {
     if (n <= 1) return '처음부터';
     if (n <= 9) return (n - 1) + '-31 보스를 이기면';
-    if (n === 10 && root.CW && root.CW.FRIEND) return '체험판에서는 열리지 않아요';
-    if (n === 10) return DATA.difficulties[TIER10.diff].name + ' ' + (TIER10.region + 1) + '-31 보스를 이기면';
+    if (LATE[n] && root.CW && root.CW.FRIEND) return '체험판에서는 열리지 않아요';
+    if (LATE[n]) return DATA.difficulties[LATE[n].diff].name + ' ' + (LATE[n].region + 1) + '-31 보스를 이기면';
     var soon = (DATA.tierSoon || []).filter(function (t) { return t.n === n; })[0];
     return soon ? DATA.difficulties[soon.diff].name + ' 10-31 보스를 이기면' : '';
   }
@@ -56,7 +71,7 @@
   function tierGoal(n) {
     if (n <= 1) return '처음부터';
     if (n <= 9) return (n - 1) + '-31 보스 깨기';
-    if (n === 10) return root.CW && root.CW.FRIEND ? '체험판에서는 열리지 않아요' : DATA.difficulties[TIER10.diff].name + ' ' + (TIER10.region + 1) + '-31 보스 깨기';
+    if (LATE[n]) return root.CW && root.CW.FRIEND ? '체험판에서는 열리지 않아요' : DATA.difficulties[LATE[n].diff].name + ' ' + (LATE[n].region + 1) + '-31 보스 깨기';
     var soon = (DATA.tierSoon || []).filter(function (t) { return t.n === n; })[0];
     return soon ? DATA.difficulties[soon.diff].name + ' 10-31 보스 깨기' : '';
   }
@@ -107,5 +122,5 @@
     state.farming = state.stage <= state.best;
     return true;
   }
-  return { clearKey: clearKey, setDifficulty: setDifficulty, stageLabel: stageLabel, stageInfo: stageInfo, stageBoss: stageBoss, isTierTrial: isTierTrial, tierNeed: tierNeed, tierGoal: tierGoal, onKill: onKill, onBossResult: onBossResult, retryBoss: retryBoss, onHidden: onHidden, goStage: goStage, LAST_STAGE: LAST };
+  return { clearKey: clearKey, setDifficulty: setDifficulty, stageLabel: stageLabel, stageInfo: stageInfo, stageBoss: stageBoss, isTierTrial: isTierTrial, lateTier: lateTier, tierNeed: tierNeed, tierGoal: tierGoal, onKill: onKill, onBossResult: onBossResult, retryBoss: retryBoss, onHidden: onHidden, goStage: goStage, LAST_STAGE: LAST };
 });

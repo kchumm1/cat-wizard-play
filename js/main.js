@@ -18,6 +18,12 @@
     return s;
   }
   friendCap(state);
+  // 11차 물 (2026-11-17): a 10th-job save that already beat 루나틱 10-31 (its last stage, not to be fought again) gets the
+  // 11th job now. Its celebration is owed (state.tierShow, saved): it plays once the game has begun and no window is
+  // open — not behind the update screen or under the 「돌아왔어요」 window (final review), and still next time if the
+  // app is left before it played
+  if (CW.lateTier) CW.lateTier(state, CW.FRIEND);
+  var begun = false;
   // monster codex (2026-11-15): an old save gets its codex filled once from how far it went
   if (CW.dexBackfill) CW.dexBackfill(state);
   var params = new URLSearchParams(location.search);
@@ -290,6 +296,7 @@
     restT = 0.8; save();
   }
   function doTierUp(t) {
+    if (state.tierShow === t) delete state.tierShow;
     var id = DATA.tiers[t - 1].skill, sk = id && CW.skillById(id);
     if (id) CW.autoSlotNew(state, id);
     sc.setTierAura(t); fx.levelUp(t, [0xffd84a, 0xff6a2b, 0x9fd8ff, 0xbfefff, 0xffe14a, 0xe6e6ff, 0xffd84a, 0xb04bff, 0xffffff][t - 1]);
@@ -582,7 +589,9 @@
   var buffKey = '', buffT = 0;
   function tick(dt) {
     buffT -= dt; if (buffT <= 0) { buffT = 1; var bk = CW.buffKey(state); if (bk !== buffKey) { buffKey = bk; refreshStats(); } }
-    for (var i = pendingTier.length - 1; i >= 0; i--) { pendingTier[i].at -= dt; if (pendingTier[i].at <= 0) { doTierUp(pendingTier[i].tier); pendingTier.splice(i, 1); } }
+    var mEl = $('modal'), calm = !mEl || mEl.hidden;
+    if (begun && calm && state.tierShow && !pendingTier.length) pendingTier.push({ tier: state.tierShow, at: 1.0 });
+    for (var i = pendingTier.length - 1; i >= 0; i--) { if (!calm) break; pendingTier[i].at -= dt; if (pendingTier[i].at <= 0) { doTierUp(pendingTier[i].tier); pendingTier.splice(i, 1); } }
     // how many little ones: only in a plain stage fight (not a boss, not a dungeon), fewer on a phone and at lower quality
     if (mins) mins.setWant(dun || boss || state.bossTry ? 0 : CW.minionCap(sc.getQuality(), CW.PHONE), minionPick);
     if (dun) dunTick(dt);
@@ -661,6 +670,7 @@
 
   // ---------- leaving and coming back ----------
   function giveOffline() {
+    begun = true;   // (모험 시작 pressed: an owed job celebration may play — state.tierShow)
     var r = CW.offlineReward(state, Date.now());
     if (r.seconds < 60) { ui.showDaily(true); return; }
     state.gold += r.gold; state.gems += r.gems; CW.setGoldScale(CW.capGold(state)); var lv = CW.gainXp(state, r.xp || 0); r.levels = lv.levels; if (lv.levels) refreshStats(); save();
@@ -699,7 +709,8 @@
   }
   function adopt(json) {
     var loaded = CW.load({ getItem: function () { return json; } }); if (!loaded) return false; CW.migrateBag(loaded); if (CW.dexBackfill) CW.dexBackfill(loaded);
-    state = friendCap(loaded); rot = CW.rotation(state); refreshStats(); pendingTier.length = 0; preview = null;
+    state = friendCap(loaded); if (CW.lateTier) CW.lateTier(state, CW.FRIEND);   // 11차 물: a save brought in (the celebration: state.tierShow)
+    rot = CW.rotation(state); refreshStats(); pendingTier.length = 0; preview = null;
     clearField(true); region = -1; restT = 0.4;
     if (state.bossTry) { state.bossTry = false; state.stage = Math.max(0, state.stage - 1); state.farming = true; }
     syncRegion(); sc.setTierAura(state.tier); applySettings();
