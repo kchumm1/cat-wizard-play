@@ -2158,6 +2158,37 @@
       panel.scrollTop = Math.max(0, c.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop - 12);
       c.classList.remove('sumflash'); void c.offsetWidth; c.classList.add('sumflash'); setTimeout(function () { c.classList.remove('sumflash'); }, 1600);
     };
+    // 메뉴 그림 미리 불러 두기 (2026-11-18, 형: 장비를 누르면 화면은 바로 나오는데 지팡이 그림만 잠깐 늦게 나옴)
+    // 메뉴는 누르는 순간 처음 만들어져서, 그때서야 그림을 저장본(서비스워커)에서 꺼내고 풀기 시작함 → 전투·화면 만들기로 바쁜 폰에서는
+    // 창이 먼저 뜨고 그림이 한두 박자 뒤에 들어옴 (앱을 켜고 처음 열 때마다). 시작한 뒤 한가할 때 미리 불러 풀어 두고 붙잡아 두면
+    // 메뉴를 열 때 같은 주소의 그림이 바로 그려짐. 한 번에 조금씩만 (폰 발열·전투 끊김 없게)
+    var warmKeep = [], warmHas = {};
+    function warmImgs(urls, done) {
+      var list = urls.filter(function (u) { return u && !warmHas[u] && (warmHas[u] = 1); }), i = 0;
+      var later = root.requestIdleCallback ? function (f) { root.requestIdleCallback(f, { timeout: 1500 }); } : function (f) { setTimeout(f, 120); };
+      (function warmStep() {
+        if (i >= list.length) { if (done) done(); return; }
+        list.slice(i, i += 4).forEach(function (u) {
+          var im = new Image(); im.decoding = 'async'; im.src = u; warmKeep.push(im);
+          if (im.decode) im.decode().catch(function () {});
+        });
+        later(warmStep);
+      })();
+    }
+    function gearKindPics(kind) {   // 장비 목록 한 종류에 나오는 그림 전부 (등급 0~9, 혼돈·멸망은 단계 I~IV마다)
+      var out = []; if (!CW.ICO.gearSrc) return out;
+      for (var g = 0; g < DATA.grades.length; g++) for (var sb = 1; sb <= 4; sb++) out.push(CW.ICO.gearSrc(kind, g, sb));
+      return out;
+    }
+    (CW.afterStart || function (f) { f(); })(function () {
+      setTimeout(function () {
+        var A = CW.ART_BASE || 'art/';
+        // 먼저: 장비를 열면 처음 보이는 지팡이 목록·전시대, 구분선 발바닥, 뽑기 상자 / 그다음: 나머지 장비 종류
+        warmImgs(gearKindPics(bagKind).concat([A + 'ui-paw.webp', A + 'ui-chest-closed.webp', A + 'ui-chest-open.webp']), function () {
+          warmImgs(['hat', 'robe', 'belt', 'necklace', 'ear', 'ring'].reduce(function (a, k) { return a.concat(gearKindPics(k)); }, []));
+        });
+      }, 1200);
+    });
     function openTab(name) {
       if (name === 'gacha') ghdSeen = null;
       if (name === 'more' && tab !== 'more') tierAnim = true;   // 전직 cards slide in when 더보기 opens
