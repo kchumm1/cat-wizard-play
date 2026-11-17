@@ -1,7 +1,10 @@
 (function (root) {
   var CW = root.CW = root.CW || {};
   var ctx = null, enabled = true, master = null, last = {};
+  // 2026-11-17 형: 음악·효과음이 완벽해질 때까지 소리 전부 막기. 다시 켜려면 false로. (테스트는 CW_SOUND_ON으로 풀고 돎)
+  var MUTED = root.CW_SOUND_ON !== true;
   function init() {
+    if (MUTED) return;   // AudioContext도 안 만들고 소리 파일도 안 받음
     if (ctx) { if (ctx.state !== 'running') { try { var p = ctx.resume(); if (p && p.catch) p.catch(function () { }); } catch (e) { } } return; }   // iPhone: 'interrupted' after leaving the app, too
     try { var AC = root.AudioContext || root.webkitAudioContext; if (!AC) return; ctx = new AC(); master = ctx.createGain(); master.gain.value = 0.35; master.connect(ctx.destination); } catch (e) { ctx = null; }
   }
@@ -76,7 +79,7 @@
     var now = performance.now(); if (last[name] && now - last[name] < 45) return; last[name] = now;
     try { SOUNDS[name] && SOUNDS[name](); } catch (e) { }
   }
-  var init0 = init; init = function () { init0(); loadAll(); };
+  var init0 = init; init = function () { if (MUTED) return; init0(); loadAll(); };
   // what the sound is doing (open the game with ?snd to see it on screen)
   function status() { return { state: ctx ? ctx.state : 'none', enabled: enabled, loaded: stat.loaded, failed: stat.failed, played: stat.played, playing: voices.length, err: stat.err }; }
   CW.sound = { init: init, play: play, skillCast: skillCast, skillHit: skillHit, status: status, setEnabled: function (v) { enabled = !!v; } };
