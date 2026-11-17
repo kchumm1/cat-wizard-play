@@ -44,6 +44,10 @@ if ('serviceWorker' in navigator) (function () {
   color-scheme:dark;
 }
 html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-family:var(--body);-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;overflow:hidden}
+/* 2026-11-17 형(아이폰: 꾸욱 누르니 「닫기」 글자가 잡힘 → 잡히는 거 전부 다 안 되게): 게임 어디서도 글자 선택·길게 누르기 메뉴 없음 (#app 밖의 창·공지·우편함·가방 포함). 입력칸만 예외 */
+*,*::before,*::after{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,[contenteditable],[contenteditable] *{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+input[type=range]{-webkit-user-select:none;user-select:none}
 *{box-sizing:border-box}
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-action:manipulation}
 button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
