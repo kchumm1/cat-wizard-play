@@ -20,9 +20,19 @@
     if (n && !d) { d = document.createElement('b'); d.className = 'qnum'; b.appendChild(d); }
     if (d) { if (n) d.textContent = n > 99 ? '99+' : n; else d.remove(); }
   }
+  // 운영자가 보낸 편지가 바로 들어오게 (2026-11-18, the user: 더 빨리): on the real site read the repository file itself
+  // (no wait for the site to rebuild, ?t= skips the 5-minute cache); anywhere else, or if that fails, the site's own file
+  function getJson(file) {
+    var rel = file + '?t=' + Date.now(), host = (root.location && root.location.hostname) || '';
+    var go = function (u) { return fetch(u, { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }); };
+    if (!/github\.io$/.test(host)) return go(rel).catch(function () { return null; });
+    return go('https://raw.githubusercontent.com/kchumm1/cat-wizard-play/main/' + file + '?t=' + Date.now())
+      .then(function (d) { return d || go(rel); })
+      .catch(function () { return go(rel).catch(function () { return null; }); });
+  }
   function fetchMail() {
     if (typeof fetch !== 'function') return;
-    fetch('mail.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (m) {
+    getJson('mail.json').then(function (m) {
       if (m && Array.isArray(m.letters)) { list = m.letters; mailCount(); if (page && page.classList.contains('on')) render(); }
     }).catch(function () {});
   }
@@ -171,7 +181,7 @@
   // tap the mailbox: it pops, the letters fan out, then the window rises (a tap skips the show)
   function openMail() {
     if (!page) build();
-    view = 'list'; tab = 'all'; open = null; render();
+    view = 'list'; tab = 'all'; open = null; render(); fetchMail();   // opening the mailbox looks for new letters right away
     page.classList.remove('fan'); void page.offsetWidth;
     page.classList.add('on', 'fan', 'rise');   // the window rises once, when it opens (not at every redraw)
     clearTimeout(page._t); page._t = setTimeout(function () { page.classList.remove('fan'); }, 1100);
@@ -180,7 +190,7 @@
   CW.mailOpen = openMail; CW.mailCount = mailCount; CW.mailFetch = fetchMail;
   CW.mailIsOpen = function () { return !!(page && page.classList.contains('on')); };
   CW.mailStart = function () {
-    fetchMail(); setInterval(fetchMail, 5 * 60 * 1000);
+    fetchMail(); setInterval(function () { if (!document.hidden) fetchMail(); }, 60 * 1000);   // every minute while the game is on screen
     document.addEventListener('visibilitychange', function () { if (!document.hidden) fetchMail(); });
   };
 })(this);

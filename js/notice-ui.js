@@ -32,9 +32,18 @@
     if (on && !d) { d = document.createElement('b'); d.className = 'qdot'; b.appendChild(d); }
     if (!on && d) d.remove();
   }
+  // same as the mailbox (js/mail-ui.js getJson): the real site reads the repository file itself, so a notice shows up in a minute
+  function getJson(file) {
+    var rel = file + '?t=' + Date.now(), host = (root.location && root.location.hostname) || '';
+    var go = function (u) { return fetch(u, { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }); };
+    if (!/github\.io$/.test(host)) return go(rel).catch(function () { return null; });
+    return go('https://raw.githubusercontent.com/kchumm1/cat-wizard-play/main/' + file + '?t=' + Date.now())
+      .then(function (d) { return d || go(rel); })
+      .catch(function () { return go(rel).catch(function () { return null; }); });
+  }
   function fetchNotice() {
     if (typeof fetch !== 'function') return;
-    fetch('notice.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+    getJson('notice.json').then(function (d) {
       if (d && Array.isArray(d.notices)) { list = d.notices.filter(forMe); noticeDot(); if (page && page.classList.contains('on')) render(); }
     }).catch(function () {});
   }
@@ -107,7 +116,7 @@
   CW.noticeIsOpen = function () { return !!(page && page.classList.contains('on')); };
   CW.noticeHorn = horn;
   CW.noticeStart = function () {
-    fetchNotice(); setInterval(fetchNotice, 5 * 60 * 1000);
+    fetchNotice(); setInterval(function () { if (!document.hidden) fetchNotice(); }, 60 * 1000);
     document.addEventListener('visibilitychange', function () { if (!document.hidden) fetchNotice(); });
   };
 })(this);
