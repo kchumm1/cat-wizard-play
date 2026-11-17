@@ -1011,6 +1011,10 @@
     '#sheet.opal#sheet.opal .pcard.anw .ptime{justify-content:center!important;gap:5px!important;padding:0 8px 1px!important}#sheet.opal#sheet.opal .pcard.anw .ptime i{position:static!important;margin:0!important;flex:none}',
     '#sheet.opal#sheet.opal .pcard.anw .pname{text-align:center;left:50%}',
     '#sheet.opal#sheet.opal #panel>.alchhead.anw{margin-top:auto!important}#sheet.opal#sheet.opal #panel>.pgrid.anw{margin-bottom:auto!important}',
+    // 연금술 물약 만들 때 톡 (사용자 2026-11-17 「생성하면 오른쪽으로 밀려났다 다시 가운데로」): 카드 안 칸은 translateX(-50%)로 가운데인데
+    // opPop 이 transform 을 통째로 바꿔서 0.55초 동안 반 칸 오른쪽으로 밀렸음 → 가운데 맞춤을 넣은 톡
+    '@keyframes opPopC{0%{transform:translateX(-50%) scale(1)}40%{transform:translateX(-50%) scale(1.12)}100%{transform:translateX(-50%) scale(1)}}',
+    '#sheet.opal#sheet.opal .pcard.anw .pbot.opfx{animation:opPopC .55s ease-out var(--opd,0s) both}',
     // 골드·재료가 모자라 꺼진 버튼도 회색 그림 대신 반투명 유리 (사용자 2026-11-16 「응, 반투명으로」): 성장·장비·연금술·특성·승급·마나서클·뽑기.
     // 최대 버튼(아래, 글씨 .55)보다 글씨를 조금 더 흐리게(.42) 해서 「모자람」과 「다 올림」을 구분. 동전 아이콘도 살짝 흐리게
     '#sheet.opal#sheet.opal#sheet.opal :is(.buy.off,.buy.gemb.off,.pull.big.off,.tupb.off,.rkup.off,.rkbuy.off,.mcup.off){border-image:none!important;border:1.5px solid rgba(255,255,255,.8)!important;border-radius:14px!important;background:linear-gradient(180deg,rgba(255,255,255,.30),rgba(255,255,255,.10))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.65),0 0 0 1px rgba(140,150,190,.25),0 2px 6px rgba(80,70,140,.10)!important;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);color:rgba(48,54,77,.42)!important;text-shadow:0 1px 0 rgba(255,255,255,.6)!important;animation:none!important;filter:none!important}',

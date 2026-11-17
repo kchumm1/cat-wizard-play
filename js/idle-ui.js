@@ -7,7 +7,7 @@
 (function (root) {
   var CW = root.CW;
   var box = null, tally = null, timer = 0, holdUntil = 0, lastNum = 0, lock = null, on = false;
-  var MOON = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M30 6a17 17 0 1 0 12 26A15 15 0 0 1 30 6z" fill="#ffe7a0" stroke="#5b4320" stroke-width="2.4" stroke-linejoin="round"/>' +
+  var MOON = '<svg viewBox="2.3 -1.2 48 48" aria-hidden="true"><path d="M30 6a17 17 0 1 0 12 26A15 15 0 0 1 30 6z" fill="#ffe7a0" stroke="#5b4320" stroke-width="2.4" stroke-linejoin="round"/>' +
     '<circle cx="22" cy="21" r="2.4" fill="#e9c66a"/><circle cx="16" cy="31" r="1.7" fill="#e9c66a"/><path d="M37 13l1.2 2.6 2.8.4-2 2 .5 2.8-2.5-1.3-2.5 1.3.5-2.8-2-2 2.8-.4z" fill="#fff6cf"/></svg>';
   function G() { return root.GAME; }
 
