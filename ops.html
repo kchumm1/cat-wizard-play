@@ -233,7 +233,7 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
         <div class="seg" id="toSeg"><button type="button" data-to="all" class="on">모두</button><button type="button" data-to="pid">우편번호</button></div>
         <div id="pidBox" class="hide">
           <div class="pidhead"><label style="margin:0">저장해 둔 우편번호 <span class="count" id="pidSel" style="float:none;margin-left:6px">0명 선택</span></label>
-            <div class="pidbtns"><button type="button" id="pidAll">모두 선택</button><button type="button" id="pidNone">해제</button></div></div>
+            <div class="pidbtns"><button type="button" id="pidAll">둘 다 선택</button><button type="button" id="pidNone">해제</button></div></div>
           <div class="pidlist" id="pidList" role="group" aria-label="저장해 둔 우편번호"></div>
           <label for="pids">받는 우편번호 <span class="count" style="float:none;font-weight:600">(다른 번호는 쉼표로 더해요)</span></label>
           <input id="pids" type="text" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="AB12CD34">
@@ -819,6 +819,8 @@ ol.steps{padding-left:22px;font-size:15px;margin:0 0 12px;line-height:1.7}ol.ste
   $('pidAll').onclick = function () { var cur = pidList(); MY_PIDS.forEach(function (p) { if (cur.indexOf(p[0]) < 0) cur.push(p[0]); }); setPids(cur); };
   $('pidNone').onclick = function () { var mine = MY_PIDS.map(function (p) { return p[0]; }); setPids(pidList().filter(function (x) { return mine.indexOf(x) < 0; })); };
   $('pids').addEventListener('input', markMy); markMy();
+  // 「우편번호」를 누르면 비어 있을 때 저장해 둔 2개가 한 번에 선택돼요(빼고 싶으면 그 줄만 다시 누르기)
+  $('toSeg').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b && b.dataset.to === 'pid' && !pidList().length) $('pidAll').click(); });
 
   showKey();
   if (token()) load(NZ).then(function (cur) { nzDraw(cur.doc); }).catch(function (e) { say('nzListMsg', e.message, 'bad'); });
