@@ -2735,6 +2735,12 @@ body{font-family:'Noto Sans KR',"Malgun Gothic","Apple SD Gothic Neo",system-ui,
     background:linear-gradient(270deg,rgba(40,24,96,.28),rgba(24,14,64,.5)),url(art/mn-neb-fill.webp) 50% 20%/auto 150%!important;animation:tabnebV 46s ease-in-out infinite alternate!important}
   @keyframes tabnebV{from{background-position:0 0,35% 10%}to{background-position:0 0,65% 90%}}
   html.notchL #tabs{right:0;width:calc(var(--tw) + var(--er))}
+  /* a column at the very edge meets the screen's round corners (형 2026-11-17, 실제 아이폰: 조금 잘리고 위에가 가려진다 —
+     the 전투 picture, floating up when chosen, went into the corner): its first and last buttons are kept that far
+     in from the top and the bottom. min(…, the safe gap): a phone with square corners and no gap (iPhone SE) keeps
+     its old spacing */
+  html.notchL #tabs{padding-top:calc(var(--st) + 10px + min(16px, var(--sr)))!important;padding-bottom:calc(var(--sb) + 4px + min(8px, var(--sr)))!important}
+  html.notchR #quick{top:calc(var(--st) + 6px + min(14px, var(--sl)))!important;bottom:calc(var(--sb) + 6px + min(6px, var(--sl)))}
   html.notchR #tabs{top:6px;bottom:6px;border-radius:20px!important;padding-top:calc(var(--st) + 6px)!important;padding-bottom:calc(var(--sb) + 2px)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.28),0 6px 18px rgba(40,20,100,.4)!important}
   #tabs button{min-height:0;padding:0!important}
   /* a thin column (형: 가로모드는 화면을 더 넓게 보는 거니까 좀 더 줄이고): smaller pictures, names and halo */
