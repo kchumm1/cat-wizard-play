@@ -1180,6 +1180,9 @@
       var settings = '<h3>설정</h3>' + perf + '<div class="list">' +
         '<div class="row"><div class="info"><div class="name">닉네임</div><div class="desc">' + esc(G.nickName()) + '</div></div><button class="btn" data-act="nick">변경</button></div>' +
         '<div class="row"><div class="info"><div class="name">화면 표현</div><div class="desc">기본 3D 또는 픽셀 스타일</div></div><button class="btn" data-set="pixel">' + (st.pixel ? '픽셀 스타일' : '기본 3D') + '</button></div>' +
+        // 가로 시점 (2026-11-17): only while the phone is sideways (upright the screen is as it was)
+        (CW.isLand && CW.isLand() ? '<div class="row"><div class="info"><div class="name">가로 화면 시점</div><div class="desc">옆에서: 냥법사 왼쪽, 몬스터 오른쪽으로 길게<br>멀리서: 앞에서 넓게 내려다봐요</div></div>' +
+          '<div class="sbtns"><button class="btn' + (st.landView === 'far' ? '' : ' on') + '" data-set="landSide">옆에서</button><button class="btn' + (st.landView === 'far' ? ' on' : '') + '" data-set="landFar">멀리서</button></div></div>' : '') +
         '<div class="row"><div class="info"><div class="name">효과음</div></div><button class="btn" data-set="sound">' + (st.sound ? '켜짐' : '꺼짐') + '</button></div>' +
         dmgRow('dmgSize', '대미지 글씨 크기', '작게 하면 몬스터가 잘 보여요', st.dmgSize === undefined ? 60 : st.dmgSize, 30, 120) +
         dmgRow('dmgAlpha', '대미지 글씨 투명도', '낮출수록 글씨가 비쳐 보여요', st.dmgAlpha === undefined ? 85 : st.dmgAlpha, 10, 100) +
@@ -1780,6 +1783,8 @@
           if (root.__cwFit) root.__cwFit(); root.dispatchEvent(new Event('resize'));
         }
         if (d.set === 'fpsCap') G.setSetting('fpsCap', { 50: 40, 40: 30, 30: 60 }[st.fpsCap || 60] || 50);
+        if (d.set === 'landSide') G.setSetting('landView', 'side');
+        if (d.set === 'landFar') G.setSetting('landView', 'far');
         if (d.set === 'fps60') G.setSetting('fpsCap', 60);
         if (d.set === 'fps120') G.setSetting('fpsCap', 120);
         if (d.set === 'perfOn' && !G.perfOn()) { G.perfSet(true); toast('성능 표시를 켰어요. 지금부터 10초마다 기록해요.'); }

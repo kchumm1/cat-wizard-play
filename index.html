@@ -2718,10 +2718,13 @@ body{font-family:'Noto Sans KR',"Malgun Gothic","Apple SD Gothic Neo",system-ui,
   #quick i,#quick i .ico{width:22px!important;height:22px!important}
   #quick span{font-size:10px!important;line-height:1.1}
   /* top band: profile · stage · wallet on one line, the boss bar and 보스 도전 under the stage */
-  #hud{left:calc(var(--el) + var(--qw));right:calc(var(--er) + var(--tw));top:var(--st);padding:6px 8px 0!important;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:start;gap:4px 8px!important}
+  /* (형 2026-11-17, 실제 아이폰: 상단바가 위에 너무 붙어 있고 보스 도전은 떨어져 있다) the band starts a little lower, so
+     the difficulty badge over the stage bar (엘리멘탈 …) is clear of the screen's top; the profile and the wallet span
+     both lines, so the second line is only as far down as the stage bar and 보스 도전 sits right under it */
+  #hud{left:calc(var(--el) + var(--qw));right:calc(var(--er) + var(--tw));top:var(--st);padding:13px 8px 0!important;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:start;gap:6px 8px!important}
   #hud .hud-row{display:contents}
-  #hud .prof{grid-column:1;grid-row:1}
-  #hud .wallet{grid-column:3;grid-row:1}
+  #hud .prof{grid-column:1;grid-row:1 / span 2}
+  #hud .wallet{grid-column:3;grid-row:1 / span 2}
   #hud .place.stg{grid-column:2;grid-row:1;justify-self:center;align-self:start;width:min(300px,100%)!important}
   #bossbox{grid-column:2;grid-row:2;justify-self:center;width:min(300px,100%)}
   #retry{grid-column:2;grid-row:2;justify-self:center;align-self:start}
@@ -2797,7 +2800,7 @@ body{font-family:'Noto Sans KR',"Malgun Gothic","Apple SD Gothic Neo",system-ui,
   #panel{padding-left:12px!important;padding-right:12px!important;padding-bottom:calc(var(--sb) + 12px)!important}
   /* with a menu open the top band keeps only the wallet (gold and gems are what a menu spends), next to the column */
   html.sheeton #hud .prof,html.sheeton #hud .place.stg{visibility:hidden}
-  html.sheeton #hud .wallet{grid-column:1;grid-row:1;flex-direction:column;align-items:flex-start}
+  html.sheeton #hud .wallet{grid-column:1;grid-row:1 / span 2;flex-direction:column;align-items:flex-start}
   html.sheeton #skillbar .slots,html.sheeton #surgeGauge,html.sheeton #pre{visibility:hidden}
   /* the start screen (js/update-screen.js): the picture fills the screen, the title and the cat at the left, the card
      with the progress and 모험 시작 at the right — all of it on one screen, nothing to scroll down to */

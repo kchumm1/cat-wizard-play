@@ -107,6 +107,21 @@
     // LAND_UP of the screen's height the fight sits higher there, so the wizard (low in the field) stays clear of the
     // skills at the bottom right
     var LAND = false, LAND_HALF = 5.2, LAND_FX = 1.3, LAND_UP = 0.1;
+    // 가로 시점 (2026-11-17, 형: 세로는 xy축이 잘 구별돼 스킬이 어디서 나오는지 보이는데 가로는 안 보이고 좁다 → 옆에서·멀리서
+    // 둘 다, 멀리서도 방향이 애매하지 않게). Sideways the fight runs along the screen, a lane: the wizard keeps to the left
+    // third, every monster stays to its right and comes in from the right edge, so each spell visibly flies left → right.
+    // 'side': the camera turned a quarter (LANE_YAW) and a little lower (PITCH_SIDE), so the field's long depth runs
+    // across the wide screen and what rises or falls has more height; 'far': the front view, further back (LAND_HALF_FAR).
+    // Upright nothing of this applies (LAND false).
+    var landView = 'side', LANE_YAW = Math.PI / 2, PITCH_SIDE = 0.66, LAND_HALF_SIDE = 5.6, LAND_HALF_FAR = 6.6, LANE_GAP = 0.9;
+    var LcY = 1, LsY = 0, laneFrame = 0;
+    function sideView() { return LAND && landView === 'side'; }
+    function homeYaw() { return sideView() ? LANE_YAW : 0; }
+    function pitchNow() { return sideView() ? PITCH_SIDE : PITCH; }
+    // along the lane (u, + toward the monsters = the screen's right) and across it (v, + toward the camera)
+    function laneU(x, z) { return x * LcY - z * LsY; }
+    function laneV(x, z) { return x * LsY + z * LcY; }
+    function fromLane(u, v) { return { x: u * LcY + v * LsY, z: -u * LsY + v * LcY }; }
     // the canvas's size on the page, kept up to date by the browser (ResizeObserver) instead of being read for every
     // damage number: reading it right after numbers were added makes the browser lay the page out again each time,
     // and a spell that hits the whole crowd at once did that once per monster (a stall on phones)
@@ -174,16 +189,18 @@
     canvas.addEventListener('wheel', function (e) { orb.zoom = Math.max(ORB_ZMIN, Math.min(ORB_ZMAX, orb.zoom * Math.exp(e.deltaY * 0.0012))); orb.idle = 0; orb.back = 0; if (e.cancelable) e.preventDefault(); }, { passive: false });
     function orbTick(rdt) {
       if (orb.n > 0) { orb.idle = 0; orb.back = 0; } else orb.idle += rdt;
-      if (orb.n === 0 && orb.idle > ORB_BACK && (orb.yaw || orb.zoom !== 1)) {
+      // back to the usual turn: 0, or a quarter turn in the sideways side view (가로 시점)
+      var hY = homeYaw();
+      if (orb.n === 0 && orb.idle > ORB_BACK && (orb.yaw !== hY || orb.zoom !== 1)) {
         if (!orb.back) {
           // the long way round is never taken: from 350° it comes back the last 10°. A slow start and a soft landing,
           // longer for a bigger turn (0.7 s … 1.6 s)
-          var y = orb.yaw % (Math.PI * 2); if (y > Math.PI) y -= Math.PI * 2; if (y < -Math.PI) y += Math.PI * 2;
+          var y = (orb.yaw - hY) % (Math.PI * 2); if (y > Math.PI) y -= Math.PI * 2; if (y < -Math.PI) y += Math.PI * 2;
           orb.back = { y: y, z: orb.zoom, t: 0, d: 0.7 + Math.max(Math.abs(y) / Math.PI, Math.abs(orb.zoom - 1) * 1.5) * 0.9 };
         }
         var B = orb.back; B.t += rdt; var k = Math.min(1, B.t / B.d), e = k * k * (3 - 2 * k);
-        orb.yaw = B.y * (1 - e); orb.zoom = B.z + (1 - B.z) * e;
-        if (k >= 1) { orb.yaw = 0; orb.zoom = 1; orb.back = 0; }
+        orb.yaw = hY + B.y * (1 - e); orb.zoom = B.z + (1 - B.z) * e;
+        if (k >= 1) { orb.yaw = hY; orb.zoom = 1; orb.back = 0; }
       }
       cY = Math.cos(orb.yaw); sY = Math.sin(orb.yaw);
     }
@@ -213,8 +230,10 @@
       else { renderer.setPixelRatio(pr); renderer.setSize(w, h, false); canvas.style.imageRendering = 'auto'; }
       camera.aspect = w / h; vw = w; vh = h; cssW = canvas.clientWidth; cssH = canvas.clientHeight;
       // keep the same width of ground on every phone; tall screens simply see more ground above and below
-      LAND = w / h > 1.1;
-      baseFov = LAND ? Math.max(8, 2 * Math.atan(LAND_HALF / (CAM_D * w / h)) * 180 / Math.PI)
+      var wasLand = LAND; LAND = w / h > 1.1;
+      if (LAND !== wasLand) laneTurn();
+      var half = LAND_HALF; if (LAND) half = landView === 'far' ? LAND_HALF_FAR : LAND_HALF_SIDE;
+      baseFov = LAND ? Math.max(8, 2 * Math.atan(half / (CAM_D * w / h)) * 180 / Math.PI)
         : Math.max(22, Math.min(60, 2 * Math.atan(Math.tan(H_HALF) / Math.min(w / h, 0.95)) * 180 / Math.PI));
       camera.fov = baseFov; applyShift(); camera.updateProjectionMatrix();
       homeCam.fov = baseFov; homeCam.aspect = camera.aspect; homeCam.updateProjectionMatrix();
@@ -227,6 +246,10 @@
       if (ox || oy) camera.setViewOffset(vw, vh, ox, oy, vw, vh); else camera.clearViewOffset();
     }
     function setViewShift(f, ax) { viewShiftT = f; if (ax) shiftX = ax === 'x'; }
+    // the lane's direction follows the camera's usual turn; the camera goes straight to it (turning the phone, or picking
+    // the other view in 설정)
+    function laneTurn() { var h = homeYaw(); LcY = Math.cos(h); LsY = Math.sin(h); LB.f = -9; if (orb.n === 0) { orb.yaw = h; orb.back = 0; } }
+    function setLandView(v) { v = v === 'far' ? 'far' : 'side'; if (v === landView) return; landView = v; laneTurn(); size(); }
     // ---------- region dressing ----------
     function lambert(c) { return new T.MeshLambertMaterial({ color: c }); }
     function add(geo, mat, x, y, z, s, parent) { var m = new T.Mesh(geo, mat); m.position.set(x, y, z); if (s) m.scale.setScalar(s); (parent || world).add(m); return m; }
@@ -520,7 +543,7 @@
     function heroCheer(sec) { HB.cheer = Math.max(HB.cheer, sec || 1.2); }
     function heroDodge(from) {
       if (!hero || HB.dash > 0 || HB.dashCd > 0 || HB.cheer > 0) return;
-      var ax = from ? HB.x - from.x : rr(-1, 1), az = from ? HB.z - from.z : rr(-1, 1), al = Math.sqrt(ax * ax + az * az) || 1, Z = HERO_ZONE;
+      var ax = from ? HB.x - from.x : rr(-1, 1), az = from ? HB.z - from.z : rr(-1, 1), al = Math.sqrt(ax * ax + az * az) || 1, Z = heroZone();
       ax /= al; az /= al;
       // slip out sideways, toward whichever side has more room
       var side = Math.random() < 0.5 ? 1 : -1, dx = ax * 0.5 - az * side * 0.87, dz = az * 0.5 + ax * side * 0.87, tx = HB.x + dx * 1.3, tz = HB.z + dz * 1.3;
@@ -546,7 +569,45 @@
       var zAt = function (t) { return (t * (e[7] * MID_Y + e[15]) - (e[5] * MID_Y + e[13])) / (e[9] - t * e[11]); };
       return { x0: xAt(-VIEW_X), x1: xAt(VIEW_X), zFar: zAt(VIEW_TOP), zNear: zAt(VIEW_BOT) };
     }
-    function clampField(p) {
+    // ---- the sideways lane (가로 시점) ----
+    // What the usual view shows of the ground (at a monster's middle, inside VIEW_X / VIEW_TOP / VIEW_BOT), in lane terms:
+    // its left and right ends at the far and the near side, and its far and near limits. Worked out once a frame.
+    var LB = { f: -9 }, LBp = new T.Vector3(), LBd = new T.Vector3(), LANE_BOT = -0.28;
+    function laneBox() {
+      if (LB.f === laneFrame) return LB; LB.f = laneFrame;
+      homeCam.updateMatrixWorld();
+      var at = function (nx, ny) {
+        LBp.set(nx, ny, 0.5).unproject(homeCam); LBd.copy(LBp).sub(homeCam.position);
+        var t = Math.abs(LBd.y) > 1e-6 ? (MID_Y - homeCam.position.y) / LBd.y : 0, x = homeCam.position.x + LBd.x * t, z = homeCam.position.z + LBd.z * t;
+        return { u: laneU(x, z), v: laneV(x, z) };
+      };
+      // (the low limit a little higher than upright: the skills sit at the bottom right, over the monsters' half)
+      var fl = at(-VIEW_X, VIEW_TOP), fr = at(VIEW_X, VIEW_TOP), nl = at(-VIEW_X, LANE_BOT), nr = at(VIEW_X, LANE_BOT);
+      LB.uLf = fl.u; LB.uRf = fr.u; LB.uLn = nl.u; LB.uRn = nr.u;
+      LB.vFar = Math.max(fl.v, fr.v); LB.vNear = Math.min(nl.v, nr.v);
+      LB.uL = Math.max(LB.uLf, LB.uLn); LB.uR = Math.min(LB.uRf, LB.uRn);
+      return LB;
+    }
+    // a spot kept on the field and in the usual view; a monster ('mob', the default) also kept LANE_GAP to the wizard's
+    // right, so they never stand behind it; the little ones ('free') go anywhere in view
+    function clampLane(p, who) {
+      p.z = Math.max(FIELD.z0, Math.min(FIELD.z1, p.z)); var hx = halfX(p.z); p.x = Math.max(-hx, Math.min(hx, p.x));
+      var B = laneBox(), u = laneU(p.x, p.z), v = laneV(p.x, p.z), span = B.vNear - B.vFar;
+      if (span > 0) v = Math.max(B.vFar, Math.min(B.vNear, v));
+      var k = span > 0 ? (v - B.vFar) / span : 0.5, uL = B.uLf + (B.uLn - B.uLf) * k, uR = B.uRf + (B.uRn - B.uRf) * k;
+      if (who !== 'free') uL = Math.max(uL, Math.min(laneU(HB.x, HB.z) + LANE_GAP, uR - 0.6));
+      if (uR > uL) u = Math.max(uL, Math.min(uR, u));
+      var q = fromLane(u, v); p.x = q.x; p.z = q.z; return p;
+    }
+    // where the wizard keeps: the left third of the lane, inside the view (as a box on the field: the lane runs along
+    // the field's x (멀리서) or its z (옆에서))
+    function laneHeroZone() {
+      var B = laneBox(), a = B.uL + 0.3, b = B.uL + (B.uR - B.uL) * 0.34, p1 = fromLane(a, B.vFar + 0.4), p2 = fromLane(b, B.vNear - 0.3);
+      return { x0: Math.min(p1.x, p2.x), x1: Math.max(p1.x, p2.x), z0: Math.min(p1.z, p2.z), z1: Math.max(p1.z, p2.z) };
+    }
+    function heroZone() { return LAND ? laneHeroZone() : HERO_ZONE; }
+    function clampField(p, who) {
+      if (LAND) return clampLane(p, who);
       var z0 = FIELD.z0, z1 = FIELD.z1, v = viewBox(0);
       if (isFinite(v.zFar) && isFinite(v.zNear) && v.zFar < v.zNear) { z0 = Math.max(z0, v.zFar); z1 = Math.min(z1, v.zNear); }
       p.z = Math.max(z0, Math.min(z1, p.z));
@@ -556,6 +617,8 @@
     }
     function inView(m) { var p = clampField({ x: m.x, z: m.z }); return Math.abs(p.x - m.x) + Math.abs(p.z - m.z) < 0.05; }
     function ringSpot(r0, r1, boss) {
+      // sideways: only on the wizard's right (the half circle facing the monsters' side)
+      if (LAND) { var la = rr(-1.2, 1.2), lr = rr(r0, r1), q = fromLane(laneU(HB.x, HB.z) + Math.cos(la) * lr, laneV(HB.x, HB.z) + Math.sin(la) * lr); return clampLane(q); }
       var a = rr(0, Math.PI * 2), r = rr(r0, r1);
       if (boss) a = rr(-Math.PI * 0.85, -Math.PI * 0.15);
       return clampField({ x: HB.x + Math.cos(a) * r, z: HB.z + Math.sin(a) * r * 1.15 });
@@ -569,6 +632,11 @@
       for (var k = 0; k < 16; k++) {
         var p;
         if (boss) p = ringSpot(1.9, 2.6, true);
+        else if (LAND) {
+          // sideways: anywhere between a step right of the wizard and the right of the view, near or far
+          var LBx = laneBox(), lu0 = Math.min(laneU(HB.x, HB.z) + 1.8, LBx.uR - 0.8);
+          p = clampLane(fromLane(rr(lu0, LBx.uR - 0.2), rr(LBx.vFar + 0.2, LBx.vNear - 0.2)));
+        }
         else { var z = rr(FIELD.z0 + 0.6, 2.7), hx = halfX(z) - 0.4; p = clampField({ x: rr(-hx, hx), z: z }); }
         var dh = Math.hypot(p.x - HB.x, p.z - HB.z), dmin = 9;
         if (!boss && dh < 1.3) continue;
@@ -591,7 +659,9 @@
         gait: GAITS[def.art.id] || 'walk', hopCd: 0, pvx: 0, pvz: 0, tilt: spring(120, 9), dartT: 0, dartOn: true, orbDir: 1, orbR: 2.4 };
       // come in from the nearest screen edge: left, right, the far side or the near side
       var ang = Math.atan2((spot.z - HB.z) / 1.15, spot.x - HB.x), cx = Math.cos(ang), cz = Math.sin(ang);
-      if (boss) { mob.x = spot.x * 0.4; mob.z = FIELD.z0 - 2.5; }
+      // sideways every one (the boss too) comes in from the right edge, at about the depth it is heading for
+      if (LAND) { var LBe = laneBox(), qe = fromLane(Math.max(LBe.uRf, LBe.uRn) + rr(1.2, 2), laneV(spot.x, spot.z) + rr(-0.6, 0.6)); mob.x = qe.x; mob.z = qe.z; }
+      else if (boss) { mob.x = spot.x * 0.4; mob.z = FIELD.z0 - 2.5; }
       else if (Math.abs(cx) > Math.abs(cz) * 0.8) { mob.x = (cx > 0 ? 1 : -1) * (halfX(spot.z) + rr(1.2, 2)); mob.z = spot.z + rr(-0.6, 0.6); }
       else if (cz < 0) { mob.x = spot.x + rr(-1, 1); mob.z = FIELD.z0 - rr(1.5, 2.5); }
       else { mob.x = spot.x + rr(-1, 1); mob.z = FIELD.z1 + rr(1.6, 2.4); }
@@ -639,7 +709,7 @@
       mobGroup.remove(mob.group); disposeGroup(mob.group);
     }
     // the little ones milling round the fight (js/minions.js): cheap stiff pictures that burst in crowds where spells land
-    var minions = CW.createMinions ? CW.createMinions({ T: T, group: mobGroup, tilt: TILT, yaw: function () { return orb.yaw; }, scrX: scrX, clampField: clampField, halfX: halfX, field: FIELD,
+    var minions = CW.createMinions ? CW.createMinions({ T: T, group: mobGroup, tilt: TILT, yaw: function () { return orb.yaw; }, scrX: scrX, clampField: function (p) { return clampField(p, 'free'); }, halfX: halfX, field: FIELD,
       hero: function () { return HB; }, mobs: function () { return mobs; } }) : null;
     function disposeGroup(g) { g.traverse(function (x) { if (x.geometry && !x.geometry.userData.cached) x.geometry.dispose(); if (x.material && x.material.dispose) x.material.dispose(); }); }
     function clearMobs() { if (minions) minions.clear(); HB.focus = null; mobs.slice().forEach(function (m) { m.alive = false; mobGroup.remove(m.group); disposeGroup(m.group); }); mobs.length = 0; dying.forEach(function (m) { mobGroup.remove(m.group); disposeGroup(m.group); }); dying.length = 0; }
@@ -803,7 +873,7 @@
 
     // ---------- hero brain ----------
     function heroBrain(dt) {
-      var hd = hero.userData, Z = HERO_ZONE, i, m;
+      var hd = hero.userData, Z = heroZone(), i, m;
       HB.lock = Math.max(0, HB.lock - dt); HB.turnT -= dt; HB.aim = Math.max(0, HB.aim - dt); HB.dashCd -= dt; HB.orbitT -= dt; HB.focusT -= dt; HB.cheer = Math.max(0, HB.cheer - dt);
       // who to hunt: the nearest monster, kept for a moment so the wizard does not dither between two
       var f = HB.focus;
@@ -851,7 +921,7 @@
       } else {
         // nobody to fight yet: walk a little, stop, look around one way and the other, walk on
         HB.pt -= dt; HB.lookT -= dt; var gx = HB.px - HB.x, gz = HB.pz - HB.z, gd = Math.sqrt(gx * gx + gz * gz);
-        if (HB.pt <= 0) { HB.px = rr(Z.x0, Z.x1) * 0.6; HB.pz = rr(Z.z0, Z.z1) * 0.5; HB.pt = rr(2.2, 3.6); HB.lookS = 2; HB.lookT = 0; gx = HB.px - HB.x; gz = HB.pz - HB.z; gd = Math.sqrt(gx * gx + gz * gz); }
+        if (HB.pt <= 0) { HB.px = rr(Z.x0, Z.x1) * (LAND ? 1 : 0.6); HB.pz = rr(Z.z0, Z.z1) * (LAND ? 1 : 0.5); HB.pt = rr(2.2, 3.6); HB.lookS = 2; HB.lookT = 0; gx = HB.px - HB.x; gz = HB.pz - HB.z; gd = Math.sqrt(gx * gx + gz * gz); }
         if (gd < 0.2 && HB.lookS > 0 && HB.lookT <= 0) { heroTurn(-HB.faceT); HB.lookS--; HB.lookT = rr(0.55, 0.9); }
         if (gd > 0.2) { var gs = Math.min(1.1, gd * 1.8); wx = gx / gd * gs; wz = gz / gd * gs; }
       }
@@ -1008,7 +1078,7 @@
 
     function update(dt, realDt) {
       var rdt = realDt === undefined ? dt : realDt;
-      time += dt;
+      time += dt; laneFrame++;
       orbTick(rdt);
       // hero
       if (hero) {
@@ -1161,15 +1231,18 @@
       // only the fight on it turns. Zooming in makes the picture bigger with the fight; zooming out leaves it filling the screen
       var bgY = shiftX ? 0 : -Math.round(viewShift * cssH), bgX = shiftX ? -Math.round(viewShift * cssW) : 0, bgS = Math.round(1000 / Math.min(1, orb.zoom)) / 1000, bgK = bgX + '|' + bgY + '|' + bgS;
       if (bgK !== bgEl._k) { bgEl._k = bgK; bgEl.style.transform = (bgX ? 'translateX(' + bgX + 'px)' : '') + (bgY ? ' translateY(' + bgY + 'px)' : '') + (bgS !== 1 ? ' scale(' + bgS + ')' : ''); }
-      var fk = Math.min(1, rdt * 2.2); pan.x += (HB.x * 0.3 - pan.x) * fk; pan.z += (HB.z * 0.22 - pan.z) * fk;
+      // (sideways the camera stays put: the lane is laid out on the screen, the wizard at its left)
+      var fk = Math.min(1, rdt * 2.2); pan.x += ((LAND ? 0 : HB.x * 0.3) - pan.x) * fk; pan.z += ((LAND ? 0 : HB.z * 0.22) - pan.z) * fk;
       // the usual view (kept for where monsters may go), then the one turned and zoomed by hand; the shake and the slow
-      // drift go along the screen's left/right, whichever way the camera looks
-      homeCam.position.set(camBase.x + pan.x, camBase.y, camBase.z + pan.z); homeCam.lookAt(lookAt.x + pan.x, lookAt.y, lookAt.z + pan.z);
+      // drift go along the screen's left/right, whichever way the camera looks. The usual view is the usual turn (a
+      // quarter in the sideways side view) at the usual lean
+      var hP = pitchNow(), hYw = homeYaw(), hzz = CAM_D * Math.cos(hP);
+      homeCam.position.set(lookAt.x + pan.x + hzz * Math.sin(hYw), lookAt.y + CAM_D * Math.sin(hP), lookAt.z + pan.z + hzz * Math.cos(hYw)); homeCam.lookAt(lookAt.x + pan.x, lookAt.y, lookAt.z + pan.z);
       homeCam.updateMatrixWorld(); homeInv.copy(homeCam.matrixWorld).invert();
       homeCam.fov = baseFov * (1 - Math.max(-0.2, Math.min(0.2, punch))); homeCam.aspect = camera.aspect;
       if (camera.view && camera.view.enabled) homeCam.setViewOffset(camera.view.fullWidth, camera.view.fullHeight, camera.view.offsetX, camera.view.offsetY, camera.view.width, camera.view.height); else homeCam.clearViewOffset();
       homeCam.updateProjectionMatrix();
-      var hz = CAM_D * Math.cos(PITCH), hy = CAM_D * Math.sin(PITCH), dr = sx + Math.sin(time * 0.35) * 0.06;
+      var hz = CAM_D * Math.cos(hP), hy = CAM_D * Math.sin(hP), dr = sx + Math.sin(time * 0.35) * 0.06;
       camera.position.set(lookAt.x + pan.x + hz * sY + dr * cY + kick.x, lookAt.y + hy + sy + kick.y + Math.sin(time * 0.5) * 0.03, lookAt.z + pan.z + hz * cY - dr * sY + kick.z);
       camera.lookAt(lookAt.x + pan.x + sx * 0.3 * cY, lookAt.y + sy * 0.3, lookAt.z + pan.z - sx * 0.3 * sY);
       camera.rotation.z += (Math.sin(st * 19.3) * 0.012) * tq;
@@ -1187,7 +1260,7 @@
     var fitK = 1, fitInv = new T.Matrix4(), fitP = new T.Vector3();
     function orbFit(rdt) {
       var want = 1;
-      if (orb.yaw) {
+      if (orb.yaw !== homeYaw()) {
         camera.updateMatrixWorld(); fitInv.copy(camera.matrixWorld).invert();
         var tn = Math.tan(baseFov * Math.PI / 360), tx = tn * (camera.aspect || 1);
         var see = function (x, z) {
@@ -1269,7 +1342,7 @@
     return {
       THREE: T, scene: scene, camera: camera, renderer: renderer, fxGroup: fxGroup, glow: GLOW, hooks: hooks,
       size: size, setRegion: setRegion, setHero: setHero, setHeroTexture: setHeroTexture, setHeroViews: setHeroViews, setCostumeFx: setCostumeFx, heroTip: heroTip, heroPaw: heroPaw, heroCenter: heroCenter, heroPose: heroPose, heroBeatAt: function () { return beatT; }, heroGlow: heroGlowPulse, ghost: ghost,
-      castPulse: function () { heroGlow = 1; }, heroState: function () { return HB; }, heroFaceTo: heroFaceTo, heroCheer: heroCheer, setViewShift: setViewShift,
+      castPulse: function () { heroGlow = 1; }, heroState: function () { return HB; }, heroFaceTo: heroFaceTo, heroCheer: heroCheer, setViewShift: setViewShift, setLandView: setLandView, landView: function () { return landView; },
       minions: minions, spawnMob: spawnMob, hitMob: hitMob, killMob: killMob, dismissMob: dismissMob, clearMobs: clearMobs, mobs: function () { return mobs; }, mobPos: mobPos, mobTop: mobTop,
       setTierAura: setTierAura, damageText: damageText, screenPos: screenPos, flash: flash, dim: dim, shake: shake, punch: camPunch, light: light,
       hitStop: hitStop, slowmo: slowmo, climax: climax, scaleDt: scaleDt, update: update, render: render, lens: lens, warmLens: warmLens,
