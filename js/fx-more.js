@@ -447,7 +447,8 @@
       var S_ = Math.min(1.6, 1.3 * c.s), LB = Math.min(2.3, 1.5 * S_), ball = K.toonBall(LB, { glow: 1.1, thick: true }), hold = 0, HOLD = c.D(0.26), thrown = false, hp = V(), UPV = V(0, -1, 0);
       function ballAt() { return hp.copy(sc.heroPaw()).add(V(0, 0.75 + 0.35 * Math.min(1, hold / HOLD), 0)); }
       var tip = ballAt().clone();
-      glow(tip, 0xff6a2b, [0.3, 1.0 * c.s], HOLD, { fadeIn: 0.6, hot: 1.2 });
+      // (2026-11-18) small and faint: over a bright region a big one read as a flat orange disc behind the ball
+      glow(tip, 0xff6a2b, [0.2, 0.45 * c.s], HOLD, { fadeIn: 0.6, hot: 1.2 });
       for (var i = 0; i < N(16, c); i++) { var a = rr(0, 6.28), r = rr(0.6, 1.1); E({ pos: tip, frame: 'flame', color: [0xffe080, 0xff6a2b], size: [0.26, 0.08], life: c.D(rr(0.16, 0.24)), delay: rr(0, c.D(0.06)), upd: K.spiralTo(tip, a, r), fadeIn: 0.3 }); }
       tick(function (dt) {
         if (thrown) return true; hold += dt; var k = Math.min(1, hold / HOLD);

@@ -1990,15 +1990,21 @@
       // streaks of flame shooting up through it, darker gaps between; a tornado's winding strands only a little brighter
       // than the gaps and never white (bright diagonal bands read as candy stripes)
       ' h = clamp(h * mix(0.55 + 0.7 * fl, 0.78 + 0.28 * fl, uSwirl), 0.0, 1.0 - 0.22 * uSwirl);\n' +
-      ' vec3 col = mix(vec3(0.72, 0.07, 0.02), vec3(1.0, 0.26, 0.02), smoothstep(0.0, 0.28, h));\n' +
-      ' col = mix(col, vec3(1.0, 0.62, 0.1), smoothstep(0.3, 0.6, h)); col = mix(col, vec3(1.0, 0.92, 0.6), smoothstep(0.62, 0.85, h)); col = mix(col, vec3(1.0, 0.99, 0.92), smoothstep(0.85, 1.0, h));\n' +
+      // (2026-11-18, the user: "the fire's colour should stand out more") deeper, purer colours: crimson, a vivid red-orange,
+      // deep orange, bright yellow; white only in the very hottest specks (pale yellow over a bright region read washed out)
+      ' vec3 col = mix(vec3(0.62, 0.02, 0.0), vec3(1.0, 0.16, 0.0), smoothstep(0.0, 0.3, h));\n' +
+      ' col = mix(col, vec3(1.0, 0.42, 0.0), smoothstep(0.3, 0.55, h)); col = mix(col, vec3(1.0, 0.78, 0.08), smoothstep(0.58, 0.82, h)); col = mix(col, vec3(1.0, 0.97, 0.75), smoothstep(0.93, 1.0, h));\n' +
+      // a dark crimson rim round the fire, so its shape stands out even over a bright region
+      ' float rim = 1.0 - smoothstep(0.27, 0.42, v); col = mix(col, vec3(0.5, 0.02, 0.0), rim * 0.55 * (1.0 - smk));\n' +
+      // fire that reaches the edge of its scene fades out there instead of being cut off straight
+      ' a *= smoothstep(0.0, 0.06, vLoc.x) * smoothstep(1.0, 0.94, vLoc.x) * smoothstep(1.0, 0.94, vLoc.y) * smoothstep(0.0, 0.03, vLoc.y);\n' +
       ' vec3 sc = vec3(dot(c.rgb, vec3(0.34))) * (0.8 + 0.4 * n) + vec3(0.04, 0.02, 0.0); float sa = m * (0.45 + 0.55 * n);\n' +
       ' col = mix(col, sc, smk); a = mix(a, sa, smk); if (a < 0.01) discard;\n' +
       ' gl_FragColor = vec4(col, a); }';
     var FS_SHEET_GLOW = SHEET_HEAD + 'uniform float uGlow; void main(){ vec2 l = vLoc; float r = 0.045;' +
       ' vec4 c = cellAt(l + vec2(r, 0.0)) + cellAt(l - vec2(r, 0.0)) + cellAt(l + vec2(0.0, r)) + cellAt(l - vec2(0.0, r)); c *= 0.25;' +
       ' float a = c.a * vA * uGlow * (0.85 + 0.15 * sin(uTime * 17.0 + vSeed)); if (a < 0.01) discard;' +
-      ' vec3 col = mix(vec3(1.0, 0.35, 0.08), vec3(1.0, 0.75, 0.35), smoothstep(0.4, 0.9, c.g)) * smoothstep(0.15, 0.5, max(c.r, c.g));' +
+      ' vec3 col = mix(vec3(1.0, 0.22, 0.02), vec3(1.0, 0.6, 0.12), smoothstep(0.4, 0.9, c.g)) * smoothstep(0.15, 0.5, max(c.r, c.g)) * 1.35;' +
       ' gl_FragColor = vec4(col * a, 0.0); }';
     function sheetLayer(name) {
       var L = sheetL[name]; if (L) return L;
