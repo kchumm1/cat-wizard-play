@@ -1526,7 +1526,7 @@
         (G.storageOk() ? '' : '<p class="note">이 브라우저에서는 진행을 저장할 수 없어요.<br>창을 닫으면 진행이 사라져요.</p>') + '</div>' +
         (CW.FRIEND ? '' : '<details class="fold"' + (foldOpen ? ' open' : '') + '><summary>문제 확인용</summary><div class="list">' +
         '<div class="row"><div class="info"><div class="name">게임 버전</div><div class="desc">새 버전은 앱을 다시 열 때 적용돼요.</div></div><b class="appver" id="appVer">' + appVersion() + '</b></div>' +
-        lastErrorRow() + hitchRow() + perfRows() + ownerSyncRow() +
+        lastErrorRow() + hitchRow() + perfRows() + ownerSyncRow() + playerSyncRow() +
         '<div class="row"><div class="info"><div class="name">화면 높이</div><div class="desc" id="scrInfo">' + screenInfo() + '</div></div></div>' +
         '<div class="row"><div class="info"><div class="name">진행 초기화</div><div class="desc">모든 진행 데이터가 삭제돼요.</div></div><button class="btn" data-set="reset">처음부터 시작</button></div>' +
         '</div></details>');
@@ -1596,6 +1596,12 @@
         '<div class="sbtns">' + (has ? '<button class="btn" data-act="ownsend">지금 보내기</button><button class="btn" data-act="ownclear">열쇠 지우기</button>' : '<button class="btn" data-act="ownkey">열쇠 넣기</button>') + '</div></div>' +
         (has ? '<div class="row"><div class="info"><div class="name">저장 되돌리기</div><div class="desc">앱을 지웠다가 다시 깔았을 때 눌러요. 서버에 남은 가장 많이 진행한 저장을 불러와요.</div></div>' +
           '<div class="sbtns"><button class="btn" data-act="ownget">되돌리기</button></div></div>' : '');
+    }
+    // 모든 플레이어 저장 (2026-11-18, js/player-sync.js, main.js G.playerSync): only a status line, 형꺼 only
+    function playerSyncRow() {
+      var ps = G.playerSync; if (!ps || CW.FRIEND) return '';
+      var desc = esc(CW.playerSyncText(ps.status()));   // a 429 reads "잠시 뒤에", not 실패 (js/player-sync.js)
+      return '<div class="row"><div class="info"><div class="name">서버 저장</div><div class="desc">' + desc + '</div></div></div>';
     }
     // 저장 되돌리기: what the server keeps against this phone, then the save takes this phone's place (G.restoreSave)
     function ownRestore(r) {

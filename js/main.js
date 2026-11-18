@@ -958,6 +958,23 @@
     document.addEventListener('visibilitychange', function () { if (ready && document.hidden) ownerSync.push('hide'); });
   }
   G.ownerSync = ownerSync;
+  // ---------- 서버 저장 (2026-11-18, js/player-sync.js): anonymous login; 형꺼 only for now (형: 우선 내꺼만 올려) ----------
+  // a first send a few seconds after the game is ready (moves the save already on this phone to the server), then
+  // every 10 minutes when it changed and when the app is put away; off on localhost unless ?psync=1.
+  // 체험판 gets it later by taking !CW.FRIEND away (the server already takes anyone's anonymous login).
+  var playerSync = CW.createPlayerSync ? CW.createPlayerSync({
+    enabled: !CW.FRIEND && CW.playerSyncAllowed(location), store: storage, fetch: root.fetch ? root.fetch.bind(root) : null,
+    locks: root.navigator && root.navigator.locks,
+    body: function () { save(); return JSON.stringify(state); },
+    info: function () { return (navigator.userAgent || '').slice(0, 160); }
+  }) : null;
+  if (playerSync) {
+    var psStart = setInterval(function () { if (ready) { clearInterval(psStart); setTimeout(function () { playerSync.start(); }, 5000); } }, 1000);
+    setInterval(function () { if (ready && !document.hidden) playerSync.tick(); }, 60000);
+    // back on screen: renew a login that is about to run out now, so the send made when the app is put away needn't
+    document.addEventListener('visibilitychange', function () { if (ready) { if (document.hidden) playerSync.push('hide'); else playerSync.warm(); } });
+  }
+  G.playerSync = playerSync;
   // 저장 되돌리기 (설정 › 문제 확인용, 형꺼 only): the save kept on the server takes this phone's place
   G.restoreSave = function (obj) {
     if (CW.FRIEND || !obj || typeof obj !== 'object') return false;
