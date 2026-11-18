@@ -1272,7 +1272,7 @@
     '#sheet.opal#sheet.opal#sheet.opal .opbag .ef b.two>.v{text-align:left!important}',
     '#sheet.opal#sheet.opal#sheet.opal .opbag .ef.stack>b.one{grid-column:1/-1;justify-self:stretch!important;width:auto!important;max-width:none!important;grid-template-columns:minmax(0,1fr) auto!important;padding:0 0 0 15px;box-sizing:border-box}',
     // 자물쇠 그림은 칸 오른쪽 끝에 붙여 효과 숫자 오른쪽 끝과 같은 세로줄로
-    '#sheet.opal#sheet.opal#sheet.opal .opbag .plock{background-position:right -2.5px center!important}',   // 그림 안 여백(약 2.5px)만큼 더 밀어 자물쇠 선 끝 = 숫자 끝
+    '#sheet.opal#sheet.opal#sheet.opal .opbag .plock{background-position:center!important;margin-right:9px!important}',   // 자물쇠는 알약 끝에서 조금 안쪽 (형 2026-11-18 「너무 끝에, 살짝 왼쪽으로」)
     // 강화 버튼 크게 (형 2026-11-18 「특성·코스튬, 스킬 강화 버튼 쪽 전부 키워」)
     // 특성: 100×30 → 102×40 (가운데 높이는 그대로, 오른쪽은 카드 끝에서 10px)
     '#sheet.opal#sheet.opal#sheet.opal .tinfo.tnw .tupb{width:102px!important;height:40px!important;margin-top:16.5px!important;font-size:13px!important;white-space:nowrap}',
