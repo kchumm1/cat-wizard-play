@@ -239,13 +239,19 @@
       var numCol = skill.el === 'water' ? '#f4fcff' : hexCss(skill.color);
       sc.damageText(sc.mobTop(mob), CW.fmt(dmg), ct, numCol);
       // the little ones standing near where it landed are knocked out together, with one shared burst
+      // (2026-11-18, user: '졸개들한테 타격이 안 들어가는 것 같다'): the reach was 0.8–1.3 round the monster hit, so a
+      // wide spell that covers the whole screen (원소 합체 궁극기, 별똥별 비…) left most little ones standing a step away
+      // (in a test, twice as many stood within 2 of a hit as were knocked out). Wide spells now reach 2.0 round every
+      // monster they land on, the others 1.1–1.6.
       if (mins && !mob.boss) {
-        var mk = mins.hitArea(mob.x, mob.z, 0.8 + 0.25 * Math.min(2, power || 1));
+        var mk = mins.hitArea(mob.x, mob.z, skill.targets >= 99 ? 2.0 : 1.1 + 0.25 * Math.min(2, power || 1));
         if (mk.n) {
           fx.minionBurst(new sc.THREE.Vector3(mk.x, 0.3, mk.z), mk.n, skill.color); if (mk.n >= 2) snd.play('kill');
           // each little one shows the damage the same spell would deal it, with its own critical roll (2026-11-16, user:
           // "졸개도 스킬에 맞고 대미지를 몬스터 + 졸개까지 다 보여줘"); they still bring nothing and count for nothing
-          mk.hits.forEach(function (h) {
+          // (at most 8 numbers a hit, so a wide reach does not flood a phone with text)
+          mk.hits.forEach(function (h, hi) {
+            if (hi >= 8) return;
             var mt = CW.rollCrit(st), md = CW.hitDamage(st, skill, { boss: false, critTier: mt, even: true }) * (frac === undefined ? 1 : frac) * (mul || 1);
             sc.damageText(new sc.THREE.Vector3(h.x, h.y, h.z), CW.fmt(md), mt, numCol);
           });
