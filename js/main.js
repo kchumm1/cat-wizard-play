@@ -942,6 +942,19 @@
     }).catch(function () { cloud.ref = null; });
   }
   setInterval(function () { if (ready && !document.hidden) cloudPush(false); }, 20000);
+
+  // ---------- Claude에게 저장 보내기 (2026-11-18, js/owner-sync.js): 형꺼 only, once a key is pasted in 설정 ----------
+  // every 10 minutes while playing and when the app is put away; a failure only shows on the settings row
+  var ownerSync = !CW.FRIEND && CW.createOwnerSync ? CW.createOwnerSync({
+    friend: CW.FRIEND, store: storage, fetch: root.fetch ? root.fetch.bind(root) : null,
+    body: function () { save(); return JSON.stringify(state); },
+    info: function () { return (navigator.userAgent || '').slice(0, 160); }
+  }) : null;
+  if (ownerSync) {
+    setInterval(function () { if (ready && !document.hidden) ownerSync.tick(); }, 60000);
+    document.addEventListener('visibilitychange', function () { if (ready && document.hidden) ownerSync.push('hide'); });
+  }
+  G.ownerSync = ownerSync;
   document.addEventListener('visibilitychange', function () { if (document.hidden) cloudPush(false); });
 
   // ---------- start ----------

@@ -1470,7 +1470,7 @@
         (G.storageOk() ? '' : '<p class="note">이 브라우저에서는 진행을 저장할 수 없어요.<br>창을 닫으면 진행이 사라져요.</p>') + '</div>' +
         (CW.FRIEND ? '' : '<details class="fold"' + (foldOpen ? ' open' : '') + '><summary>문제 확인용</summary><div class="list">' +
         '<div class="row"><div class="info"><div class="name">게임 버전</div><div class="desc">새 버전은 앱을 다시 열 때 적용돼요.</div></div><b class="appver" id="appVer">' + appVersion() + '</b></div>' +
-        lastErrorRow() + hitchRow() + perfRows() +
+        lastErrorRow() + hitchRow() + perfRows() + ownerSyncRow() +
         '<div class="row"><div class="info"><div class="name">화면 높이</div><div class="desc" id="scrInfo">' + screenInfo() + '</div></div></div>' +
         '<div class="row"><div class="info"><div class="name">진행 초기화</div><div class="desc">모든 진행 데이터가 삭제돼요.</div></div><button class="btn" data-set="reset">처음부터 시작</button></div>' +
         '</div></details>');
@@ -1528,6 +1528,16 @@
       return out + '<div class="row"><div class="info"><div class="name">성능 기록</div><div class="desc">' + (d.getMonth() + 1) + '/' + d.getDate() + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes()) +
         '부터 ' + Math.floor(rows[rows.length - 1].t / 60) + '분 · 평균 ' + Math.round(dd ? f / dd : 0) + '장 · 멈칫 ' + h + '회</div></div>' +
         '<div class="sbtns"><button class="btn" data-act="perfview">보기</button><button class="btn" data-act="perfcopy">복사</button></div></div>';
+    }
+    // Claude에게 저장 보내기 (2026-11-18, js/owner-sync.js, main.js G.ownerSync): 형꺼 only (체험판 has no ownerSync at all)
+    function ownerSyncRow() {
+      var os = G.ownerSync; if (!os || CW.FRIEND) return '';
+      var has = !!os.key(), s = os.status(), p2 = function (v) { return (v < 10 ? '0' : '') + v; };
+      var when = function (t) { var d = new Date(t); return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes()); };
+      var desc = !has ? 'Claude가 준 열쇠를 넣으면 10분마다, 그리고 앱을 내릴 때 저장을 보내요.'
+        : (s.okAt ? '마지막으로 보낸 시각 ' + when(s.okAt) : '아직 보내지 않았어요') + (s.t && !s.ok ? ' · ' + when(s.t) + ' 실패: ' + esc(s.msg || '') : '') + ' · 10분마다 자동으로 보내요';
+      return '<div class="row"><div class="info"><div class="name" style="word-break:keep-all">Claude에게 저장 보내기</div><div class="desc">' + desc + '</div></div>' +
+        '<div class="sbtns">' + (has ? '<button class="btn" data-act="ownsend">지금 보내기</button><button class="btn" data-act="ownclear">열쇠 지우기</button>' : '<button class="btn" data-act="ownkey">열쇠 넣기</button>') + '</div></div>';
     }
     // one line a minute; a minute that ran under 80% of its aim or stood still is marked
     function showPerf() {
@@ -2140,6 +2150,27 @@
       }
       else if (d.act === 'perfview') showPerf();
       else if (d.act === 'perfcopy') copyPerf();
+      else if ((d.act === 'ownkey' || d.act === 'ownsend' || d.act === 'ownclear') && (CW.FRIEND || !G.ownerSync)) { /* 체험판: no such buttons */ }
+      else if (d.act === 'ownkey') {
+        modal('<h2>Claude에게 저장 보내기</h2><p class="guide-lead">Claude가 알려 준 열쇠를 붙여 넣으세요. 이 기기에만 보관돼요.</p><input class="nickin owkin" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="열쇠">',
+          [{ label: '취소' }, { label: '넣기', pri: true, fn: function () {
+            var v = $('modalCard').querySelector('.owkin').value;
+            if (!G.ownerSync.setKey(v)) { toast('열쇠가 올바르지 않아요. 처음부터 끝까지 복사했는지 확인해 주세요.'); return; }
+            toast('열쇠를 넣었어요. 저장을 보내 볼게요.');
+            G.ownerSync.push('now').then(function (r) { if (r && r.ok) toast('Claude에게 저장을 보냈어요.'); else if (r && r.msg) toast('보내지 못했어요: ' + r.msg); renderPanel(true); });
+            renderPanel(true);
+          } }], { variant: 'guide' });
+      }
+      else if (d.act === 'ownsend') {
+        G.ownerSync.push('now').then(function (r) {
+          if (r && r.ok) toast('Claude에게 저장을 보냈어요.');
+          else if (r && r.skip === 'soon') toast('방금 보냈어요. 1분 뒤에 다시 눌러 주세요.');
+          else if (r && r.skip === 'busy') toast('보내는 중이에요.');
+          else toast('보내지 못했어요' + (r && r.msg ? ': ' + r.msg : '.'));
+          renderPanel(true);
+        });
+      }
+      else if (d.act === 'ownclear') confirmBox('열쇠를 지울까요?', '지우면 더 이상 Claude에게 저장을 보내지 않아요.', '지우기', function () { G.ownerSync.clearKey(); toast('열쇠를 지웠어요.'); renderPanel(true); });
       else if (d.act === 'nick') {
         modal('<h2>닉네임 변경</h2><p class="guide-lead">1~8글자로 입력해 주세요.</p><input class="nickin" type="text" maxlength="8" autocomplete="off" value="' + esc(G.nickName()) + '">',
           [{ label: '취소' }, { label: '변경하기', pri: true, fn: function () { var v = ($('modalCard').querySelector('.nickin').value || '').replace(/\s+/g, ' ').trim(); if (!v || v.length > 8) { toast('닉네임은 1~8글자로 입력해 주세요.'); return; } G.setNick(v); toast('닉네임을 변경했어요.'); renderPanel(true); hud(); } }], { variant: 'guide' });
