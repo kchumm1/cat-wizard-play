@@ -49,6 +49,9 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 *,*::before,*::after{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 input,textarea,[contenteditable],[contenteditable] *{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 input[type=range]{-webkit-user-select:none;user-select:none}
+/* 2026-11-18 형(아이폰: 코스튬 강화 꾸욱 누르면 아직도 물방울 손잡이로 잡힘): 혹시 잡혀도 칠이 안 보이게. 진짜 막는 건 #app 앞 스크립트 */
+::selection{background:transparent;color:inherit}
+input::selection,textarea::selection,[contenteditable] ::selection{background:rgba(120,160,255,.35)}
 *{box-sizing:border-box}
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-action:manipulation}
 button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
@@ -3363,6 +3366,27 @@ html.cw-calm #tabs>.tabneb,html.cw-calm #tabs::before,html.cw-calm #tabs::after,
   <div class="celebration" id="celebration" aria-hidden="true"></div>
 </section>
 </div>
+<script>
+/* 2026-11-18 형(아이폰: 코스튬 강화를 꾸욱 누르면 물방울 손잡이로 글자가 잡힘 → 아예 전부 안 잡히게).
+   CSS user-select:none만으로는 꾸욱 누르는 동안 버튼이 계속 다시 그려지면(강화 연속) 아이폰이 글자를 잡아 버림.
+   그래서 입력칸 말고는 ① 선택 시작 자체를 취소 ② 그래도 생긴 선택은 바로 지움 ③ 길게 누르기 메뉴·끌기 막음. */
+(function () {
+  function editable(n) {
+    if (n && n.nodeType !== 1) n = n.parentNode;
+    return !!(n && n.closest && n.closest('input,textarea,select,[contenteditable]:not([contenteditable=false])'));
+  }
+  function stop(e) { if (!editable(e.target)) e.preventDefault(); }
+  document.addEventListener('selectstart', stop, true);
+  document.addEventListener('contextmenu', stop, true);
+  document.addEventListener('dragstart', stop, true);
+  document.addEventListener('selectionchange', function () {
+    var s = window.getSelection && window.getSelection();
+    if (!s || !s.rangeCount || s.isCollapsed) return;
+    if (editable(s.anchorNode) || editable(document.activeElement)) return;
+    s.removeAllRanges();
+  });
+})();
+</script>
 <script src="js/update-screen.js"></script>
 <div id="topcap" aria-hidden="true"></div>
 <div id="app">
