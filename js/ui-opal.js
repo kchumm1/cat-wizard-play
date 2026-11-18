@@ -1260,10 +1260,19 @@
     '#sheet.opal#sheet.opal#sheet.opal .opbag .ef.stack>b.two{justify-self:stretch!important;width:auto!important;max-width:none!important;grid-template-columns:minmax(0,1fr) auto!important;padding:0 0 0 15px;box-sizing:border-box}',
     // 장비 줄·칸 맞춤 (형 2026-11-18 「줄맞춤 칸맞춤 다시」): 잠재력 상자도 효과 상자와 같은 안쪽 여백(9px) → ✦ 아이콘 세로줄이 같고,
     // 잠재력 줄의 점은 ✦ 칸 가운데·글자는 「장착 효과」 글자 시작과 같은 자리, 자물쇠 오른쪽 끝은 효과 숫자 오른쪽 끝과 같은 자리
-    // (줄 바탕 알약은 양옆 6px 바깥으로 내밀어 둠)
-    '#sheet.opal#sheet.opal#sheet.opal .opbag .gpot{padding-left:9px!important;padding-right:9px!important}',
-    '#sheet.opal#sheet.opal#sheet.opal .opbag .potline{margin-left:-6px!important;margin-right:-6px!important;padding-left:6px!important;padding-right:6px!important;column-gap:6px!important;gap:6px!important}',
+    // (줄 바탕 알약은 양옆 4px만 바깥으로 — 상자 테두리와 5px 떨어지게, 형 폰 화면 2026-11-18 「여백 안 맞어」)
+    // 위아래 여백도 효과 상자와 같게: 「잠재력」 글자가 윗변에 붙던 것 → 위 6px·아래 5px
+    '#sheet.opal#sheet.opal#sheet.opal .opbag .gpot{padding:7px 9px 5px!important}#sheet.opal#sheet.opal#sheet.opal .opbag .potline:last-child{margin-bottom:0!important}',
+    '#sheet.opal#sheet.opal#sheet.opal .opbag .potline{margin-left:-4px!important;margin-right:-4px!important;padding-left:4px!important;padding-right:4px!important;column-gap:6px!important;gap:6px!important}',
     '#sheet.opal#sheet.opal#sheet.opal .opbag .ptag{margin:0 .7px!important}#sheet.opal#sheet.opal#sheet.opal .opbag .pthead{gap:6px!important}',
+    // 효과 하나인 줄: 「공격력」 칸 | 숫자 칸 (ui.js fitGear 가 두 줄 칸 너비를 같게 맞춤)
+    '#sheet.opal#sheet.opal#sheet.opal .opbag .ef b.one{display:grid!important;grid-template-columns:auto auto;column-gap:5px;justify-self:end!important;width:auto!important;max-width:100%;overflow:visible!important;white-space:nowrap}',
+    '#sheet.opal#sheet.opal#sheet.opal .opbag .ef b.one>.k{text-align:left}#sheet.opal#sheet.opal#sheet.opal .opbag .ef b.one>.v{text-align:left}',
+    // 숫자는 「+」 시작을 두 줄 같은 세로줄에 (형 2026-11-18 「여기 맞춰」: +61920% 를 위 줄 +247682% 시작에) — 반지 표도 같게
+    '#sheet.opal#sheet.opal#sheet.opal .opbag .ef b.two>.v{text-align:left!important}',
+    '#sheet.opal#sheet.opal#sheet.opal .opbag .ef.stack>b.one{grid-column:1/-1;justify-self:stretch!important;width:auto!important;max-width:none!important;grid-template-columns:minmax(0,1fr) auto!important;padding:0 0 0 15px;box-sizing:border-box}',
+    // 자물쇠 그림은 칸 오른쪽 끝에 붙여 효과 숫자 오른쪽 끝과 같은 세로줄로
+    '#sheet.opal#sheet.opal#sheet.opal .opbag .plock{background-position:right -2.5px center!important}',   // 그림 안 여백(약 2.5px)만큼 더 밀어 자물쇠 선 끝 = 숫자 끝
     // 강화 버튼 크게 (형 2026-11-18 「특성·코스튬, 스킬 강화 버튼 쪽 전부 키워」)
     // 특성: 100×30 → 102×40 (가운데 높이는 그대로, 오른쪽은 카드 끝에서 10px)
     '#sheet.opal#sheet.opal#sheet.opal .tinfo.tnw .tupb{width:102px!important;height:40px!important;margin-top:16.5px!important;font-size:13px!important;white-space:nowrap}',

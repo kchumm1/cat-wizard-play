@@ -1727,6 +1727,32 @@
         if (v.classList.contains('two')) v.closest('.ef').classList.add('tw2');
         shrink(v, [v], 9.5);
       });
+      // 효과가 하나인 줄도 「공격력」 칸 | 숫자 칸으로 나눠, 장착·보유 두 줄의 「공격력」을 같은 세로줄에 (숫자 길이가 달라 어긋나던 것,
+      // 형 2026-11-18 「여기 안 맞다」). 숫자는 오른쪽 끝을 맞춤, 두 줄은 같은 글자 크기·같은 칸 너비
+      var ones = [].slice.call(panel.querySelectorAll('.opbag .ef b')).filter(function (v) { return !v.classList.contains('two'); });
+      ones.forEach(function (v) {
+        if (!v.querySelector('.v')) { var t = v.textContent, at = t.lastIndexOf(' +'); if (at > 0) v.innerHTML = '<span class="k">' + t.slice(0, at) + '</span><span class="v">' + t.slice(at + 1) + '</span>'; }
+        if (v.children.length === 2) v.classList.add('one');
+      });
+      ones = ones.filter(function (v) { return v.classList.contains('one'); });
+      if (ones.length > 1) {
+        var fmin1 = Math.min.apply(null, ones.map(function (v) { return parseFloat(getComputedStyle(v).fontSize); }));
+        ones.forEach(function (v) { v.style.setProperty('font-size', fmin1 + 'px', 'important'); v.style.gridTemplateColumns = ''; });
+        var fitOnes = function () {
+          ones.forEach(function (v) { v.style.gridTemplateColumns = ''; });
+          var cols1 = [0, 1].map(function (i) { return Math.max.apply(null, ones.map(function (v) { return Math.ceil(v.children[i].getBoundingClientRect().width); })); });
+          ones.forEach(function (v) { v.style.gridTemplateColumns = cols1[0] + 'px ' + cols1[1] + 'px'; });
+        };
+        fitOnes();
+        // 칸으로 나누며 생긴 사이(5px)만큼 넘치면 (「골드 획득 +353400%」 등) 두 줄 같이 글씨를 조금씩 줄임
+        for (var gi = 0; gi < 14 && fmin1 > 9 && ones.some(function (v) { return v.scrollWidth > v.clientWidth + 0.5; }); gi++) {
+          fmin1 = Math.max(9, fmin1 * 0.96);
+          ones.forEach(function (v) { v.style.setProperty('font-size', fmin1.toFixed(2) + 'px', 'important'); });
+          fitOnes();
+        }
+        // 그래도 넘치면(좁은 폰 360px): 반지처럼 「장착 효과」는 위 줄, 「이름 | 숫자」는 아래 줄 전체 폭으로, 글씨는 원래 크기
+        if (ones.some(function (v) { return v.scrollWidth > v.clientWidth + 0.5; })) ones.forEach(function (v) { v.closest('.ef').classList.add('stack', 'tw2'); v.style.removeProperty('font-size'); v.style.gridTemplateColumns = ''; });
+      }
       // 장착 효과·보유 효과 두 표를 같은 글자 크기·같은 열 너비로 (위아래 줄이 똑같이 맞게)
       var twos = [].slice.call(panel.querySelectorAll('.opbag .ef b.two'));
       // 좁은 폰(360px 등)에서 가장 작은 글씨로도 안 들어가면: 「장착 효과」 이름은 위 줄, 표는 아래 줄 전체 폭
