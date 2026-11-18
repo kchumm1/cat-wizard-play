@@ -31,7 +31,7 @@
     return saved;
   }
   function save(state, storage) {
-    try { if (!storage) return false; state.lastSeen = Date.now(); storage.setItem(KEY, JSON.stringify(state)); return true; } catch (e) { return false; }
+    try { if (!storage || root.CW_NOSAVE) return false; state.lastSeen = Date.now(); storage.setItem(KEY, JSON.stringify(state)); return true; } catch (e) { return false; }
   }
   // 2체인/3체인 were replaced by 약점 피해 / 폭주 피해: sigils change their stat (their value is worked out from it),
   // gear potential lines keep their roll but move to the new range (ten times the old numbers)

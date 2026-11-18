@@ -1513,6 +1513,8 @@
         '</div><div class="subh">게임</div>';
       var settings = '<h3>설정</h3>' + perf + '<div class="list">' +
         '<div class="row"><div class="info"><div class="name">닉네임</div><div class="desc">' + esc(G.nickName()) + '</div></div><button class="btn" data-act="nick">변경</button></div>' +
+        (G.loginGate && G.loginGate.loggedIn() ? '<div class="row"><div class="info"><div class="name">비밀번호 변경</div><div class="desc">로그인할 때 쓰는 비밀번호를 바꿔요.</div></div><button class="btn" data-act="pwchange">변경</button></div>' : '') +
+        (G.loginGate && G.loginGate.loggedIn() ? '<div class="row"><div class="info"><div class="name">로그아웃</div><div class="desc">다른 아이디로 들어갈 수 있어요. 진행은 아이디에 저장돼 있어요.</div></div><button class="btn" data-act="logout">로그아웃</button></div>' : '') +
         '<div class="row"><div class="info"><div class="name">화면 표현</div><div class="desc">기본 3D 또는 픽셀 스타일</div></div><button class="btn" data-set="pixel">' + (st.pixel ? '픽셀 스타일' : '기본 3D') + '</button></div>' +
         // 가로 시점 (2026-11-17): only while the phone is sideways (upright the screen is as it was)
         (CW.isLand && CW.isLand() ? '<div class="row"><div class="info"><div class="name">가로 화면 시점</div><div class="desc">옆에서: 냥법사 왼쪽, 몬스터 오른쪽으로 길게<br>멀리서: 앞에서 넓게 내려다봐요</div></div>' +
@@ -2290,6 +2292,30 @@
         });
       }
       else if (d.act === 'ownclear') confirmBox('열쇠를 지울까요?', '지우면 더 이상 Claude에게 저장을 보내지 않아요.', '지우기', function () { G.ownerSync.clearKey(); toast('열쇠를 지웠어요.'); renderPanel(true); });
+      else if (d.act === 'pwchange') {
+        // 아이디 로그인 (js/login-gate.js): a new password for the id logged in here
+        if (!G.loginGate) return;
+        modal('<h2>비밀번호 변경</h2><p class="guide-lead">새 비밀번호를 8자 이상으로 넣어 주세요.</p><input class="nickin pwin1" type="password" maxlength="72" autocomplete="new-password" placeholder="새 비밀번호"><input class="nickin pwin2" type="password" maxlength="72" autocomplete="new-password" placeholder="한 번 더" style="margin-top:8px">',
+          [{ label: '취소' }, { label: '바꾸기', pri: true, fn: function () {
+            var c = $('modalCard'), a = c.querySelector('.pwin1').value, b = c.querySelector('.pwin2').value;
+            if (a.length < 8) { toast('비밀번호는 8자 이상으로 해 주세요.'); return; }
+            if (a !== b) { toast('비밀번호가 서로 달라요.'); return; }
+            toast('바꾸는 중이에요…');
+            G.loginGate.changePassword(a).then(function (r) { toast(r && r.ok ? '비밀번호를 바꿨어요.' : '바꾸지 못했어요' + (r && r.msg ? ': ' + r.msg : '.')); });
+          } }], { variant: 'guide' });
+      }
+      else if (d.act === 'logout') {
+        // 아이디 로그인 (js/login-gate.js): the newest save goes to the server first; if that fails the player is asked once more
+        if (!G.loginGate) return;
+        var outNow = function () { toast('로그아웃해요…'); G.loginGate.logout(null); };
+        confirmBox('로그아웃할까요?', '지금 진행을 서버에 저장하고 로그인 화면으로 가요. 같은 아이디로 다시 들어오면 이어서 할 수 있어요.', '로그아웃', function () {
+          toast('저장하는 중이에요…');
+          (G.playerSync ? G.playerSync.push('first') : Promise.resolve(null)).then(function (r) {
+            if (r && (r.ok || (r.code === 429 && !r.auth))) outNow();   // 429 = the server saved it less than a minute ago
+            else confirmBox('서버에 저장하지 못했어요', (r && r.msg ? r.msg + '. ' : '') + '그래도 로그아웃하면 이 기기에는 백업이 남지만, 마지막 몇 분의 진행은 아이디에 없을 수 있어요.', '그래도 로그아웃', outNow);
+          });
+        });
+      }
       else if (d.act === 'nick') {
         modal('<h2>닉네임 변경</h2><p class="guide-lead">1~8글자로 입력해 주세요.</p><input class="nickin" type="text" maxlength="8" autocomplete="off" value="' + esc(G.nickName()) + '">',
           [{ label: '취소' }, { label: '변경하기', pri: true, fn: function () { var v = ($('modalCard').querySelector('.nickin').value || '').replace(/\s+/g, ' ').trim(); if (!v || v.length > 8) { toast('닉네임은 1~8글자로 입력해 주세요.'); return; } G.setNick(v); toast('닉네임을 변경했어요.'); renderPanel(true); hud(); } }], { variant: 'guide' });

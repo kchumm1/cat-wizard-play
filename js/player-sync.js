@@ -11,6 +11,9 @@
   //   o.now      clock (ms)
   //   o.body()   the save as JSON text
   //   o.info()   a little text about the device and the version (optional)
+//   o.blocked() true → nothing is sent (another device is playing this id now)
+//   o.account  true → the account is made by the login screen (js/login-gate.js), never silently here: without a login this
+//              sends nothing, and a login that the server no longer knows calls o.onLost() instead of making a new anonymous one
   var BASE = 'https://ifqlrmenlyzmxojwspya.supabase.co';
   var URL = BASE + '/functions/v1/save-sync';
   var AUTH = BASE + '/auth/v1';
@@ -59,10 +62,11 @@
       var a = null; try { a = JSON.parse(get(AUTH_KEY) || 'null'); } catch (e) { a = null; }
       return memAuth && !(a && a.access) ? memAuth : a;
     }
-    function keep(j, prev) {
+    function keep(j, prev, lid) {
       if (!j || typeof j.access_token !== 'string' || typeof j.refresh_token !== 'string' || !j.user || typeof j.user.id !== 'string') return null;
       // the phone's own clock from now on: the server's expires_at is not used (a phone's clock can be off)
       var a = { access: j.access_token, refresh: j.refresh_token, exp: now() + (+j.expires_in || 3600) * 1000, uid: j.user.id };
+      if (lid) a.lid = lid;   // the login id (set by js/login-gate.js): stays through every renewal
       if (prev) a.prev = prev;   // the account before (a refused refresh made a new one): sent along so rows can be joined by hand
       var text = JSON.stringify(a); memAuth = a; put(AUTH_KEY, text);
       if (get(AUTH_KEY) !== text) noSignup = true;
@@ -102,9 +106,13 @@
     }
     function refresh(a) {
       return call(AUTH + '/token?grant_type=refresh_token', JSON.stringify({ refresh_token: a.refresh })).then(function (res) {
-        if (res && res.ok) return res.json().then(function (j) { return keep(j, a.prev); });
+        if (res && res.ok) return res.json().then(function (j) { return keep(j, a.prev, a.lid); });
         var st = res ? res.status : 0;
-        if (st === 400 || st === 401 || st === 403) { put(AUTH_KEY, null); memAuth = null; return signup(a.uid || a.prev); }   // the account is gone: a new one
+        if (st === 400 || st === 401 || st === 403) {
+          put(AUTH_KEY, null); memAuth = null;
+          if (o.account) { if (o.onLost) { try { o.onLost(); } catch (e) { /* the game goes on */ } } return null; }   // an account: back to the login screen
+          return signup(a.uid || a.prev);
+        }   // the account is gone: a new one
         return null;
       }).then(null, function () { return null; });
     }
@@ -112,6 +120,7 @@
     function ensureAuth(left) {
       if (inflight) return inflight;
       var a = readAuth();
+      if (o.account && !(a && (a.access || a.refresh))) return Promise.resolve({ wait: true });   // no login yet: the login screen is open
       if (a && a.access && a.exp - now() > (left || EARLY)) return Promise.resolve(a);
       var p;
       if (a && a.refresh) p = refresh(a);
@@ -125,6 +134,7 @@
     function push(reason) {
       try {
         if (!storeOk()) return Promise.resolve({ skip: 'nostore' });
+        if (o.blocked && o.blocked()) return Promise.resolve({ skip: 'kicked' });   // another device opened this id (js/login-gate.js)
         if (busy) return Promise.resolve({ skip: 'busy' });
         if (!o.fetch) return Promise.resolve({ skip: 'nofetch' });
         var t = now(), first = reason === 'first';

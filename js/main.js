@@ -966,13 +966,23 @@
   // a first send a few seconds after the game is ready (moves the save already on this phone to the server), then
   // every 10 minutes when it changed and when the app is put away; off on localhost unless ?psync=1.
   // 체험판 gets it later by taking !CW.FRIEND away (the server already takes anyone's anonymous login).
+  // 아이디 로그인 (js/login-gate.js): the game opens on the login screen until this browser holds a login with an id
+  var loginGate = !CW.FRIEND && CW.startLoginGate ? CW.startLoginGate({
+    friend: CW.FRIEND, allowed: CW.playerSyncAllowed(location), store: storage, fetch: root.fetch ? root.fetch.bind(root) : null,
+    reload: function () { location.reload(); }, info: function () { return (navigator.userAgent || '').slice(0, 160); }
+  }) : null;
+  G.loginGate = loginGate;
   var playerSync = CW.createPlayerSync ? CW.createPlayerSync({
     enabled: !CW.FRIEND && CW.playerSyncAllowed(location), store: storage, fetch: root.fetch ? root.fetch.bind(root) : null,
+    account: !!loginGate,
+    blocked: function () { return !!(loginGate && loginGate.isKicked()); },
+    onLost: function () { if (loginGate && CW.openLoginScreen) CW.openLoginScreen(loginGate, { reload: function () { location.reload(); } }); },
     locks: root.navigator && root.navigator.locks,
     // 서버 지갑: a save-sync answer for a wallet account carries the server's fields (diamonds etc.); they win
     onServer: function (server) { if (!G.wallet) return; CW.applyServer(state, server); refreshStats(); save(); ui.hud(); },
     body: function () { save(); return JSON.stringify(state); },
-    info: function () { return (navigator.userAgent || '').slice(0, 160); }
+    // sid first: the server tells which device wrote the newest save from it (js/login-gate.js open)
+    info: function () { return (loginGate ? 'sid=' + loginGate.sid() + ' ' : '') + (navigator.userAgent || '').slice(0, 140); }
   }) : null;
   if (playerSync) {
     var psStart = setInterval(function () { if (ready) { clearInterval(psStart); setTimeout(function () { playerSync.start(); }, 5000); } }, 1000);
