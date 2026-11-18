@@ -955,6 +955,12 @@
     document.addEventListener('visibilitychange', function () { if (ready && document.hidden) ownerSync.push('hide'); });
   }
   G.ownerSync = ownerSync;
+  // 저장 되돌리기 (설정 › 문제 확인용, 형꺼 only): the save kept on the server takes this phone's place
+  G.restoreSave = function (obj) {
+    if (CW.FRIEND || !obj || typeof obj !== 'object') return false;
+    if (!adopt(JSON.stringify(obj))) return false;
+    save(); cloudPush(true); return true;
+  };
   document.addEventListener('visibilitychange', function () { if (document.hidden) cloudPush(false); });
 
   // ---------- start ----------

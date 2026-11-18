@@ -1466,7 +1466,6 @@
         // only in an iPhone home-screen app whose page lies under the clock (an icon added the old way), where the page
         // may be stretched to the screen (tools/build-site.cjs)
         (!CW.FRIEND && root.__cwFit && document.documentElement.classList.contains('under') ? '<div class="row"><div class="info"><div class="name">하단 메뉴 위치</div><div class="desc">메뉴가 잘리면 ‘안쪽’을 선택해 주세요.</div></div><button class="btn" data-set="bottomFit">' + (bottomInside() ? '안쪽' : '맨 아래') + '</button></div>' : '') +
-        (CW.FRIEND ? '' : '<div class="row"><div class="info"><div class="name">다른 기기로 진행 옮기기</div><div class="desc">저장 코드를 복사한 뒤, 다른 기기의 ‘진행 불러오기’에 붙여 넣으세요.</div></div><div class="sbtns"><button class="btn" data-act="savecopy">저장 코드 복사</button><button class="btn" data-act="savepaste">진행 불러오기</button></div></div>') +
         (G.storageOk() ? '' : '<p class="note">이 브라우저에서는 진행을 저장할 수 없어요.<br>창을 닫으면 진행이 사라져요.</p>') + '</div>' +
         (CW.FRIEND ? '' : '<details class="fold"' + (foldOpen ? ' open' : '') + '><summary>문제 확인용</summary><div class="list">' +
         '<div class="row"><div class="info"><div class="name">게임 버전</div><div class="desc">새 버전은 앱을 다시 열 때 적용돼요.</div></div><b class="appver" id="appVer">' + appVersion() + '</b></div>' +
@@ -1537,7 +1536,20 @@
       var desc = !has ? 'Claude가 준 열쇠를 넣으면 10분마다, 그리고 앱을 내릴 때 저장을 보내요.'
         : (s.okAt ? '마지막으로 보낸 시각 ' + when(s.okAt) : '아직 보내지 않았어요') + (s.t && !s.ok ? ' · ' + when(s.t) + ' 실패: ' + esc(s.msg || '') : '') + ' · 10분마다 자동으로 보내요';
       return '<div class="row"><div class="info"><div class="name" style="word-break:keep-all">Claude에게 저장 보내기</div><div class="desc">' + desc + '</div></div>' +
-        '<div class="sbtns">' + (has ? '<button class="btn" data-act="ownsend">지금 보내기</button><button class="btn" data-act="ownclear">열쇠 지우기</button>' : '<button class="btn" data-act="ownkey">열쇠 넣기</button>') + '</div></div>';
+        '<div class="sbtns">' + (has ? '<button class="btn" data-act="ownsend">지금 보내기</button><button class="btn" data-act="ownclear">열쇠 지우기</button>' : '<button class="btn" data-act="ownkey">열쇠 넣기</button>') + '</div></div>' +
+        (has ? '<div class="row"><div class="info"><div class="name">저장 되돌리기</div><div class="desc">앱을 지웠다가 다시 깔았을 때 눌러요. 서버에 남은 가장 많이 진행한 저장을 불러와요.</div></div>' +
+          '<div class="sbtns"><button class="btn" data-act="ownget">되돌리기</button></div></div>' : '');
+    }
+    // 저장 되돌리기: what the server keeps against this phone, then the save takes this phone's place (G.restoreSave)
+    function ownRestore(r) {
+      var p2 = function (v) { return (v < 10 ? '0' : '') + v; }, d = new Date(r.savedAt || 0), me = G.state;
+      var when = r.savedAt ? (d.getMonth() + 1) + '/' + d.getDate() + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes()) + ' 저장' : '';
+      var head = CW.ownerSaveAhead(me, r.data) ? '<strong>이 기기 진행이 서버 저장보다 앞서 있어요.</strong><br>' : '';
+      confirmBox('저장을 되돌릴까요?', head + '서버 저장 · <b>' + (r.data.tier || 1) + '차 Lv' + (r.data.level || 1) + '</b>' + (when ? ' · ' + when : '') +
+        '<br>이 기기 · ' + (me.tier || 1) + '차 Lv' + (me.level || 1) + '<br>이 기기 진행이 서버 저장으로 바뀌어요.', '되돌리기', function () {
+        if (G.restoreSave(r.data)) toast('저장을 되돌렸어요.'); else toast('저장을 불러오지 못했어요.');
+        renderPanel(true); hud();
+      }, { variant: 'danger' });
     }
     // one line a minute; a minute that ran under 80% of its aim or stood still is marked
     function showPerf() {
@@ -2143,22 +2155,26 @@
       else if (d.shop !== undefined && CW.FRIEND) { toast('체험판에서는 수령할 수 없어요.'); }
       else if (d.shop !== undefined) { var p = DATA.shop[+d.shop]; confirmBox('연습용 다이아를 받을까요?', '<b>' + p.name + '</b> · 표시 가격 ' + p.won.toLocaleString('ko-KR') + '원<br>실제 결제는 없어요. 다이아가 즉시 지급돼요.', '다이아 받기', function () { var g = G.buy(+d.shop); toast('다이아 +' + fmt(g)); renderPanel(true); hud(); }); }
       else if (d.go !== undefined) { if (G.goStage(+d.go)) { toast(CW.stageLabel(+d.go) + ' 이동 완료'); renderPanel(true); } }
-      else if (d.act === 'savecopy') {
-        var code = G.exportSave(), done = function () { toast('저장 코드를 복사했어요. 다른 기기의 ‘진행 불러오기’에 붙여 넣으세요.'); };
-        var show = function () { modal('<h2>저장 코드</h2><p class="guide-lead">코드 전체를 복사해 다른 기기에서 사용하세요.</p><textarea class="codebox" readonly>' + code + '</textarea>', [{ label: '확인', pri: true }], { variant: 'guide' }); var ta = $('modalCard').querySelector('textarea'); ta.focus(); ta.select(); };
-        try { navigator.clipboard.writeText(code).then(done, show); } catch (err) { show(); }
-      }
       else if (d.act === 'perfview') showPerf();
       else if (d.act === 'perfcopy') copyPerf();
-      else if ((d.act === 'ownkey' || d.act === 'ownsend' || d.act === 'ownclear') && (CW.FRIEND || !G.ownerSync)) { /* 체험판: no such buttons */ }
+      else if ((d.act === 'ownkey' || d.act === 'ownsend' || d.act === 'ownclear' || d.act === 'ownget') && (CW.FRIEND || !G.ownerSync)) { /* 체험판: no such buttons */ }
+      else if (d.act === 'ownget') {
+        toast('서버 저장을 불러오고 있어요…');
+        G.ownerSync.fetchSave('top').then(function (r) { if (r && r.ok) ownRestore(r); else toast('불러오지 못했어요' + (r && r.msg ? ': ' + r.msg : '.')); });
+      }
       else if (d.act === 'ownkey') {
         modal('<h2>Claude에게 저장 보내기</h2><p class="guide-lead">Claude가 알려 준 열쇠를 붙여 넣으세요. 이 기기에만 보관돼요.</p><input class="nickin owkin" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="열쇠">',
           [{ label: '취소' }, { label: '넣기', pri: true, fn: function () {
             var v = $('modalCard').querySelector('.owkin').value;
             if (!G.ownerSync.setKey(v)) { toast('열쇠가 올바르지 않아요. 처음부터 끝까지 복사했는지 확인해 주세요.'); return; }
-            toast('열쇠를 넣었어요. 저장을 보내 볼게요.');
-            G.ownerSync.push('now').then(function (r) { if (r && r.ok) toast('Claude에게 저장을 보냈어요.'); else if (r && r.msg) toast('보내지 못했어요: ' + r.msg); renderPanel(true); });
+            toast('열쇠를 넣었어요.');
             renderPanel(true);
+            // a fresh start (the app deleted and installed again): the server's save is further on → offer it back first
+            // instead of sending this phone's new game
+            G.ownerSync.fetchSave('top').then(function (r) {
+              if (r && r.ok && CW.ownerSaveAhead(r.data, G.state)) { ownRestore(r); return; }
+              G.ownerSync.push('now').then(function (p) { if (p && p.ok) toast('Claude에게 저장을 보냈어요.'); else if (p && p.msg) toast('보내지 못했어요: ' + p.msg); renderPanel(true); });
+            });
           } }], { variant: 'guide' });
       }
       else if (d.act === 'ownsend') {
@@ -2174,11 +2190,6 @@
       else if (d.act === 'nick') {
         modal('<h2>닉네임 변경</h2><p class="guide-lead">1~8글자로 입력해 주세요.</p><input class="nickin" type="text" maxlength="8" autocomplete="off" value="' + esc(G.nickName()) + '">',
           [{ label: '취소' }, { label: '변경하기', pri: true, fn: function () { var v = ($('modalCard').querySelector('.nickin').value || '').replace(/\s+/g, ' ').trim(); if (!v || v.length > 8) { toast('닉네임은 1~8글자로 입력해 주세요.'); return; } G.setNick(v); toast('닉네임을 변경했어요.'); renderPanel(true); hud(); } }], { variant: 'guide' });
-      }
-      else if (d.act === 'savepaste' && CW.FRIEND) { toast('체험판에서는 사용할 수 없어요.'); }
-      else if (d.act === 'savepaste') {
-        modal('<h2>진행을 불러올까요?</h2><p class="guide-lead">다른 기기에서 복사한 저장 코드를 붙여 넣으세요.</p><div class="guide-section"><p><strong>주의</strong> · 이 기기의 현재 진행이 코드의 진행으로 교체돼요.</p></div><textarea class="codebox" placeholder="CW1:로 시작하는 코드"></textarea>',
-          [{ label: '취소' }, { label: '진행 불러오기', pri: true, fn: function () { var v = $('modalCard').querySelector('textarea').value; if (G.importSave(v)) toast('저장한 진행을 불러왔어요.'); else toast('저장 코드가 올바르지 않아요. 처음부터 끝까지 복사했는지 확인해 주세요.'); } }], { variant: 'danger' });
       }
       else if (d.set) {
         var st = G.state.settings;

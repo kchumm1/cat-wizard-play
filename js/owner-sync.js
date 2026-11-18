@@ -12,6 +12,7 @@
   //   o.body()   the save as JSON text (the same as localStorage cw-save)
   //   o.info()   a little text about the device and the version (optional)
   var URL = 'https://ifqlrmenlyzmxojwspya.supabase.co/functions/v1/upload-save';
+  var GET_URL = 'https://ifqlrmenlyzmxojwspya.supabase.co/functions/v1/download-save';
   var KEY = 'cw-claude-key', LOG = 'cw-claude-sync';
   var EVERY = 10 * 60 * 1000, MIN_GAP = 65 * 1000, MAX = 2 * 1024 * 1024, KEEPALIVE_MAX = 60000;
   var KEY_RE = /^[A-Za-z0-9_-]{24,128}$/;
@@ -66,8 +67,33 @@
       if (s.t && t - s.t < wait) return Promise.resolve({ skip: 'wait' });
       return push('tick');
     }
-    return { key: key, setKey: setKey, clearKey: clearKey, status: status, push: push, tick: tick };
+    // 저장 되돌리기 (2026-11-18): the kept save back from the server ('top' = the furthest, the default).
+    // Never throws; resolves to { ok, data, savedAt } or { ok: false, msg }.
+    function fetchSave(slot) {
+      try {
+        var k = key();
+        if (!k) return Promise.resolve({ ok: false, msg: '열쇠를 먼저 넣어 주세요' });
+        if (!o.fetch) return Promise.resolve({ ok: false, msg: '인터넷 연결을 확인해 주세요' });
+        var opts = { method: 'POST', headers: { 'content-type': 'application/json', 'x-owner-key': k }, body: JSON.stringify({ slot: slot === 'latest' ? 'latest' : 'top' }) };
+        return Promise.resolve().then(function () { return o.fetch(GET_URL, opts); }).then(function (res) {
+          if (!res || !res.ok) {
+            var st = res ? res.status : 0;
+            return { ok: false, code: st, msg: st === 401 ? '열쇠가 맞지 않아요' : st === 404 ? '서버에 저장이 없어요' : '서버 오류 ' + st };
+          }
+          return res.json().then(function (j) {
+            if (!j || !j.data || typeof j.data !== 'object') return { ok: false, msg: '서버 저장을 읽지 못했어요' };
+            return { ok: true, data: j.data, savedAt: Date.parse(j.saved_at) || 0 };
+          });
+        }).then(null, function () { return { ok: false, msg: '인터넷 연결을 확인해 주세요' }; });
+      } catch (e) { return Promise.resolve({ ok: false, msg: 'error' }); }
+    }
+    return { key: key, setKey: setKey, clearKey: clearKey, status: status, push: push, tick: tick, fetchSave: fetchSave };
+  }
+  // how far a save has come: 차수 first, then level (a fresh start after the app was deleted is far behind)
+  function ahead(a, b) {
+    var ta = +(a && a.tier) || 0, tb = +(b && b.tier) || 0, la = +(a && a.level) || 0, lb = +(b && b.level) || 0;
+    return ta > tb || (ta === tb && la > lb + 10);
   }
 
-  return { createOwnerSync: createOwnerSync, OWNER_SYNC_URL: URL, OWNER_SYNC_KEY: KEY, OWNER_SYNC_LOG: LOG, OWNER_SYNC_EVERY: EVERY };
+  return { createOwnerSync: createOwnerSync, ownerSaveAhead: ahead, OWNER_SYNC_URL: URL, OWNER_GET_URL: GET_URL, OWNER_SYNC_KEY: KEY, OWNER_SYNC_LOG: LOG, OWNER_SYNC_EVERY: EVERY };
 });
