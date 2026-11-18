@@ -1181,8 +1181,22 @@
       var tier = DATA.tiers[s.tier - 1];
       var lastT = CW.FRIEND ? CW.FRIEND_MAX_TIER : DATA.tiers.length; // 체험판 ends at the 9th job
       var next = s.tier < lastT ? CW.tierNeed(s.tier + 1) + ' ' + (s.tier + 1) + '차' : (s.best >= 309 ? '마왕 토벌 완료!' : '최종 목표 10-31 늑대 왕');
-      var nk = G.nickName(); if ($('nick').textContent !== nk) $('nick').textContent = nk; if ($('questTxt').textContent !== next) $('questTxt').textContent = next;
+      var nk = G.nickName(); if ($('nick').textContent !== nk) { $('nick').textContent = nk; fitNick(); } if ($('questTxt').textContent !== next) $('questTxt').textContent = next;
     }
+    // 2026-11-18 형: 운영자 상단도 내 핸드폰처럼 — a long nickname (귤귤귤귤귤, up to 8 letters) made the Lv box run under the
+    // place tag and the stage plate in the middle. The box now ends before the place tag: the name gets smaller (down to
+    // 11px), and only if that is not enough its end becomes …  (measured, so every screen width and orientation fits)
+    function fitNick() {
+      var nk = $('nick'), tag = $('placeName'); if (!nk || !tag) return;
+      nk.style.fontSize = ''; nk.style.maxWidth = '';
+      var box = nk.closest('div,button') || nk.parentElement, t = tag.getBoundingClientRect(), b = box.getBoundingClientRect();
+      if (!t.width || !b.width || b.left >= t.left) return;   // hidden, or not side by side (another layout)
+      var over = b.right - (t.left + 6); if (over <= 0) return;   // +6: about where the box ends with a short name (우유) on 형's phone, which looks right
+      var w = nk.getBoundingClientRect().width, want = Math.max(18, w - over), fs = parseFloat(getComputedStyle(nk).fontSize) || 15;
+      nk.style.fontSize = Math.max(11, Math.floor(fs * want / w * 10) / 10) + 'px';
+      if (nk.getBoundingClientRect().width > want + 0.5) nk.style.maxWidth = Math.floor(want) + 'px';
+    }
+    if (typeof root.addEventListener === 'function') root.addEventListener('resize', function () { clearTimeout(fitNick.t); fitNick.t = setTimeout(fitNick, 120); });
     function slots() {
       var s = G.state, now = G.castingSlot();
       var pre = [0, 1, 2].map(function (i) { return '<button data-pre="' + i + '" aria-pressed="' + ((s.preset || 0) === i) + '" aria-label="스킬 프리셋 ' + (i + 1) + '">' + (i + 1) + '</button>'; }).join(''); if ($('pre').innerHTML !== pre) $('pre').innerHTML = pre;
