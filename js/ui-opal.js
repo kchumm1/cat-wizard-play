@@ -1258,6 +1258,21 @@
     '#sheet.opal#sheet.opal .opbag .ef.tw2{height:auto!important;min-height:22px}#sheet.opal#sheet.opal .opbag .ef.tw2>*{line-height:1.25!important}#sheet.opal#sheet.opal .opbag .ef.tw2 b.two>*{line-height:1.25!important}',
     // 좁은 폰에서 표가 아래 줄로 내려간 경우(stack): 표를 줄 전체 폭으로 — 이름은 「장착 효과」 글자 시작에 맞추고, 숫자는 오른쪽 끝에서 같은 여백 (형 2026-11-18 「줄칸 넓이 깔끔하게, 옆에 여백」)
     '#sheet.opal#sheet.opal#sheet.opal .opbag .ef.stack>b.two{justify-self:stretch!important;width:auto!important;max-width:none!important;grid-template-columns:minmax(0,1fr) auto!important;padding:0 0 0 15px;box-sizing:border-box}',
+    // 장비 줄·칸 맞춤 (형 2026-11-18 「줄맞춤 칸맞춤 다시」): 잠재력 상자도 효과 상자와 같은 안쪽 여백(9px) → ✦ 아이콘 세로줄이 같고,
+    // 잠재력 줄의 점은 ✦ 칸 가운데·글자는 「장착 효과」 글자 시작과 같은 자리, 자물쇠 오른쪽 끝은 효과 숫자 오른쪽 끝과 같은 자리
+    // (줄 바탕 알약은 양옆 6px 바깥으로 내밀어 둠)
+    '#sheet.opal#sheet.opal#sheet.opal .opbag .gpot{padding-left:9px!important;padding-right:9px!important}',
+    '#sheet.opal#sheet.opal#sheet.opal .opbag .potline{margin-left:-6px!important;margin-right:-6px!important;padding-left:6px!important;padding-right:6px!important;column-gap:6px!important;gap:6px!important}',
+    '#sheet.opal#sheet.opal#sheet.opal .opbag .ptag{margin:0 .7px!important}#sheet.opal#sheet.opal#sheet.opal .opbag .pthead{gap:6px!important}',
+    // 강화 버튼 크게 (형 2026-11-18 「특성·코스튬, 스킬 강화 버튼 쪽 전부 키워」)
+    // 특성: 100×30 → 102×40 (가운데 높이는 그대로, 오른쪽은 카드 끝에서 10px)
+    '#sheet.opal#sheet.opal#sheet.opal .tinfo.tnw .tupb{width:102px!important;height:40px!important;margin-top:16.5px!important;font-size:13px!important;white-space:nowrap}',
+    // 코스튬 전시대 아래 입기·강화: 29 → 40px
+    '#sheet.opal#sheet.opal#sheet.opal .cosstage .cs-act>*{min-height:40px!important;height:40px}#sheet.opal#sheet.opal#sheet.opal .cosstage .cs-act .buy small{font-size:16px!important}#sheet.opal#sheet.opal#sheet.opal .cosstage .cs-act .buy span{font-size:14px!important}',
+    // 스킬 목록 줄의 보기·넣기·강화: 23 → 28px (아래 설명 글 위까지)
+    '#sheet.opal#sheet.opal#sheet.opal .skr .bs{top:8px!important;height:28px!important}#sheet.opal#sheet.opal#sheet.opal .skr .b{height:28px!important}#sheet.opal#sheet.opal#sheet.opal .skr :is(.b.see,.b.put,.b.up){font-size:13px!important}',
+    // 스킬 상세의 넣기·강화: 43 → 50px
+    '#sheet.opal#sheet.opal#sheet.opal .skd-bot>button{height:50px!important}',
     // ---- 스킬 목록 = 사용자 스킬 부품 + 시안(10-skills) 실측 (2026-11-16, 시안 패널 962px = 화면 391px, 좌표는 .skw 기준 = 화면 x-16, y-40) ----
     '#sheet.opal#sheet.opal .skw{position:relative;height:321px;margin:3px 0 -3px!important;padding:0!important}',   // 시안보다 14px 아래: 우리 제목 글자 아래 끝이 시안보다 11px 낮아서, 창·모자가 제목에 닿지 않게 (사용자 2026-11-16)
     '#sheet.opal#sheet.opal .skw>*{position:absolute}',

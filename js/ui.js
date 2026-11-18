@@ -1712,6 +1712,8 @@
       var shrink = function (el, kids, min) { var g = 0; while (el.scrollWidth > el.clientWidth + 0.5 && g++ < 16) { var done = true; kids.forEach(function (k) { var f = parseFloat(getComputedStyle(k).fontSize); if (f > min) { k.style.setProperty('font-size', Math.max(min, f * 0.95).toFixed(2) + 'px', 'important'); done = false; } }); if (done) break; } };
       // 코스튬 카드 이름 (2026-11-17, 형: 줄·칸 맞춰): 「시계태엽 가면 …」처럼 잘리지 않게 글씨만 줄임
       panel.querySelectorAll('.ccard>b').forEach(function (b) { b.style.removeProperty('font-size'); shrink(b, [b], 8.5); });
+      // 잠재력 줄 (형 2026-11-18 「칸맞춤」): 좁은 폰에서 「솔라 크리티컬 피해 +0.07배」가 「…」로 잘리던 것 → 글씨만 줄여 다 보이게
+      panel.querySelectorAll('.opbag .potline>span').forEach(function (p) { p.style.removeProperty('font-size'); shrink(p, [p], 9); });
       // 같은 장비를 계속 올리는 동안 효과 숫자 글씨 크기는 다시 커지지 않음 (숫자 자릿수가 늘 때만 한 번 더 줄고, 오르락내리락 흔들리지 않게 — 사용자 2026-11-18)
       var gkey = ((panel.querySelector('.opbag .bname b') || {}).textContent || '') + '|' + ((panel.querySelector('.opbag .ggr') || {}).textContent || ''), gmem = fitGear.mem && fitGear.mem.k === gkey ? fitGear.mem.f : [];
       panel.querySelectorAll('.opbag .ef b').forEach(function (v, vi) {
