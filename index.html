@@ -3331,6 +3331,35 @@ html.cw-calm #tabs>.tabneb,html.cw-calm #tabs::before,html.cw-calm #tabs::after,
 #app #quick i .ico.qart{display:block;width:100%;height:100%;margin:0;object-fit:contain;transform:scale(1.12);transform-origin:50% 50%;filter:drop-shadow(0 1px 2px rgba(92,67,48,.35))}
 #app #buffs{top:calc(var(--hudH) + var(--cap,0px) + env(safe-area-inset-top,0px))}
 #app #dunHud{top:calc(var(--hudH) - 4px + var(--cap,0px) + env(safe-area-inset-top,0px))}
+
+/* 뒤틀린 마법 도서관 */
+.dung.dg-library .library-icon{width:92px;height:58px;padding:0;overflow:hidden;border-radius:12px}
+.library-icon img{width:100%;height:100%;object-fit:cover;pointer-events:none}
+#modalCard.library-card{width:min(100%,460px);max-height:calc(100dvh - 46px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow:auto;padding:18px 14px;background:linear-gradient(140deg,rgba(52,33,79,.98),rgba(21,16,49,.97));color:#fff4e8;box-shadow:inset 0 0 0 1px #bc9cec,0 12px 38px #080415ba}
+#modalCard.library-card h2{color:#ffe3a9;margin:0 0 4px}
+#modalCard.library-card p{margin:0 0 14px;color:#eddbff;font-size:14px}
+#modalCard.library-card .btns{display:grid;grid-template-columns:1fr;gap:8px;margin:0}
+#modalCard.library-card .btn{margin:0;min-height:46px;text-align:center;touch-action:manipulation;white-space:normal}
+#modalCard.library-card .btn:not(:last-child){display:grid;grid-template-columns:44px minmax(0,1fr);align-items:center;gap:10px;min-width:0;min-height:96px;padding:9px 12px;line-height:1.22;background:linear-gradient(120deg,#b591df44,#d7bcfa22);box-shadow:inset 0 0 0 1px #c3a1e7a0;color:#fff4e8}
+#modalCard.library-card .btn:active{filter:brightness(1.18)}
+#modalCard.library-card .btn:focus-visible{outline:2px solid #ffe3a9;outline-offset:-3px}
+#modalCard.library-card .btn img{width:44px;height:44px;border-radius:10px;object-fit:contain;flex:none;pointer-events:none}
+.library-copy{display:grid;min-width:0;gap:3px;text-align:center;overflow-wrap:anywhere}
+.library-card .library-empty-icon{width:44px;height:1px}
+.library-copy small{color:#e5caff;font-size:12px}
+.library-copy strong{font:400 20px/1.15 var(--display);color:#ffe4aa}
+.library-copy>span{font:400 14px/1.25 var(--display);word-break:keep-all}
+#modalCard.library-card .btn:last-child{background:#f6e5bc;color:#3f2a4b;box-shadow:none;font-family:var(--display)}
+@media (orientation:landscape) and (min-aspect-ratio:6/5){
+  #modalCard.library-card{width:min(640px,100%);padding:12px}
+  #modalCard.library-card .btns{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #modalCard.library-card .btn:not(:last-child){grid-template-columns:minmax(0,1fr);justify-items:center;align-content:start;gap:5px;min-height:126px}
+  #modalCard.library-card .btn img{width:35px;height:35px}
+  .library-card .library-empty-icon{width:1px;height:35px}
+  #modalCard.library-card .btn:last-child{grid-column:1/-1}
+}
+
+
 </style>
 
 <!-- 업데이트 화면 (2026-11-15, the user's design art-src/update-20261115; js/update-screen.js): shown first, "모험 시작" goes into the game -->
@@ -3486,6 +3515,7 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script src="js/divine.js"></script>
 <script src="js/training.js"></script>
 <script src="js/dungeon.js"></script>
+<script src="js/library.js"></script>
 <script src="js/runes.js"></script>
 <script src="js/titles.js"></script>
 <script src="js/dex.js"></script>
@@ -3543,13 +3573,13 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script src="js/ui-opal.js"></script>
 <script src="js/opal-rune-sigil.js"></script>
 <script src="js/opal-divine.js"></script>
-<script src="js/dungeon-book.js"></script>
-<script src="js/ui.js"></script>
+<script src="js/owner/dungeon-book.js"></script>
+<script src="js/owner/ui.js"></script>
 <script src="js/wallet-fields.js"></script>
 <script src="js/wallet-actions.js"></script>
 <script src="js/wallet-rules.js"></script>
 <script src="js/wallet.js"></script>
-<script src="js/main.js"></script>
+<script src="js/owner/main.js"></script>
 <script>
 if ('serviceWorker' in navigator) addEventListener('load', function () {
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (reg) {
