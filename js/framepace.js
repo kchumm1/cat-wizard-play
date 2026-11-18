@@ -3,11 +3,15 @@
   // The picture itself is not touched (same quality, same effects); only how often it is drawn:
   //  - the setting caps it (120 = every refresh of a fast screen, 60 = the usual, 50, 40, 30);
   //  - while a menu sheet covers most of the battle, 30 (the strip above the sheet still moves);
-  //  - after IDLE_MS without a touch, 30; the next touch brings it back at once.
+  //  - after IDLE_MS without a touch, 30; the next touch brings it back at once (3 min → 1 min, 2026-11-18, 형: 발열);
+  //  - no monster on the field (waiting for the next ones, walking to the next place), 30 (2026-11-18);
+  //  - a tall menu sheet over almost all of the battle, COVER (only a thin strip of the fight shows) (2026-11-18);
+  //  - 방치모드 (js/idle-ui.js) covers the whole battle with its own dark screen: HIDDEN (2026-11-18).
+  // The game itself runs at the same speed whatever the rate (frameSteps): only how often it is drawn changes.
   // The screen asks for a frame every refresh (60 or 120 a second); a frame is drawn when its turn has come. The turns
   // are kept on an even clock (next += interval), so 30 on a 60 Hz screen is every second refresh and 40 on a 120 Hz
   // screen every third.
-  var IDLE_MS = 3 * 60 * 1000, SOFT = 30, SLACK = 2;
+  var IDLE_MS = 60 * 1000, SOFT = 30, COVER = 12, HIDDEN = 5, SLACK = 2;
   // the screen's refresh time from recent gaps between refreshes. Each usual screen rate is tried from the slowest up;
   // the first one that most gaps fit (each gap a whole number of its refreshes: 1, or 2–3 for a busy frame) is the
   // screen. The shortest gap was used before, but an iPhone's times wobble (a 120 Hz screen gave a 6 ms gap now and then
@@ -26,11 +30,13 @@
     var s = gaps.slice().sort(function (x, y) { return x - y; }); return s[s.length >> 1];
   }
   function createFramePace() {
-    var cap = 60, sheet = false, touchedAt = 0, next = 0, lastTarget = 60;
+    var cap = 60, sheet = false, tall = false, quiet = false, hidden = false, touchedAt = 0, next = 0, lastTarget = 60;
     function target(now) {
       var t = cap;
-      if (sheet) t = Math.min(t, SOFT);
+      if (sheet) t = Math.min(t, tall ? COVER : SOFT);
       if (touchedAt && now - touchedAt > IDLE_MS) t = Math.min(t, SOFT);
+      if (quiet) t = Math.min(t, SOFT);
+      if (hidden) t = Math.min(t, HIDDEN);
       return t;
     }
     // true when this screen refresh should be drawn
@@ -60,7 +66,11 @@
     }
     return {
       setCap: function (fps) { cap = fps === 30 || fps === 40 || fps === 50 || fps === 120 ? fps : 60; },
-      setSheet: function (open) { sheet = !!open; },
+      setSheet: function (open, isTall) { sheet = !!open; tall = !!(open && isTall); },
+      setQuiet: function (v) { quiet = !!v; },
+      setHidden: function (v) { hidden = !!v; },
+      // calm: nobody has touched for a while or 방치모드 is on — the little decorations (tab bar, icons, bars) may rest
+      calm: function (now) { return hidden || !!(touchedAt && now - touchedAt > IDLE_MS); },
       touch: function (now) { touchedAt = now; },
       target: target,
       interval: function (now) { return 1000 / target(now); },

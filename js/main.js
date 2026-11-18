@@ -471,6 +471,10 @@
   // ---------- actions used by the screens ----------
   // how many frames a second are drawn (js/framepace.js): the 절전 setting, a menu sheet open, no touch for a while
   var pace = CW.createFramePace();
+  // 아래 탭 줄 성운 (2026-11-18, 형: 발열): the nebula is its own layer slid sideways (index.html .tabneb) instead of the
+  // tab bar's background being moved, which repainted the whole bar every frame
+  (function () { var tb = $('tabs'); if (tb && !tb.querySelector('.tabneb')) { var nb = document.createElement('i'); nb.className = 'tabneb'; nb.setAttribute('aria-hidden', 'true'); tb.insertBefore(nb, tb.firstChild); } })();
+  var calmOn = false;
   // 가로 (2026-11-17): how far left the view goes with the drawer open — the middle of the stage to the middle of the
   // part still showing (between the quick-button column and the drawer), a little short of it so the wizard at the left
   // of the fight is not pushed against the column
@@ -600,7 +604,9 @@
     setSheet: function (open) {
       sheetOpen = open; var land = CW.isLand && CW.isLand();
       document.documentElement.classList.toggle('sheeton', open);
-      sc.setViewShift(open ? (land ? landShift() : 0.22) : 0, land ? 'x' : 'y'); pace.setSheet(open);
+      sc.setViewShift(open ? (land ? landShift() : 0.22) : 0, land ? 'x' : 'y');
+      // a tall sheet upright leaves only a thin strip of the fight: drawn a few times a second (js/framepace.js COVER)
+      var sh = $('sheet'); pace.setSheet(open, !land && !!(sh && sh.classList.contains('tall')));
     },
     screenHz: function () { return pace.hz(); },
     // 성능 표시 (설정 › 문제 확인용): on / off, and the record for the settings page
@@ -812,7 +818,12 @@
     // the next frame is asked for first, and each part runs on its own: one error used to end the game loop for good
     // (the picture stood still until the app was reopened)
     requestAnimationFrame(frame);
-    // fewer frames on purpose (절전 / menu open / no touch for a while): this refresh is skipped, nothing is computed
+    // fewer frames on purpose (절전 / menu open / no touch for a while / no monster / 방치모드): this refresh is skipped
+    if (ready) {
+      pace.setQuiet(!dun && !boss && !preview && aliveMobs().length === 0);
+      pace.setHidden(document.documentElement.classList.contains('idling'));
+      var calmNow = pace.calm(now); if (calmNow !== calmOn) { calmOn = calmNow; document.documentElement.classList.toggle('cw-calm', calmOn); }
+    }
     if (!pace.shouldDraw(now)) return;
     var t0 = ready && perf && perf.on() ? performance.now() : 0;   // 성능 표시: the time this frame's own code takes
     var aim = pace.target(now);

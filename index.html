@@ -3102,6 +3102,31 @@ html.fullh #chestfx{position:absolute;bottom:auto;height:var(--apph)}
 @keyframes lkSway{0%,100%{transform:none}30%{transform:skewX(4deg)}62%{transform:skewX(-2.5deg)}}
 @keyframes lkGlow{0%,100%{opacity:.5;transform:scale(.8)}50%{opacity:1;transform:scale(1.18)}}
 @media (prefers-reduced-motion:reduce){#panel .lkcat,#panel .lkdog,#panel .lkstar,#panel .lkglow{animation:none}}
+/* 폰 발열 줄이기 (2026-11-18, 형: 꾸밈 애니메이션을 다시 칠하지 않게): 배경 위치·밝기·그림자를 매 장 바꾸면 그 부분을
+   매 장 새로 칠함. 그림을 한 장 칠해 두고 그 판을 옮기거나(transform) 투명도만 바꾸면 칠은 처음 한 번뿐.
+   - 탭 줄 성운: #tabs 바탕을 움직이던 것 → 성운 판(.tabneb, main.js가 넣음)을 옆으로 밂. 15%→85% 위치 = 판 폭 180%의 -6.7%→-37.8%
+   - 경험치 줄 줄무늬: 배경 위치 → 줄무늬 판(::before)을 밂
+   - 던전 아이콘 빛나기: 밝기·번지는 그림자 → 아이콘 뒤 빛 그림의 투명도
+   - 쉬는 동안(1분 안 만짐·방치모드, html.cw-calm) 이 꾸밈들은 잠깐 멈춤 */
+#tabs{background:rgba(22,13,56,.92);animation:none;overflow:hidden}
+#tabs>.tabneb{position:absolute;left:0;top:0;bottom:0;width:180%;z-index:0;pointer-events:none;background:linear-gradient(180deg,rgba(40,24,96,.28),rgba(24,14,64,.5)),url(art/mn-neb-fill.webp) 0 72%/100% auto;will-change:transform;animation:tabnebT 46s ease-in-out infinite alternate}
+@keyframes tabnebT{from{transform:translateX(-6.7%)}to{transform:translateX(-37.8%)}}
+#tabs::before,#tabs::after{z-index:1}
+#tabs>button{position:relative;z-index:2}
+#hud .stg #killBar i{background:linear-gradient(180deg,#b9ff8a,#3fd07a 60%,#22a862);animation:none;overflow:hidden}
+#hud .stg #killBar i::before{content:'';position:absolute;top:0;bottom:0;left:-28px;right:0;border-radius:inherit;pointer-events:none;background:repeating-linear-gradient(115deg,rgba(255,255,255,.2) 0 7px,rgba(255,255,255,0) 7px 14px);background-size:28px 100%;will-change:transform;animation:barflowT 1.1s linear infinite}
+@keyframes barflowT{to{transform:translateX(28px)}}
+@keyframes idglow{0%,16%,100%{transform:none}7%{transform:scale(1.1)}}
+#tabs button[data-tab="dungeon"]:not([aria-selected=true])::after{content:'';display:block;position:absolute;left:50%;top:1px;bottom:auto;width:46px;height:46px;margin-left:-23px;border-radius:50%;background:radial-gradient(circle,rgba(235,215,255,.95),rgba(210,170,255,.5) 40%,transparent 70%);opacity:0;z-index:-1;pointer-events:none;animation:idhalo 6s ease-in-out infinite;animation-delay:calc(5 * .85s)}
+@keyframes idhalo{0%,16%,100%{opacity:0;transform:scale(.85)}7%{opacity:1;transform:scale(1.05)}}
+html.cw-calm #tabs>.tabneb,html.cw-calm #tabs::before,html.cw-calm #tabs::after,html.cw-calm #tabs button img.ico,html.cw-calm #tabs button::before,html.cw-calm #tabs button::after,html.cw-calm #hud .stg #killBar i::before{animation-play-state:paused!important}
+@media (orientation:landscape) and (min-aspect-ratio:6/5){
+  /* 가로: 세로로 긴 탭 기둥, 성운은 위아래로 흐름(원래 10%→90% = 판 높이 150%의 -3.3%→-30%) */
+  #tabs{background:rgba(22,13,56,.92)!important;animation:none!important}
+  #tabs>.tabneb{left:0;right:0;width:auto;top:0;bottom:auto;height:150%;background:linear-gradient(270deg,rgba(40,24,96,.28),rgba(24,14,64,.5)),url(art/mn-neb-fill.webp) 50% 0/auto 100%;animation:tabnebTV 46s ease-in-out infinite alternate}
+  @keyframes tabnebTV{from{transform:translateY(-3.3%)}to{transform:translateY(-30%)}}
+}
+@media (prefers-reduced-motion:reduce){#tabs>.tabneb,#hud .stg #killBar i::before,#tabs button[data-tab="dungeon"]::after{animation:none!important}}
 </style>
 
 <!-- 업데이트 화면 (2026-11-15, the user's design art-src/update-20261115; js/update-screen.js): shown first, "모험 시작" goes into the game -->
