@@ -3165,7 +3165,7 @@ html.cw-calm #tabs>.tabneb,html.cw-calm #tabs::before,html.cw-calm #tabs::after,
 #hud.nh .nh-cur .gem{width:25px;height:25px;margin-top:-12.5px;left:-2px}
 #hud.nh .nh-cur .gn{font-size:12px}
 /* row 2: the region tab on the big stage plate, the map plate on the right */
-#hud.nh .nh-mid{position:relative;display:flex;justify-content:center;margin-top:-22px;height:66px;pointer-events:none}
+#hud.nh .nh-mid{position:relative;display:flex;justify-content:center;margin-top:-22px;height:76px;pointer-events:none}
 #hud.nh .nh-stage{position:relative;display:flex;flex-direction:column;align-items:center;width:170px}
 #hud.nh .nh-stage::before{content:none;position:absolute;left:-6px;top:-4px;width:84px;height:84px;border-radius:50%;border:1.3px solid transparent;border-top-color:rgba(220,184,108,.85);border-left-color:rgba(220,184,108,.85);transform:rotate(8deg);pointer-events:none}
 #hud.nh .nh-stage .top{width:10px;height:18px;left:calc(50% - 5px);top:-16px}
@@ -3174,7 +3174,7 @@ html.cw-calm #tabs>.tabneb,html.cw-calm #tabs::before,html.cw-calm #tabs::after,
 #hud.nh #placeName b::after{content:none}
 #hud.nh #placeName .rmark{flex:none;width:17px;height:17px}
 #hud.nh #placeName u{position:static;text-decoration:none;font:700 10px/1 var(--body);padding:3px 6px;border-radius:8px;color:#fff;background:linear-gradient(180deg,#e88aa0,#c75a78);box-shadow:none}
-#hud.nh .nh-no{--sh:var(--wing);display:flex;align-items:center;justify-content:center;width:100%;height:46px;margin-top:-6px;filter:drop-shadow(0 4px 6px rgba(10,14,40,.5))}
+#hud.nh .nh-no{--sh:var(--wing);display:flex;align-items:center;justify-content:center;width:100%;height:46px;margin-top:4px;filter:drop-shadow(0 4px 6px rgba(10,14,40,.5))}
 #hud.nh #stageNo{font:700 28px/1 var(--serif);color:#fbf1dc;letter-spacing:1px;text-shadow:0 0 10px rgba(255,214,140,.35),0 2px 0 rgba(10,14,40,.6)}
 #hud.nh .nh-no .l,#hud.nh .nh-no .r{width:12px;height:12px;top:calc(50% - 6px)}
 #hud.nh .nh-no .l{left:17%}#hud.nh .nh-no .r{right:17%}
@@ -3182,7 +3182,7 @@ html.cw-calm #tabs>.tabneb,html.cw-calm #tabs::before,html.cw-calm #tabs::after,
 @media (max-width:350px){#hud.nh{--mapW:66px}#hud.nh .nh-map{font-size:13px;gap:3px}#hud.nh .nh-map svg{width:18px;height:18px}#hud.nh #nick{max-width:72px}#hud.nh .nh-cur{min-width:84px}}
 /* the map plate sits right against the stage plate (2026-11-18, the user: 지도를 좀 붙여야지); the button is 56 tall so the
    finger area stays about 40px after the zoom below, the plate is drawn 40 tall inside it */
-#hud.nh .nh-map{--sh:var(--hex);position:absolute;right:auto;left:calc(50% + 85px + 3px);top:19px;display:flex;align-items:center;justify-content:center;gap:5px;width:var(--mapW);height:56px;pointer-events:auto;cursor:pointer;font:700 15px/1 var(--serif);color:var(--crm)}
+#hud.nh .nh-map{--sh:var(--hex);position:absolute;right:auto;left:calc(50% + 85px + 3px);top:29px;display:flex;align-items:center;justify-content:center;gap:5px;width:var(--mapW);height:56px;pointer-events:auto;cursor:pointer;font:700 15px/1 var(--serif);color:var(--crm)}
 #hud.nh .nh-map::before{inset:8px 0}#hud.nh .nh-map::after{inset:9.5px 1.5px}
 #hud.nh .nh-map svg{width:22px;height:22px;fill:none;stroke:var(--gd);stroke-width:1.4;stroke-linejoin:round}
 #hud.nh .nh-map svg .st{fill:var(--gdl);stroke:none}
@@ -3192,6 +3192,9 @@ html.cw-calm #tabs>.tabneb,html.cw-calm #tabs::before,html.cw-calm #tabs::after,
 #hud.nh #placeSub{display:flex;align-items:center;justify-content:center;gap:3px;height:22px;margin:0;font:700 18px/1 var(--serif);color:#fffaf0;letter-spacing:.5px;padding:0 6px;background:radial-gradient(closest-side,rgba(18,27,60,.7),rgba(18,27,60,0));text-shadow:0 0 1px #121b3c,0 1px 2px rgba(10,14,40,.95),0 0 8px rgba(255,214,140,.35)}
 #hud.nh #placeSub::before,#hud.nh #placeSub::after{content:"";display:block;width:42px;height:1.5px;margin:0 7px;background:linear-gradient(90deg,rgba(220,184,108,0),var(--gdl));box-shadow:0 1px 2px rgba(18,27,60,.7)}
 #hud.nh #placeSub::after{background:linear-gradient(90deg,var(--gdl),rgba(220,184,108,0))}
+/* an older rule (position:absolute; right:-5px) threw this line out to the right edge of the screen, under the gems
+   (2026-11-18, seen on the user's phone: 이상한 선): keep both lines beside the count */
+#hud.nh #placeSub::before,#hud.nh #placeSub::after{position:static;left:auto;right:auto;top:auto;bottom:auto;transform:none}
 #hud.nh #placeSub b,#hud.nh #placeSub em{font:inherit;color:inherit;font-style:normal;-webkit-text-stroke:0}
 #hud.nh #placeSub em{margin:0 1px;color:var(--gdl)}
 #hud.nh #placeSub .loop{font-size:14px;color:var(--gdl)}
@@ -3299,14 +3302,14 @@ html.cw-calm #tabs>.tabneb,html.cw-calm #tabs::before,html.cw-calm #tabs::after,
    and gold edge as the rest (the user: 색깔이 빠졌잖아 — not cream) */
 /* close to the right edge but the whole box with its gold edge still shows (2026-11-18, the user: 오른쪽에 딱맞게 붙여봐 …
    너무 붙여버리니까 상자 오른쪽테두리가 짤려버린다) */
-#app #quick{gap:7px;right:max(5px,env(safe-area-inset-right,0px))}
-#app #quick button{width:52px;padding:9px 0 2px;gap:2px;border-radius:14px;border:0;background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,0) 45%),linear-gradient(180deg,rgba(66,38,150,.62),rgba(32,16,84,.74));box-shadow:inset 0 0 0 1.5px rgba(220,184,108,.85),0 0 0 1px rgba(20,10,60,.3),0 3px 8px rgba(20,10,60,.35)}
+#app #quick{gap:6px;right:max(5px,env(safe-area-inset-right,0px))}
+#app #quick button{width:46px;padding:6px 0 3px;gap:1px;border-radius:14px;border:0;background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,0) 45%),linear-gradient(180deg,rgba(66,38,150,.62),rgba(32,16,84,.74));box-shadow:inset 0 0 0 1.5px rgba(220,184,108,.85),0 0 0 1px rgba(20,10,60,.3),0 3px 8px rgba(20,10,60,.35)}
 #app #quick button:active{filter:brightness(1.2)}
-#app #quick i,#app #quick i .ico,#app #quick i img{width:30px;height:30px}
-#app #quick span{font-size:11.5px;color:#fffaf2;text-shadow:0 0 2px #140838,0 1px 2px rgba(10,4,30,.8)}
+#app #quick i,#app #quick i .ico,#app #quick i img{width:24px;height:24px}
+#app #quick span{font-size:10.5px;line-height:1.15;color:#fffaf2;text-shadow:0 0 2px #140838,0 1px 2px rgba(10,4,30,.8)}
 #app #quick i .ico{filter:drop-shadow(0 1px 2px rgba(10,4,30,.6))}
 /* short phones (iPhone SE 667, Galaxy 740 tall): seven bigger boxes ran into the preset row, so they shrink back a little there */
-@media (max-height:760px){#app #quick{gap:4px}#app #quick button{width:48px;padding:5px 0 1px;gap:1px}#app #quick i,#app #quick i .ico,#app #quick i img{width:24px;height:24px}#app #quick span{font-size:10.5px;line-height:1.15}}
+@media (max-height:760px){#app #quick{gap:4px}#app #quick button{width:44px;padding:4px 0 2px}#app #quick i,#app #quick i .ico,#app #quick i img{width:22px;height:22px}#app #quick span{font-size:10px}}
 #quest b{color:#3a2400;background:linear-gradient(180deg,#fff0bf,#dcb86c 60%,#b8913f);text-shadow:none}
 #quest span,#questTxt{color:#fffaf2}
 #pre button[aria-pressed=true]{background:linear-gradient(180deg,#fff0bf,#dcb86c 60%,#b8913f);color:#3a2400;text-shadow:none;box-shadow:inset 0 0 0 1.5px #f6e2a6,0 2px 0 #8a6a2a,0 3px 8px rgba(20,10,60,.35)}
