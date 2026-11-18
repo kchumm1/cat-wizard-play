@@ -1066,11 +1066,23 @@
     function banner(text) { var b = $('banner'); b.textContent = text; b.classList.add('on'); setTimeout(function () { b.classList.remove('on'); }, 1300); }
 
     // ---------- HUD ----------
-    var lastPlace = '', lastSub = null;
+    var lastPlace = '', lastSub = null, lastStars = '';
+    // the star path under the stage plate (2026-11-18 starry HUD): the gold line runs to pct, and each of the six stars
+    // lights once the line reaches it; while farming the whole path glows
+    var STAR_AT = [8, 26, 44, 60, 76, 92];
+    function starPath(pct, loop) {
+      var key = Math.round(pct * 10) + (loop ? 'L' : '');
+      if (key === lastStars) return; lastStars = key;
+      var kb = $('killBar'); kb.classList.toggle('loop', loop);
+      kb.querySelector('.fill').style.strokeDashoffset = String(100 - pct);
+      kb.querySelectorAll('.st').forEach(function (st, i) { st.classList.toggle('on', pct >= STAR_AT[i]); });
+    }
     function hud() {
       var s = G.state, info = CW.stageInfo(s.stage), R = CW.regionAt(s.diff, info.region), sr = CW.sceneRegion(s.diff, info.region);
       var mark = CW.ICO.region ? CW.ICO.region(sr) : '';   // the region's own little mark (design-cream.js)
-      var pn = (s.diff ? '<u>' + CW.diffOf(s).name + '</u>' : '') + '<span class="rmark">' + mark + '</span><b data-t="' + R.name + '">' + R.name + '</b><i>' + CW.stageLabel(s.stage) + '</i>';
+      // region tab (difficulty badge, mark, name) above the big stage plate (2026-11-18 starry HUD)
+      var pn = (s.diff ? '<u>' + CW.diffOf(s).name + '</u>' : '') + '<span class="rmark">' + mark + '</span><b>' + R.name + '</b>', sno = CW.stageLabel(s.stage);
+      if ($('stageNo').textContent !== sno) $('stageNo').textContent = sno;
       if (pn !== lastPlace) {
         lastPlace = pn; $('placeName').innerHTML = pn;
         // the clock area above the home-screen app takes the colour of this region's field, and the field fades from it
@@ -1085,7 +1097,7 @@
       $('lvTxt').textContent = 'Lv.' + s.level; $('xpBar').style.width = (s.level >= DATA.balance.levelMax ? 100 : Math.min(100, s.xp / CW.xpNeed(s.level) * 100)) + '%';
       var boss = G.boss(), sub = '', kp;
       $('bossbox').classList.toggle('on', !!boss);
-      $('killBar').style.display = boss ? 'none' : '';
+      $('nhProg').style.display = boss ? 'none' : '';
       if (boss) {
         // "전직 시험" only while beating it still gives a new job (progress.js isTierTrial), not after the job is reached
         $('bossName').textContent = (CW.isTierTrial(s, s.stage) ? '전직 시험 · ' : '') + boss.name;
@@ -1097,11 +1109,10 @@
         if ($('bossPct').textContent !== pctTxt) $('bossPct').textContent = pctTxt;
       } else {
         kp = G.killProgress();
-        sub = s.farming ? '' : '<i class="mk">' + mark + '</i><b>' + kp.n + '</b><em>/' + kp.max + '</em>';
-        $('killBar').firstChild.style.width = (s.farming ? 100 : kp.n / kp.max * 100) + '%';
-        $('killBar').classList.toggle('loop', !!s.farming);
+        sub = s.farming ? '<span class="loop">반복 사냥</span>' : '<b>' + kp.n + '</b><em>/</em><b>' + kp.max + '</b>';
+        starPath(s.farming ? 100 : Math.min(100, kp.n / kp.max * 100), !!s.farming);
       }
-      if (sub !== lastSub) { lastSub = sub; $('placeSub').innerHTML = sub; $('placeSub').style.display = sub ? '' : 'none'; }
+      if (sub !== lastSub) { lastSub = sub; $('placeSub').innerHTML = sub; }
       $('retry').classList.toggle('on', s.farming && !boss && G.canRetry() && !G.dunState());
       dunHud(G.dunState());
       var now = Date.now(), bt = DATA.potions.map(function (p) { var l = CW.buffLeft(s, p.id, now); return l ? '<span>' + mi('potion', p) + mmss(l) + '</span>' : ''; }).join('');
@@ -1109,8 +1120,7 @@
       var tier = DATA.tiers[s.tier - 1];
       var lastT = CW.FRIEND ? CW.FRIEND_MAX_TIER : DATA.tiers.length; // 체험판 ends at the 9th job
       var next = s.tier < lastT ? CW.tierNeed(s.tier + 1) + ' ' + (s.tier + 1) + '차' : (s.best >= 309 ? '마왕 토벌 완료!' : '최종 목표 10-31 늑대 왕');
-      var wornT = CW.titleWorn ? CW.titleWorn(s) : 'tNovice';
-      var tTxt = wornT !== 'tNovice' ? CW.titleById(wornT).name : s.tier + '차 ' + tier.name; if ($('tierTag').textContent !== tTxt) $('tierTag').textContent = tTxt; $('tierTag').classList.toggle('ttl', wornT !== 'tNovice'); var nk = G.nickName(); if ($('nick').textContent !== nk) $('nick').textContent = nk; if ($('questTxt').textContent !== next) $('questTxt').textContent = next;
+      var nk = G.nickName(); if ($('nick').textContent !== nk) $('nick').textContent = nk; if ($('questTxt').textContent !== next) $('questTxt').textContent = next;
     }
     function slots() {
       var s = G.state, now = G.castingSlot();
@@ -2171,7 +2181,9 @@
     CW.ICO.onTint = function () { if (tab === 'gear' || tab === 'gacha') renderPanel(true); };
     document.querySelectorAll('#tabs [data-tab]').forEach(function (b) { var x = CW.ICO.misc && CW.ICO.misc('tab', b.dataset.tab), sv = b.querySelector('svg'); if (x && sv) sv.outerHTML = x; });
     // the rune and sigil shortcuts use the user's pictures (art/ic-rune.webp, ic-sigil.webp, 2026-11-14)
-    var QI = { map: CW.ICO.misc('quick', 'map'), alch: CW.ICO.misc('potion', 'rage'), rune: '<img class="ico" src="art/ic-rune.webp" alt="">', sigil: '<img class="ico" src="art/ic-sigil.webp" alt="">',
+    var QI = { map: CW.ICO.misc('quick', 'map'), alch: CW.ICO.misc('potion', 'rage'), // the game's own rune and sigil pictures without a grade frame (2026-11-18, the user: 우리실제 룬이랑 신성력 그림 … 테두리 머야)
+      rune: '<img class="ico qart" src="art/sg2-atkPct.webp" alt="" draggable="false">',   // the paw crystal (the user: 이그림을 룬으로)
+      sigil: '<img class="ico qart" src="art/rn2-rOrigin.webp" alt="" draggable="false">',   // the gold ring star (the user: 이걸 신성력)
       // the monster codex (2026-11-15): the book off the user's codex picture, opens the full-screen page (js/dex-ui.js)
       dex: '<img class="ico" src="art/dex-book.webp" alt="">',
       chest: '<img class="ico" src="art/ic-bag.webp" alt="">',   // 가방 (2026-11-17): 형의 가방 그림 (tools/bag-art.py)
@@ -2569,7 +2581,7 @@
       profEl.classList.remove('on'); document.documentElement.classList.remove('profon');
       profTheme(getComputedStyle(document.documentElement).getPropertyValue('--capc').trim());
     }
-    document.querySelector('#hud .prof').addEventListener('click', function () { G.sound('click'); openStats(); });
+    document.querySelector('#hud .nh-prof').addEventListener('click', function () { G.sound('click'); openStats(); });
     return { surgeGauge: surgeGauge, dunHud: dunHud, gainLog: gainLog, openTab: openTab, hud: hud, slots: slots, renderPanel: renderPanel, toast: toast, banner: banner, showOffline: showOffline, showDaily: showDaily, showTierUp: showTierUp, showGacha: showGacha, modal: modal, currentTab: function () { return tab; } };
   }
   CW.createUI = createUI;
