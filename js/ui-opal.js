@@ -53,7 +53,7 @@
     // 숫자 바뀜: 행 안의 값만 짧게 (성장 180ms, 아이콘 260ms)
     '@keyframes opNum{0%{transform:translateY(5px);opacity:.2}100%{transform:none;opacity:1}}',
     '@keyframes opPop{0%{transform:scale(1)}40%{transform:scale(1.12)}100%{transform:scale(1)}}',
-    '.op-num{display:inline-block;animation:opNum .18s ease-out}.op-pop{animation:opPop .26s ease-out}',
+    '.op-num{animation:none}.op-pop{animation:opPop .26s ease-out}',   // 숫자가 바뀔 때 위로 튀어 오르던 움직임을 뺌 (inline-block 으로 바뀌며 줄 높이도 흔들렸음 — 사용자 2026-11-18 「숫자만 바껴야」)
     // ---- 마나서클 ----
     '#sheet.opal .opcircle{position:relative;margin:2px auto 0;width:min(320px,86vw);display:flex;flex-direction:column;align-items:center}',
     '#sheet.opal .opdev{position:relative;width:100%;aspect-ratio:1/.86;border-radius:22px;overflow:hidden;background:radial-gradient(70% 60% at 50% 42%,rgba(226,241,255,.9),rgba(248,234,244,.55) 55%,transparent 75%)}',
@@ -630,6 +630,8 @@
     '#sheet.opal .opbag .binfo{padding:0 2px!important;gap:0!important}#sheet.opal .opbag .bname b{font-size:19px!important}#sheet.opal .opbag .gstars{font-size:13px;letter-spacing:1.5px;margin:1px 0 2px}',
     '#sheet.opal .opbag .bdetail{padding:3px 9px!important}#sheet.opal .opbag .ef{padding:4px 0!important;font-size:11.5px!important}#sheet.opal .opbag .ef b{font-size:11.5px!important}',
     '#sheet.opal .opbag .gpot{padding:4px 9px 4px!important}#sheet.opal .opbag .pthead{margin:0 0 1px!important;font-size:11.5px!important}',
+    // 효과 줄 높이는 글씨 크기와 상관없이 늘 같게 (숫자가 길어져 글씨가 줄어도 줄·칸이 움직이지 않게)
+    '#sheet.opal .opbag .ef{height:22px;box-sizing:border-box}#sheet.opal .opbag .ef>*{line-height:14px!important}',
     '#sheet.opal .opbag .potline{grid-template-columns:auto minmax(0,1fr) auto!important;gap:5px!important;padding:2px 0!important;min-height:22px}',
     '#sheet.opal .opbag .ptag{width:8px!important;height:8px!important;padding:0!important;border-radius:50%!important;font-size:0!important;background:var(--ink)!important;overflow:hidden}',
     '#sheet.opal .opbag .potline>span{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis;font-size:11px!important}',

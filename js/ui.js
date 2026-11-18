@@ -60,7 +60,8 @@
       // 승인 시안 (2026-11-16 최종): 왼쪽 성운 전시대 위 선택 장비, 오른쪽 이름·Lv·별 + 한 덩어리 효과 영역(장착·보유·잠재력)
       var ST = CW.opalUI ? CW.opalUI.stage : function (x) { return x; };
       var gsrc = CW.ICO.gearSrc && CW.ICO.gearSrc(p.kind, p.grade, p.sub + 1);   // 전시대엔 원판 없는 원본 그림
-      var top = '<div class="bagtop opbag">' + ST(gsrc ? '<img class="gshow" src="' + gsrc + '" alt="" draggable="false">' : gearArt(p.kind, p.grade, p.sub), { cls: 'gstage k-' + p.kind + (e ? '' : ' none'), seed: 0, objAttr: ' data-opfx="bl:' + k + '" data-opdur=".25"' }) +
+      // (사용자 2026-11-18: 레벨업 때 전시대 그림이 튀며 다시 시작하던 것을 뺌 — objAttr 없음, 숫자만 바뀜)
+      var top = '<div class="bagtop opbag">' + ST(gsrc ? '<img class="gshow" src="' + gsrc + '" alt="" draggable="false">' : gearArt(p.kind, p.grade, p.sub), { cls: 'gstage k-' + p.kind + (e ? '' : ' none'), seed: 0 }) +
         '<div class="binfo"><div class="bname"><b>' + DATA.kindName[p.kind] + '</b><em class="glv" data-opv="blv">Lv.' + lv + '<small> / ' + max + '</small></em></div><span class="gstars">' + stars + '<em class="ggr" style="color:' + gc(p.grade) + '">' + DATA.grades[p.grade].name + ' ' + CW.roman(p.sub) + '</em></span>' +
         '</div>' +   // 승인 시안: 이름·Lv 아래엔 별만 (등급·장착·개수는 아래 목록 칸과 장착 버튼에)
         // 승인 시안: 효과 상자(장착·보유)와 잠재력 상자(옵션 줄 + 자물쇠)를 따로
@@ -1677,12 +1678,15 @@
       // 수치 상자: 숫자가 길면 글씨만 줄여 양 끝 여백 유지 (최소 10.5px)
       panel.querySelectorAll('.row.grow .gpill').forEach(function (g) {
         g.style.fontSize = '';
+        var prevFs = g.__fs;   // 같은 칸의 글씨는 강화해서 숫자가 바뀌어도 다시 커지지 않음 (오르락내리락 흔들림 없음, 사용자 2026-11-18)
         g.classList.remove('pill2');
         var cs = getComputedStyle(g), room = g.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), gap = parseFloat(cs.columnGap) || 0, used = 0;
         Array.prototype.forEach.call(g.children, function (c, i) { used += c.getBoundingClientRect().width + (i ? gap : 0); });
         if (used > room + 0.5) g.style.fontSize = Math.max(10.5, parseFloat(cs.fontSize) * (room - 1) / used).toFixed(2) + 'px';
         // 원소 지배 (약점 +200% · 폭주 +400% → …): wider than the box even at 10.5px → two lines in a taller box (the now-value above, → and the next one below), nothing runs out of it
+        if (prevFs && parseFloat(g.style.fontSize || cs.fontSize) > prevFs + 0.01) g.style.fontSize = prevFs.toFixed(2) + 'px';
         { var used2 = 0, cs2 = getComputedStyle(g); Array.prototype.forEach.call(g.children, function (c, i) { used2 += c.getBoundingClientRect().width + (i ? gap : 0); }); var room2 = g.clientWidth - parseFloat(cs2.paddingLeft) - parseFloat(cs2.paddingRight); if (used2 > room2 + 3) { g.style.fontSize = ''; g.classList.add('pill2'); } }
+        g.__fs = g.classList.contains('pill2') ? 0 : parseFloat(getComputedStyle(g).fontSize);
       });
       // 성장 시안 (2026-11-16): 설명도 한 줄 — 넘치면 9.5px 까지 줄이고, 그래도 넘치면 두 줄로
       panel.querySelectorAll('.row.grow .gabout').forEach(function (g) {
@@ -1705,7 +1709,10 @@
       var shrink = function (el, kids, min) { var g = 0; while (el.scrollWidth > el.clientWidth + 0.5 && g++ < 16) { var done = true; kids.forEach(function (k) { var f = parseFloat(getComputedStyle(k).fontSize); if (f > min) { k.style.setProperty('font-size', Math.max(min, f * 0.95).toFixed(2) + 'px', 'important'); done = false; } }); if (done) break; } };
       // 코스튬 카드 이름 (2026-11-17, 형: 줄·칸 맞춰): 「시계태엽 가면 …」처럼 잘리지 않게 글씨만 줄임
       panel.querySelectorAll('.ccard>b').forEach(function (b) { b.style.removeProperty('font-size'); shrink(b, [b], 8.5); });
-      panel.querySelectorAll('.opbag .ef b').forEach(function (v) {
+      // 같은 장비를 계속 올리는 동안 효과 숫자 글씨 크기는 다시 커지지 않음 (숫자 자릿수가 늘 때만 한 번 더 줄고, 오르락내리락 흔들리지 않게 — 사용자 2026-11-18)
+      var gkey = ((panel.querySelector('.opbag .bname b') || {}).textContent || '') + '|' + ((panel.querySelector('.opbag .ggr') || {}).textContent || ''), gmem = fitGear.mem && fitGear.mem.k === gkey ? fitGear.mem.f : [];
+      panel.querySelectorAll('.opbag .ef b').forEach(function (v, vi) {
+        if (gmem[vi]) v.style.setProperty('font-size', gmem[vi] + 'px', 'important');
         // 두 효과(반지: 공격 속도·보스 피해)는 이름 칸 | 숫자 칸 두 줄 표로 — 이름은 왼쪽, 숫자는 오른쪽 끝을 맞춤 (사용자 2026-11-16)
         if (v.textContent.indexOf(' · ') > 0 && !v.classList.contains('two')) {
           v.innerHTML = v.textContent.split(' · ').map(function (t) { var at = t.lastIndexOf(' +'); return at > 0 ? '<span class="k">' + t.slice(0, at) + '</span><span class="v">' + t.slice(at + 1) + '</span>' : '<span class="k"></span><span class="v">' + t + '</span>'; }).join('');
@@ -1723,8 +1730,9 @@
         var cols = [0, 1].map(function (i) { return Math.max.apply(null, twos.map(function (v) { var c = v.children[i]; return c ? Math.ceil(c.getBoundingClientRect().width) : 0; })); });
         twos.forEach(function (v) { v.style.gridTemplateColumns = cols[0] + 'px ' + cols[1] + 'px'; });
       }
-      var b = panel.querySelector('.bagbtns>.buy');
-      if (b) shrink(b, [].slice.call(b.querySelectorAll('small, span')), 10);
+      var b = panel.querySelector('.bagbtns>.buy'), bk = b ? [].slice.call(b.querySelectorAll('small, span')) : [], pm = fitGear.mem && fitGear.mem.k === gkey ? fitGear.mem.bf : null;
+      if (b) { if (pm) bk.forEach(function (k, ki) { if (pm[ki]) k.style.setProperty('font-size', pm[ki] + 'px'); }); shrink(b, bk, 10); }   // 레벨업 버튼 글씨도 같은 장비를 올리는 동안 다시 커지지 않음
+      fitGear.mem = { k: gkey, f: [].slice.call(panel.querySelectorAll('.opbag .ef b')).map(function (v) { return parseFloat(getComputedStyle(v).fontSize); }), bf: bk.map(function (k) { return parseFloat(getComputedStyle(k).fontSize); }) };
     }
     // 스킬 줄: 설명·이름이 칸보다 길면 글자만 줄임 (설명 10px, 이름 12px 까지)
     function fitSkillRows() {
@@ -1875,6 +1883,8 @@
       if (ghdPlay) { ghdPlay = false; var ghd = panel.querySelector('.ghd'); if (ghd) { ghd.style.setProperty('--from', ghdFrom + '%'); ghd.classList.add('play'); } }
       keepCircle(); if (tab === 'stage') fitStageRows(); if (tab === 'up') { fitGrowNames(); fitAlch(); } if (tab === 'gear') fitGear(); if (tab === 'skill') fitSkillRows();
       fitNarrow();
+      // 칸 높이를 맞추느라 잠깐 줄었다 늘어나는 사이 스크롤 자리가 짧아진 길이에 잘려 위로 올라가던 것 (사용자 2026-11-18 「성장에서 강화 누르면 스크롤돼서 위로」): 자리를 다시 돌려 놓음
+      if (panel.scrollTop !== y) panel.scrollTop = y;
       if (CW.opalUI) { CW.opalUI.bumpValues(panel); CW.opalUI.applyFx(panel); }   // 오팔 메뉴: 바뀐 숫자·성공 반응만 짧게
       var stb, ohd;
       if (soft) { stb = opTabs.querySelector(':scope > .subtabs'); ohd = opTabs.querySelector(':scope > .ophold, :scope > .tinfo.tnw'); }   // 이미 아래 고정 자리에 있음 (softPrep가 맞춤)
@@ -1904,6 +1914,7 @@
       dock.hidden = !dh;
       if (dh && CW.opalUI) { CW.opalUI.bumpValues(dock); CW.opalUI.applyFx(dock); }   // 아래 상세 칸도 강화·승급 반응·숫자 바뀜 (룬·신성력 2026-11-17)
       if (dh && !was) { dock.classList.remove('pop'); void dock.offsetWidth; dock.classList.add('pop'); var sl = panel.querySelector('.sel'); if (sl) sl.scrollIntoView({ block: 'nearest' }); }
+      else if (panel.scrollTop !== y) panel.scrollTop = y;   // 아래 고정 칸이 바뀌어 길이가 달라진 뒤에도 같은 자리
     }
 
     function dmgRow(key, name, desc, v, lo, hi) {
