@@ -112,6 +112,7 @@
     for (var k in b) if (validKey(k)) t += b[k].lv + (parseKey(k).t + 1) * BG.tierPoints;
     return t;
   }
+  var POT_STATS = {}; DATA.potConf.stats.forEach(function (p) { POT_STATS[p.stat] = true; });
   function addStat(r, stat, v) { if (stat === 'speedBoss') { r.speed += v; r.bossDmg += v * 8; } else r[stat] = (r[stat] || 0) + v; }
   function gearStats(state) {
     var r = { atk: 0, atkPct: 0, critRate: 0, critDmg: 0, goldMul: 0, skillDmg: 0, speed: 0, bossDmg: 0, superRate: 0, weakDmg: 0, finalPct: 0 };
@@ -120,7 +121,8 @@
     DATA.kinds.forEach(function (kind) {
       var k2 = eq[kind]; if (!k2 || !b[k2] || !validKey(k2)) return;
       var q = parseKey(k2); addStat(r, DATA.kindStat[q.kind], mainValue(q.kind, q.t, b[k2].lv, b[k2].star));
-      (b[k2].pot || []).forEach(function (pl) { if (r[pl.stat] !== undefined) r[pl.stat] += pl.val; });
+      // every potential stat counts, 초월 crit damages (hyperDmg·megaDmg·alphaDmg) too — they were dropped before (2026-11-18)
+      (b[k2].pot || []).forEach(function (pl) { if (POT_STATS[pl.stat] && isFinite(pl.val)) addStat(r, pl.stat, pl.val); });
     });
     r.atkPct += gearTotalLevel(state) * DATA.gearCodex.per;
     r.finalPct += gearStars(state) * BG.starFinal;
