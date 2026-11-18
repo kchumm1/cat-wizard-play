@@ -286,10 +286,13 @@
     S.flameWave = function (c) {
       c.plain = true;
       sc.heroPose('raise', c.D(0.16), 0xff8a3a);
-      var HC = sc.heroCenter(), cs = Math.min(1.3, c.s), hit = [], t = 0;
+      var HC = sc.heroCenter(), cs = Math.min(1.3, c.s), hit = [];
       var T_GROW = c.D(0.42), T_RUN = c.D(1.1), T_FADE = c.D(0.8), END = T_GROW + T_RUN + T_FADE;
+      // (2026-11-18, the user: "it plays on its own, as if made up above and wandering about") a streak of fire first runs
+      // along the ground from the wizard's feet to where it rises (t < 0), so the wizard is seen to send it out
+      var T_LEAD = c.D(0.16), t = -T_LEAD, from0 = V(HC.x, 0, HC.z - 0.35);
       // its way: from just in front of the wizard to the nearest monster, then on to the nearest one left, and so on
-      var start = V(HC.x * 0.6, 0, HC.z - 1.6), way = [start.clone()], left = liveMobs().slice(), at = start.clone();
+      var start = V(HC.x * 0.6, 0, HC.z - 1.2), way = [start.clone()], left = liveMobs().slice(), at = start.clone();
       while (left.length) {
         var bi = 0, bd = 1e9;
         left.forEach(function (m, i) { var g = gp(m), d = Math.hypot(g.x - at.x, g.z - at.z); if (d < bd) { bd = d; bi = i; } });
@@ -304,7 +307,13 @@
       // the tornado: real 3D shapes made in Blender (an outer swirl and a hot core inside it, and the same swirl as smoke for
       // the end), painted as toon fire by the game (P3.toonFire); the drawn tornado only until those shapes have loaded
       var tf = P3.toonFire ? P3.toonFire('tornado', { tw: 5.5, top: 0.1, pic: 'fx-fireswirl', edge: 0.22, paintEdge: 3 }) : null, tcore = tf && P3.toonFire('tornadoCore', { core: true, tw: 4.5, top: 0.1 }), tsm = tf && P3.toonFire('tornado', { smoke: true, tw: 3.5, top: 0.1 }), toonOn = function () { return tf && tf.ready(); };
-      var tw = toonOn() ? null : P3.twister({}), spin = Math.random() * 6.283, P = start.clone(), trailT = 0, emT = 0, chipT = 0, tgT = 0, lightT = 0, flung = false;
+      // (2026-11-18) the tornado is the user's painted one (art/fx-tornado.webp, laid out like the pillar: 1-4 spinning up
+      // out of a spark, 5-12 spinning, 13-16 going out into smoke) carried along its way; the 3D one only until it has come
+      var tpic = P3.sheetFx ? P3.sheetFx('fx-tornado') : null, tpf = Math.random() * 8, picOn = function () { return tpic && tpic.ready(); };
+      // (2026-11-18, "too much like a picture") a second one just behind it, four scenes on and a little wider, faint: the
+      // two read as the near and far side of one turning body; dust and embers off the ground are sucked in round its foot
+      var tback = tpic && P3.sheetFx('fx-tornado'), suckT = 0;
+      var tw = toonOn() || picOn() ? null : P3.twister({}), spin = Math.random() * 6.283, P = start.clone(), trailT = 0, emT = 0, chipT = 0, tgT = 0, lightT = 0, flung = false;
       // a monster caught up in it: little flames whirl up round it and sparks fly. Only a boss, and the last monster it
       // reaches, get the big effect (a column of fire, a ring on the ground): one under every monster cluttered the whirl
       var nAll = Math.max(1, c.pool().length);
@@ -318,8 +327,19 @@
         }
         c.hit(m, 1, 1.5);
       }
+      var tilt = 0, pPrev = start.clone(), ringT = 0, padT = 0, leadT = 0;
       tick(function (dt) {
         t += dt;
+        // the streak of fire running along the ground from the wizard to where the tornado will rise
+        if (t < 0) {
+          var lk = 1 + t / T_LEAD, lp = from0.clone().lerp(start, lk);
+          leadT -= dt; while (leadT <= 0) {
+            leadT += 0.012 / Math.max(0.25, c.n);
+            E({ pos: V(lp.x + rr(-0.12, 0.12), rr(0.05, 0.2), lp.z + rr(-0.1, 0.1)), vel: V(rr(-0.4, 0.4), rr(1.5, 3.2), 0), frame: pick(['flame', 'flame', 'dot']), color: [0xffd060, 0xff3a0c], size: [rr(0.2, 0.34) * cs, 0.04], life: rr(0.22, 0.38), drag: 1.2 });
+            E({ sys: 'gadd', pos: V(lp.x, 0.035, lp.z), frame: 'glow', color: [0xffa040, 0xc8301a], size: [0.7 * cs, 1.0 * cs], life: 0.4, rot: 0, alpha: 0.5, fadeIn: 0.1 });
+          }
+          return false;
+        }
         // (the user's drawing of its life: a small flame grows into the tornado, at its biggest it throws out embers, then
         // the smoke takes it over from the top down — the fire goes out, the last of it at its foot — and the smoke thins away)
         var grow = ease3(t / T_GROW), run = ease3((t - T_GROW) / T_RUN), fz = Math.max(0, (t - T_GROW - T_RUN) / T_FADE);
@@ -332,7 +352,40 @@
         var roar = 1 + Math.sin(t * 17) * 0.04, H = (0.35 + 3.0 * grow + 0.4 * k) * cs * roar, r0 = (0.035 + 0.07 * grow) * cs, r1 = (0.2 + 0.8 * grow) * cs * (1 + 0.1 * k);
         // the tornado itself: the Blender shapes painted as toon fire (the drawn one only if those shapes are missing)
         spin += dt * 8.8;
-        if (toonOn()) {
+        if (picOn()) {
+          if (tw) { tw.kill(); tw = null; }
+          if (tf) { var hid = V(P.x, 0, P.z); tf.set(hid, 1, 0, 1, 0, 1); tcore.set(hid, 1, 0, 1, 0, 1); tsm.set(hid, 1, 0, 1, 0, 1); }   // (k 1: hidden)
+          // scenes 1-4 while it grows, 5-12 looping while it runs, 13-16 as it goes out into smoke (the last of them thinning)
+          tpf += dt * 18;
+          var tfr = t < T_GROW ? t / T_GROW * 4 : fz <= 0 ? 4 + tpf % 8 : 12 + Math.min(3.99, fz * 4.4);
+          var tal = fz > 0.8 ? Math.max(0, (1 - fz) / 0.2) : 1;
+          // it rises out of the ground (small at first, growing upward from its foot), and as it is dragged along its top
+          // leans back behind its foot, so it is seen to be held to the ground
+          var tsz = 3.0 * cs * roar * (0.3 + 0.7 * grow), vx = (P.x - pPrev.x) / Math.max(1e-3, dt); pPrev.copy(P);
+          tilt += (Math.max(-0.2, Math.min(0.2, vx * 0.04)) - tilt) * Math.min(1, dt * 6);
+          tpic.set(V(P.x, 0, P.z), tsz, tfr, tilt, tal);
+          var bfr = tfr >= 4 && tfr < 12 ? 4 + (tfr - 4 + 4) % 8 : tfr;
+          tback.set(V(P.x, 0, P.z - 0.12), tsz * 1.1, bfr, tilt * 1.15, tal * 0.35 * (1 - k));
+          // at its foot: fire whirling round on the ground, and the ground glowing under it
+          if (k < 1) {
+            ringT -= dt; while (ringT <= 0) {
+              ringT += 0.02 / Math.max(0.25, c.n);
+              var ra = rr(0, 6.283), rrad = rr(0.3, 0.55) * cs * (0.5 + 0.5 * grow);
+              E({ pos: V(P.x + Math.cos(ra) * rrad, rr(0.03, 0.15), P.z + Math.sin(ra) * rrad * 0.6), vel: V(-Math.sin(ra) * 3.5, rr(0.8, 2.2), Math.cos(ra) * 2.2), frame: pick(['flame', 'flame', 'dot']), color: [0xffd060, 0xff3a0c], size: [rr(0.16, 0.3) * cs, 0.03], life: rr(0.2, 0.32), drag: 1.4 });
+            }
+            padT -= dt; if (padT <= 0) { padT = 0.1; gGlow(V(P.x, 0, P.z), 0xff6a1a, 1.3 * cs * (0.5 + 0.5 * grow), 0.25); }
+          }
+          // dust and embers off the ground swept in round its foot, whirled up into it
+          if (k < 1 && grow > 0.3) {
+            suckT -= dt; while (suckT <= 0) {
+              suckT += 0.03 / Math.max(0.25, c.n);
+              var sa = rr(0, 6.283), sr = rr(1.1, 1.8) * cs, dust = Math.random() < 0.55;
+              E({ pos: V(P.x + Math.cos(sa) * sr, rr(0.03, 0.25), P.z + Math.sin(sa) * sr * 0.7), vel: V(-Math.sin(sa) * 4.5 - Math.cos(sa) * 2.6, rr(1.2, 3.2), Math.cos(sa) * 3.2 - Math.sin(sa) * 1.8),
+                frame: dust ? 'smoke' : pick(['dot', 'flame']), sys: dust ? 'norm' : undefined, color: dust ? [0x8a6a50, 0x4a3a30] : [0xffc060, 0xff3a0c],
+                size: dust ? [rr(0.18, 0.32) * cs, rr(0.35, 0.6) * cs] : [rr(0.06, 0.12), 0.02], alpha: dust ? 0.35 : undefined, life: rr(0.35, 0.55), drag: 1.6, grav: dust ? -1 : -3, stretch: dust ? undefined : 0.06 });
+            }
+          }
+        } else if (toonOn()) {
           if (tw) { tw.kill(); tw = null; }
           var foot3 = V(P.x, 0, P.z), H3 = H * 0.95;
           tf.set(foot3, H3, spin, k, 0, 0); tcore.set(foot3, H3, spin * 1.15, Math.min(1, k * 1.2), 0, 0);
@@ -347,7 +400,7 @@
           }
           // tongues of flame licking up its outside, swept round the way it turns
           tgT -= dt; while (tgT <= 0) {
-            tgT += (toonOn() ? 0.07 : 0.022) / Math.max(0.25, c.n); var ty = rr(0.08, 0.85), ta = rr(0, 6.283), trad = (r0 + (r1 - r0) * Math.pow(ty, 1.45)) * 1.02;
+            tgT += (picOn() ? 0.04 : toonOn() ? 0.07 : 0.022) / Math.max(0.25, c.n); var ty = rr(0.08, 0.85), ta = rr(0, 6.283), trad = (r0 + (r1 - r0) * Math.pow(ty, 1.45)) * 1.02;
             E({ pos: V(P.x + Math.cos(ta) * trad, ty * H, P.z + Math.sin(ta) * trad * 0.8), vel: V(-Math.sin(ta) * 2.2, rr(3, 5.5), Math.cos(ta) * 1.4), frame: 'flame', color: [0xffc040, 0xff2a0a], size: [rr(0.3, 0.55) * cs, 0.05], life: rr(0.22, 0.38), drag: 1.5 });
           }
           // rocks and dust thrown out at its foot
@@ -378,7 +431,7 @@
         if (t < END) return false;
         // anyone it never reached (who moved off its way) is still caught in the last of it
         c.pool().forEach(function (m) { if (hit.indexOf(m) < 0) { hit.push(m); caught(m); } });
-        if (tw) tw.kill(); if (tf) { tf.kill(); tcore.kill(); tsm.kill(); } return true;
+        if (tw) tw.kill(); if (tf) { tf.kill(); tcore.kill(); tsm.kill(); } if (tpic) { tpic.kill(); tback.kill(); } return true;
       });
     };
     // Inferno shell: one huge fireball is lobbed high, comes down on a monster and takes the ground around it with it.
@@ -398,16 +451,17 @@
       for (var i = 0; i < N(16, c); i++) { var a = rr(0, 6.28), r = rr(0.6, 1.1); E({ pos: tip, frame: 'flame', color: [0xffe080, 0xff6a2b], size: [0.26, 0.08], life: c.D(rr(0.16, 0.24)), delay: rr(0, c.D(0.06)), upd: K.spiralTo(tip, a, r), fadeIn: 0.3 }); }
       tick(function (dt) {
         if (thrown) return true; hold += dt; var k = Math.min(1, hold / HOLD);
-        ball.set(ballAt(), UPV, dt, 0.2 + 0.8 * (1 - (1 - k) * (1 - k)) * (1 + 0.05 * Math.sin(hold * 40)));
+        ball.set(ballAt(), UPV, dt, 0.2 + 0.8 * (1 - (1 - k) * (1 - k)) * (1 + 0.05 * Math.sin(hold * 40)), k);
         return false;
       });
       after(HOLD, function () {
         thrown = true; var from = ballAt().clone(), land = mp(mob);
         smoke(from, 0x5a4a44, N(3, c), { size: 0.7, rise: 0.4 }); sc.shake(0.08);
-        homing({ from: from, to: function () { land = mp(mob); return land; }, time: c.D(0.42), arc: V(0, 3.6, -0.5), ease: function (x) { return x * x * 0.7 + x * 0.3; },
+        var ft = 0, FT = c.D(0.42);
+        homing({ from: from, to: function () { land = mp(mob); return land; }, time: FT, arc: V(0, 3.6, -0.5), ease: function (x) { return x * x * 0.7 + x * 0.3; },
           fancy: false, heads: [],
           emit: function (p, v, dt) {
-            ball.set(p, v, dt);
+            ft += dt; ball.set(p, v, dt, undefined, 1, (ft / FT - 0.7) / 0.3);
             var back = v.clone().multiplyScalar(-0.12);
             if (Math.random() < dt * 26 * c.n) E({ pos: p.clone().addScaledVector(v, -0.06), vel: rdir(1.4).add(back), frame: 'dot', color: [0xffe080, 0xff5a1a], size: [0.08, 0], life: 0.4, grav: 2, stretch: 0.1 });
             if (Math.random() < dt * 16 * c.n) E({ sys: 'norm', pos: p.clone().addScaledVector(v, -0.1), vel: back.clone().add(V(0, 0.5, 0)), frame: 'smoke', color: 0x4a3c38, size: [0.2 * S_, 0.7 * S_], ease: 1, life: 0.6, alpha: 0.32, drag: 2, fadeIn: 0.2 });
@@ -417,15 +471,41 @@
             ball.kill();
             // the instant it lands
             sc.climax(0.45, 0.3); sc.flash('rgba(255,140,50,0.42)', 0.24); sc.shake(0.55); sc.punch(0.13); sc.light(p, 0xff8a3a, 2.6, 0.5);
-            // the burst: flung out wide at once, a taller one bursting up inside it
-            if (!K.toonBoom(g, 0.95 * S_, { tall: 1.25, climb: 1.4, grow: 0.06, spread: 0.55, end: 1.05 })) P3.blast(g, { size: 0.6 * S_, col: 0xff7a1a, chips: 6, ring: 2.6, life: 0.8 });
-            // (2026-11-17) the tall one inside is the user's painted anime explosion: a ball of fire rising into a mushroom, then smoke
-            if (P3.fireBoom) P3.fireBoom(g, 0.95 * S_, c.D(1.5)); else after(c.D(0.06), function () { K.toonBoom(g, 0.55 * S_, { tall: 2.1, climb: 1.6, grow: 0.07, spread: 0.2, end: 0.8, layers: 1 }); });
-            // the ground all round bursts a beat later, flung outward
-            for (var f = 0; f < 6; f++) (function (f) {
-              var a = f / 6 * 6.283 + rr(-0.25, 0.25), q = V(g.x + Math.cos(a) * 1.3 * S_, 0, g.z + Math.sin(a) * 1.0 * S_);
-              after(c.D(0.05 + f * 0.018), function () { K.toonBoom(q, 0.32 * S_, { tall: 1.35, grow: 0.05, spread: 0.45, end: 0.55, lite: true }); scorch(q, 0.7, 2); });
-            })(f);
+            // (2026-11-18) the burst is the user's painted landing (art/fx-impact.webp, laid out like the pillar: 1 the white
+            // flash, 2-4 flung wide and up, 5-12 roaring, 13-16 a mushroom of smoke), with small ones of it bursting round
+            // it a beat later; the 3D domes only until the picture has come
+            var ip = P3.sheetFx ? P3.sheetFx('fx-impact') : null;
+            if (ip && ip.ready()) {
+              var playImpact = function (h, q, W, T1, T2, T3) {
+                var it = 0, lf = Math.random() * 8;
+                tick(function (dt2) {
+                  it += dt2; lf += dt2 * 18;
+                  var fr = it < T1 ? it / T1 * 4 : it < T1 + T2 ? 4 + lf % 8 : 12 + Math.min(3.99, (it - T1 - T2) / T3 * 4);
+                  h.set(q, W * (it < T1 ? 0.85 + 0.15 * it / T1 : 1), fr, 0, 1);
+                  // (living fire) real tongues of flame and embers keep rising off it while it roars
+                  if (it > T1 * 0.5 && it < T1 + T2 + T3 * 0.4 && Math.random() < dt2 * 60 * W / 4 * c.n) E({ pos: V(q.x + rr(-0.32, 0.32) * W, rr(0.1, 0.5) * W, q.z + rr(-0.1, 0.1)), vel: V(rr(-0.6, 0.6), rr(2.5, 5) * Math.min(1.5, W / 2.5), 0), frame: pick(['flame', 'flame', 'dot']), color: [0xffd060, 0xff3a0c], size: [rr(0.25, 0.5) * W / 3, 0.04], life: rr(0.3, 0.55), drag: 1.2, stretch: 0.03 });
+                  if (it < T1 + T2 + T3) return false; h.kill(); return true;
+                });
+              };
+              playImpact(ip, g, Math.min(4.0, 2.5 * S_), c.D(0.12), c.D(0.55), c.D(0.6));
+              // (2026-11-18) a wall of dust thrown out flat along the ground from under it, and dark smoke rolling up behind
+              for (var d = 0; d < N(18, c); d++) { var da = d / N(18, c) * 6.283 + rr(-0.15, 0.15); E({ sys: 'norm', pos: V(g.x + Math.cos(da) * 0.5, rr(0.1, 0.35), g.z + Math.sin(da) * 0.4), vel: V(Math.cos(da) * rr(5, 8), rr(0.3, 1.2), Math.sin(da) * rr(3.5, 6)), frame: 'smoke', color: [0x9a7a5a, 0x5a4636], size: [0.35 * S_, rr(0.9, 1.4) * S_], ease: 1, life: rr(0.6, 0.9), alpha: 0.4, drag: 3.2, fadeIn: 0.05 }); }
+              smoke(V(g.x, 1.2 * S_, g.z), [0x4a3a34, 0x221a18], N(6, c), { size: 1.3 * S_, rise: 2.2, speed: 0.9, life: 1.4 });
+              for (var f = 0; f < 6; f++) (function (f) {
+                var a = f / 6 * 6.283 + rr(-0.25, 0.25), q = V(g.x + Math.cos(a) * 1.5 * S_, 0, g.z + Math.sin(a) * 1.1 * S_);
+                after(c.D(0.05 + f * 0.018), function () { playImpact(P3.sheetFx('fx-impact'), q, 0.7 * S_, c.D(0.08), c.D(0.18), c.D(0.32)); scorch(q, 0.7, 2); });
+              })(f);
+            } else {
+              if (ip) ip.kill();
+              // the burst: flung out wide at once, a taller one bursting up inside it
+              if (!K.toonBoom(g, 0.95 * S_, { tall: 1.25, climb: 1.4, grow: 0.06, spread: 0.55, end: 1.05 })) P3.blast(g, { size: 0.6 * S_, col: 0xff7a1a, chips: 6, ring: 2.6, life: 0.8 });
+              if (P3.fireBoom) P3.fireBoom(g, 0.95 * S_, c.D(1.5));
+              // the ground all round bursts a beat later, flung outward
+              for (var f2 = 0; f2 < 6; f2++) (function (f) {
+                var a = f / 6 * 6.283 + rr(-0.25, 0.25), q = V(g.x + Math.cos(a) * 1.3 * S_, 0, g.z + Math.sin(a) * 1.0 * S_);
+                after(c.D(0.05 + f * 0.018), function () { K.toonBoom(q, 0.32 * S_, { tall: 1.35, grow: 0.05, spread: 0.45, end: 0.55, lite: true }); scorch(q, 0.7, 2); });
+              })(f2);
+            }
             // a ring of heat racing out over the ground; the crater, and rock thrown up
             gRing(g, 0xff7a2b, 4.4 * S_, 0.45); gRing(g, 0xffc040, 2.4 * S_, 0.3); gGlow(g, 0xff6a1a, 2.2 * S_, 0.45);
             P3.blast(g, { size: 0.3 * S_, col: 0xff7a1a, flash: false, chips: 8, ring: 0, life: 0.45, crater: true });

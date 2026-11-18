@@ -1917,30 +1917,109 @@
     // smoke; its foot at the bottom middle of each scene). Each sheet is one batched layer of pictures facing the camera.
     // sheetFx(name) → { set(pos, size, frame, angle, alpha), kill() }: pos is the picture's anchor (head: the ball's head;
     // foot: its foot on the ground), size its width in the world, angle (radians, on the screen) turns it
+    // (2026-11-18) the user's 3rd batch, all laid out like the pillar (1-4 forming, 5-12 looping, 13-16 ending):
+    // fx-flyball redrawn (1-4 a ball swirling together, 5-12 flying, 13-16 its head going white-hot just before it
+    // hits; its head's middle at 0.73 across, the middle down), art/fx-tornado.webp a fire tornado (1-4 spinning up out
+    // of a spark, 5-12 spinning, 13-16 going out from the top into smoke), art/fx-impact.webp 폭염탄's landing (1 the
+    // white flash, 2-4 flung wide and up, 5-12 roaring, 13-16 a mushroom of smoke)
     var SHEETS = {
-      'fx-flyball': { anchor: [0.33, -0.06], order: 6.4 },
-      'fx-pillar': { anchor: [0, -0.46], order: 6.3 },
+      // loop: after scene 12 comes 5; blend: scenes melt into each other; wob: heat shimmer; glow: the added glow round it;
+      // live: living fire made from the picture's shape and heat (flow: the way its flames run, in the picture; swirl: its
+      // flames also sweep sideways as they climb, winding round like a tornado's)
+      'fx-flyball': { anchor: [0.23, -0.04], order: 6.4, loop: 1, blend: 1, wob: 0.6, glow: 0.55, live: 1, flow: [-1, 0] },
+      'fx-pillar': { anchor: [0, -0.46], order: 6.3, loop: 1, blend: 1, wob: 1, glow: 0.45, live: 1 },
+      'fx-tornado': { anchor: [0, -0.46], order: 6.3, loop: 1, blend: 1, wob: 1, glow: 0.5, live: 1, swirl: 0.5 },
+      'fx-impact': { anchor: [0, -0.46], order: 6.45, loop: 1, blend: 1, wob: 1.2, glow: 0.6, live: 1 },
       // 11차 물: the splash (art/fx-watersplash.webp, tools/comfyui/water-prep.py; 1-3 gathering, 4-8 a crown thrown up,
       // 9-16 falling away; its foot a little above the bottom of each scene)
       'fx-watersplash': { anchor: [0, -0.36], order: 6.5 }
     }, sheetL = {};
+    // (2026-11-18, the user: "too much like a picture") so it reads as live fire, not a sticker: one scene melts into the
+    // next (no hard flip; after scene 12 comes 5 again, the loop), the picture shimmers in its own heat (more toward the
+    // top), its flames flicker, and a soft glow of its own colours spills round it (uGrow > 1: the glow layer, drawn
+    // added, a blurred copy a little bigger than the picture)
     var VS_SHEET = [
-      'attribute vec3 iF; uniform vec2 uAnchor; varying vec2 vUv0; varying float vA;',
+      'attribute vec3 iF; uniform vec2 uAnchor; uniform float uGrow, uLoop, uBlend; varying vec4 vCell; varying vec2 vLoc; varying float vA, vK, vSeed;',
       'void main(){',
       '  vec4 mv = modelViewMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0); float s = length(instanceMatrix[0].xyz);',
-      '  vec2 q = position.xy - uAnchor; float c = cos(iF.z), n = sin(iF.z); mv.xy += vec2(q.x * c - q.y * n, q.x * n + q.y * c) * s;',
-      '  gl_Position = projectionMatrix * mv; vA = iF.y; float f0 = floor(iF.x + 0.001);',
-      '  vUv0 = (vec2(mod(f0, 4.0), 3.0 - floor(f0 / 4.0)) + position.xy + 0.5) / 4.0; }'].join('\n');
-    var FS_SHEET = 'uniform sampler2D uMap; varying vec2 vUv0; varying float vA; void main(){ vec4 c = texture2D(uMap, vUv0); c.a *= vA; if (c.a < 0.01) discard; gl_FragColor = c; }';
+      '  vec2 q = position.xy * uGrow - uAnchor;',
+      '  float c = cos(iF.z), n = sin(iF.z); mv.xy += vec2(q.x * c - q.y * n, q.x * n + q.y * c) * s;',
+      '  gl_Position = projectionMatrix * mv; vA = iF.y; float f0 = floor(iF.x + 0.001), f1 = uLoop > 0.5 && f0 > 10.5 && f0 < 11.5 ? 4.0 : min(15.0, f0 + 1.0);',
+      '  vK = (iF.x - f0) * uBlend; vSeed = instanceMatrix[3].x * 1.7 + instanceMatrix[3].z;',
+      '  vCell = vec4(mod(f0, 4.0), 3.0 - floor(f0 / 4.0), mod(f1, 4.0), 3.0 - floor(f1 / 4.0)); vLoc = position.xy * uGrow + 0.5; }'].join('\n');
+    var SHEET_HEAD = 'uniform sampler2D uMap; uniform float uTime, uWob; varying vec4 vCell; varying vec2 vLoc; varying float vA, vK, vSeed;\n' +
+      'vec4 cellAt(vec2 l){ l = clamp(l, 0.004, 0.996); vec4 a = texture2D(uMap, (vCell.xy + l) / 4.0), b = texture2D(uMap, (vCell.zw + l) / 4.0);' +
+      ' float al = max(a.a, b.a); return vec4((a.rgb * a.a * (1.0 - vK) + b.rgb * b.a * vK) / max(al, 0.001), al); }\n' +
+      'vec2 heat(){ float y = clamp(vLoc.y, 0.0, 1.0); return vLoc + uWob * y * vec2(0.007 * sin(vLoc.y * 31.0 - uTime * 12.0 + vSeed) + 0.004 * sin(vLoc.y * 13.0 + uTime * 7.0), 0.004 * sin(vLoc.x * 27.0 + uTime * 9.0 + vSeed)); }\n';
+    // (2026-11-18, the user: "living fire, take the painted look away") uLive 1: the picture only gives the fire its
+    // shape and how hot each part is (its brightness); the fire itself is made fresh every moment: a flowing pattern races
+    // along it (up, or back along a fireball's tail: uFlow), bending the shape as it goes and eating at its edges so the
+    // tongues lick and tear, and the colour comes from the heat (deep red, orange, yellow, white at the hottest) — the
+    // drawn dark outlines read as cold and melt away. Grey smoke in the picture stays smoke, drifting.
+    var SHEET_NOISE = 'float shH(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\n' +
+      'float shN(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(shH(i), shH(i + vec2(1.0, 0.0)), f.x), mix(shH(i + vec2(0.0, 1.0)), shH(i + 1.0), f.x), f.y); }\n' +
+      'float shF(vec2 p){ return shN(p) * 0.55 + shN(p * 2.07 + 3.1) * 0.3 + shN(p * 4.3 + 7.7) * 0.15; }\n';
+    var FS_SHEET = SHEET_HEAD + SHEET_NOISE + 'uniform float uLive, uSwirl; uniform vec2 uFlow;\n' +
+      'void main(){ if (vLoc.x < 0.0 || vLoc.x > 1.0 || vLoc.y < 0.0 || vLoc.y > 1.0) discard; vec2 l = heat();\n' +
+      ' if (uLive < 0.5) { vec4 c0 = cellAt(l); c0.a *= vA; if (c0.a < 0.01) discard; c0.rgb *= 1.0 + 0.1 * sin(uTime * 23.0 + vLoc.y * 7.0 + vSeed) * (0.4 + smoothstep(0.55, 1.0, c0.g)); gl_FragColor = c0; return; }\n' +
+      ' vec2 fw = uFlow, sd = vec2(-fw.y, fw.x); float along = dot(vLoc - 0.5, fw) + 0.5, across = dot(vLoc - 0.5, sd);\n' +
+      // (3rd pass, the user: "it is mushy, not blazing") the pattern is stretched long along the flow and races up fast,
+      // so it reads as tongues of flame shooting up rather than a slow wobble
+      ' vec2 np = vec2(across * 7.0 + uSwirl * (along * 6.0 + uTime * 4.0) + vSeed, along * 2.2 - uTime * 5.5); float n = shF(np), n2 = shF(np * 2.3 + vec2(1.7, -uTime * 3.0));\n' +
+      // (2nd pass, "even less like a picture") thin strands of flame racing along the flow: a ridged pattern, finer and
+      // faster than the body's, stretched the way the fire runs
+      ' vec2 fp = vec2(across * 13.0 + uSwirl * (along * 9.0 + uTime * 6.0) + vSeed * 1.3, along * 3.0 - uTime * 6.5); float fl = 1.0 - abs(shF(fp) * 2.0 - 1.0); fl *= fl;\n' +
+      ' float up = clamp(along, 0.0, 1.0);\n' +
+      // only a small sideways flick (a big bend made it melt)
+      ' l += sd * (n2 - 0.5) * 0.025 * (0.2 + up);\n' +
+      // the picture is read a little blurred: its shape and where it is hottest, none of its brush strokes
+      ' float r = 0.02; vec4 t0 = cellAt(l), t1 = cellAt(l + vec2(r, 0.0)), t2 = cellAt(l - vec2(r, 0.0)), t3 = cellAt(l + vec2(0.0, r)), t4 = cellAt(l - vec2(0.0, r));\n' +
+      ' vec4 c = vec4(t0.rgb * t0.a, t0.a) * 0.36 + (vec4(t1.rgb * t1.a, t1.a) + vec4(t2.rgb * t2.a, t2.a) + vec4(t3.rgb * t3.a, t3.a) + vec4(t4.rgb * t4.a, t4.a)) * 0.16;\n' +
+      ' c.rgb /= max(c.a, 0.001); float m = c.a * vA; if (m < 0.01) discard;\n' +
+      ' float mx = max(c.r, max(c.g, c.b)), sat = mx - min(c.r, min(c.g, c.b)), smk = (1.0 - smoothstep(0.1, 0.28, sat)) * (1.0 - smoothstep(0.55, 0.8, mx));\n' +   // (grey and dim: smoke; the white-hot core is not)
+      ' float h0 = clamp(c.r * 0.22 + c.g * 0.62 + c.b * 0.3, 0.0, 1.0), core = smoothstep(0.3, 1.0, m);\n' +
+      // the fire: the shape, burnt away the higher it climbs and torn by the racing pattern, so its top splits into
+      // separate tongues licking up; cut sharp (no soft melting edge); hottest deep inside, white at its root
+      ' float fn = n * 0.65 + n2 * 0.35, ero = 0.42 * (1.0 - 0.65 * uSwirl);\n' +
+      ' float v = m * (0.75 + 0.5 * h0) - up * ero + (fn - 0.5) * (0.6 + 0.6 * up) + 0.12 * core;\n' +
+      // its root kept whole (a thin foot was eaten away and the fire seemed to float off the ground)
+      ' v += 0.32 * (1.0 - smoothstep(0.0, 0.22, up)) * smoothstep(0.03, 0.15, m);\n' +
+      ' float a = smoothstep(0.15, 0.27, v);\n' +
+      // the heat rises and falls with the racing pattern (white only in the hottest streaks), a little from the picture
+      ' float h = clamp((v - 0.15) * 1.25 * (0.5 + 0.7 * fn) + 0.28 * h0 + 0.12, 0.0, 1.0) * (0.92 + 0.08 * sin(uTime * 31.0 + vSeed));\n' +
+      // streaks of flame shooting up through it, darker gaps between; a tornado's winding strands only a little brighter
+      // than the gaps and never white (bright diagonal bands read as candy stripes)
+      ' h = clamp(h * mix(0.55 + 0.7 * fl, 0.78 + 0.28 * fl, uSwirl), 0.0, 1.0 - 0.22 * uSwirl);\n' +
+      ' vec3 col = mix(vec3(0.72, 0.07, 0.02), vec3(1.0, 0.26, 0.02), smoothstep(0.0, 0.28, h));\n' +
+      ' col = mix(col, vec3(1.0, 0.62, 0.1), smoothstep(0.3, 0.6, h)); col = mix(col, vec3(1.0, 0.92, 0.6), smoothstep(0.62, 0.85, h)); col = mix(col, vec3(1.0, 0.99, 0.92), smoothstep(0.85, 1.0, h));\n' +
+      ' vec3 sc = vec3(dot(c.rgb, vec3(0.34))) * (0.8 + 0.4 * n) + vec3(0.04, 0.02, 0.0); float sa = m * (0.45 + 0.55 * n);\n' +
+      ' col = mix(col, sc, smk); a = mix(a, sa, smk); if (a < 0.01) discard;\n' +
+      ' gl_FragColor = vec4(col, a); }';
+    var FS_SHEET_GLOW = SHEET_HEAD + 'uniform float uGlow; void main(){ vec2 l = vLoc; float r = 0.045;' +
+      ' vec4 c = cellAt(l + vec2(r, 0.0)) + cellAt(l - vec2(r, 0.0)) + cellAt(l + vec2(0.0, r)) + cellAt(l - vec2(0.0, r)); c *= 0.25;' +
+      ' float a = c.a * vA * uGlow * (0.85 + 0.15 * sin(uTime * 17.0 + vSeed)); if (a < 0.01) discard;' +
+      ' vec3 col = mix(vec3(1.0, 0.35, 0.08), vec3(1.0, 0.75, 0.35), smoothstep(0.4, 0.9, c.g)) * smoothstep(0.15, 0.5, max(c.r, c.g));' +
+      ' gl_FragColor = vec4(col * a, 0.0); }';
     function sheetLayer(name) {
       var L = sheetL[name]; if (L) return L;
       var S = SHEETS[name], cap = 32, ph = new T.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1); ph.needsUpdate = true;
       var g = new T.InstancedBufferGeometry().copy(new T.PlaneGeometry(1, 1)), fa = new Float32Array(cap * 3);
       g.setAttribute('iF', new T.InstancedBufferAttribute(fa, 3).setUsage(T.DynamicDrawUsage));
-      var m = new T.ShaderMaterial({ uniforms: { uMap: { value: ph }, uAnchor: { value: new T.Vector2(S.anchor[0], S.anchor[1]) } }, vertexShader: VS_SHEET, fragmentShader: FS_SHEET, transparent: true, depthWrite: false, depthTest: true });
+      var anc = new T.Vector2(S.anchor[0], S.anchor[1]), uT = { value: 0 };
+      var m = new T.ShaderMaterial({ uniforms: { uMap: { value: ph }, uAnchor: { value: anc }, uGrow: { value: 1 }, uLoop: { value: S.loop ? 1 : 0 }, uBlend: { value: S.blend ? 1 : 0 }, uTime: uT, uWob: { value: S.wob || 0 }, uLive: { value: S.live ? 1 : 0 }, uSwirl: { value: S.swirl || 0 }, uFlow: { value: new T.Vector2(S.flow ? S.flow[0] : 0, S.flow ? S.flow[1] : 1) } }, vertexShader: VS_SHEET, fragmentShader: FS_SHEET, transparent: true, depthWrite: false, depthTest: true });
       var mesh = new T.InstancedMesh(g, m, cap); mesh.instanceMatrix.setUsage(T.DynamicDrawUsage); mesh.frustumCulled = false; mesh.count = 0; mesh.visible = false; mesh.renderOrder = S.order; mesh.name = 'core3d sheet ' + name;
       group.add(mesh);
-      L = sheetL[name] = { mesh: mesh, mat: m, fa: fa, g: g, cap: cap, list: [], ready: false };
+      // the glow of it: the same pictures (same places, same scenes) blurred and added under it
+      var gm = null;
+      if (S.glow) {
+        var gmat = new T.ShaderMaterial({ uniforms: { uMap: m.uniforms.uMap, uAnchor: { value: anc }, uGrow: { value: 1 }, uLoop: m.uniforms.uLoop, uBlend: m.uniforms.uBlend, uTime: uT, uWob: { value: 0 }, uGlow: { value: S.glow } }, vertexShader: VS_SHEET, fragmentShader: FS_SHEET_GLOW, transparent: true, depthWrite: false, depthTest: true,
+          // light only: the canvas is see-through over the region's picture, so its alpha is left alone (alpha written here
+          // showed as a black halo on bright regions)
+          blending: T.CustomBlending, blendEquation: T.AddEquation, blendSrc: T.OneFactor, blendDst: T.OneFactor, blendSrcAlpha: T.ZeroFactor, blendDstAlpha: T.OneFactor });
+        gm = new T.InstancedMesh(g, gmat, cap); gm.instanceMatrix = mesh.instanceMatrix; gm.frustumCulled = false; gm.count = 0; gm.visible = false; gm.renderOrder = S.order - 0.01; gm.name = 'core3d sheet glow ' + name;
+        group.add(gm);
+      }
+      L = sheetL[name] = { mesh: mesh, glow: gm, mat: m, uT: uT, fa: fa, g: g, cap: cap, list: [], ready: false };
       if (T.TextureLoader) new T.TextureLoader().load((root.CW && root.CW.ART_BASE || 'art/') + name + '.webp', function (t) {
         t.generateMipmaps = false; t.minFilter = T.LinearFilter; m.uniforms.uMap.value = t; L.ready = true;
         try { if (sc.renderer && sc.renderer.initTexture) sc.renderer.initTexture(t); } catch (e) { }
@@ -1965,9 +2044,12 @@
         for (var i = L.list.length - 1; i >= 0; i--) if (L.list[i].dead) L.list.splice(i, 1);
         for (var j = 0; j < L.list.length && n < L.cap; j++) {
           var h = L.list[j]; if (h.al <= 0.001) continue;
-          BOOM_S.setScalar(h.s); L.mesh.setMatrixAt(n, BOOM_M.compose(h.p, BOOM_Q, BOOM_S)); L.fa[n * 3] = ((Math.floor(h.f) % 16) + 16) % 16; L.fa[n * 3 + 1] = h.al; L.fa[n * 3 + 2] = h.a; n++;
+          // (the scene with its fraction: the shader melts it into the next one)
+          BOOM_S.setScalar(h.s); L.mesh.setMatrixAt(n, BOOM_M.compose(h.p, BOOM_Q, BOOM_S)); L.fa[n * 3] = ((h.f % 16) + 16) % 16; L.fa[n * 3 + 1] = h.al; L.fa[n * 3 + 2] = h.a; n++;
         }
+        L.uT.value = time;
         L.mesh.count = n; L.mesh.visible = n > 0 && L.ready; L.mesh.instanceMatrix.needsUpdate = true; L.g.attributes.iF.needsUpdate = true;
+        if (L.glow) { L.glow.count = n; L.glow.visible = L.mesh.visible; }
       }
     }
     // the ground where fire landed, seen from above (art/fx-lavamark.webp: cracked glowing lava in a ring of low flame):

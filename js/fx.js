@@ -431,13 +431,20 @@
       // (2026-11-17) the fire's ball is the user's painted flying fireball (art/fx-flyball.webp): its head at p, its tail
       // streaming back along the flight on the screen, its flames looping; the 3D one stays hidden behind it (and shows
       // only until the picture has come, and for the sun's gold ball)
-      var pic = o.kind !== 'sun' && P3.sheetFx ? P3.sheetFx('fx-flyball') : null, pf = Math.random() * 16, vv = V(0, -1, 0);
+      // (2026-11-18) redrawn like the pillar: scenes 1-4 the ball swirling together, 5-12 flying (looped), 13-16 its head
+      // going white-hot just before it hits. form (0..1): how far it has swirled together (left out: it forms by itself in
+      // its first 0.1 s); end (0..1): how close it is to hitting
+      var pic = o.kind !== 'sun' && P3.sheetFx ? P3.sheetFx('fx-flyball') : null, pf = Math.random() * 8, vv = V(0, -1, 0), age = 0;
       return {
-        set: function (p, v, dt, k) {
+        set: function (p, v, dt, k, form, end) {
           var Lk = L * (k === undefined ? 1 : Math.max(0.01, k));
           if (pic && pic.ready()) {
-            pf += (dt || 0) * 22; if (v.lengthSq() > 1e-8) vv.copy(v);
-            pic.set(p, Lk * 1.55, pf, P3.screenAngle(vv), 1);
+            age += dt || 0; pf += (dt || 0) * 22; if (v.lengthSq() > 1e-8) vv.copy(v);
+            var fm = form === undefined ? age / 0.1 : form, fr = fm < 1 ? Math.max(0, fm) * 4 : end > 0 ? 12 + Math.min(3.99, end * 4) : 4 + pf % 8;
+            // (while it swirls together the picture grows by itself: no shrinking it by k as well)
+            pic.set(p, (fm < 1 ? L : Lk) * 1.15, fr, P3.screenAngle(vv), 1);
+            // (living fire) real flames torn off its tail as it flies
+            if (fm >= 1 && dt && Math.random() < dt * 40) { var bk = vv.clone().normalize(); E({ pos: p.clone().addScaledVector(bk, -rr(0.1, 0.45) * Lk).add(rdir(0.12 * Lk)), vel: bk.clone().multiplyScalar(-rr(0.5, 1.5)).add(V(0, rr(0.8, 1.8), 0)), frame: 'flame', color: [0xffc050, 0xff2a0a], size: [rr(0.18, 0.32) * Lk, 0.03], life: rr(0.2, 0.35), drag: 1.5 }); }
             b.set(p, Lk, 0, 1, 0, 0); cr.set(p, Lk, 0, 1, 0, 0); if (b2) b2.set(p, Lk, 0, 1, 0, 0);   // (k 1: hidden)
             return;
           }
@@ -666,17 +673,28 @@
         after(c.D(0.18 + j * 0.09), function () {
           var from = sc.heroPaw(), S_ = Math.min(1.5, c.s * (1 + 0.08 * (c.tier - 2))), ball = toonBall(0.8 * S_);
           smoke(from, 0x5a4a44, N(2, c), { size: 0.4, rise: 0.4 });
-          homing({ from: from, to: function () { return sc.mobPos(mob); }, time: c.D(0.36), arc: V(0, 1.9 - j * 0.6, 0.15), ease: function (k) { return k * k * 0.6 + k * 0.4; }, fancy: false, heads: [],
+          var ft = 0, FT = c.D(0.36);
+          homing({ from: from, to: function () { return sc.mobPos(mob); }, time: FT, arc: V(0, 1.9 - j * 0.6, 0.15), ease: function (k) { return k * k * 0.6 + k * 0.4; }, fancy: false, heads: [],
             emit: function (p, v, dt) {
-              ball.set(p, v, dt);
+              ft += dt; ball.set(p, v, dt, undefined, undefined, (ft / FT - 0.72) / 0.28);
               var back = v.clone().multiplyScalar(-0.12);
               if (Math.random() < dt * 22 * c.n) E({ pos: p.clone().addScaledVector(v, -0.05), vel: rdir(1.2).add(back), frame: 'dot', color: [0xffe080, 0xff5a1a], size: [0.06, 0], life: 0.35, grav: 2, stretch: 0.1 });
               if (Math.random() < dt * 12 * c.n) E({ sys: 'norm', pos: p.clone().addScaledVector(v, -0.09), vel: back.clone().add(V(0, 0.5, 0)), frame: 'smoke', color: 0x4a3c38, size: [0.15 * S_, 0.5 * S_], ease: 1, life: 0.5, alpha: 0.28, drag: 2, fadeIn: 0.2 });
             },
             onHit: function (p) {
               ball.kill(); var g = V(p.x, 0, p.z);
-              if (!toonBoom(g, 0.52 * S_)) P3.blast(g, { size: 0.4 * S_, col: 0xff8a2b, chips: 3, ring: 2.0, life: 0.6 });
-              if (P3.fireBoom) P3.fireBoom(g, 0.62 * S_, c.D(1.0));   // (2026-11-17: the user's painted explosion, small)
+              // (2026-11-18) the burst is 폭염탄's living-fire landing, small and quick; the old 3D dome and painted burst only
+              // if that picture has not come
+              var ib = P3.sheetFx ? P3.sheetFx('fx-impact') : null;
+              if (ib && ib.ready()) {
+                var it = 0, lf = Math.random() * 8, IW = Math.min(2.4, 1.5 * S_), T1 = c.D(0.08), T2 = c.D(0.2), T3 = c.D(0.4);
+                tick(function (dt2) { it += dt2; lf += dt2 * 18; ib.set(g, IW, it < T1 ? it / T1 * 4 : it < T1 + T2 ? 4 + lf % 8 : 12 + Math.min(3.99, (it - T1 - T2) / T3 * 4), 0, 1); if (it < T1 + T2 + T3) return false; ib.kill(); return true; });
+                P3.blast(g, { size: 0.3 * S_, col: 0xff8a2b, flash: false, chips: 3, ring: 1.6, life: 0.4 });
+              } else {
+                if (ib) ib.kill();
+                if (!toonBoom(g, 0.52 * S_)) P3.blast(g, { size: 0.4 * S_, col: 0xff8a2b, chips: 3, ring: 2.0, life: 0.6 });
+                if (P3.fireBoom) P3.fireBoom(g, 0.62 * S_, c.D(1.0));
+              }
               if (P3.lavaMark) P3.lavaMark(g, 1.0 * S_, c.D(1.1));
               sparks(p, [0xffe080, 0xff8a2b], N(8, c), 5, { size: 0.15, stretch: 0.14 });
               embers(p, [0xffe080, 0xff6a2b], N(6, c), { speed: 2.4, up: 2.2 });
