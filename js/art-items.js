@@ -78,10 +78,25 @@
   I.sigilSrc = function (stat) { stat = al(stat); return SG2.indexOf(stat) >= 0 ? src('sg2-' + stat) : null; };
   I.runeSrc = function (id) { id = al(id); return RN2.indexOf(id) >= 0 ? src('rn2-' + id) : null; };
   I.gradeFrameSrc = function (g) { g = clamp(g, 0, 10); return src('gf-' + (g < 10 ? '0' : '') + g); };
+  // 룬·신성력·삼신기 화면에 <img>로 들어가는 그림 전부 (ui.js 가 시작 뒤 미리 불러 둠, 2026-11-18 형: 룬·신성력 들어가면 가끔 늦게 나옴)
+  I.menuItemPics = function () {
+    var out = RN2.map(function (k) { return src('rn2-' + k); }).concat(SG2.map(function (k) { return src('sg2-' + k); }));
+    for (var g = 0; g <= 10; g++) out.push(I.gradeFrameSrc(g));
+    return out.concat(DIVINE.map(function (k) { return src('dv2-' + k); }));
+  };
+  // 다른 메뉴에 <img>로 들어가는 그림: 성장·특성·스킬·유물·코스튬 목록 카드 (같은 날 형: 전체적으로 늦게 뜨는 화면 없게)
+  I.menuOtherPics = function () {
+    var A = B, f = function (pre) { return function (k) { return A + pre + k + '.webp'; }; };
+    return GROW_ART.map(f('gro-')).concat(TAL_ART.map(f('tal-')), SK2.map(f('sk2-')), RELICS.map(f('rl-')),
+      Object.keys(COS_FEET).map(function (k) { return A + 'cos-' + k + '-s.webp'; }));
+  };
   // bg: 목록 칸과 같은 바탕 그림 (사용자 2026-11-17 「요걸로 다 통일」) — 룬 art/ru-orb(보석 원판), 신성력 art/si-cardbg(별빛 카드).
   // 바탕이 없을 때(패키지 아이콘)만 등급 테두리.
+  // crossorigin: 룬·신성력 그림·등급 테두리는 무대 반짝임 마스크(CORS)와 같은 방식으로 받아 메모리 칸을 같이 씀 (ui.js runeArt 위 설명).
+  // 바탕(ru-orb·si-cardbg)은 CSS 바탕으로도 쓰여 일반 방식 그대로
+
   function framed(cls, art, grade, bg) {
-    return '<span class="ico ' + cls + (bg ? ' onbg' : '') + '"><img class="' + (bg ? 'gbg' : 'gfr') + '" src="' + (bg || I.gradeFrameSrc(grade)) + '" alt="" draggable="false"><img class="gart" src="' + art + '" alt="" draggable="false"></span>';
+    return '<span class="ico ' + cls + (bg ? ' onbg' : '') + '"><img class="' + (bg ? 'gbg' : 'gfr') + '" src="' + (bg || I.gradeFrameSrc(grade)) + '" alt=""' + (bg ? '' : ' crossorigin="anonymous"') + ' draggable="false"><img class="gart" src="' + art + '" alt="" crossorigin="anonymous" draggable="false"></span>';
   }
 
   // ---------- sigils (신성력) ----------

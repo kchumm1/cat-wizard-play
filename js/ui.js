@@ -549,15 +549,18 @@
     // ---------- runes (2026-11-14): seven worn runes in the ring, the bag below; pick one to level, promote, wear, lock, fuse ----------
     // 오팔 2판 (사용자 룬·신성력 부품·시안, 2026-11-17): 그림 = 종류마다 하나(rn2-/sg2-), 등급 = 따로 얹는 등급 테두리(gf-).
     // 목록 칸 = 부품 목록 칸(slot-normal / 고르면 slot-selected + 체크), 안에 유리 구슬 + 그림, 아래 Lv(룬)·품질 %(신성력).
+    // decoding="sync" (2026-11-18): 무대 보석·룬은 계속 움직이는 층 안이라 크롬이 그림 풀기를 뒤로 미뤄 빈 소켓이 잠깐 보였음(신성력 17칸 장착 때 잘 보임)
+    // → 240px 작은 그림이라 그리는 프레임에 바로 풀게 함. crossorigin: 신성력 보석 위 반짝임이 같은 그림을 마스크(CORS 방식)로도 받아서,
+    // <img>(일반 방식)와 브라우저 메모리 칸을 서로 밀어내 가끔 보석·목록 그림 전부가 늦게 나왔음 → <img>도 CORS 방식으로 맞춤 (art-items.js framed 도 같이)
     function runeArt(kind, cls) {
       var u = CW.ICO.runeSrc && CW.ICO.runeSrc(kind), k = CW.runeById(kind);
-      return u ? '<img class="' + cls + '" src="' + u + '" alt="" draggable="false">' : '<span class="' + cls + '">' + CW.ICO.rune(kind, k.color, 0, '#9aa0b8') + '</span>';
+      return u ? '<img class="' + cls + '" src="' + u + '" alt="" decoding="sync" crossorigin="anonymous" draggable="false">' : '<span class="' + cls + '">' + CW.ICO.rune(kind, k.color, 0, '#9aa0b8') + '</span>';
     }
     function sigilArt(stat, grade, cls) {
       var u = CW.ICO.sigilSrc && CW.ICO.sigilSrc(stat);
-      return u ? '<img class="' + cls + '" src="' + u + '" alt="" draggable="false">' : '<span class="' + cls + '">' + CW.ICO.sigil(stat, grade, hc(grade)) + '</span>';
+      return u ? '<img class="' + cls + '" src="' + u + '" alt="" decoding="sync" crossorigin="anonymous" draggable="false">' : '<span class="' + cls + '">' + CW.ICO.sigil(stat, grade, hc(grade)) + '</span>';
     }
-    function gfImg(grade, cls) { return '<img class="' + cls + '" src="' + CW.ICO.gradeFrameSrc(grade) + '" alt="" draggable="false">'; }
+    function gfImg(grade, cls) { return '<img class="' + cls + '" src="' + CW.ICO.gradeFrameSrc(grade) + '" alt="" decoding="sync" crossorigin="anonymous" draggable="false">'; }
     function rsCell(attr, id, grade, on, worn, lock, art, foot, label) {
       return '<button class="rsc' + (on ? ' sel' : '') + (worn ? ' eq' : '') + '" ' + attr + '="' + id + '" data-opfx="rc:' + id + '" data-opdur=".6" style="--gc:' + hc(grade) + '" aria-label="' + label + (worn ? ' 장착 중' : '') + (lock ? ' 잠금' : '') + '">' +
         '<i class="rsc-orb">' + gfImg(grade, 'rsc-gf') + art + '</i><span class="rsc-g">' + hn(grade) + '</span>' + (lock ? '<i class="rsc-lk"></i>' : '') +
@@ -2218,32 +2221,95 @@
     // 메뉴는 누르는 순간 처음 만들어져서, 그때서야 그림을 저장본(서비스워커)에서 꺼내고 풀기 시작함 → 전투·화면 만들기로 바쁜 폰에서는
     // 창이 먼저 뜨고 그림이 한두 박자 뒤에 들어옴 (앱을 켜고 처음 열 때마다). 시작한 뒤 한가할 때 미리 불러 풀어 두고 붙잡아 두면
     // 메뉴를 열 때 같은 주소의 그림이 바로 그려짐. 한 번에 조금씩만 (폰 발열·전투 끊김 없게)
-    var warmKeep = [], warmHas = {};
-    function warmImgs(urls, done) {
-      var list = urls.filter(function (u) { return u && !warmHas[u] && (warmHas[u] = 1); }), i = 0;
-      var later = root.requestIdleCallback ? function (f) { root.requestIdleCallback(f, { timeout: 1500 }); } : function (f) { setTimeout(f, 120); };
-      (function warmStep() {
-        if (i >= list.length) { if (done) done(); return; }
-        list.slice(i, i += 4).forEach(function (u) {
-          var im = new Image(); im.decoding = 'async'; im.src = u; warmKeep.push(im);
-          if (im.decode) im.decode().catch(function () {});
-        });
-        later(warmStep);
-      })();
+    // 2026-11-18 더 (형: 룬·신성력 화면에 들어가면 가끔 그림·칸이 늦게 나옴 / 전체적으로 늦게 뜨는 화면 없게): 위 방식이 장비 아이템 그림에만
+    // 쓰였고, 메뉴 틀 그림(룬·신성력·삼신기 성운 창·돔·받침대·소켓, 장비 전시대, 공용 부품 sk-* 같은 CSS 바탕·마스크 그림)과 룬·신성력·
+    // 삼신기 보석 그림은 빠져 있었음 → 처음 열 때마다 룬 26장·신성력 32장(17칸 장착)·삼신기 16장·장비 틀 8장을 그 순간에 받았음
+    // (아이폰 크기 에뮬레이션 실측). 훈련·스킬·유물·코스튬 목록 그림도 같았고, 붙잡아 두는 곳이 없어 다시 오갈 때마다 또 받아서
+    // 늦게 나왔음(옛 판: 다시 열 때도 신성력 58·룬 60·성장 36개가 한 박자 늦음). 이제 화면에 붙은 CSS 에 나오는 art/ 그림 전부와
+    // 메뉴 목록 그림도 미리 받아 warmKeep 에 붙잡아 둠 (파일로 약 10MB, 이미 서비스워커 저장본에 있는 것).
+    // CSS 그림은 다 풀면 200MB 가까이라 받아 두기만 하고(decode 안 함, 폰 메모리), 작은 보석 그림만 풀어 둠.
+    // 마스크(mask-image) 그림은 브라우저가 CORS 방식으로 받으므로 그 방식으로도 받아 둠.
+    // 받는 차례는 한 줄(warmQ)로: 한 번에 받기만 할 그림 12장 / 풀어 둘 작은 그림 6장, 한가할 때(늦어도 0.25초 뒤) 다음 묶음.
+    // 처음엔 1.5초마다 4장이라 전투 중인 폰에서는 다 받는 데 몇 분 걸렸음 (CPU 4배 느리게 한 에뮬레이션: 30초 지나도 절반) → 훈련·스킬을 먼저 열면 또 늦게 나옴
+    var warmKeep = [], warmHas = {}, warmQ = [], warmRun = false;
+    function warmImgs(urls, opt) {
+      opt = opt || {};
+      urls.forEach(function (u) {
+        if (!u) return; var k = (opt.cors ? 'c|' : '') + new URL(u, document.baseURI).href;
+        if (warmHas[k]) return; warmHas[k] = 1; warmQ.push({ u: u, cors: !!opt.cors, decode: opt.decode !== false });
+      });
+      if (!warmRun) { warmRun = true; warmStep(); }
+    }
+    var warmLater = root.requestIdleCallback ? function (f) { root.requestIdleCallback(f, { timeout: 250 }); } : function (f) { setTimeout(f, 60); };
+    function warmStep() {
+      if (!warmQ.length) { warmRun = false; return; }
+      var load = 0;
+      while (warmQ.length && load < 12) {
+        var j = warmQ.shift(), im = new Image(); if (j.cors) im.crossOrigin = 'anonymous'; im.decoding = 'async';
+        // 받기만 하는 그림도 작은 것(300×300 이하: 돔·알약·칸 등, CSS 그림 중 123장·약 13MB)은 받은 뒤 풀어 둠.
+        // 큰 창·버튼·성운 그림(약 190MB)은 받기만: 다 풀면 폰 메모리·발열이 크고, 미리 풀어 둬도 브라우저가 곧 버려 효과가 없었음(특성 성운 실측)
+        if (!j.decode && im.decode) im.onload = function () { this.onload = null; if (this.naturalWidth * this.naturalHeight <= 90000) this.decode().catch(function () {}); };
+        im.src = j.u; warmKeep.push(im);
+        if (j.decode && im.decode) { im.decode().catch(function () {}); load += 2; } else load += 1;
+      }
+      warmLater(warmStep);
+    }
+    // 화면에 붙은 스타일(메뉴마다 js 가 넣은 <style>)에 나오는 art/ 그림 주소 전부, mask = 그중 마스크로 쓰이는 것
+    function cssArtPics() {
+      var all = [], mask = [], seen = {}, mseen = {}, re = /url\(\s*["']?([^"')]+)["']?\s*\)/g;
+      function take(v, isMask) {
+        var m; re.lastIndex = 0;
+        while ((m = re.exec(v))) {
+          if (!/(^|\/)art\/[^\/]+\.(webp|png|jpg)$/.test(m[1])) continue;
+          var u = new URL(m[1], document.baseURI).href;
+          if (!seen[u]) { seen[u] = 1; all.push(u); }
+          if (isMask && !mseen[u]) { mseen[u] = 1; mask.push(u); }
+        }
+      }
+      function walk(rules) {
+        for (var r = 0; r < rules.length; r++) {
+          var rule = rules[r], st = rule.style;
+          if (!st) { if (rule.cssRules) walk(rule.cssRules); continue; }
+          for (var p = 0; p < st.length; p++) { var v = st.getPropertyValue(st[p]); if (v.indexOf('url(') >= 0) take(v, st[p].indexOf('mask') >= 0); }
+        }
+      }
+      [].forEach.call(document.styleSheets, function (sh) { try { walk(sh.cssRules || []); } catch (e) {} });
+      return { all: all, mask: mask };
     }
     function gearKindPics(kind) {   // 장비 목록 한 종류에 나오는 그림 전부 (등급 0~9, 혼돈·멸망은 단계 I~IV마다)
       var out = []; if (!CW.ICO.gearSrc) return out;
       for (var g = 0; g < DATA.grades.length; g++) for (var sb = 1; sb <= 4; sb++) out.push(CW.ICO.gearSrc(kind, g, sb));
       return out;
     }
+    // 성장·특성·스킬·유물·코스튬 목록 카드와 각인·연금술·마나 서클·던전·스킬 속성 그림 (메뉴 js 가 <img>·style 로 넣는 것)
+    function otherMenuPics(A) {
+      var out = (CW.ICO.menuOtherPics && CW.ICO.menuOtherPics()) || [], s = G.state;
+      (DATA.marks || []).forEach(function (m) { out.push(A + 'rk-' + m.id + '.webp'); });
+      (DATA.potions || []).forEach(function (p) { out.push(A + 'al-' + p.id + '.webp'); });
+      Object.keys(DATA.elements || {}).forEach(function (e) { out.push(A + 'sk-el-' + e + '.webp'); });
+      ['gold', 'gem', 'mana', 'rune'].forEach(function (k) { out.push(A + 'ui-dungeon-' + k + '.webp'); });
+      ['rk-badge', 'rk-paw', 'al-cauldron', 'mn-crystal', 'mn-paw', 'sk-cat', 'tr-state-lock'].forEach(function (n) { out.push(A + n + '.webp'); });
+      // 스킬 목록 아이콘: 스킬마다 그리는 함수가 고르는 그림 그대로 (sk2-·sk-·그린 아이콘)
+      (DATA.skills || []).forEach(function (sk) { var m = /src="([^"]+)"/.exec((CW.ICO.skill && CW.ICO.skill(sk.id)) || ''); if (m) out.push(m[1]); });
+      var wear = s && s.costume && s.costume.wear, big = wear && CW.ICO.cosArt && CW.ICO.cosArt(wear);   // 코스튬 전시대에 서 있는 지금 옷 (큰 그림은 이것만)
+      if (big) out.push(big);
+      return out;
+    }
     (CW.afterStart || function (f) { f(); })(function () {
       setTimeout(function () {
-        var A = CW.ART_BASE || 'art/';
-        // 먼저: 장비를 열면 처음 보이는 지팡이 목록·전시대, 구분선 발바닥, 뽑기 상자 / 그다음: 나머지 장비 종류
-        warmImgs(gearKindPics(bagKind).concat([A + 'ui-paw.webp', A + 'ui-chest-closed.webp', A + 'ui-chest-open.webp']), function () {
-          warmImgs(['hat', 'robe', 'belt', 'necklace', 'ear', 'ring'].reduce(function (a, k) { return a.concat(gearKindPics(k)); }, []));
-        });
-      }, 1200);
+        var A = CW.ART_BASE || 'art/', css = cssArtPics(), abs = function (u) { return new URL(u, document.baseURI).href; };
+        var items = ((CW.ICO.menuItemPics && CW.ICO.menuItemPics()) || []).concat([A + 'ic-runestone.webp', A + 'ic-sigilstone.webp']);
+        // 룬·신성력 그림·등급 테두리는 <img crossorigin> 라 CORS 방식으로 (runeArt 위 설명). 스킬 속성(sk-el-)은 마스크로 쓰여 CORS
+        var corsP = /\/art\/(rn2|sg2|gf|sk-el)-/, isC = function (u) { return corsP.test(abs(u)); }, other = otherMenuPics(A);
+        // 차례: 장비를 열면 처음 보이는 지팡이 목록 → 모든 메뉴 틀(CSS) → 룬·신성력·삼신기 그림 → 훈련·스킬·유물·코스튬 등 그림 → 마스크 → 나머지 장비 종류
+        warmImgs(gearKindPics(bagKind).concat([A + 'ui-paw.webp', A + 'ui-chest-closed.webp', A + 'ui-chest-open.webp']));
+        warmImgs(css.all, { decode: false });
+        warmImgs(items.filter(isC), { cors: true });
+        warmImgs(items.filter(function (u) { return !isC(u); }));
+        warmImgs(other.filter(function (u) { return !isC(u); }), { decode: false });
+        warmImgs(other.filter(isC), { decode: false, cors: true });
+        warmImgs(css.mask, { decode: false, cors: true });
+        warmImgs(['hat', 'robe', 'belt', 'necklace', 'ear', 'ring'].reduce(function (a, k) { return a.concat(gearKindPics(k)); }, []));      }, 1200);
     });
     function openTab(name) {
       if (name === 'gacha') ghdSeen = null;
