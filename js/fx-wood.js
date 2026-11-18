@@ -634,6 +634,11 @@
       return null;
     }
     ['wt-tree', 'wt-fruit-red', 'wt-trap-upper', 'wt-trap-lower', 'wt-root', 'wt-spikes'].forEach(function (n) { if (!CW.FRIEND) wpLoad(n); });
+    // every painted piece on the field (woodPic, liveSheet) until it is killed: fx.clear() (a boss, a dungeon, the app
+    // put away…) stops the ticks that would kill them, so they are taken off here — before 2026-11-18 they stayed on the
+    // field frozen and were drawn for good (one 뿌리 가시 left ~220 draw calls and 26만 triangles behind: 발열)
+    var LIVE = [];
+    function track(h) { LIVE.push(h); var k0 = h.kill; h.kill = function () { var i = LIVE.indexOf(h); if (i >= 0) LIVE.splice(i, 1); k0(); }; return h; }
     function woodPic(name, cx, cy, order, tint) {
       var tex = wpLoad(name), parts = [];
       function make(add) {
@@ -641,7 +646,7 @@
         sp.center.set(cx, cy); sp.renderOrder = (order || 2) + (add ? 0.05 : 0); (sc.fxGroup || sc.scene).add(sp); parts.push(sp); return sp;
       }
       var a = tex ? make(false) : null, g = tex ? make(true) : null;
-      return {
+      return track({
         ok: !!tex,
         set: function (pos, w, h, alpha, glow, rot) {
           if (!a) return;
@@ -649,8 +654,8 @@
           a.material.opacity = Math.max(0, Math.min(1, alpha)); g.material.opacity = Math.max(0, Math.min(1, glow));
           a.material.rotation = g.material.rotation = rot || 0;
         },
-        kill: function () { parts.forEach(function (sp) { if (sp.parent) sp.parent.remove(sp); }); parts.length = 0; a = g = null; }
-      };
+        kill: function () { parts.forEach(function (sp) { if (sp.parent) sp.parent.remove(sp); sp.material.dispose(); }); parts.length = 0; a = g = null; }
+      });
     }
     // ---- living painted sheets, the phoenix's way (2026-11-17, the user: "불사조처럼 바꾸자" — js/fx-beasts.js: a painted
     // picture moved as a cut-out looked pasted on; the phoenix lives because its picture bends, light runs through it,
@@ -670,7 +675,9 @@
       'float fm=smoothstep(0.42,0.8,yn);p.x+=uFlut*fm*(sin(uTime*3.1+xn*7.0+yn*5.0)+0.5*sin(uTime*5.3+xn*13.0));p.y+=uFlut*0.6*fm*sin(uTime*2.3+xn*9.0);' +
       'vWy=(modelMatrix*vec4(p,1.0)).y;gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.0);}';
     var LS_FS = LS_GL + 'uniform sampler2D map;uniform vec3 uTint;uniform vec3 uDark;uniform float uTime,uAlpha,uFlow,uEdge,uGrow,uFlash,uSpirit,uFloor;varying vec2 vUv;varying float vYn;varying float vWy;' +
-      'void main(){float fl=uFloor+(ln3(vec3(vUv.x*14.0,1.7,uFloor))-0.5)*0.14;if(vYn>uGrow||vWy<fl)discard;vec4 t=texture2D(map,vUv);float A=t.a*uAlpha;if(A<0.05)discard;vec3 c=t.rgb;' +
+      // (발열, 2026-11-18: the empty part of the sheet — most of it — is thrown away first, before any noise; the floor's
+      // ragged edge only when a floor is set: the same picture, a fraction of the work on a phone's graphics chip)
+      'void main(){if(vYn>uGrow)discard;vec4 t=texture2D(map,vUv);float A=t.a*uAlpha;if(A<0.05)discard;float fl=uFloor<-100.0?-1e4:uFloor+(ln3(vec3(vUv.x*14.0,1.7,uFloor))-0.5)*0.14;if(vWy<fl)discard;vec3 c=t.rgb;' +
       'float lum=dot(c,vec3(0.3,0.59,0.11));' +
       // light running up through it, strongest in its bright parts
       'float n=lfbm(vec3(vUv.x*4.0,vUv.y*5.0-uTime*1.6,uTime*0.3));float band=smoothstep(0.58,0.86,n);c+=uTint*band*uFlow*(0.35+0.9*lum);' +
@@ -687,7 +694,7 @@
       'c*=0.25+0.75*smoothstep(0.0,0.2,vWy-fl);gl_FragColor=vec4(min(c,vec3(1.0)),A);}';
     // a soft halo round it (a second, larger sheet: the picture's blurred outline, rippling)
     var LS_AURA = LS_GL + 'uniform sampler2D map;uniform vec3 uTint;uniform vec2 uC;uniform float uTime,uAlpha,uEdge,uGrow,uK,uFloor;varying vec2 vUv;varying float vYn;varying float vWy;' +
-      'void main(){float fl=uFloor+(ln3(vec3(vUv.x*14.0,1.7,uFloor))-0.5)*0.14;if(vYn>uGrow||vWy<fl+0.04)discard;vec2 uv=uC+(vUv-uC)*uK;float n=lfbm(vec3(vUv*vec2(6.0,7.0)+vec2(0.0,-uTime*1.5),uTime*0.5));uv+=vec2((n-0.5)*0.02,-n*0.02);' +
+      'void main(){if(vYn>uGrow||uAlpha*uEdge<0.008)discard;float fl=uFloor<-100.0?-1e4:uFloor+(ln3(vec3(vUv.x*14.0,1.7,uFloor))-0.5)*0.14;if(vWy<fl+0.04)discard;vec2 uv=uC+(vUv-uC)*uK;float n=lfbm(vec3(vUv*vec2(6.0,7.0)+vec2(0.0,-uTime*1.5),uTime*0.5));uv+=vec2((n-0.5)*0.02,-n*0.02);' +
       'float a=0.0;for(int i=0;i<8;i++){float g=float(i)*0.785;vec2 q=uv+vec2(cos(g),sin(g))*0.03;a+=(q.x<0.0||q.y<0.0||q.x>1.0||q.y>1.0)?0.0:texture2D(map,q).a;}' +
       'a*=0.125;vec2 u0=uC+(vUv-uC)*uK;float inside=(u0.x<0.0||u0.y<0.0||u0.x>1.0||u0.y>1.0)?0.0:texture2D(map,u0).a;a*=1.0-0.9*inside;float f=a*(0.3+0.9*n)*uEdge*uAlpha;if(f<0.01)discard;gl_FragColor=vec4(uTint*(0.7+0.5*n),min(1.0,f*0.9));}';
     var lsGeo = {};
@@ -708,11 +715,11 @@
         return new T.ShaderMaterial({ vertexShader: LS_VS, fragmentShader: fs, transparent: true, depthWrite: !add && !spirit, depthTest: !spirit, side: T.DoubleSide, blending: add ? T.AdditiveBlending : T.NormalBlending,
           uniforms: { map: { value: tex }, uC: { value: new T.Vector2(cx, cy) }, uTint: { value: col }, uTime: { value: 0 }, uBend: { value: 0 }, uWig: { value: 0 }, uWigF: { value: 9 }, uWigS: { value: 6 }, uFlut: { value: 0 }, uFlow: { value: 0 }, uEdge: { value: 0 }, uGrow: { value: 2 }, uFlash: { value: 0 }, uAlpha: { value: 0 }, uK: { value: 1.12 }, uFloor: { value: -1e4 }, uSpirit: { value: spirit === 2 ? 2 : spirit ? 1 : 0 }, uDark: { value: new T.Color(dark || 0x000000) } } });
       }
-      var geo = lsGeometry(cx, cy, 24), body = new T.Mesh(geo, mats(LS_FS, false)), aura = new T.Mesh(geo, mats(LS_AURA, true));
+      var geo = lsGeometry(cx, cy, 16), body = new T.Mesh(geo, mats(LS_FS, false)), aura = new T.Mesh(geo, mats(LS_AURA, true));
       body.renderOrder = order; aura.renderOrder = order + 0.05; body.frustumCulled = aura.frustumCulled = false;
       var grp = sc.fxGroup || sc.scene; grp.add(aura); grp.add(body);
       var t0 = 0;
-      return {
+      return track({
         ok: true,
         set: function (pos, w, h, rot, U, dt) {
           t0 += dt || 0.016; U = U || {};
@@ -724,10 +731,12 @@
             u.uFlow.value = U.flow || 0; u.uEdge.value = U.edge === undefined ? 0.6 : U.edge; u.uGrow.value = U.grow === undefined ? 2 : U.grow; u.uFlash.value = U.flash || 0; u.uAlpha.value = U.alpha === undefined ? 1 : U.alpha; u.uFloor.value = U.floor === undefined ? -1e4 : U.floor;
           });
           aura.position.z -= 0.001;
+          // not drawn at all while nothing of it would show (a claw still under the ground, a halo turned off)
+          var al = U.alpha === undefined ? 1 : U.alpha; body.visible = al >= 0.05; aura.visible = al * (U.edge === undefined ? 0.6 : U.edge) >= 0.008;
         },
         time: function () { return t0; },
         kill: function () { [body, aura].forEach(function (m) { if (m.parent) m.parent.remove(m); m.material.dispose(); }); }
-      };
+      });
     }
     // a falling fruit as a painted picture, with the same set/kill as the 3D one (pos, q, size)
     function fruitPic() {
@@ -855,5 +864,6 @@
         return true;
       });
     };
+    return { clear: function () { LIVE.slice().forEach(function (h) { h.kill(); }); LIVE.length = 0; } };
   };
 })(this);

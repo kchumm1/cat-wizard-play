@@ -1312,7 +1312,7 @@
       P3: P3, liveMobs: liveMobs, gp: gp, near: near, share: share, volley: volley, ringHits: ringHits, passHits: passHits, skyBolt: skyBolt, zapHit: zapHit, beamOf: beamOf, picHead: picHead, picAt: picAt, picFall: picFall,
       dustCol: function () { return dustCol; } };
     if (CW.fxMore) CW.fxMore(KIT, S);
-    if (CW.fxWood) CW.fxWood(KIT, S);   // 10차 나무 (js/fx-wood.js)
+    var WOOD = CW.fxWood ? CW.fxWood(KIT, S) : null;   // 10차 나무 (js/fx-wood.js); its painted pieces are cleared with the rest
     if (CW.fxWater) CW.fxWater(KIT, S);   // 11차 물 (js/fx-water.js)
     // 1차 스킬 7개는 3D 몸으로 (js/fx-tier1.js)
     if (CW.fxTier1) CW.fxTier1(KIT, S);
@@ -1600,7 +1600,7 @@
     function setLoad(k) { vx.setLoad(k); }
     function setBright(v) { vx.setBright(v); P3.setBright(v); }
     function setRegion(regionData) { dustCol = new T.Color(regionData.ground).lerp(new T.Color(0xffffff), 0.45).getHex(); P3.warm(); warmPics(); }
-    function clear() { epoch++; carry = []; timers.length = 0; ticks.length = 0; meteorLive = 0; scorchAt.length = 0; vx.clear(); P3.clear(); picClear(); if (BEASTS) BEASTS.clear(); sc.mobs().forEach(function (m) { m.pull = undefined; m.pullZ = undefined; m.lift = undefined; }); }
+    function clear() { epoch++; carry = []; timers.length = 0; ticks.length = 0; meteorLive = 0; scorchAt.length = 0; vx.clear(); P3.clear(); picClear(); if (WOOD && WOOD.clear) WOOD.clear(); if (BEASTS) BEASTS.clear(); sc.mobs().forEach(function (m) { m.pull = undefined; m.pullZ = undefined; m.lift = undefined; }); }
     return { setStaffColor: function (c) { staffCol = c; }, setCostume: function (f) { cosFx = f; cosAcc = 0; }, cast: cast, update: update, setQuality: setQuality, setLoad: setLoad, load: function () { return vx.load(); }, setBright: setBright, setRegion: setRegion, clear: clear, count: vx.count, minionBurst: minionBurst,
       impact: impact, levelUp: levelUp, bossEnter: bossEnter, coinPop: coinPop, burst: function (pos, col) { impact(pos, col, 0.8); }, vfx: vx,
       // for checks: 3D parts alive, and painted heads alive (only those of the given pictures when names are given)
