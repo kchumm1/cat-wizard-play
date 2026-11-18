@@ -817,10 +817,11 @@
     '#sheet.opal .cosstage .cs-act .btn[data-cwear]:not(.on){position:relative}',
     '#sheet.opal .cosstage .cs-act .btn[data-cwear]:not(.on)::before,#sheet.opal .cosstage .cs-act .btn[data-cwear]:not(.on)::after{content:"✦";position:absolute;top:50%;transform:translateY(-52%);font-size:12px;color:rgba(255,255,255,.85);text-shadow:0 0 6px rgba(255,255,255,.8)}',
     '#sheet.opal .cosstage .cs-act .btn[data-cwear]:not(.on)::before{left:18px}#sheet.opal .cosstage .cs-act .btn[data-cwear]:not(.on)::after{right:18px}',
-    // 버튼이 하나뿐(미보유 → 구매)일 때는 세로선 없이 가운데 하나
-    '#sheet.opal#sheet.opal .cosstage .cs-act:has(>:only-child){grid-template-columns:minmax(0,200px)!important;justify-content:center}',
-    '#sheet.opal .cosstage .cs-act:has(>:only-child)::before{display:none}',
-    '#sheet.opal#sheet.opal .cosstage .cs-act:has(>:only-child)>*{grid-column:1!important}',
+    // 버튼이 하나뿐(미보유 → 구매)일 때는 세로선 없이 가운데 하나. 예전엔 :has(>:only-child) 로 골랐는데, 이 규칙이 있으면 게임 어디서든 글자·요소가
+    // 바뀔 때마다 브라우저가 메뉴 창 전체 스타일을 다시 계산했음(제목 한 글자 바꾸기 40ms → 빼면 2ms, CPU 4배 느리게 실측, 2026-11-18) → ui.js 가 붙이는 .one 으로
+    '#sheet.opal#sheet.opal .cosstage .cs-act.one{grid-template-columns:minmax(0,200px)!important;justify-content:center}',
+    '#sheet.opal .cosstage .cs-act.one::before{display:none}',
+    '#sheet.opal#sheet.opal .cosstage .cs-act.one>*{grid-column:1!important}',
     // 목록 카드: 시안 82px 높이 (그림 48px, 위 여백 15px)
     '#sheet.opal#sheet.opal .ccard{padding-top:15px!important}#sheet.opal#sheet.opal .ccard .cprevb img{height:48px!important}',
     // ---- 장비 아래쪽 = 승인 시안 실측 (2026-11-16): 레벨업 28px · 부위 탭 막대 29px · 장비 칸 94px(그림 72%) · 전부 합성/추천 장착 26px, 좌우 15px 안쪽 ----

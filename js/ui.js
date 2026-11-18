@@ -396,7 +396,7 @@
         '<div class="cs-name' + (pc.name.length >= 9 ? ' long' : '') + '"><b>' + pc.name + '</b><small style="color:' + hc(pc.grade) + '">' + hn(pc.grade) + '</small>' + badge + '</div>' +
         '<div class="cs-eff2"><p><i>✦</i><span>외형</span><em>입으면 모습이 바뀌어요</em></p><p><i>✦</i><span>보유 효과</span><em><b>' + bonusText(pc.stat, CW.costumeValue(pc, Math.max(1, plv))) + '</b><span class="cs-suf">' + (plv ? '· 안 입어도 적용' : '· 보유하면 적용') + '</span></em></p>' +
         '<p class="cs-lvrow"><span>' + (plv ? 'Lv.<span data-opv="cosl">' + plv + '</span>' : '미보유') + '</span><em class="cs-st">' + csStars + '</em><em>' + (plv ? (pmax ? '최대 레벨' : '다음 별까지 <b>' + toStar + '레벨</b>') : '') + '</em></p></div>' +
-        '<div class="cs-act">' + pact + '</div></div>';
+        '<div class="cs-act' + (plv ? '' : ' one') + '">' + pact + '</div></div>';   // one: 버튼 하나(구매)뿐 — ui-opal.js 설명
       // 승인 시안 순서: 전시 → 이름 → 효과 → 입기·강화 → 의상 목록 (수집 효과는 목록 아래)
       return '<h3 class="ophide">코스튬</h3>' + stage + '<div class="cgrid">' + cards + '</div>' +
         // 수집 카드 (2026-11-17, 사용자: 코스튬 수집 부분 이쁘게): 제목·개수 → 진행 막대 → 지금 효과 | 다음 하나 더
@@ -1714,23 +1714,27 @@
       };
       if (sizeNames() < 12 && list) { list.classList.add('lvdown'); sizeNames(); }
       // 수치 상자: 숫자가 길면 글씨만 줄여 양 끝 여백 유지 (최소 10.5px)
-      panel.querySelectorAll('.row.grow .gpill').forEach(function (g) {
-        g.style.fontSize = '';
-        var prevFs = g.__fs;   // 같은 칸의 글씨는 강화해서 숫자가 바뀌어도 다시 커지지 않음 (오르락내리락 흔들림 없음, 사용자 2026-11-18)
-        g.classList.remove('pill2');
-        var cs = getComputedStyle(g), room = g.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), gap = parseFloat(cs.columnGap) || 0, used = 0;
-        Array.prototype.forEach.call(g.children, function (c, i) { used += c.getBoundingClientRect().width + (i ? gap : 0); });
-        if (used > room + 0.5) g.style.fontSize = Math.max(10.5, parseFloat(cs.fontSize) * (room - 1) / used).toFixed(2) + 'px';
-        // 원소 지배 (약점 +200% · 폭주 +400% → …): wider than the box even at 10.5px → two lines in a taller box (the now-value above, → and the next one below), nothing runs out of it
-        if (prevFs && parseFloat(g.style.fontSize || cs.fontSize) > prevFs + 0.01) g.style.fontSize = prevFs.toFixed(2) + 'px';
-        { var used2 = 0, cs2 = getComputedStyle(g); Array.prototype.forEach.call(g.children, function (c, i) { used2 += c.getBoundingClientRect().width + (i ? gap : 0); }); var room2 = g.clientWidth - parseFloat(cs2.paddingLeft) - parseFloat(cs2.paddingRight); if (used2 > room2 + 3) { g.style.fontSize = ''; g.classList.add('pill2'); } }
-        g.__fs = g.classList.contains('pill2') ? 0 : parseFloat(getComputedStyle(g).fontSize);
+      // 2026-11-18: 칸마다 넣고-재기를 번갈아 하면 칸 수만큼 배치 계산을 다시 해서 좁은 폰(갤럭시 폭)에서 훈련이 늦게 열렸음
+      // → 모든 칸을 단계마다 한꺼번에 (지우기 → 재기 → 줄이기 → 다시 재기 → 두 줄) — 칸끼리는 서로 영향이 없어 결과는 같음
+      var pills = [].slice.call(panel.querySelectorAll('.row.grow .gpill'));
+      var pillUsed = function (g, gap) { var u = 0; Array.prototype.forEach.call(g.children, function (c, i) { u += c.getBoundingClientRect().width + (i ? gap : 0); }); return u; };
+      var pillRoom = function (g) { var cs = getComputedStyle(g); return g.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight); };
+      pills.forEach(function (g) { g.style.fontSize = ''; g.classList.remove('pill2'); });
+      var pm = pills.map(function (g) { var cs = getComputedStyle(g), gap = parseFloat(cs.columnGap) || 0; return { gap: gap, room: pillRoom(g), used: pillUsed(g, gap), fs: parseFloat(cs.fontSize) }; });
+      pills.forEach(function (g, i) {
+        var m = pm[i], prevFs = g.__fs;   // 같은 칸의 글씨는 강화해서 숫자가 바뀌어도 다시 커지지 않음 (오르락내리락 흔들림 없음, 사용자 2026-11-18)
+        if (m.used > m.room + 0.5) g.style.fontSize = Math.max(10.5, m.fs * (m.room - 1) / m.used).toFixed(2) + 'px';
+        if (prevFs && parseFloat(g.style.fontSize || m.fs) > prevFs + 0.01) g.style.fontSize = prevFs.toFixed(2) + 'px';
       });
-      // 성장 시안 (2026-11-16): 설명도 한 줄 — 넘치면 9.5px 까지 줄이고, 그래도 넘치면 두 줄로
-      panel.querySelectorAll('.row.grow .gabout').forEach(function (g) {
-        g.style.fontSize = ''; g.classList.remove('wrap');
-        var full = g.scrollWidth, room = g.clientWidth;
-        if (full > room + 0.5) { var fs = parseFloat(getComputedStyle(g).fontSize) * (room - 1) / full; if (fs >= 9.5) g.style.fontSize = fs.toFixed(2) + 'px'; else g.classList.add('wrap'); }
+      // 원소 지배 (약점 +200% · 폭주 +400% → …): wider than the box even at 10.5px → two lines in a taller box (the now-value above, → and the next one below), nothing runs out of it
+      var two = pills.map(function (g, i) { return pillUsed(g, pm[i].gap) > pillRoom(g) + 3; });
+      pills.forEach(function (g, i) { if (two[i]) { g.style.fontSize = ''; g.classList.add('pill2'); } });
+      pills.forEach(function (g) { g.__fs = g.classList.contains('pill2') ? 0 : parseFloat(getComputedStyle(g).fontSize); });
+      // 성장 시안 (2026-11-16): 설명도 한 줄 — 넘치면 9.5px 까지 줄이고, 그래도 넘치면 두 줄로 (위와 같이 단계마다 한꺼번에)
+      var abouts = [].slice.call(panel.querySelectorAll('.row.grow .gabout'));
+      abouts.forEach(function (g) { g.style.fontSize = ''; g.classList.remove('wrap'); });
+      abouts.map(function (g) { return { full: g.scrollWidth, room: g.clientWidth, fs: parseFloat(getComputedStyle(g).fontSize) }; }).forEach(function (m, i) {
+        var g = abouts[i]; if (m.full > m.room + 0.5) { var fs = m.fs * (m.room - 1) / m.full; if (fs >= 9.5) g.style.fontSize = fs.toFixed(2) + 'px'; else g.classList.add('wrap'); }
       });
       // 설명이 두 줄인 칸이 있으면 성장 칸 높이를 모두 그 칸에 맞춤 — 칸마다 키가 들쭉날쭉하지 않게 (2026-11-17)
       var rows = panel.querySelectorAll('.row.grow'), tall = 0;
@@ -1861,7 +1865,9 @@
       list.style.setProperty('--rc1', rc1 + 'px'); list.style.setProperty('--rc2', rc2 + 'px');
       list.style.setProperty('--sgw', (natural([].slice.call(list.querySelectorAll('.sname'))) + 2) + 'px');
       list.style.setProperty('--sow', (natural([].slice.call(list.querySelectorAll('.sgo'))) + 2) + 'px');
-      var widest = function () { var w = 0; list.querySelectorAll('.srews').forEach(function (e) { e.style.width = 'max-content'; w = Math.max(w, e.getBoundingClientRect().width); e.style.width = ''; }); return Math.ceil(w); };
+      // 모든 줄을 한꺼번에 max-content 로 두고 한 번에 잼 (2026-11-18): 줄마다 넣고-재고-빼면 줄 수(30줄)만큼 배치 계산을 다시 해서
+      // 스테이지 창이 늦게 열렸음 (CPU 4배 느리게: 줄 하나 10ms × 30)
+      var widest = function () { var els = list.querySelectorAll('.srews'), w = 0; els.forEach(function (e) { e.style.width = 'max-content'; }); els.forEach(function (e) { w = Math.max(w, e.getBoundingClientRect().width); }); els.forEach(function (e) { e.style.width = ''; }); return Math.ceil(w); };
       var room = function () {
         var cs = getComputedStyle(row), cols = cs.gridTemplateColumns.split(' ').map(parseFloat), gap = parseFloat(cs.columnGap) || 0;
         return row.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - cols[0] - cols[1] - cols[4] - gap * 4 - STAGE_NAME_MIN;
@@ -1885,7 +1891,9 @@
       // never wider than before; a name that still does not fit wraps or shrinks as before
       if (nw > 0) list.style.setProperty('--snw', Math.ceil(Math.min(nw + 2, nameRoom)) + 'px');
       var cut = function (n) { return n.scrollHeight > n.clientHeight + 1; };
-      list.querySelectorAll('.snm b').forEach(function (n) { n.classList.remove('tiny', 'tiny3'); if (cut(n)) n.classList.add('tiny'); if (cut(n)) n.classList.add('tiny3'); });
+      // 넣고-재기를 이름마다 번갈아 하지 않고 단계마다 한꺼번에 (배치 계산 두세 번으로)
+      var nms = [].slice.call(list.querySelectorAll('.snm b')); nms.forEach(function (n) { n.classList.remove('tiny', 'tiny3'); });
+      var big = nms.filter(cut); big.forEach(function (n) { n.classList.add('tiny'); }); big.filter(cut).forEach(function (n) { n.classList.add('tiny3'); });
     }
     // 손가락으로 스크롤하는 동안(그리고 멈춘 직후 0.5초)은 저절로 다시 그리지 않음 — 다시 그리면 폰에서 스크롤이 끊기고 제자리로 돌아감 (사용자 2026-11-16).
     // 직접 누른 것(force)은 그대로 바로 그림
@@ -1931,7 +1939,12 @@
       panel.classList.toggle('opz', on && k < 1); panel.style.setProperty('--opz', k.toFixed(4));
     }
     window.addEventListener('resize', function () { fitNarrow(); });
+    // 맨 위에서 새로 그리기 (탭·하위 탭 바꿀 때, 2026-11-18): 예전엔 그리기 전에 panel.scrollTop = 0 을 넣어서, 곧 버릴 예전 화면까지
+    // 배치를 한 번 더 계산했음(훈련 탭 열 때 81ms+, CPU 4배 느리게 실측) → 새 화면을 넣은 뒤에 맨 위로
+    var topNext = false;
+    function renderTop() { topNext = true; renderPanel(true); }
     function renderPanel(force) {
+      var top0 = topNext; topNext = false;
       if (tab === 'battle') return;
       if (!force && (panelTouch || performance.now() - panelScrollAt < 500)) return;
       dockHtml = '';
@@ -1943,7 +1956,7 @@
       // 통째로 다시 만들면 아래 탭이 새로 붙어 고른 탭 반짝임이 계속 다시 나오고(깜빡깜빡), 연금술 등은 누를 때마다 스크롤이 살짝 밀렸음
       // 0.3초마다 저절로 다시 그릴 때(!force)는 모든 화면(스킬·더보기 포함)에서 글자·속성만 고침 — 모양이 달라졌을 때만 통째로
       var soft = (softRender || !force || (opTabs && !opTabs.hidden && opTabs.querySelector(':scope > .subtabs'))) && panel.firstChild && softPrep(html);
-      var y = panel.scrollTop; if (soft) morphKids(panel, soft); else panel.innerHTML = html; if (panel.scrollTop !== y) panel.scrollTop = y; lastPanel = key;
+      var y = top0 ? 0 : panel.scrollTop; if (soft) morphKids(panel, soft); else panel.innerHTML = html; if (panel.scrollTop !== y) panel.scrollTop = y; lastPanel = key;
       var phv = (-(Date.now() % 60000) / 1000).toFixed(2) + 's';   // 계속 도는 움직임(마나서클·연금술)은 시계에 맞춰 이어서
       // 룬·신성력 보관함(최대 300칸, 2026-11-18): 칸을 누를 때 남아 있는 격자에 새 시간값을 넣으면 칸 전체 스타일을 다시 계산해 폰에서 느려짐
       // → 그대로 남은 격자는 처음 값을 다시 씀(같은 값이면 다시 계산 안 함), 새로 만든 격자만 지금 시간값
@@ -2057,8 +2070,8 @@
       var d = t.dataset;
       if (d.guide) { G.sound('click'); showGuide(d.guide); return; }   // 안내 카드 '자세히'
       if (t.matches(HOLD_STEP)) { if (e.detail === 0) stepAct(d, false); return; }   // a press is done on pointerdown; keys still work
-      if (d.skd) { skDetail = d.skd; skRegOpen = false; panel.scrollTop = 0; renderPanel(true); return; }
-      if (t.hasAttribute('data-skback')) { skDetail = null; panel.scrollTop = 0; renderPanel(true); return; }
+      if (d.skd) { skDetail = d.skd; skRegOpen = false; renderTop(); return; }
+      if (t.hasAttribute('data-skback')) { skDetail = null; renderTop(); return; }
       if (t.hasAttribute('data-skagain')) { var sv = panel.querySelector('.skd-v'); if (sv) { sv.classList.remove('run'); void sv.offsetWidth; sv.classList.add('run'); } return; }
       if (t.hasAttribute('data-skreg')) { skRegOpen = !skRegOpen; renderPanel(true); return; }
       if (d.prev) { G.previewSkill(d.prev); }
@@ -2067,14 +2080,14 @@
       else if (d.out !== undefined || d.unslot !== undefined) { G.unequipSkill(+(d.out !== undefined ? d.out : d.unslot)); if (selSlot === +(d.out !== undefined ? d.out : d.unslot)) selSlot = -1; renderPanel(true); slots(); }
       else if (d.act === 'unslotall') { G.state.slots.forEach(function (id, i) { if (id) G.unequipSkill(i); }); selSlot = 0; toast('스킬을 모두 뺐어요. 넣을 스킬의 「1번에 넣기」를 눌러 주세요.'); renderPanel(true); slots(); }
       else if (d.mul) { upMul = +d.mul; renderPanel(true); }
-      else if (d.tsub) { trainSub = d.tsub; panel.scrollTop = 0; renderPanel(true); }
+      else if (d.tsub) { trainSub = d.tsub; renderTop(); }
       else if (d.tal) { selTalent = d.tal; renderPanel(true); }
       else if (d.act === 'treset') { G.talentReset(); toast('특성 포인트를 초기화했어요.'); renderPanel(true); }
       else if (d.act === 'rankup') { var rr2 = CW.rankReady(G.state); if (G.rankUp() && (!CW.opalUI || CW.opalUI.fx('rankup') || 1)) toast(DATA.rankConf.names[G.state.rank] + ' 승급 완료'); else toast(rr2.why === 'marks' ? '기본 징표 6개를 최대 레벨로 강화해 주세요.' : rr2.why === 'level' ? '계정 Lv.' + rr2.need + '이 필요해요.' : rr2.why === 'mana' ? '마력석이 부족해요.' : '최고 계급에 도달했어요.'); renderPanel(true); }
       else if (d.dgo) { var r3 = G.dungeon(d.dgo); if (r3 === 'busy') toast('진행 중인 보스전이나 던전을 먼저 마쳐 주세요.'); else if (r3 === 'ticket') toast('오늘 입장권을 모두 사용했어요.'); }
       else if (d.dsw) { var r4 = G.sweep(d.dsw); if (!r4) toast('소탕할 수 없어요. 입장권과 클리어 기록을 확인해 주세요.'); else toast('소탕 완료 · ' + (r4.gold ? '골드 +' + fmtG(r4.gold) : r4.gems ? '다이아 +' + fmt(r4.gems) : r4.runeStone ? '룬석 +' + fmt(r4.runeStone) + (r4.got && r4.got.length ? ' · 룬 ' + r4.got.length + '개' : '') + (r4.overflow ? ' · 가방 초과 보상 룬석 +' + fmt(r4.overflow) : '') : '마력석 +' + fmt(r4.mana))); renderPanel(true); hud(); }
-      else if (d.jump !== undefined) { moreSub = +d.jump; tierAnim = moreSub === 0; panel.scrollTop = 0; renderPanel(true); }
-      else if (d.gsub) { gearSub = d.gsub; selSigil = selRune = null; rnBag = sgBag = false; panel.scrollTop = 0; renderPanel(true); }
+      else if (d.jump !== undefined) { moreSub = +d.jump; tierAnim = moreSub === 0; renderTop(); }
+      else if (d.gsub) { gearSub = d.gsub; selSigil = selRune = null; rnBag = sgBag = false; renderTop(); }
       else if (d.relic) { var rr = G.summonRelics(+d.relic); if (!rr) toast('다이아가 부족해요.'); else { showRelics(rr); renderPanel(true); hud(); } }
       else if (d.cbuy) { if (G.buyCostume(d.cbuy)) toast('새 코스튬 획득 · ' + CW.costumeById(d.cbuy).name); else toast('다이아가 부족해요.'); renderPanel(true); hud(); }
       else if (d.dvsel) { selDivine = d.dvsel; renderPanel(true); }
@@ -2113,10 +2126,10 @@
       else if (d.sgasum) { var sa = G.sigilSummon(+d.sgasum, true); if (!sa) toast('소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showSigils(sa); renderPanel(true); hud(); } }
       else if (d.rcraft) { var rc2 = G.runeCraft(d.rcraft); if (!rc2) toast('각성 파편이 모자라거나 가방이 가득 찼어요.'); else { selRune = rc2.id; toast(CW.runeById(rc2.kind).name + ' 제작!'); renderPanel(true); } }
       else if (d.sgcraft) { var sc2 = G.sigilCraft(d.sgcraft); if (!sc2) toast('각성 파편이 모자라거나 가방이 가득 찼어요.'); else { selSigil = sc2.id; toast('각성 신성력 제작!'); renderPanel(true); } }
-      else if (d.act === 'sgbag') { sgBag = true; selSigil = null; renderPanel(true); panel.scrollTop = 0; }   // 신성력 보관함 (2026-11-17)
-      else if (d.act === 'sgbagx') { sgBag = false; renderPanel(true); panel.scrollTop = 0; }
-      else if (d.act === 'rbag') { rnBag = true; selRune = null; renderPanel(true); panel.scrollTop = 0; }   // 룬 보관함 (2026-11-17)
-      else if (d.act === 'rbagx') { rnBag = false; renderPanel(true); panel.scrollTop = 0; }
+      else if (d.act === 'sgbag') { sgBag = true; selSigil = null; renderTop(); }   // 신성력 보관함 (2026-11-17)
+      else if (d.act === 'sgbagx') { sgBag = false; renderTop(); }
+      else if (d.act === 'rbag') { rnBag = true; selRune = null; renderTop(); }   // 룬 보관함 (2026-11-17)
+      else if (d.act === 'rbagx') { rnBag = false; renderTop(); }
       else if (d.act === 'rbest') { G.runeEquipBest(); toast('추천 룬을 장착했어요.'); renderPanel(true); }
       else if (d.act === 'rdisall') { confirmBox('룬을 일괄 분해할까요?', '장착하지 않고 잠기지 않은 룬을 모두 룬석으로 바꿔요.<br>분해한 룬은 되돌릴 수 없어요.', '룬 분해', function () { var rn2 = G.runeDismantleAll(); toast(rn2 ? '룬석 +' + fmt(rn2) : '분해할 룬이 없어요.'); selRune = null; renderPanel(true); }, { variant: 'danger' }); }
       else if (d.pack && CW.FRIEND) { toast('체험판에서는 수령할 수 없어요.'); }
@@ -2362,7 +2375,7 @@
       $('sheet').classList.toggle('neb', name === 'gacha' || name === 'dungeon' || name === 'more');   // 뽑기·던전·더보기는 성운 바탕 (2026-11-16, the user: 색깔이 너무 튄다 / 여기랑 더보기 란도, 배경을)
       $('sheet').classList.toggle('opal', name === 'up' || name === 'gear' || name === 'skill');
       $('sheet').classList.toggle('stg', name === 'stage');   // 스테이지 선택: the user's violet cloud sky behind it (2026-11-17)   // 오팔 연구소 메뉴 (js/ui-opal.js, 2026-11-16)
-      if (open) { skDetail = null; $('sheetTitle').innerHTML = ((CW.ICO.misc && CW.ICO.misc('tab', name)) || (name === 'stage' ? CW.ICO.misc('quick', 'map') : '')) + TITLES[name]; panel.scrollTop = 0; renderPanel(true); }
+      if (open) { skDetail = null; $('sheetTitle').innerHTML = ((CW.ICO.misc && CW.ICO.misc('tab', name)) || (name === 'stage' ? CW.ICO.misc('quick', 'map') : '')) + TITLES[name]; renderTop(); }
     }
     $('tabs').addEventListener('click', function (e) {
       var b = e.target.closest('[data-tab]'); if (!b) return;
