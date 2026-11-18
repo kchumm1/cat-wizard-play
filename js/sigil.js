@@ -52,8 +52,28 @@
     b.items.push(it); return it;
   }
   function sigilSlots(state) { return Math.min(C.slotsMax, C.slotsBase + Math.floor(box(state).lv / C.slotsPer)); }
+  // 한 종류에 하나 (2026-11-18, 형: 같은 종류를 끼고 있으면 등급·품질이 달라도 같은 종류는 아예 못 끼게): a list (the worn
+  // set, or the awakening slots) holds at most one sigil of each option. The one already worn of that option, apart from
+  // exceptId (the one being swapped out), or null.
+  function sameWorn(state, list, stat, exceptId) {
+    for (var i = 0; i < list.length; i++) { var x = list[i] && list[i] !== exceptId && sigilById(state, list[i]); if (x && x.stat === stat) return x; }
+    return null;
+  }
+  // older saves could wear an option twice: the strongest stays, the rest are taken off (every preset and the awakening slots)
+  function sigilDedupe(state) {
+    var b = box(state), n = 0;
+    var keep = function (list) {
+      var best = {};
+      list.forEach(function (id) { var it = id && sigilById(state, id); if (it && (!best[it.stat] || sigilValue(it) > sigilValue(best[it.stat]))) best[it.stat] = it; });
+      return list.map(function (id) { var it = id && sigilById(state, id); if (it && best[it.stat] !== it) { n++; return null; } return id; });
+    };
+    b.sets = b.sets.map(function (s) { return keep(s).filter(Boolean); });
+    b.aw = keep(b.aw);
+    return n;
+  }
   function sigilEquip(state, id) {
     var b = box(state), it = sigilById(state, id); if (!it || isEquipped(state, id) && (isAwaken(it) || b.sets[b.cur].indexOf(id) >= 0)) return false;
+    if (sameWorn(state, isAwaken(it) ? b.aw : b.sets[b.cur], it.stat)) return false;   // that option is already worn: 교체 only
     if (isAwaken(it)) { var e = b.aw.indexOf(null); if (e < 0) return false; b.aw[e] = id; return true; }
     var set = b.sets[b.cur]; if (set.indexOf(id) >= 0) return false;
     if (equipped(state).length >= sigilSlots(state)) return false;
@@ -137,11 +157,12 @@
   // ones that still add something (critConf.caps.sigil)
   function sigilEquipBest(state) {
     var b = box(state), byPow = b.items.slice().sort(function (a, c) { return power(c) - power(a); });
-    var best = byPow.filter(function (it) { return !isAwaken(it) && statOpen(state, statDef(it.stat)); }).slice(0, sigilSlots(state));
+    // one of each option (sameWorn): the strongest of an option, then the next options by strength
+    var seen = {}, best = byPow.filter(function (it) { if (isAwaken(it) || !statOpen(state, statDef(it.stat)) || seen[it.stat]) return false; seen[it.stat] = 1; return true; }).slice(0, sigilSlots(state));
     b.sets[b.cur] = best.map(function (it) { return it.id; });
-    var sum = {}, aw = byPow.filter(function (it) {
-      var d = statDef(it.stat), k = outKey(d); if (!d.awaken || !statOpen(state, d) || (sum[k] || 0) >= capOf(d) - 1e-12) return false;
-      sum[k] = (sum[k] || 0) + sigilValue(it); return true;
+    var sum = {}, awSeen = {}, aw = byPow.filter(function (it) {
+      var d = statDef(it.stat), k = outKey(d); if (!d.awaken || !statOpen(state, d) || awSeen[it.stat] || (sum[k] || 0) >= capOf(d) - 1e-12) return false;
+      awSeen[it.stat] = 1; sum[k] = (sum[k] || 0) + sigilValue(it); return true;
     }).slice(0, C.awakenSlots);
     b.aw = aw.map(function (it) { return it.id; }); while (b.aw.length < C.awakenSlots) b.aw.push(null);
     return best.length;
@@ -162,6 +183,7 @@
   // the new one takes the old one's place in the worn list
   function sigilSwap(state, oldId, newId) {
     var b = box(state), nw = sigilById(state, newId); if (!nw || isEquipped(state, newId) && b.aw.indexOf(newId) >= 0) return false;
+    if (sameWorn(state, isAwaken(nw) ? b.aw : b.sets[b.cur], nw.stat, oldId)) return false;   // would wear that option twice
     if (isAwaken(nw)) { var a = b.aw.indexOf(oldId); if (a < 0) return false; b.aw[a] = newId; return true; }
     var set = b.sets[b.cur], i = set.indexOf(oldId);
     if (i < 0 || set.indexOf(newId) >= 0) return false;
@@ -177,7 +199,7 @@
     return b;
   }
   return { sigilOpen: sigilOpen, sigilStoneForBoss: sigilStoneForBoss, addSigilStone: addSigilStone, sigilById: sigilById, equipped: equipped, sigilAwakened: awakened, sigilIsAwaken: isAwaken, isEquipped: isEquipped, qualityName: qualityName, sigilValue: sigilValue, addSigil: addSigil,
-    sigilSlots: sigilSlots, sigilEquip: sigilEquip, sigilUnequip: sigilUnequip, sigilSet: sigilSet, sigilLock: sigilLock, sigilDismantle: sigilDismantle,
+    sigilSlots: sigilSlots, sigilEquip: sigilEquip, sigilSameWorn: sameWorn, sigilDedupe: sigilDedupe, sigilUnequip: sigilUnequip, sigilSet: sigilSet, sigilLock: sigilLock, sigilDismantle: sigilDismantle,
     sigilDismantleAll: sigilDismantleAll, sigilFuse: sigilFuse, sigilLvCost: sigilLvCost, sigilLvUp: sigilLvUp, sigilDrop: sigilDrop, sigilSummon: sigilSummon, sigilCraft: sigilCraft,
     sigilPool: pool, sigilShardsOf: shardsOf,
     sigilStats: sigilStats, sigilEquipBest: sigilEquipBest, sigilCompare: sigilCompare, sigilSwap: sigilSwap, sigilPower: power, sigilStatDef: statDef, sigilOutKey: outKey, sigilIcon: function (stat) { return statDef(stat).icon; } };

@@ -6,6 +6,9 @@
   var storage = null;
   try { storage = root.localStorage; storage.setItem('cw-probe', '1'); storage.removeItem('cw-probe'); } catch (e) { storage = null; }
   var state = CW.migrateBag(CW.load(storage) || CW.newState());
+  // 한 종류에 하나 (2026-11-18, js/sigil.js · js/runes.js): a save that wore an option or a rune kind twice keeps the strongest
+  function oneOfEach(s) { if (CW.sigilDedupe && s.sigil) CW.sigilDedupe(s); if (CW.runeDedupe && s.runeBag) CW.runeDedupe(s); return s; }
+  oneOfEach(state);
   // 체험판 (js/friend.js): a save brought in from a full game keeps at most the 9th job
   // 체험판: 10차 이상은 없음 — 차수만 9로 내리고, 슬롯·프리셋에 남은 10차 이상 스킬도 9차까지의 스킬로 바꿈 (2026-11-16, 나무 10차가 새어 나오지 않게)
   function friendCap(s) {
@@ -911,7 +914,7 @@
     }).then(function () { cloud.busy = false; });
   }
   function adopt(json) {
-    var loaded = CW.load({ getItem: function () { return json; } }); if (!loaded) return false; CW.migrateBag(loaded); if (CW.dexBackfill) CW.dexBackfill(loaded);
+    var loaded = CW.load({ getItem: function () { return json; } }); if (!loaded) return false; CW.migrateBag(loaded); if (CW.dexBackfill) CW.dexBackfill(loaded); oneOfEach(loaded);
     state = friendCap(loaded); if (CW.lateTier) CW.lateTier(state, CW.FRIEND);   // 11차 물: a save brought in (the celebration: state.tierShow)
     rot = CW.rotation(state); refreshStats(); pendingTier.length = 0; preview = null;
     clearField(true); region = -1; restT = 0.4;

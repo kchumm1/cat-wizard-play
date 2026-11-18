@@ -3,7 +3,7 @@
 // 무대(.ruv / .sgv) 좌표는 시안 실측 px (폭 359 = 390 폭 폰의 패널 안쪽). 좁은 폰은 ui.js fitNarrow 가 --opz 로 무대만 줄임.
 (function () {
   if (typeof document === 'undefined') return;
-  var S = '#sheet.opal#sheet.opal ', D = S;   // D: 상세 칸 모양 (아래 고정 칸·룬 본문 상세 둘 다)
+  var S = '#sheet.opal#sheet.opal ', D = S, P = '#sheet.opal#sheet.opal#sheet.opal#sheet.opal ';   // P: 착용 중·종류별 목록 (공용 버튼 모양보다 세게)   // D: 상세 칸 모양 (아래 고정 칸·룬 본문 상세 둘 다)
   var CSS = [
     // ---------- 룬 무대: 성운 창 + 받침대 + 유리 돔 7개 + 가운데 공명 발바닥 ----------
     S + '.ruw{position:relative;width:359px;height:227px;margin:-8px auto 0!important;zoom:var(--opz,1)}',
@@ -213,6 +213,47 @@
     // 룬 줄: 시안처럼 칸 4개가 보이고 옆으로 넘겨 봄
     S + '.rsstrip{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding:3px 2px 6px;margin:0 -2px;scroll-padding-inline:2px;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}',
     S + '.rsstrip::-webkit-scrollbar{display:none}' + S + '.rsstrip>.rsc{flex:0 0 calc((100% - 24px) / 4);scroll-snap-align:start}',
+    // ---------- 착용 중 · 종류별 목록 (2026-11-18 GPT 시안 art-src/ai-review/2026-11-18-rs-list, 부품 art/rs-*.webp) ----------
+    // 치수는 시안 실측 (시안 724px = 화면 390px, ×0.539). 누르는 것은 모두 높이 44px 이상(줄·칸은 50px·118px).
+    P + '.rwcard,' + P + '.rkcard{margin:6px 0 10px!important;padding:10px 10px 10px;border-radius:18px;background:linear-gradient(180deg,rgba(248,246,255,.94),rgba(234,229,252,.9));box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.95),0 0 0 1px #dcd6f1,0 6px 14px -8px rgba(90,70,160,.32)}',
+    P + '.rwh{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:24px;margin:0 4px 8px}' + P + '.rwh>b{display:flex;align-items:center;gap:6px;font:900 16px/1 var(--body);color:#30364d}',
+    P + '.rwh>span{display:flex;align-items:center;gap:4px;font:800 13px/1 var(--body);color:#30364d;white-space:nowrap}' + P + '.rwh>span b{color:#1f8577}' + P + '.rwh>span b.aw{color:#8a4fd6}' + P + '.rwh>span>i{font-style:normal;color:#8f96aa;margin:0 2px}',
+    P + '.rwtag{font-style:normal;padding:3px 8px 4px;border-radius:10px;background:linear-gradient(180deg,#c6b3f3,#a98de6);color:#fff;font:800 11.5px/1 var(--body);margin-right:2px}',
+    P + '.rwg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}',
+    P + '.rwr{position:relative;display:grid;align-items:center;gap:1px 7px;width:100%;min-width:0!important;min-height:50px;height:auto;margin:0!important;padding:4px 9px 4px 6px!important;text-align:left;border:0 solid transparent!important;border-radius:0!important;border-image:url(art/rs-row.webp) 40 fill / 14px stretch!important;background:none!important;box-shadow:none!important}',
+    P + '.rwr.sel{border-image-source:url(art/rs-row-sel.webp)!important}',
+    P + '.rwr.sg{grid-template-columns:50px minmax(0,1fr);grid-template-rows:auto auto}' + P + '.rwr.sg .rwi{grid-row:1/3;width:50px;height:46px}',
+    P + '.rwr.sg .rwv{grid-column:2;justify-self:stretch;margin-top:1px;padding:1px 0 2px;border-radius:10px;background:rgba(255,255,255,.92);box-shadow:inset 0 0 0 1px #dfe1ef;text-align:center;font:800 13.5px/1.1 var(--body);color:#1f8577}',
+    P + '.rwr.rn{grid-template-columns:32px minmax(0,1fr) auto}' + P + '.rwr.rn .rwi{width:32px;height:32px}' + P + '.rwr.rn .rwt small{font-size:10.5px}' + P + '.rwr.rn .rwv{grid-column:3;grid-row:1;font:800 13px/1 var(--body);color:#1f8577;white-space:nowrap}' + P + '.rwr.rn{gap:2px 5px;padding-right:8px!important}',
+    // 룬 줄: 「이름 ··· 값」 / 「등급 · Lv」(둘째 줄은 끝까지)
+    P + '.rwr.rn .rwi{grid-row:1/3}' + P + '.rwr.rn .rwt{display:contents}' + P + '.rwr.rn .rwt b{grid-column:2;grid-row:1}' + P + '.rwr.rn .rwt small{grid-column:2/4;grid-row:2}',
+    P + '.rwt{min-width:0}' + P + '.rwt b{display:block;font:800 13px/1.2 var(--body);color:#30364d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    P + '.rwt small{display:block;font:700 11px/1.25 var(--body);color:#5d6580;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' + P + '.rwt small em{font-style:normal;font-weight:900}',
+    P + '.rwi{position:relative;display:block;flex:none}' + P + '.rwi.sg{border-radius:10px;background:radial-gradient(circle at 50% 45%,rgba(255,255,255,.95),rgba(225,214,250,.75));box-shadow:inset 0 0 0 1px rgba(255,255,255,.9)}',
+    P + '.rki{position:relative;display:block;flex:none}',
+    P + '.rwi .rw-art,' + P + '.rki .rw-art{position:absolute;left:6%;top:4%;width:88%;height:92%;object-fit:contain}' + P + '.rwi.rn .rw-dome,' + P + '.rki.rn .rw-dome{position:absolute;inset:0;border-radius:50%;background:url(art/ru-orb.webp) 50% 50%/100% 100% no-repeat;box-shadow:0 1px 4px rgba(110,80,180,.25)}' + P + '.rwi.rn .rw-art,' + P + '.rki.rn .rw-art{left:18%;top:16%;width:64%;height:64%}',
+    P + '.rwall{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:44px;min-height:44px;margin:8px 0 0!important;padding:0!important;border:0!important;border-radius:22px!important;background:linear-gradient(180deg,#d2c3f6,#a98ee8)!important;color:#fff!important;font:900 15px/1 var(--body);text-shadow:0 1px 2px rgba(80,50,150,.35);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.65),inset 0 0 0 1px rgba(255,255,255,.4),0 3px 8px -4px rgba(100,70,180,.55)!important}',
+    P + '.rwar{display:inline-block;width:8px;height:8px;border-right:2.5px solid currentColor;border-bottom:2.5px solid currentColor;transform:translateY(-2px) rotate(45deg)}' + P + '.rwar.up{transform:translateY(2px) rotate(-135deg)}',
+    P + '.rwsub{margin:9px 4px 6px!important;font:900 13px/1 var(--body);color:#8a4fd6}' + P + '.rwnone{margin:4px!important;font:700 12.5px var(--body);color:#8f96aa;text-align:center}',
+    P + '.rures{display:flex;align-items:center;justify-content:center;gap:6px;height:34px;margin:2px 4px 8px!important;border-radius:17px;background:rgba(255,255,255,.88);box-shadow:inset 0 0 0 1.5px #ddd7f2,0 3px 8px -5px rgba(90,70,160,.35);font:800 15px/1 var(--body);color:#30364d}' + P + '.rures b{color:#1f8577}' + P + '.rures>i{font-style:normal;color:#8f96aa}' + P + '.rures small{font:700 12.5px var(--body);color:#8f96aa}',
+    P + '.rksort{height:44px;min-height:44px;padding:0 14px!important;border:0!important;border-radius:22px!important;background:rgba(255,255,255,.95)!important;box-shadow:inset 0 0 0 1px #d9dbe8,0 2px 5px -3px rgba(80,90,140,.35)!important;font:800 13.5px/1 var(--body);color:#30364d!important}',
+    // 종류 버튼: 시안처럼 두 줄, 종류가 많으면(신성력 20종) 옆으로 밀어 봄
+    P + '.rkrow{display:flex;gap:6px;width:max-content}' + P + '.rkrow>.rkc{min-width:96px!important}',
+    P + '.rkchips{display:flex;flex-direction:column;gap:6px;margin:0 -10px 10px!important;padding:0 10px 2px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scroll-padding-inline:10px}' + P + '.rkchips::-webkit-scrollbar{display:none}',
+    P + '.rkchips.few{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));margin:0 0 10px!important;padding:0;overflow:visible}',
+    P + '.rkc{display:flex;align-items:center;justify-content:center;gap:4px;height:44px;min-height:44px;min-width:0!important;margin:0!important;padding:0 8px!important;border:0 solid transparent!important;border-radius:0!important;border-image:url(art/rs-chip.webp) 40 fill / 16px stretch!important;background:none!important;box-shadow:none!important;font:800 14px/1 var(--body);color:#30364d!important;white-space:nowrap}',
+    P + '.rkc{padding:0 14px!important}' + P + '.rkc.on{border-image-source:url(art/rs-chip-on.webp)!important;color:#fff!important;text-shadow:0 1px 2px rgba(0,70,70,.45)}',
+    P + '.rkci{position:relative;display:inline-block;width:20px;height:20px;flex:none}' + P + '.rkc-art{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}',
+    P + '.rkgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 6px}',
+    P + '.rkcd{position:relative;display:flex;flex-direction:column;align-items:center;width:100%;min-width:0!important;min-height:104px;height:auto;margin:0!important;padding:15px 3px 6px!important;border:0!important;border-radius:14px!important;background:linear-gradient(180deg,#faf8ff,#ebe4fb)!important;box-shadow:inset 0 0 0 1.5px #fff,0 0 0 1px #dcd5f2,0 4px 8px -5px rgba(90,70,160,.35)!important}',
+    P + '.rkcd.sel{box-shadow:inset 0 0 0 1.5px #fff,0 0 0 2.5px #3cc4bc,0 0 10px rgba(60,196,188,.45)!important}',
+    P + '.rkg{position:absolute;left:6px;top:4px;font:900 11px/1 var(--body);text-shadow:0 0 2px #fff,0 0 2px #fff}',
+    P + '.rki{width:42px;height:42px;margin:0 0 2px}' + P + '.rki.sg .rw-art{left:0;top:0;width:100%;height:100%}',
+    P + '.rkn{display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;max-width:100%;font:800 12px/1.15 var(--body);color:#30364d;text-align:center;word-break:keep-all}',
+    P + '.rkq{margin:1px 0 4px;font:800 12px/1 var(--body);color:#30364d}',
+    P + '.rkb{display:block;width:64px;height:20px;margin-top:auto;background:50% 50%/contain no-repeat}' + P + '.rkb.on{background-image:url(art/rs-badge-on.webp)}' + P + '.rkb.swap{background-image:url(art/rs-badge-swap.webp)}' + P + '.rkb.none{visibility:hidden}',
+    P + '.rkcd .rsc-lk{position:absolute;right:6px;top:4px}',
+    P + '.rkfoot{display:flex;align-items:center;justify-content:center;gap:6px;margin:10px 0 2px!important;font:700 12px/1.3 var(--body);color:#7a6fb0}',
     '.rsstrip .rsc-orb{animation:rsBob 3.4s ease-in-out infinite;animation-delay:calc(var(--ph,0s) - var(--k,0s))}',
     '.rsstrip .rsc:nth-child(4n+2) .rsc-orb{--k:.85s}.rsstrip .rsc:nth-child(4n+3) .rsc-orb{--k:1.7s}.rsstrip .rsc:nth-child(4n) .rsc-orb{--k:2.55s}',
     S + '.rsempty{margin:4px 0;text-align:center;font:700 12.5px var(--body);color:#6b7189}',

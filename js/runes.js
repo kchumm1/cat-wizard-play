@@ -45,9 +45,26 @@
     var it = { id: 'u' + (++b.seq), kind: kind, grade: Math.max(0, Math.min(TOP, grade || 0)), lv: 0, lock: false };
     b.items.push(it); return it;
   }
+  // 한 종류에 하나 (2026-11-18, 형: 같은 종류 룬을 끼고 있으면 등급·레벨이 달라도 같은 종류는 아예 못 끼게): the rune of that
+  // kind already worn in the list (7 slots, or the awakening slots), apart from exceptId (the one being swapped out)
+  function sameWorn(state, list, kind, exceptId) {
+    for (var i = 0; i < list.length; i++) { var x = list[i] && list[i] !== exceptId && runeItem(state, list[i]); if (x && x.kind === kind) return x; }
+    return null;
+  }
+  // older saves could wear a kind twice: the strongest stays, the rest are taken off
+  function runeDedupe(state) {
+    var b = runeBag(state), n = 0;
+    [b.eq, b.aw].forEach(function (list) {
+      var best = {};
+      list.forEach(function (id) { var it = id && runeItem(state, id); if (it && (!best[it.kind] || runePower(it) > runePower(best[it.kind]))) best[it.kind] = it; });
+      list.forEach(function (id, i) { var it = id && runeItem(state, id); if (it && best[it.kind] !== it) { list[i] = null; n++; } });
+    });
+    return n;
+  }
   function runeEquip(state, id, slot) {
     var it = runeItem(state, id); if (!it || isWorn(state, id)) return false;
     var list = slotsOf(state, it);
+    if (sameWorn(state, list, it.kind)) return false;   // that kind is already worn: 교체 only
     if (slot === undefined || slot === null) slot = list.indexOf(null);
     if (!(slot >= 0 && slot < list.length)) return false;
     list[slot] = id; return true;
@@ -74,15 +91,19 @@
     [[b.eq, false], [b.aw, true]].forEach(function (pair) {
       var list = pair[0], aw = pair[1];
       for (var guard = 0; guard < 50; guard++) {
-        var floor = aw ? 0 : runeResonance(state) * C.resEvery, spares = b.items.filter(function (it) { return isAwaken(it) === aw && !isWorn(state, it.id) && it.lv > 0 && it.lv >= floor && runeUseful(state, it.kind); })
+        var floor = aw ? 0 : runeResonance(state) * C.resEvery, all = b.items.filter(function (it) { return isAwaken(it) === aw && !isWorn(state, it.id) && it.lv > 0 && it.lv >= floor && runeUseful(state, it.kind); })
           .sort(function (a, c) { return runePower(c) - runePower(a); });
-        if (!spares.length) break;
-        var empty = list.indexOf(null);
-        if (empty >= 0) { list[empty] = spares[0].id; continue; }
-        var weak = list.map(function (id) { return runeItem(state, id); }).filter(Boolean).sort(function (a, c) { return runePower(a) - runePower(c); })[0];
-        if (!weak || runePower(spares[0]) <= runePower(weak)) break;
-        if (!runeUseful(state, spares[0].kind, weak.id)) break;
-        list[list.indexOf(weak.id)] = spares[0].id;
+        // one of each kind: a spare of a kind already worn may only take that rune's own place
+        var empty = list.indexOf(null), spares = all.filter(function (it) { return !sameWorn(state, list, it.kind); });
+        if (empty >= 0 && spares.length) { list[empty] = spares[0].id; continue; }
+        var better = null;
+        all.forEach(function (it) {
+          var same = sameWorn(state, list, it.kind), worn = list.map(function (id) { return runeItem(state, id); }).filter(Boolean);
+          var tgt = same || (empty < 0 ? worn.sort(function (a, c) { return runePower(a) - runePower(c); })[0] : null);
+          if (!better && tgt && runePower(it) > runePower(tgt) && runeUseful(state, it.kind, tgt.id)) better = [tgt, it];
+        });
+        if (!better) break;
+        list[list.indexOf(better[0].id)] = better[1].id;
       }
     });
     return runeEquipped(state).length;
@@ -199,6 +220,7 @@
     var nw = runeItem(state, newId); if (!nw || isWorn(state, newId)) return false;
     var list = slotsOf(state, nw), i = list.indexOf(oldId);
     if (i < 0) return false;
+    if (sameWorn(state, list, nw.kind, oldId)) return false;   // would wear that kind twice
     list[i] = newId; return true;
   }
   function runeResonance(state) {
@@ -225,7 +247,7 @@
     return b;
   }
   return { runeById: runeById, runeOpen: runeOpen, runeBag: runeBag, runeItem: runeItem, runeIsWorn: isWorn, runeCraft: runeCraft, runeShardsOf: shardsOf, runeEquipped: runeEquipped, runeAwakened: runeAwakened, runeIsAwaken: isAwaken, runeCompare: runeCompare, runeSwap: runeSwap, runeCap: runeCap, runeCost: runeCost,
-    runeGradeCost: runeGradeCost, runeValue: runeValue, runePower: runePower, runeAdd: runeAdd, runeEquip: runeEquip, runeUnequip: runeUnequip, runeEquipBest: runeEquipBest, runeUseful: runeUseful,
+    runeGradeCost: runeGradeCost, runeValue: runeValue, runePower: runePower, runeAdd: runeAdd, runeEquip: runeEquip, runeUnequip: runeUnequip, runeSameWorn: sameWorn, runeDedupe: runeDedupe, runeEquipBest: runeEquipBest, runeUseful: runeUseful,
     runeLock: runeLock, runeUp: runeUp, runeGradeUp: runeGradeUp, runeFuse: runeFuse, fuseRate: fuseRate, fuseRoll: fuseRoll, runeDismantleValue: runeDismantleValue, runeDismantle: runeDismantle,
     runeDismantleAll: runeDismantleAll, runeDrop: runeDrop, runeGive: runeGive, runeSummon: runeSummon, runePool: runePool, runeKindOpen: kindOpen, runeResonance: runeResonance, runeStoneForBoss: runeStoneForBoss, runeStats: runeStats };
 });
