@@ -1249,6 +1249,15 @@
     '#sheet.opal#sheet.opal .opbag .ef span{white-space:nowrap}',
     // 레벨업 버튼: 안 글자가 버튼 밖으로 나가지 않게
     '#sheet.opal#sheet.opal .bagbtns>.buy{overflow:hidden;min-width:0!important;padding-left:8px!important;padding-right:8px!important;gap:4px!important}#sheet.opal#sheet.opal .bagbtns>.buy span{white-space:nowrap}',
+    // 레벨업 버튼 크게 (형 2026-11-18 「너무 작다」): 높이 28 → 40px, 글씨 16 → 18px, 비용 12.5 → 15px. 옆 장착·합성·초월·잠재력은 그대로
+    '#sheet.opal#sheet.opal#sheet.opal .bagbtns>.buy{height:40px!important;min-height:40px!important}#sheet.opal#sheet.opal#sheet.opal .bagbtns>.pot{align-self:center!important}',
+    '#sheet.opal#sheet.opal#sheet.opal .bagbtns>.buy small{font-size:18px!important}#sheet.opal#sheet.opal#sheet.opal .bagbtns>.buy span{font-size:15px!important}#sheet.opal#sheet.opal#sheet.opal .bagbtns>.buy .coin{width:15px;height:15px}',
+    // 장착·보유 효과 숫자: 자릿수 폭을 같게 (숫자가 바뀌어도 글자 덩어리 폭이 그대로)
+    '#sheet.opal#sheet.opal .opbag .ef b,#sheet.opal#sheet.opal .opbag .glv{font-variant-numeric:tabular-nums}',
+    // 반지처럼 효과가 두 개인 줄(두 줄 표): 위의 한 줄 높이 고정(22px)을 풀어 두 줄이 겹치지 않게 (형 2026-11-18)
+    '#sheet.opal#sheet.opal .opbag .ef.tw2{height:auto!important;min-height:22px}#sheet.opal#sheet.opal .opbag .ef.tw2>*{line-height:1.25!important}#sheet.opal#sheet.opal .opbag .ef.tw2 b.two>*{line-height:1.25!important}',
+    // 좁은 폰에서 표가 아래 줄로 내려간 경우(stack): 표를 줄 전체 폭으로 — 이름은 「장착 효과」 글자 시작에 맞추고, 숫자는 오른쪽 끝에서 같은 여백 (형 2026-11-18 「줄칸 넓이 깔끔하게, 옆에 여백」)
+    '#sheet.opal#sheet.opal#sheet.opal .opbag .ef.stack>b.two{justify-self:stretch!important;width:auto!important;max-width:none!important;grid-template-columns:minmax(0,1fr) auto!important;padding:0 0 0 15px;box-sizing:border-box}',
     // ---- 스킬 목록 = 사용자 스킬 부품 + 시안(10-skills) 실측 (2026-11-16, 시안 패널 962px = 화면 391px, 좌표는 .skw 기준 = 화면 x-16, y-40) ----
     '#sheet.opal#sheet.opal .skw{position:relative;height:321px;margin:3px 0 -3px!important;padding:0!important}',   // 시안보다 14px 아래: 우리 제목 글자 아래 끝이 시안보다 11px 낮아서, 창·모자가 제목에 닿지 않게 (사용자 2026-11-16)
     '#sheet.opal#sheet.opal .skw>*{position:absolute}',

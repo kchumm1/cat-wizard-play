@@ -34,7 +34,10 @@
     var TITLES = { dungeon: '던전', up: '훈련', skill: '스킬', gear: '장비', gacha: '뽑기', more: '더보기', stage: '스테이지 선택' };
     var bagKind = 'staff', selKey = null, bagAll = true;   // 사용자 2026-11-16: 모든 등급을 늘 보여 줌 (「고른 등급만 보기」 버튼 뺌)   // bagAll: 장비 목록에 미보유 등급까지 (보기만)
     var KIND_SHORT = { hat: '모자', staff: '지팡이', robe: '로브', belt: '벨트', necklace: '목걸이', ear: '귀걸이', ring: '반지' };
-    function statLine(stat, v) { return stat === 'speedBoss' ? '공격 속도 +' + pct(v) + ' · 보스 피해 +' + pct(v * 8) : (STAT_NAME[stat] || STAT_KO[stat] || stat) + ' +' + pct(v); }
+    // 장비 효과 숫자는 소수점 자리를 늘 같게 (형 2026-11-18 「숫자가 바뀌면 옆으로 퍼졌다 줄었다」): 47197.5% → 47244% 처럼 소수점이
+    // 붙었다 떨어지며 한 레벨마다 글자 폭이 바뀌었음 → 1000% 미만은 소수 한 자리(6.0%), 1000% 이상은 정수
+    function gpct(v) { var p = v * 100; return (p >= 999.95 ? String(Math.round(p)) : (Math.round(p * 10) / 10).toFixed(1)) + '%'; }
+    function statLine(stat, v) { return stat === 'speedBoss' ? '공격 속도 +' + gpct(v) + ' · 보스 피해 +' + gpct(v * 8) : (STAT_NAME[stat] || STAT_KO[stat] || stat) + ' +' + gpct(v); }
     function potTag(q) { return q > 0.85 ? ['레전더리', '#ff4d6d'] : q > 0.6 ? ['유니크', '#ffd84a'] : q > 0.3 ? ['에픽', '#c47bff'] : ['레어', '#6fb8ff']; }
     function bagCell(k, big) {
       var s = G.state, p = CW.parseKey(k), e = s.bag && s.bag[k], worn = s.equip[p.kind] === k;
@@ -1718,6 +1721,8 @@
           v.innerHTML = v.textContent.split(' · ').map(function (t) { var at = t.lastIndexOf(' +'); return at > 0 ? '<span class="k">' + t.slice(0, at) + '</span><span class="v">' + t.slice(at + 1) + '</span>' : '<span class="k"></span><span class="v">' + t + '</span>'; }).join('');
           v.classList.add('two');
         }
+        // 두 줄 표인 줄은 한 줄 높이(22px) 고정에서 뺌 (형 2026-11-18: 반지 효과 두 줄이 겹쳐 보임)
+        if (v.classList.contains('two')) v.closest('.ef').classList.add('tw2');
         shrink(v, [v], 9.5);
       });
       // 장착 효과·보유 효과 두 표를 같은 글자 크기·같은 열 너비로 (위아래 줄이 똑같이 맞게)
