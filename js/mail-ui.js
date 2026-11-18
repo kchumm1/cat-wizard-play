@@ -158,10 +158,14 @@
   function claim(l) {
     var g = G(); if (!l || CW.mailGot(state(), l)) return false;
     // 가방 (2026-11-17): 보상은 가방에 상자로 들어가고, 룬·신성력 자리는 가방에서 열 때 봄
-    if (!g.G.claimMail(l)) { if (CW.chestFull && CW.chestFull(state())) g.ui.toast('가방이 가득 찼어요. 가방에서 열고 다시 받아 주세요.'); return false; }
-    if (CW.mailHasReward(l)) g.ui.toast('가방에 넣었어요 · 가방에서 열어 받아요');
-    if (CW.chestBadge) CW.chestBadge();
-    g.ui.hud(); return true;
+    var ok = false;
+    return g.G.later(g.G.claimMail(l), function (got) {
+      if (!got) { if (CW.chestFull && CW.chestFull(state())) g.ui.toast('가방이 가득 찼어요. 가방에서 열고 다시 받아 주세요.'); return; }
+      ok = true;
+      if (CW.mailHasReward(l)) g.ui.toast('가방에 넣었어요 · 가방에서 열어 받아요');
+      if (CW.chestBadge) CW.chestBadge();
+      g.ui.hud();
+    }).then(function () { return ok; });
   }
   function close() { page.classList.remove('on', 'fan', 'rise'); if (G()) G().ui.renderPanel(true); }
   function build() {
@@ -178,12 +182,13 @@
       var gt = t.closest('[data-mbget]');
       if (gt) {
         var l = list.filter(function (x) { return x.id === gt.dataset.mbget; })[0];
-        if (l && !CW.mailGot(state(), l)) { claim(l); render(); } else { view = 'list'; render(); }
+        if (l && !CW.mailGot(state(), l)) { Promise.resolve(claim(l)).then(render); } else { view = 'list'; render(); }
         return;
       }
       if (t.closest('[data-mball]')) {
-        var n = 0; waiting().filter(CW.mailHasReward).forEach(function (x) { if (claim(x)) n++; });
-        if (n > 1) g.ui.toast('우편 ' + n + '통의 보상을 가방에 넣었어요.'); render(); return;
+        var n = 0, chain = Promise.resolve();
+        waiting().filter(CW.mailHasReward).forEach(function (x) { chain = chain.then(function () { return Promise.resolve(claim(x)).then(function (ok) { if (ok) n++; }); }); });
+        chain.then(function () { if (n > 1) g.ui.toast('우편 ' + n + '통의 보상을 가방에 넣었어요.'); render(); }); return;
       }
       if (t.closest('[data-mbcopy]')) {
         var pid = CW.mailPid(state()), done = function () { g.ui.toast('우편번호를 복사했어요. (' + pid + ')'); };

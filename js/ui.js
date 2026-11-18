@@ -748,7 +748,7 @@
     function showRunes(list, dust) {
       var best = Math.max.apply(null, list.map(function (x) { return x.grade; }));
       modal('<h2 style="color:' + hc(best) + '">' + (best >= 5 ? hn(best) + ' 룬 획득' : '룬 ' + list.length + '개 획득') + '</h2><div class="sggrid got rsgot">' + list.slice().sort(function (a, c) { return c.grade - a.grade; }).map(function (x) { return runeCell(G.state, x); }).join('') + '</div>',
-        [{ label: '확인' }, { label: dust ? '다시 만들기' : '다시 소환', pri: true, fn: function () { var r = G.runeSummon(list.length, rnGroup, dust); if (!r) toast(dust ? '만들 수 없어요. 룬 가루와 가방 여유 공간을 확인해 주세요.' : '소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showRunes(r, dust); renderPanel(true); hud(); } } }]);
+        [{ label: '확인' }, { label: dust ? '다시 만들기' : '다시 소환', pri: true, fn: function () { G.later(G.runeSummon(list.length, rnGroup, dust), function (r) { if (!r) toast(dust ? '만들 수 없어요. 룬 가루와 가방 여유 공간을 확인해 주세요.' : '소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showRunes(r, dust); renderPanel(true); hud(); } }); } }]);
     }
     function sgCell(it, eqd, curId) {
       var nm = STAT_KO[it.stat] || it.stat;
@@ -853,14 +853,14 @@
     function showSigils(list, fromPack, dust) {
       var best = Math.max.apply(null, list.map(function (x) { return x.grade; }));
       modal('<h2 style="color:' + hc(best) + '">' + (best >= 5 ? hn(best) + ' 신성력 획득' : '신성력 ' + list.length + '개 획득') + '</h2><div class="sggrid got rsgot">' + list.slice().sort(function (a, c) { return c.grade - a.grade; }).map(function (it) { return sgCell(it, false); }).join('') + '</div>',
-        fromPack ? [{ label: '확인', pri: true }] : [{ label: '확인' }, { label: dust ? '다시 만들기' : '다시 소환', pri: true, fn: function () { var r = G.sigilSummon(list.length, false, dust); if (!r) toast(dust ? '만들 수 없어요. 신성력 가루와 가방 여유 공간을 확인해 주세요.' : '소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showSigils(r, false, dust); renderPanel(true); hud(); } } }]);
+        fromPack ? [{ label: '확인', pri: true }] : [{ label: '확인' }, { label: dust ? '다시 만들기' : '다시 소환', pri: true, fn: function () { G.later(G.sigilSummon(list.length, false, dust), function (r) { if (!r) toast(dust ? '만들 수 없어요. 신성력 가루와 가방 여유 공간을 확인해 주세요.' : '소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showSigils(r, false, dust); renderPanel(true); hud(); } }); } }]);
     }
     function showRelics(list) {
       var shown = list.slice().sort(function (a, b) { return (CW.relicById(b.id).divine ? 1 : 0) - (CW.relicById(a.id).divine ? 1 : 0); });
       var gems = list.reduce(function (a, o) { return a + o.refund; }, 0), hasDivine = list.some(function (o) { return CW.relicById(o.id).divine; });
       modal('<h2' + (hasDivine ? ' style="color:var(--gold)"' : '') + '>' + (hasDivine ? '신유물 획득!' : '유물 ' + list.length + '개 획득') + '</h2><div class="rgot">' + shown.slice(0, 60).map(function (o) {
         var r = CW.relicById(o.id); return '<div class="' + (r.divine ? 'divine' : '') + '"><span>' + mi('relic', r) + '</span><small>' + r.name + '</small><b>' + (o.refund ? '다이아 +' + o.refund : 'Lv.' + o.lv) + '</b></div>';
-      }).join('') + '</div>' + (gems ? '<p class="note">최대 레벨 유물을 다이아 ' + gems + '개로 전환했어요.</p>' : ''), [{ label: '확인' }, { label: '다시 소환', pri: true, fn: function () { var r = G.summonRelics(list.length); if (!r) toast('다이아가 부족해요'); else { showRelics(r); renderPanel(true); hud(); } } }]);
+      }).join('') + '</div>' + (gems ? '<p class="note">최대 레벨 유물을 다이아 ' + gems + '개로 전환했어요.</p>' : ''), [{ label: '확인' }, { label: '다시 소환', pri: true, fn: function () { G.later(G.summonRelics(list.length), function (r) { if (!r) toast('다이아가 부족해요'); else { showRelics(r); renderPanel(true); hud(); } }); } }]);
     }
     // ---------- 가방 (2026-11-17, js/chest.js) ----------
     // 패키지·우편 선물이 상자로 쌓이는 곳. 열면 룬·신성력·장비가 제자리로 들어가고, 결과 창에서 그 화면으로 바로 감
@@ -928,7 +928,7 @@
       if (!CW.chestIsItem(box)) { chestFx([id]); return; }
       var why = CW.chestRoom(G.state, box);
       modal('<h2>' + esc(CW.chestTitle(box)) + '</h2><p class="guide-lead">' + (box.src === 'rune' ? '룬' : '신성력') + ' 칸이 가득 차서 가방에 보관 중이에요.' + (why ? ' 빈자리가 생기면 꺼낼 수 있어요.' : ' 지금 꺼낼 수 있어요.') + '</p>',
-        [{ label: '닫기' }, { label: '꺼내기', pri: true, fn: function () { var r = G.openChest(id); if (!r.ok) { toast(r.why + '. 빈자리를 만든 뒤 꺼내 주세요.'); return; } toast(CW.chestTitle(box) + ' · 꺼냈어요'); bagRender(); hud(); if (tab !== 'battle') renderPanel(true); } }], { variant: 'guide', close: true });
+        [{ label: '닫기' }, { label: '꺼내기', pri: true, fn: function () { G.later(G.openChest(id), function (r) { if (!r.ok) { toast(r.why + '. 빈자리를 만든 뒤 꺼내 주세요.'); return; } toast(CW.chestTitle(box) + ' · 꺼냈어요'); bagRender(); hud(); if (tab !== 'battle') renderPanel(true); }); } }], { variant: 'guide', close: true });
     }
     // ---------- 상자 여는 연출 (2026-11-17, 형 시안 dev/chest-reward-demo.html, 형: 느리게 하나씩 말고 빠르게 후르릭) ----------
     // [상자 열기] → 상자가 흔들리고 빛나며 열림 → 보상 카드가 한꺼번에 펼쳐짐 → 동시에 날아감: 룬·신성력·장비는 아래 칸으로,
@@ -1009,13 +1009,13 @@
     function cfRun() {
       var before = cfCounts(), rew = [], go = {}, daily = false, back = { rune: 0, sigil: 0 };
       // 지급은 먼저 한꺼번에 (연출이 끊겨도 받은 건 그대로)
-      cfx._ids.forEach(function (id) {
-        var r = G.openChest(id); if (!r.ok) return;
+      var chain = Promise.resolve();   // 서버 지갑: one box at a time (each may be a server request)
+      cfx._ids.forEach(function (id) { chain = chain.then(function () { return Promise.resolve(G.openChest(id)).then(function (r) { if (!r || r.walletFail || !r.ok) return;
         (r.rewards || []).forEach(function (o) { rew.push(o); if (o.back) back[o.k] += o.back; });
         Object.keys(r.go || {}).forEach(function (k) { go[k] = 1; });
         if (r.box.src === 'pack') { var p = CW.packById(r.box.pack); if (p && p.give.daily) daily = true; }
-      });
-      var after = cfCounts(); cfx._daily = daily;
+      }); }); });
+      chain.then(function () { var after = cfCounts(); cfx._daily = daily;
       chestBadge(); hud(); if (tab !== 'battle') renderPanel(true);
       // 같은 것끼리 묶어 카드 수를 줄임 (모두 열기)
       var merged = [], key = function (o) { return o.k + ':' + (o.grade === undefined ? '' : o.grade) + ':' + (o.id || '') + ':' + (o.sub === undefined ? '' : o.sub); };
@@ -1075,6 +1075,7 @@
         btn.textContent = '확인'; btn.className = 'cfok'; btn.disabled = false;
         cfx.classList.add('done'); cfx._run = false; cfx._skip = false;
       })();
+      });
     }
     function openAllChest() {
       var ids = CW.chestItems(G.state).filter(function (b) { return !CW.chestIsItem(b); }).map(function (b) { return b.id; });
@@ -1523,7 +1524,7 @@
         // only in an iPhone home-screen app whose page lies under the clock (an icon added the old way), where the page
         // may be stretched to the screen (tools/build-site.cjs)
         (!CW.FRIEND && root.__cwFit && document.documentElement.classList.contains('under') ? '<div class="row"><div class="info"><div class="name">하단 메뉴 위치</div><div class="desc">메뉴가 잘리면 ‘안쪽’을 선택해 주세요.</div></div><button class="btn" data-set="bottomFit">' + (bottomInside() ? '안쪽' : '맨 아래') + '</button></div>' : '') +
-        (G.storageOk() ? '' : '<p class="note">이 브라우저에서는 진행을 저장할 수 없어요.<br>창을 닫으면 진행이 사라져요.</p>') + '</div>' +
+        couponRow() + (G.storageOk() ? '' : '<p class="note">이 브라우저에서는 진행을 저장할 수 없어요.<br>창을 닫으면 진행이 사라져요.</p>') + '</div>' +
         (CW.FRIEND ? '' : '<details class="fold"' + (foldOpen ? ' open' : '') + '><summary>문제 확인용</summary><div class="list">' +
         '<div class="row"><div class="info"><div class="name">게임 버전</div><div class="desc">새 버전은 앱을 다시 열 때 적용돼요.</div></div><b class="appver" id="appVer">' + appVersion() + '</b></div>' +
         lastErrorRow() + hitchRow() + perfRows() + ownerSyncRow() + playerSyncRow() +
@@ -1540,10 +1541,12 @@
     // 패키지 상자 (morePanel): pkInfo is set there each time 더보기 › 패키지 is drawn; pkBuy gives the package (no payment)
     var pkInfo = function () {}, pkHeldAt = -1e9, pkHoldT = null;
     function pkBuy(id) {
-      var pk = CW.packById(id), box = G.buyPack(id);
+      var pk = CW.packById(id);
+      G.later(G.buyPack(id), function (box) {
       if (!box) toast(CW.chestFull(G.state) ? '가방이 가득 찼어요. (최대 ' + CW.CHEST_CAP + '칸) 가방에서 열고 다시 받아 주세요.' : '현재 수령 조건을 충족하지 않아요.');
       else toast(pk.name + ' · 가방에 넣었어요');
       chestBadge(); renderPanel(true); hud();
+      });
     }
     function bottomInside() { try { return localStorage.getItem('cw-bottom') === 'inside'; } catch (e) { return false; } }
     // 문제 확인용 stays open while the page is made again (2026-11-17): its lines change on their own (화면 지연, 성능 기록
@@ -1596,6 +1599,11 @@
         '<div class="sbtns">' + (has ? '<button class="btn" data-act="ownsend">지금 보내기</button><button class="btn" data-act="ownclear">열쇠 지우기</button>' : '<button class="btn" data-act="ownkey">열쇠 넣기</button>') + '</div></div>' +
         (has ? '<div class="row"><div class="info"><div class="name">저장 되돌리기</div><div class="desc">앱을 지웠다가 다시 깔았을 때 눌러요. 서버에 남은 가장 많이 진행한 저장을 불러와요.</div></div>' +
           '<div class="sbtns"><button class="btn" data-act="ownget">되돌리기</button></div></div>' : '');
+    }
+    // 쿠폰 (2026-11-18): only while the server wallet is on (형꺼 for now); the server checks the code (js/main.js G.coupon)
+    function couponRow() {
+      if (!G.wallet) return '';
+      return '<div class="row"><div class="info"><div class="name">쿠폰 입력</div><div class="desc">이벤트 쿠폰 번호를 넣으면 선물 상자가 가방에 들어와요.</div></div><button class="btn" data-act="coupon">입력</button></div>';
     }
     // 모든 플레이어 저장 (2026-11-18, js/player-sync.js, main.js G.playerSync): only a status line, 형꺼 only
     function playerSyncRow() {
@@ -2089,7 +2097,7 @@
     function stepAct(d, quiet) {
       var ok;
       if (d.tup) { ok = G.talentUp(d.tup); if (ok) { /* 성공은 글 없이 노드 빛으로만 (사용자 2026-11-16) */ } else if (!quiet) toast(CW.talentSpent(G.state) >= CW.talentPoints(G.state) ? '사용할 특성 포인트가 없어요.' : '해금 조건을 먼저 달성해 주세요.'); }
-      else if (d.cup) { ok = G.upCostume(d.cup); if (ok) toast(CW.costumeById(d.cup).name + ' Lv.' + G.state.costume.owned[d.cup]); else if (!quiet) toast(G.state.costume.owned[d.cup] >= DATA.costumeConf.maxLv ? '최대 레벨에 도달했어요.' : '다이아가 부족해요.'); }
+      else if (d.cup) { ok = G.upCostume(d.cup); if (ok && ok.then) { G.later(ok, function (v) { if (v) toast(CW.costumeById(d.cup).name + ' Lv.' + G.state.costume.owned[d.cup]); else toast(G.state.costume.owned[d.cup] >= DATA.costumeConf.maxLv ? '최대 레벨에 도달했어요.' : '다이아가 부족해요.'); renderPanel(true); hud(); }); ok = false; } else if (ok) toast(CW.costumeById(d.cup).name + ' Lv.' + G.state.costume.owned[d.cup]); else if (!quiet) toast(G.state.costume.owned[d.cup] >= DATA.costumeConf.maxLv ? '최대 레벨에 도달했어요.' : '다이아가 부족해요.'); }
       else if (d.dlv) { ok = G.divineUp(d.dlv); if (ok) toast('삼신기 레벨이 올랐어요.'); else if (!quiet) toast(!CW.divineOpen(G.state) ? DATA.divineConf.unlockTier + '차 전직 후 해금' : '골드가 부족해요.'); }
       else if (d.sup) { ok = G.skillUp(d.sup); if (ok) toast(CW.skillById(d.sup).name + ' +' + CW.skillLevel(G.state, d.sup) + ' · 스킬 강화 완료'); else if (!quiet) toast(CW.skillLevel(G.state, d.sup) >= DATA.balance.skillMaxLv ? '최대 강화에 도달했어요.' : '골드가 부족해요.'); }
       if (ok && CW.opalUI) CW.opalUI.fx(d.tup ? 'tal:' + d.tup : d.cup ? 'cos:' + d.cup : d.dlv ? 'dv:' + d.dlv : 'sk:' + d.sup);   // 성공했을 때만 반응
@@ -2154,8 +2162,8 @@
       else if (d.dsw) { var r4 = G.sweep(d.dsw); if (!r4) toast('소탕할 수 없어요. 입장권과 클리어 기록을 확인해 주세요.'); else toast('소탕 완료 · ' + (r4.gold ? '골드 +' + fmtG(r4.gold) : r4.gems ? '다이아 +' + fmt(r4.gems) : r4.runeStone ? '룬석 +' + fmt(r4.runeStone) + (r4.got && r4.got.length ? ' · 룬 ' + r4.got.length + '개' : '') + (r4.overflow ? ' · 가방 초과 보상 룬석 +' + fmt(r4.overflow) : '') : '마력석 +' + fmt(r4.mana))); renderPanel(true); hud(); }
       else if (d.jump !== undefined) { moreSub = +d.jump; tierAnim = moreSub === 0; renderTop(); }
       else if (d.gsub) { gearSub = d.gsub; selSigil = selRune = null; rnBag = sgBag = false; renderTop(); }
-      else if (d.relic) { var rr = G.summonRelics(+d.relic); if (!rr) toast('다이아가 부족해요.'); else { showRelics(rr); renderPanel(true); hud(); } }
-      else if (d.cbuy) { if (G.buyCostume(d.cbuy)) toast('새 코스튬 획득 · ' + CW.costumeById(d.cbuy).name); else toast('다이아가 부족해요.'); renderPanel(true); hud(); }
+      else if (d.relic) { G.later(G.summonRelics(+d.relic), function (rr) { if (!rr) toast('다이아가 부족해요.'); else { showRelics(rr); renderPanel(true); hud(); } }); }
+      else if (d.cbuy) { G.later(G.buyCostume(d.cbuy), function (ok2) { if (ok2) toast('새 코스튬 획득 · ' + CW.costumeById(d.cbuy).name); else toast('다이아가 부족해요.'); renderPanel(true); hud(); }); }
       else if (d.dvsel) { selDivine = d.dvsel; renderPanel(true); }
       else if (d.act === 'bagall') { bagAll = !bagAll; renderPanel(true); }
       else if (d.rlsel) { selRelic = d.rlsel; renderPanel(true); }
@@ -2185,7 +2193,7 @@
       else if (d.rlock) { G.runeLock(d.rlock); renderPanel(true); }
       else if (d.rdis) { var rn = G.runeDismantle(d.rdis); if (rn) { toast('룬석 +' + fmt(rn)); selRune = null; } else toast('장착 중이거나 잠긴 룬은 분해할 수 없어요.'); renderPanel(true); }
       else if (d.rfuse) { var rf = G.runeFuse(d.rfuse); if (rf && rf.fail) { selRune = rf.kept.id; toast('합성 실패 · ' + hn(rf.kept.grade) + ' 룬 1개 남음 · 다음 ' + Math.round(rf.next * 100) + '%'); } else if (rf) { selRune = rf.id; if (CW.opalUI) { CW.opalUI.fx('rc:' + rf.id); CW.opalUI.fx('ru:' + rf.id); } toast('룬 합성 완료 · ' + hn(rf.grade) + ' ' + CW.runeById(rf.kind).name); banner(hn(rf.grade) + ' 룬!'); } else toast('합성하려면 같은 종류·등급의 룬 3개가 필요해요.'); renderPanel(true); }
-      else if (d.rsum) { var rs = G.runeSummon(+d.rsum, rnGroup); if (!rs) toast('소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showRunes(rs); renderPanel(true); hud(); } }
+      else if (d.rsum) { G.later(G.runeSummon(+d.rsum, rnGroup), function (rs) { if (!rs) toast('소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showRunes(rs); renderPanel(true); hud(); } }); }
       else if (d.rkf) { rnFilter = d.rkf; renderPanel(true); }
       // 착용 중 전체 보기 · 종류 버튼 · 강한 순/약한 순 · 더 보기 (2026-11-18 룬·신성력 정리)
       else if (d.rwall) { rsWornAll[d.rwall] = !rsWornAll[d.rwall]; renderPanel(true); }
@@ -2193,8 +2201,8 @@
       else if (d.rsmore) { rsMore[d.rsmore] += 16; renderPanel(true); }
       else if (d.act === 'rssort') { rsAsc = !rsAsc; renderPanel(true); }
       else if (d.rgrp) { rnGroup = d.rgrp; renderPanel(true); }
-      else if (d.rasum) { var ra = G.runeSummon(+d.rasum, 'awaken'); if (!ra) toast('소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showRunes(ra); renderPanel(true); hud(); } }
-      else if (d.sgasum) { var sa = G.sigilSummon(+d.sgasum, true); if (!sa) toast('소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showSigils(sa); renderPanel(true); hud(); } }
+      else if (d.rasum) { G.later(G.runeSummon(+d.rasum, 'awaken'), function (ra) { if (!ra) toast('소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showRunes(ra); renderPanel(true); hud(); } }); }
+      else if (d.sgasum) { G.later(G.sigilSummon(+d.sgasum, true), function (sa) { if (!sa) toast('소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showSigils(sa); renderPanel(true); hud(); } }); }
       else if (d.rcraft) { var rc2 = G.runeCraft(d.rcraft); if (!rc2) toast('각성 파편이 모자라거나 가방이 가득 찼어요.'); else { selRune = rc2.id; toast(CW.runeById(rc2.kind).name + ' 제작!'); renderPanel(true); } }
       else if (d.sgcraft) { var sc2 = G.sigilCraft(d.sgcraft); if (!sc2) toast('각성 파편이 모자라거나 가방이 가득 찼어요.'); else { selSigil = sc2.id; toast('각성 신성력 제작!'); renderPanel(true); } }
       else if (d.act === 'sgbag') { sgBag = true; selSigil = null; renderTop(); }   // 신성력 보관함 (2026-11-17)
@@ -2225,19 +2233,19 @@
       else if (d.sgfuse) { var f5 = G.sigilFuse(d.sgfuse); if (f5 && f5.fail) { selSigil = f5.kept.id; toast('합성 실패 · ' + hn(f5.kept.grade) + ' 신성력 1개 남음 · 다음 ' + Math.round(f5.next * 100) + '%'); } else if (f5) { selSigil = f5.id; if (CW.opalUI) { CW.opalUI.fx('rc:' + f5.id); CW.opalUI.fx('sg:' + f5.id); } toast('신성력 합성 완료 · ' + hn(f5.grade)); } else toast('장착하지 않고 잠기지 않은 같은 등급 3개가 필요해요.'); renderPanel(true); }
       else if (d.rdsum) { var rd = G.runeSummon(+d.rdsum, rnGroup, true); if (!rd) toast('만들 수 없어요. 룬 가루와 가방 여유 공간을 확인해 주세요.'); else { showRunes(rd, true); renderPanel(true); hud(); } }
       else if (d.sgdsum) { var sd = G.sigilSummon(+d.sgdsum, false, true); if (!sd) toast('만들 수 없어요. 신성력 가루와 가방 여유 공간을 확인해 주세요.'); else { showSigils(sd, false, true); renderPanel(true); hud(); } }
-      else if (d.sgsum) { var g5 = G.sigilSummon(+d.sgsum); if (!g5) toast('소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showSigils(g5); renderPanel(true); hud(); } }
+      else if (d.sgsum) { G.later(G.sigilSummon(+d.sgsum), function (g5) { if (!g5) toast('소환할 수 없어요. 다이아와 가방 여유 공간을 확인해 주세요.'); else { showSigils(g5); renderPanel(true); hud(); } }); }
       else if (d.act === 'sgbest') { G.sigilEquipBest(); toast('추천 신성력을 장착했어요.'); renderPanel(true); }
       else if (d.act === 'sgdisall') { confirmBox('신성력을 일괄 분해할까요?', '장착하지 않고 잠기지 않은 신성력을 모두 신성석으로 바꿔요.<br>분해한 신성력은 되돌릴 수 없어요.', '신성력 분해', function () { var n6 = G.sigilDismantleAll(); toast(n6 ? '신성석 +' + fmt(n6) : '분해할 신성력이 없어요.'); renderPanel(true); }, { variant: 'danger' }); }
       else if (d.bkey) { selKey = d.bkey; renderPanel(true); }
       else if (d.bmerge) { if (G.merge(d.bmerge)) toast('장비 합성 완료 · ' + CW.gearName(CW.keyOf(CW.parseKey(d.bmerge).kind, CW.parseKey(d.bmerge).t + 1))); else toast('같은 장비 ' + DATA.bagConf.mergeCount + '개가 필요해요.'); renderPanel(true); }
       else if (d.bequip) { if (G.equipKey(d.bequip)) toast(CW.gearName(d.bequip) + ' 장착 완료'); else toast('아직 획득하지 않은 장비예요.'); renderPanel(true); }
       else if (d.plock) { var pk = d.plock.split('|'); if (!G.potLock(pk[0], +pk[1])) toast('재설정할 옵션을 최소 1줄 남겨 주세요.'); renderPanel(true); }
-      else if (d.bpot) { if (!G.state.bag[d.bpot]) toast('아직 획득하지 않은 장비예요.'); else if (G.rollPotential(d.bpot)) toast('잠재력을 재설정했어요.'); else toast('다이아가 부족해요.'); renderPanel(true); hud(); }
+      else if (d.bpot) { if (!G.state.bag[d.bpot]) toast('아직 획득하지 않은 장비예요.'); else G.later(G.rollPotential(d.bpot), function (okp) { if (okp) toast('잠재력을 재설정했어요.'); else toast('다이아가 부족해요.'); renderPanel(true); hud(); }); }
       else if (d.act === 'best') { G.equipBest(); toast('추천 장비를 장착했어요.'); renderPanel(true); }
       else if (d.act === 'merge') { var n = G.mergeAll(); toast(n ? '장비 ' + n + '개 합성 완료' : '합성할 장비가 없어요.'); renderPanel(true); }
-      else if (d.pull) { var n2 = +d.pull, items = G.pull(n2); if (!items) toast('다이아가 부족해요.'); else pullOpen(items); }
+      else if (d.pull) { var n2 = +d.pull; G.later(G.pull(n2), function (items) { if (!items) toast('다이아가 부족해요.'); else pullOpen(items); }); }
       else if (d.shop !== undefined && CW.FRIEND) { toast('체험판에서는 수령할 수 없어요.'); }
-      else if (d.shop !== undefined) { var p = DATA.shop[+d.shop]; confirmBox('연습용 다이아를 받을까요?', '<b>' + p.name + '</b> · 표시 가격 ' + p.won.toLocaleString('ko-KR') + '원<br>실제 결제는 없어요. 다이아가 즉시 지급돼요.', '다이아 받기', function () { var g = G.buy(+d.shop); toast('다이아 +' + fmt(g)); renderPanel(true); hud(); }); }
+      else if (d.shop !== undefined) { var p = DATA.shop[+d.shop]; confirmBox('연습용 다이아를 받을까요?', '<b>' + p.name + '</b> · 표시 가격 ' + p.won.toLocaleString('ko-KR') + '원<br>실제 결제는 없어요. 다이아가 즉시 지급돼요.', '다이아 받기', function () { G.later(G.buy(+d.shop), function (g) { if (g) toast('다이아 +' + fmt(g)); renderPanel(true); hud(); }); }); }
       else if (d.go !== undefined) { if (G.goStage(+d.go)) { toast(CW.stageLabel(+d.go) + ' 이동 완료'); renderPanel(true); } }
       else if (d.act === 'perfview') showPerf();
       else if (d.act === 'perfcopy') copyPerf();
@@ -2245,6 +2253,17 @@
       else if (d.act === 'ownget') {
         toast('서버 저장을 불러오고 있어요…');
         G.ownerSync.fetchSave('top').then(function (r) { if (r && r.ok) ownRestore(r); else toast('불러오지 못했어요' + (r && r.msg ? ': ' + r.msg : '.')); });
+      }
+      else if (d.act === 'coupon' && G.wallet) {
+        modal('<h2>쿠폰 입력</h2><p class="guide-lead">받은 쿠폰 번호를 넣어 주세요.</p><input class="nickin cpin" type="text" inputmode="latin" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" placeholder="쿠폰 번호">',
+          [{ label: '취소' }, { label: '받기', pri: true, fn: function () {
+            var code = CW.couponCode($('modalCard').querySelector('.cpin').value);
+            if (!code) { toast('쿠폰 번호를 다시 확인해 주세요. (영어·숫자 6~16자)'); return; }
+            G.later(G.coupon(code), function (r) {
+              if (r && r.box) { toast('쿠폰 선물이 가방에 들어왔어요 · 가방에서 열어 받아요'); if (CW.chestBadge) CW.chestBadge(); hud(); renderPanel(true); return; }
+              toast('쿠폰을 쓸 수 없어요. 번호·기간을 확인하거나, 이미 쓴 쿠폰인지 확인해 주세요.');
+            });
+          } }]);
       }
       else if (d.act === 'ownkey') {
         modal('<h2>Claude에게 저장 보내기</h2><p class="guide-lead">Claude가 알려 준 열쇠를 붙여 넣으세요. 이 기기에만 보관돼요.</p><input class="nickin owkin" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="열쇠">',
@@ -2535,8 +2554,8 @@
         var t = e.target.closest('[data-dclaim],[data-dclose],[data-dhide]'); if (!t) return;
         if (t.dataset.dhide) { hide = !hide; G.hideDaily(hide); t.classList.toggle('on', hide); G.sound('click'); return; }
         if (t.dataset.dclose) { fx.hidden = true; G.sound('click'); renderPanel(true); return; }
-        var day = G.dailyView().taken + 1, n = G.claimDaily();
-        if (n) { draw(day); toast('다이아 +' + fmt(n) + ' 수령 완료'); hud(); renderPanel(true); }
+        var day = G.dailyView().taken + 1;
+        G.later(G.claimDaily(), function (n) { if (n) { draw(day); toast('다이아 +' + fmt(n) + ' 수령 완료'); hud(); renderPanel(true); } else toast('오늘은 이미 받았어요.'); });
       };
     }
     // 전직 축하 (2026-11-17, the user: 노란 상자가 너무 촌스러워 — 디자인해서 애니메이션으로): a full-screen moment instead of the cream
@@ -2636,7 +2655,7 @@
         var hero = best >= 4 ? '<div class="reveal" style="color:' + gc(best) + '">' + DATA.grades[best].name + '!</div>' : '';
         fx.innerHTML = hero + '<div class="cards">' + shown.map(function (it, i) { return '<div class="gcard" style="--gc:' + gc(it.grade) + ';--d:' + Math.min(i * 0.04, 1.2) + 's"><div class="gface">' + gearArt(it.kind, it.grade, it.sub) + '<small>' + DATA.grades[it.grade].name + ' ' + CW.roman(it.sub || 0) + '</small>' + (it.n > 1 ? '<b class="gcnt">×' + it.n + '</b>' : '') + '</div><div class="gbackc" style="background-image:url(' + (CW.ART_BASE || 'art/') + 'ui-card-back.webp)"></div></div>'; }).join('') + '</div><div class="btns" style="width:min(420px,100%)"><button class="btn" id="gClose">닫기</button><button class="btn pri" id="gAgain">한 번 더 (' + items.length + '회)</button></div>';
         $('gClose').onclick = function () { fx.hidden = true; };
-        $('gAgain').onclick = function () { var more = G.pull(items.length); if (!more) { toast('다이아가 부족해요.'); return; } showGacha(more); renderPanel(true); hud(); };
+        $('gAgain').onclick = function () { G.later(G.pull(items.length), function (more) { if (!more) { toast('다이아가 부족해요.'); return; } showGacha(more); renderPanel(true); hud(); }); };
       }
       if (direct) { showCards(); return; }
       $('gSkip').onclick = showCards; setTimeout(showCards, best >= 4 ? 1400 : 900);

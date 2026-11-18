@@ -411,6 +411,7 @@
   function dungeonEnd() {
     var d = dun, res = { kills: d.kills, dmg: d.dmg }, r = CW.dungeonReward(state, d.kind, res);
     CW.recordBest(state, d.kind, res); CW.applyReward(state, r);
+    if (G.wallet) { G.wallet.queueDungeon({ kind: d.kind, kills: d.kills }); walletFlush(); }   // 서버 지갑: tickets and gem-dungeon diamonds are counted by the server
     dun = null; clearField(true); restT = 0.6; ui.dunHud(null);
     snd.play('win'); ui.banner('던전 클리어!'); save();
     // the reward book (js/dungeon-book.js, 2026-11-17): the game's own currency pictures, counting up
@@ -506,9 +507,9 @@
     unequipSkill: function (slot) { var ok = CW.unequipSkill(state, slot); if (ok) save(); return ok; },
     autoSkills: function () { CW.autoFillSkills(state); snd.play('click'); save(); },
     skillUp: function (id) { var ok = CW.trySkillUp(state, id); if (ok) { refreshStats(); snd.play('click'); var sk = CW.skillById(id); fx.levelUp(state.tier, sk.color, true); save(); } return ok; },
-    summonRelics: function (n) { var r = CW.summonRelics(state, n); if (r) { refreshStats(); snd.play('pull'); save(); } return r; },
-    buyCostume: function (id) { var ok = CW.buyCostume(state, id); if (ok) { refreshStats(); snd.play('win'); save(); } return ok; },
-    upCostume: function (id) { var ok = CW.upCostume(state, id); if (ok) { refreshStats(); snd.play('click'); save(); } return ok; },
+    summonRelics: function (n) { if (G.wallet) return walletDo('summonRelics', { n: n }, function () { snd.play('pull'); }); var r = CW.summonRelics(state, n); if (r) { refreshStats(); snd.play('pull'); save(); } return r; },
+    buyCostume: function (id) { if (G.wallet) return walletDo('buyCostume', { id: id }, function () { snd.play('win'); }); var ok = CW.buyCostume(state, id); if (ok) { refreshStats(); snd.play('win'); save(); } return ok; },
+    upCostume: function (id) { if (G.wallet) return walletDo('upCostume', { id: id }, function () { snd.play('click'); }); var ok = CW.upCostume(state, id); if (ok) { refreshStats(); snd.play('click'); save(); } return ok; },
     wearCostume: function (id) { var ok = CW.wearCostume(state, id); if (ok) { applyLook(); save(); } return ok; },
     costumeThumb: function (id, size) {   // size: 오팔 코스튬 전시용 큰 그림 (2026-11-16), 없으면 목록용 150px
       size = size || 150;
@@ -534,8 +535,10 @@
     brew: function (id) { var ok = CW.brew(state, id, Date.now()); if (ok) { refreshStats(); buffKey = CW.buffKey(state); snd.play('win'); save(); } return ok; },
     runeGradeUp: function (id) { var ok = CW.runeGradeUp(state, id); if (ok) { refreshStats(); snd.play('tier'); fx.levelUp(state.tier, 0xb58cff, true); save(); } return ok; },
     // 가방 (2026-11-17, js/chest.js): 산 패키지는 가방에 상자로 — 열 때 지급
-    buyPack: function (id) { if (CW.FRIEND) return false; var box = CW.chestBuyPack(state, id); if (box) { snd.play('win'); save(); } return box; },
-    openChest: function (id) { var r = CW.chestOpen(state, id, CW.goldScale(state)); if (r.ok) { CW.setGoldScale(CW.capGold(state)); refreshStats(); snd.play('win'); save(); } return r; },
+    buyPack: function (id) { if (CW.FRIEND) return false; if (G.wallet) return walletDo('buyPack', { id: id }, function () { snd.play('win'); }); var box = CW.chestBuyPack(state, id); if (box) { snd.play('win'); save(); } return box; },
+    openChest: function (id) {
+      if (G.wallet) return walletDo('openChest', { id: id, goldScale: CW.goldScale(state) }, function () { CW.setGoldScale(CW.capGold(state)); snd.play('win'); }).then(function (r) { return r === null ? { ok: false, why: '열 수 없어요' } : r; });
+      var r = CW.chestOpen(state, id, CW.goldScale(state)); if (r.ok) { CW.setGoldScale(CW.capGold(state)); refreshStats(); snd.play('win'); save(); } return r; },
     // the phone's own date (the daily gems reset at its midnight)
     dayKey: function () { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); },
     dailyView: function () { return CW.dailyView(state, G.dayKey()); },
@@ -543,12 +546,13 @@
     // 우편함: claim one letter (js/mail.js); gold in 조 as shown goes through the gold scale, then the cap
     // 우편 선물도 가방으로 (2026-11-17): 받으면 편지는 받음 표시, 선물은 가방에서 열 때 들어감 (보상 없는 편지는 읽음 표시만)
     claimMail: function (l) {
+      if (G.wallet) return walletDo('mailTake', { id: l.id }, function () { snd.play('win'); }).then(function (r) { return r && r.walletFail ? r : !!r; });
       if (!CW.mailHasReward(l)) { var ok = CW.mailClaim(state, l, CW.goldScale(state)); if (ok) save(); return ok; }
       var box = CW.chestTakeMail(state, l); if (box) { snd.play('win'); save(); } return !!box;
     },   // items and relics change the stats (2026-11-16)
     // 공지: remember that this notice was opened (js/notice.js)
     readNotice: function (n) { if (CW.noticeMarkRead(state, n)) save(); },
-    claimDaily: function () { var n = CW.claimDaily(state, G.dayKey()); if (n) { snd.play('win'); save(); } return n; },
+    claimDaily: function () { if (G.wallet) return walletDo('claimDaily', {}, function () { snd.play('win'); }); var n = CW.claimDaily(state, G.dayKey()); if (n) { snd.play('win'); save(); } return n; },
     runeUp: function (id) { var ok = CW.runeUp(state, id); if (ok) { refreshStats(); snd.play('click'); } return ok; },
     runeSwap: function (oldId, newId) { var ok = CW.runeSwap(state, oldId, newId); if (ok) { refreshStats(); snd.play('click'); save(); } return ok; },
     runeEquipToggle: function (id) { var ok = CW.runeIsWorn(state, id) ? CW.runeUnequip(state, id) : CW.runeEquip(state, id); if (!ok) return 'full'; refreshStats(); snd.play('click'); save(); return 'ok'; },
@@ -556,7 +560,7 @@
     runeDismantle: function (id) { var n = CW.runeDismantle(state, id); if (n) { refreshStats(); save(); } return n; },
     runeDismantleAll: function () { var n = CW.runeDismantleAll(state); if (n) { refreshStats(); snd.play('win'); save(); } return n; },
     runeFuse: function (id) { var it = CW.runeFuse(state, id); if (it) { refreshStats(); if (!it.fail) snd.play('win'); save(); } return it; },
-    runeSummon: function (n, group, dust) { var r = CW.runeSummon(state, n, undefined, group, dust); if (r) { refreshStats(); snd.play('pull'); save(); } return r; },
+    runeSummon: function (n, group, dust) { if (G.wallet && !dust) return walletDo('runeSummon', { n: n, group: group }, function () { snd.play('pull'); }); var r = CW.runeSummon(state, n, undefined, group, dust); if (r) { refreshStats(); snd.play('pull'); save(); } return r; },
     runeEquipBest: function () { CW.runeEquipBest(state); refreshStats(); save(); },
     sigilSet: function (i) { var ok = CW.sigilSet(state, i); if (ok) { refreshStats(); save(); } return ok; },
     sigilEquipToggle: function (id) {
@@ -568,13 +572,13 @@
     sigilDismantle: function (id) { var n = CW.sigilDismantle(state, id); if (n) { refreshStats(); save(); } return n; },
     sigilDismantleAll: function () { var n = CW.sigilDismantleAll(state); if (n) { refreshStats(); snd.play('win'); save(); } return n; },
     sigilFuse: function (id) { var it = CW.sigilFuse(state, id); if (it) { refreshStats(); if (!it.fail) snd.play('win'); save(); } return it; },
-    sigilSummon: function (n, awaken, dust) { var r = CW.sigilSummon(state, n, undefined, awaken, dust); if (r) { refreshStats(); snd.play('pull'); save(); } return r; },
+    sigilSummon: function (n, awaken, dust) { if (G.wallet && !(dust && !awaken)) return walletDo('sigilSummon', { n: n, awaken: !!awaken }, function () { snd.play('pull'); }); var r = CW.sigilSummon(state, n, undefined, awaken, dust); if (r) { refreshStats(); snd.play('pull'); save(); } return r; },
     // 각성 제작 (2026-11-16): 각성 파편 → one awakened rune / sigil of the chosen kind
     runeCraft: function (kind) { var r = CW.runeCraft(state, kind); if (r) { refreshStats(); snd.play('pull'); save(); } return r; },
     sigilCraft: function (stat) { var r = CW.sigilCraft(state, stat); if (r) { refreshStats(); snd.play('pull'); save(); } return r; },
     sigilEquipBest: function () { CW.sigilEquipBest(state); refreshStats(); save(); },
     sigilLvUp: function () { var ok = CW.sigilLvUp(state); if (ok) { refreshStats(); snd.play('click'); } return ok; },
-    rollPotential: function (k) { var ok = CW.rollPotential(state, k); if (ok) { refreshStats(); snd.play('pull'); save(); } return ok; },
+    rollPotential: function (k) { if (G.wallet) return walletDo('rollPotential', { k: k }, function () { snd.play('pull'); }); var ok = CW.rollPotential(state, k); if (ok) { refreshStats(); snd.play('pull'); save(); } return ok; },
     titleWear: function (id) { var ok = CW.titleWear(state, id); if (ok) { refreshStats(); snd.play('click'); save(); } return ok; },
     potLock: function (k, i) { var ok = CW.potLock(state, k, i); if (ok) { snd.play('click'); save(); } return ok; },
     talentUp: function (id) { var ok = CW.talentUp(state, id); if (ok) { refreshStats(); snd.play('click'); save(); } return ok; },
@@ -583,10 +587,10 @@
     rankUp: function () { var ok = CW.rankUp(state); if (ok) { refreshStats(); snd.play('tier'); fx.levelUp(state.tier, 0xffd84a); save(); } return ok; },
     circleUp: function () { var t = CW.circleTier(state), ok = CW.circleUp(state); if (ok) { refreshStats(); snd.play('click'); if (CW.circleTier(state) > t) { fx.levelUp(state.tier, 0x6fb8ff); ui.banner((CW.circleTier(state) + 1) + '서클 달성!'); save(); } } return ok; },
     dungeon: function (kind) { var r = dungeonStart(kind); if (r === 'ok') ui.openTab('battle'); return r; },
-    sweep: function (kind) { var r = CW.sweep(state, kind, Date.now()); if (r) { refreshStats(); snd.play('win'); save(); } return r; },
+    sweep: function (kind) { var best = state.dungeon && state.dungeon.best && state.dungeon.best[kind]; var r = CW.sweep(state, kind, Date.now()); if (r && G.wallet) { G.wallet.queueDungeon({ kind: kind, kills: (best && best.kills) || 0, sweep: true }); walletFlush(); } if (r) { refreshStats(); snd.play('win'); save(); } return r; },
     dunState: function () { return dun ? { kind: dun.kind, t: dun.t, kills: dun.kills, dmg: dun.dmg, name: dun.def.name, level: dun.kind === 'mana' ? CW.golemLevel(state, dun.dmg) : 0 } : null; },
-    pull: function (n) { var items = CW.pull(state, n); if (items) { refreshStats(); save(); } return items; },
-    buy: function (i) { if (CW.FRIEND) return 0; var g = CW.buy(state, i); save(); return g; },
+    pull: function (n) { if (G.wallet) return walletDo('pull', { n: n }); var items = CW.pull(state, n); if (items) { refreshStats(); save(); } return items; },
+    buy: function (i) { if (CW.FRIEND) return 0; if (G.wallet) return walletDo('buyShop', { i: i }); var g = CW.buy(state, i); save(); return g; },
     goStage: function (i) {
       if (dun) return false;
       if (!CW.goStage(state, i)) return false;
@@ -965,6 +969,8 @@
   var playerSync = CW.createPlayerSync ? CW.createPlayerSync({
     enabled: !CW.FRIEND && CW.playerSyncAllowed(location), store: storage, fetch: root.fetch ? root.fetch.bind(root) : null,
     locks: root.navigator && root.navigator.locks,
+    // 서버 지갑: a save-sync answer for a wallet account carries the server's fields (diamonds etc.); they win
+    onServer: function (server) { if (!G.wallet) return; CW.applyServer(state, server); refreshStats(); save(); ui.hud(); },
     body: function () { save(); return JSON.stringify(state); },
     info: function () { return (navigator.userAgent || '').slice(0, 160); }
   }) : null;
@@ -975,6 +981,63 @@
     document.addEventListener('visibilitychange', function () { if (ready) { if (document.hidden) playerSync.push('hide'); else playerSync.warm(); } });
   }
   G.playerSync = playerSync;
+  // ---------- 서버 지갑 1단계 (2026-11-18, js/wallet.js): 형꺼 diamonds belong to the server ----------
+  // Diamond actions go to the function act; the answer's random numbers replay the same line of js/wallet-actions.js
+  // here, so the save changes as the server's did. Needs the save sync (its login); 체험판 and local previews: off.
+  var wallet = !CW.FRIEND && CW.createWallet && playerSync ? CW.createWallet({ enabled: true, sync: playerSync, fetch: root.fetch ? root.fetch.bind(root) : null, store: storage, rules: CW.WALLET_RULES }) : null;
+  G.wallet = wallet;
+  // the game's own refusals (the screen says why, e.g. 다이아가 부족해요); anything else is a line or server problem (최종 검토)
+  var WFAIL = { walletFail: true }, wBusy = false, ANSWERS = { gems: 1, nope: 1, used: 1, full: 1, ticket: 1, time: 1, slow: 1 };
+  function wToast(code) {
+    ui.toast(code === 'rules' ? '게임이 새로 나왔어요. 새로 고쳐 주세요.' : code === 'member' ? '이 기기는 아직 서버 지갑을 쓸 수 없어요.' : code === 'wait' ? '잠시만요, 앞의 요청을 처리하고 있어요.' : '인터넷 연결이 필요해요.');
+  }
+  // the phone runs the same line with the server's numbers. If the phone's own part of the save moved on meanwhile (a boss
+  // drop filled the rune bag…) and the line goes another way, the screen must not stop: the server's fields are taken,
+  // the result is shown as nothing, and it is noted (최종 검토)
+  function replayAct(action, args, reply) {
+    try {
+      return CW.applyReply(state, reply, function (s, rng, env) { var p = CW.performAction(s, action, args, Object.assign({}, env, { rng: rng })); return p.ok ? p.result : null; });
+    } catch (e) {
+      if (reply && reply.server) CW.applyServer(state, reply.server);
+      noteError(new Error('wallet replay ' + action + ': ' + (e && e.message)));
+      return null;
+    }
+  }
+  function walletResume() {
+    if (!wallet) return Promise.resolve();
+    return wallet.resume(JSON.stringify(state)).then(function (x) { if (x) { replayAct(x.action, x.args, x.reply); refreshStats(); save(); ui.hud(); if (x.reply && x.reply.ok) ui.toast('인터넷이 끊겼을 때 누른 요청을 마저 처리했어요.'); } });
+  }
+  function walletFlush() {
+    if (!wallet) return Promise.resolve();
+    save();
+    return wallet.flushDungeon(JSON.stringify(state)).then(function (list) {
+      list.forEach(function (x) { if (x.reply.ok) replayAct('dungeonClaim', x.args, x.reply); else CW.applyReply(state, x.reply, null); });
+      if (list.length) { refreshStats(); save(); ui.hud(); }
+    });
+  }
+  // one diamond action through the server: resolves to what the action gives (as the old wrapper returned it), null when
+  // the server says no (not enough diamonds…), or WFAIL when it could not be asked (no line…; a note was shown already)
+  function walletDo(action, args, done) {
+    if (wBusy) { wToast('wait'); return Promise.resolve(WFAIL); }
+    wBusy = true; save();
+    return wallet.act(action, args, JSON.stringify(state)).then(function (reply) {
+      if (reply.code !== 'pending') return reply;
+      return walletResume().then(function () { return wallet.act(action, args, JSON.stringify(state)); });
+    }).then(function (reply) {
+      wBusy = false;
+      if (!reply.ok && reply.code === 'member') { wallet = null; G.wallet = null; ui.toast('이 기기는 서버 지갑 없이 계속해요. 한 번 더 눌러 주세요.'); return WFAIL; }
+      if (!reply.ok && !ANSWERS[reply.code]) { wToast(reply.code); return WFAIL; }
+      var out = reply.ok ? replayAct(action, args, reply) : (CW.applyReply(state, reply, null), null);
+      refreshStats(); save(); ui.hud();
+      if (reply.ok && done) done(out);
+      return reply.ok ? out : null;
+    }, function () { wBusy = false; wToast('net'); return WFAIL; });
+  }
+  // the screens: run fn with the answer once it is there (a wallet answer comes later; the old way answers at once)
+  G.later = function (r, fn) { return Promise.resolve(r).then(function (x) { if (x && x.walletFail) return; fn(x); }); };
+  // 쿠폰 (2026-11-18): only with the wallet
+  G.coupon = function (code) { return wallet ? walletDo('coupon', { code: code }, function () { snd.play('win'); }) : Promise.resolve(WFAIL); };
+  if (wallet) { var wStart = setInterval(function () { if (ready) { clearInterval(wStart); setTimeout(function () { walletResume().then(walletFlush); }, 6000); } }, 1000); }
   // 저장 되돌리기 (설정 › 문제 확인용, 형꺼 only): the save kept on the server takes this phone's place
   G.restoreSave = function (obj) {
     if (CW.FRIEND || !obj || typeof obj !== 'object') return false;

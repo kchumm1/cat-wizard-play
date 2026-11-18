@@ -143,7 +143,12 @@
           else clear = timed(opts);
           return Promise.resolve().then(function () { return o.fetch(URL, opts); }).then(function (res) {
             clear();
-            if (res && res.ok) { lastSent = data; sameAt = 0; return note({ ok: true, code: res.status }); }
+            if (res && res.ok) {
+              lastSent = data; sameAt = 0;
+              // 서버 지갑 (2026-11-18): an account with a server wallet gets its server fields back (diamonds etc.)
+              var told = o.onServer && res.json ? Promise.resolve().then(function () { return res.json(); }).then(function (j) { if (j && j.server) o.onServer(j.server, j.rules); }, function () { }) : null;
+              return Promise.resolve(told).then(function () { return note({ ok: true, code: res.status }); });
+            }
             var st = res ? res.status : 0;
             if (st === 401 && !again) {   // the login ran out early: a fresh one, then once more
               var cur = readAuth(); if (cur && cur.access) { cur.exp = 0; put(AUTH_KEY, JSON.stringify(cur)); }
@@ -188,7 +193,12 @@
       } catch (e) { return Promise.resolve({}); }
     }
     function userId() { var a = readAuth(); return a && a.uid ? a.uid : ''; }
-    return { start: start, tick: tick, push: push, warm: warm, status: status, userId: userId };
+    // the login for the server wallet (js/wallet.js): renewed or made when needed; null when there is none to be had
+    function authed() {
+      if (!storeOk() || !o.fetch) return Promise.resolve(null);
+      return ensureAuth().then(function (a) { return a && a.access ? a : null; }, function () { return null; });
+    }
+    return { start: start, tick: tick, push: push, warm: warm, status: status, userId: userId, authed: authed };
   }
 
   return { createPlayerSync: createPlayerSync, playerSyncAllowed: allowedHere, playerSyncText: statusText, PLAYER_SYNC_URL: URL, PLAYER_AUTH_URL: AUTH, PLAYER_ANON_KEY: ANON, PLAYER_AUTH_KEY: AUTH_KEY, PLAYER_SYNC_LOG: LOG };

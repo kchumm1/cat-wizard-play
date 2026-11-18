@@ -54,7 +54,7 @@
   // { ok, box, rewards: [{ k, n, grade, gold, to: 'rune'|'sigil'|'gear'|'gem'|'gold'|'now', back (가방으로 돌아간 수) }], go, got }
   function chestOpen(state, id, goldScale, rng, now) {
     var box = chestById(state, id); if (!box) return { ok: false, why: '없는 상자예요' };
-    if (chestIsItem(box)) return chestTakeOut(state, id);
+    if (chestIsItem(box)) return chestTakeOut(state, id, rng);
     var go = {}, got = [], rew = [], back = {}, c = chest(state);
     c.items = c.items.filter(function (x) { return x.id !== id; });   // 열린 상자는 빠지고, 돌아온 아이템이 그 자리를 씀
     var spill = function (kind, it) { var k = kind + ':' + it.grade; back[k] = (back[k] || 0) + 1; put(state, Object.assign({ src: kind }, it), now); };
@@ -95,13 +95,15 @@
     return { ok: true, why: '', box: box, got: got, go: go, rewards: rew };
   }
   // 가방에 돌아와 있던 룬·신성력을 다시 그 칸으로 (빈자리가 있을 때)
-  function chestTakeOut(state, id) {
+  // rng (서버 지갑, 2026-11-18): the server rolls and the phone replays the same numbers, so both get the same sigil
+  function chestTakeOut(state, id, rng) {
+    rng = rng || Math.random;
     var box = chestById(state, id); if (!box || !chestIsItem(box)) return { ok: false, why: '없는 아이템이에요' };
     var why = chestRoom(state, box); if (why) return { ok: false, why: why, box: box };
     if (box.src === 'rune') mod('./runes.js').runeAdd(state, box.kind, box.grade);
     else {
-      var S = mod('./sigil.js'), it = S.addSigil(state, box.grade);
-      if (it && box.stat === '@aw') { var aw = DATA.sigilStats.filter(function (s) { return s.awaken; }); it.stat = aw[Math.floor(Math.random() * aw.length)].stat; }
+      var S = mod('./sigil.js'), it = S.addSigil(state, box.grade, rng);
+      if (it && box.stat === '@aw') { var aw = DATA.sigilStats.filter(function (s) { return s.awaken; }); it.stat = aw[Math.floor(rng() * aw.length)].stat; }
       else if (it && box.stat) it.stat = box.stat;
       if (it && box.q) it.q = box.q;
     }
