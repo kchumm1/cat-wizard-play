@@ -2,6 +2,14 @@
   "note": "공지 목록 (js/notice.js, js/notice-ui.js). id는 한 번만 쓰고 바꾸지 않는다. tag: 공지·업데이트·이벤트·점검 중 하나. title 제목, text 본문(줄바꿈 \\n, 빈 줄은 문단), date 올린 날(YYYY-MM-DD), pin true면 맨 위에 고정. from/until은 보이는 날(한국 시간). 운영자 화면(ops.html)에서 쓰고 지울 수 있다. view: rates(뽑기 확률표)·pack(겨울 패키지)·guide(책 가이드)면 js/notice-pages.js의 그림 화면으로 열린다. only: owner면 체험판(친구꺼)에는 안 보인다.",
   "notices": [
     {
+      "id": "notice-20261118175859-ap2a",
+      "tag": "점검",
+      "title": "점검 안내",
+      "text": "점검 시간: 2026-11-18일\n점검 내용: 서버 안정을 위한 점검을 시행할예정입니다. \n소요시간은 2시간 예정입니다.\n이용에 불편을 드려 죄송합니다.",
+      "date": "2026-11-18",
+      "by": "ops"
+    },
+    {
       "id": "notice-20261117-winter",
       "tag": "이벤트",
       "title": "겨울 신규 냥법사 패키지 출시",
