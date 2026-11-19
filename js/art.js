@@ -50,12 +50,15 @@
     var T = root.THREE;
     return Promise.all(ids.map(function (id) {
       if (cache[id]) return cache[id];
-      cache[id] = loadImage((CW.ART_BASE || 'art/') + id + '.webp').then(function (img) {
+      var puppet = CW.expeditionAtlases && CW.expeditionAtlases[id];
+      var imageId = puppet ? id.replace('exmob-', 'exparts-') : id;
+      cache[id] = loadImage((CW.ART_BASE || 'art/') + imageId + '.webp').then(function (img) {
+        if (puppet) return CW.expeditionPuppet.atlasArt(id, puppet, img, T);
         var cv = cutout(img, maxSide || 512);
         var tex = new T.CanvasTexture(cv); tex.minFilter = T.LinearMipmapLinearFilter; tex.anisotropy = 2;
         if (T.sRGBEncoding) tex.encoding = T.sRGBEncoding;
         return { id: id, tex: tex, aspect: cv.width / cv.height, canvas: cv, crop: cv.crop, rig: (CW.RIGS || {})[id] || (CW.BODY_RIGS || {})[id] || null };
-      }).catch(function () { return null; });
+      }).catch(function () { if(id.indexOf('exmob-')===0)delete cache[id]; return null; });
       return cache[id];
     })).then(function (list) { var m = {}; list.forEach(function (a) { if (a) m[a.id] = a; }); return m; });
   }

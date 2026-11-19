@@ -17,8 +17,8 @@
     var cost = costumeUpCost(c, lv); if (state.gems < cost) return false;
     state.gems -= cost; own[id] = lv + 1; return true;
   }
-  function wearCostume(state, id) { if (!byId(id) || !owned(state)[id]) return false; state.costume.wear = id; return true; }
-  function costumeLook(state) { var c = byId(state.costume && state.costume.wear) || DATA.costumes[0]; return { id: c.id, art: c.art, outfit: c.outfit, fx: c.fx || null }; }
+  function wearCostume(state, id) { if (!byId(id) || !owned(state)[id]) return false; state.costume.wear = id; if(state.dungeon && state.dungeon.explore)state.dungeon.explore.wearing=false; return true; }
+  function costumeLook(state) { var e=state.dungeon && state.dungeon.explore; if(e && e.maps && e.wearing)return {id:'explorer',art:'hero',outfit:{h:164,s:.64,v:.76,compass:true},fx:null}; var c = byId(state.costume && state.costume.wear) || DATA.costumes[0]; return { id: c.id, art: c.art, outfit: c.outfit, fx: c.fx || null }; }
   function costumeValue(c, lv) { return lv * c.per * (1 + costumeStars(lv) * C.starBonus); }
   function costumeStats(state) {
     var b = {}, own = (state.costume && state.costume.owned) || {}, n = 0;

@@ -104,7 +104,7 @@
     // whole picture shows first and the cut one takes over a little later, unless the look has changed again by then.
     if (CW.splitStaff && base.rig && base.rig.armL && base.rig.armL.cap && base.crop) setTimeout(function () {
       if (lastLook !== key) return;
-      try { var parts = CW.splitStaff(painted, base.crop, base.rig, base.id === 'hero' ? 'hero|' + CW.lookKey(l) : base.id); sc.setHeroTexture(tex, { body: mk(parts.body), staff: mk(parts.staff) }); }
+      try { var parts = CW.splitStaff(painted, base.crop, base.rig, base.id === 'hero' ? 'hero|' + CW.lookKey(l) + '|' + cl.id : base.id); sc.setHeroTexture(tex, { body: mk(parts.body), staff: mk(parts.staff) }); }
       catch (e) { /* the whole picture stays */ }
       // the plain wizard with no costume turns to where it looks, drawn from four sides (2026-11-15): each side view gets
       // the same hat and cape colours, and the staff just cut out goes into its paw
@@ -112,7 +112,9 @@
         if (parts && useViews && base.id === 'hero') sc.setHeroViews(VIEW_IDS.map(function (id) { return art[id]; }), VIEW_IDS.map(function (id) { return mk(CW.paintHero(art[id], l)); }), staffPiece(parts.staff, base, mk));
       } catch (e) { sc.setHeroViews(null); }
     }, 60);
-    var vset = VIEW_SETS[base.id], useViews = !!vset && (base.id !== 'hero' || (!cl.fx && !l.outfit)) && vset.every(function (id) { if (!art[id]) needArt(id); return art[id]; });
+    var vset = VIEW_SETS[base.id], useViews = !!vset && (base.id !== 'hero' || (!cl.fx && !l.outfit));
+    if(cl.id==='explorer') useViews=!!vset;
+    useViews=useViews && vset.every(function (id) { if (!art[id]) needArt(id); return art[id]; });
     if (!useViews) sc.setHeroViews(null);
     else if (base.id !== 'hero') sc.setHeroViews(vset.map(function (id) { return art[id]; }), vset.map(function (id) { return art[id].tex; }), null);
     if (cl.id !== lastCos) { lastCos = cl.id; sc.setCostumeFx(cl.fx); fx.setCostume(cl.fx); }
@@ -237,7 +239,7 @@
       var ct = CW.rollCrit(st), crit = ct > 0;
       var dmg = CW.hitDamage(st, skill, { boss: mob.boss, critTier: ct, even: true, frozen: mob.frozen > 0, shocked: mob.shocked > 0 }) * (frac === undefined ? 1 : frac) * (mul || 1);
       if (book) book.forEach(function (b) { if (b.mob === mob) b.left -= dmg; });
-      if (dun && mob === dun.golem) dun.dmg += dmg; else mob.hp -= dmg;
+      if (dun && mob === dun.golem) { if(CW.expeditions.track(state,'mana',dun).step>=2)dmg*=1.25; dun.dmg += dmg; } else mob.hp -= dmg;
       mob.lastCol = skill.color;
       // a boss freezes now and then, not under every ice spell (it would stand frozen the whole fight)
       if (skill.status === 'freeze') { if (!mob.boss) mob.frozen = Math.max(mob.frozen, 1.5); else if (!(mob.frzCd > 0)) { mob.frozen = Math.max(mob.frozen, 0.7); mob.frzCd = 2.8; } }
@@ -290,7 +292,7 @@
     if (dun && dun.library) { dun.kills++; dun.magic.death(mob); return; }
     dexKill(mob.id);
     if (mob.boss && boss && boss.mob === mob) { bossWin(pos); return; }
-    if (dun) { dun.kills++; if (CW.idleNote) CW.idleNote({ kill: 1 }); if (dun.kind === 'gold') { fx.coinPop(pos, 4); flyCoins(pos, 2); } else fx.coinPop(pos, 2); snd.play('kill'); return; }
+    if (dun) { dun.kills++; if(mob.expeditionTarget){dun.finds++;fx.coinPop(pos,3);} if (CW.idleNote) CW.idleNote({ kill: 1 }); if (dun.kind === 'gold') { fx.coinPop(pos, 4); flyCoins(pos, 2); } else fx.coinPop(pos, 2); snd.play('kill'); return; }
     var gold = CW.stageGold(state, undefined, st.goldMul) * st.goldMul / CROWD * DATA.balance.killPay;
     state.gold += gold; fx.coinPop(pos, 3); flyCoins(pos, 2); snd.play('kill');
     var kx = CW.killXp(state) / CROWD * st.xpMul * DATA.balance.killPay;
@@ -398,11 +400,40 @@
   // ---------- dungeons: 30-second runs ----------
   var dun = null;
   function dunDef(kind) { for (var i = 0; i < DATA.dungeons.length; i++) if (DATA.dungeons[i].id === kind) return DATA.dungeons[i]; return null; }
+  var pendingExpedition=0;
+  function enterExpedition(kind) {
+    var roster=CW.expeditions.inhabitants[kind];
+    if(!roster || !CW.kindOpen(state,kind) || !CW.ticketsLeft(state,kind,Date.now()))return 'ticket';
+    if(dun || boss || state.bossTry)return 'busy';
+    var token=++pendingExpedition, ids=roster.map(function(mon){return mon[0];});
+    function enter() {
+      var result=dungeonStart(kind);
+      if(result==='ok') ui.openTab('battle');
+      return result;
+    }
+    if(ids.every(function(id){return !!art[id];}))return enter();
+    ui.toast('던전 몬스터를 불러오고 있어요.');
+    CW.loadArt(ids,384).then(function(loaded){
+      Object.assign(art,loaded);
+      if(token!==pendingExpedition)return;
+      if(ids.every(function(id){return !!art[id];}))enter();
+      else ui.toast('몬스터 그림을 불러오지 못했어요. 입장을 다시 눌러 주세요.');
+    });
+    return 'loading';
+  }
   function spawnDun() {
-    var info = CW.stageInfo(Math.max(0, state.best)), R = CW.regionAt(state.diff, info.region);
-    var did = R.monsters[Math.floor(Math.random() * R.monsters.length)], a = mobArt(did, R.monsters[0]); if (!a) return;
-    var hp = CW.stageMonsterHp({ stage: Math.max(0, state.best), diff: state.diff || 0 }) / CW.DUN_CROWD * 0.6;
-    sc.spawnMob({ art: a, id: did, tint: dun.kind === 'gold' ? 0xffd84a : dun.kind === 'rune' ? 0xc49bff : 0x8ff0ff, height: fitHeight(a, 0.88 + Math.random() * 0.14), hp: hp, entry: Math.random() < 0.7 ? 'run' : 'leap' });
+    var site=dun.kind,roster=CW.expeditions.inhabitants[site];
+    var count=dun.spawnCount++, spec=roster[(count+Math.floor(count/3))%2];
+    var hp=CW.stageMonsterHp({stage:Math.max(0,state.best),diff:state.diff||0})/CW.DUN_CROWD*.6;
+    var target=count%({gold:6,gem:4,rune:7})[site]===0;
+    var mob=sc.spawnMob({id: spec[0],art:art[spec[0]],name:spec[1],gait:spec[2],flyer:spec[2]==='float',
+      height:fitHeight(art[spec[0]],target?1.4:1.08),hp:hp*(target?1.45:1),entry:spec[2]==='hop'?'leap':'run'});
+    mob.expeditionTarget=target;
+  }
+  function towerGuardian(index) {
+    var spec=CW.expeditions.inhabitants.mana[index],a=art[spec[0]];
+    dun.guardianIndex=index;
+    dun.golem=sc.spawnMob({id:spec[0],art:a,height:fitHeight(a,2.4),hp:1e300,boss:true,name:spec[1],gait:spec[2],flyer:index===1});
   }
   function dungeonStart(kind) {
     var def = dunDef(kind); if (!def) return 'none';
@@ -410,11 +441,13 @@
     if (!CW.useTicket(state, kind, Date.now())) return 'ticket';
     clearField(true); restT = 0;
     dun = { kind: kind, t: def.time, kills: 0, dmg: 0, golem: null, sp: 0.3, def: def };
-    var R0 = CW.regionAt(state.diff, CW.stageInfo(Math.max(0, state.best)).region); needArt('b47');
-    if (kind === 'mana') {
-      var g = mobArt('b47', R0.boss.art) || mobArt(R0.boss.art);
-      if (g) dun.golem = sc.spawnMob({ art: g, height: fitHeight(g, 2.3), hp: 1e300, boss: true, name: '마력 골렘' });
-    }
+    var R0 = CW.regionAt(state.diff, CW.stageInfo(Math.max(0, state.best)).region);
+    dun.finds=0;dun.spawnCount=0;
+    if(kind==='mana')towerGuardian(CW.expeditions.track(state,'mana').step>=2?1:0);
+    var site = CW.expeditions.places[kind];
+    var decor = Object.assign({}, R0, {bg:'expedition-'+kind,look:site.look,sky:site.sky});
+    sc.setRegion(30+CW.expeditions.ids.indexOf(kind),decor);fx.setRegion(decor);
+
     ui.banner(def.name); snd.play('boss'); save();
     return 'ok';
   }
@@ -562,6 +595,9 @@
 
   function dunTick(dt) {
     if (dun.library) { libraryTick(dt); return; }
+    if(dun.kind==='mana' && dun.guardianIndex===0 && CW.expeditions.track(state,'mana',dun).step>=2){
+      sc.dismissMob(dun.golem);towerGuardian(1);
+    }
     dun.t -= dt;
     if (dun.kind !== 'mana') {
       var alive = aliveMobs().length;
@@ -570,10 +606,11 @@
     if (dun.t <= 0) dungeonEnd();
   }
   function dungeonEnd() {
-    var d = dun, res = { kills: d.kills, dmg: d.dmg }, r = CW.dungeonReward(state, d.kind, res);
-    CW.recordBest(state, d.kind, res); CW.applyReward(state, r);
+    var d = dun, res = { kills: d.kills, dmg: d.dmg, finds:d.finds }, r = CW.dungeonReward(state, d.kind, res);
+    CW.recordBest(state, d.kind, res); CW.expeditions.finish(state,d.kind,res,r); CW.applyReward(state, r);
     if (G.wallet) { G.wallet.queueDungeon({ kind: d.kind, kills: d.kills }); walletFlush(); }   // 서버 지갑: tickets and gem-dungeon diamonds are counted by the server
     dun = null; clearField(true); restT = 0.6; ui.dunHud(null);
+    region=-1;syncRegion();
     snd.play('win'); ui.banner('던전 클리어!'); save();
     // the reward book (js/dungeon-book.js, 2026-11-17): the game's own currency pictures, counting up
     if (CW.dungeonBook) {
@@ -584,7 +621,7 @@
         : [{ ico: 'runeStone', label: '룬석', value: r.runeStone || 0, fmt: fN }];
       if (d.kind === 'rune' && r.got && r.got.length) rw.push({ ico: 'rune', label: '룬', value: r.got.length, fmt: function (v) { return CW.fmt(v); }, unit: '개' });
       if (d.kind === 'rune' && r.overflow) rw.push({ ico: 'runeStone', label: '가방이 꽉 차 룬석', value: r.overflow, fmt: fN, sub: true });
-      CW.dungeonBook({ kind: d.kind, name: d.def.name, tickets: CW.ticketsLeft(state, d.kind, Date.now()), rewards: rw,
+      CW.dungeonBook({ kind: d.kind, photo: 'expedition-'+d.kind, help:r.discovery, name: d.def.name, tickets: CW.ticketsLeft(state, d.kind, Date.now()), rewards: rw,
         stat: d.kind === 'mana' ? ['골렘에게 준 피해', CW.fmt(d.dmg), ' · Lv.' + r.level] : ['잡은 몬스터', d.kills, '마리'],
         onClose: function () { snd.play('click'); } });
       return;
@@ -757,9 +794,13 @@
     circleUp: function () { var t = CW.circleTier(state), ok = CW.circleUp(state); if (ok) { refreshStats(); snd.play('click'); if (CW.circleTier(state) > t) { fx.levelUp(state.tier, 0x6fb8ff); ui.banner((CW.circleTier(state) + 1) + '서클 달성!'); save(); } } return ok; },
     libraryStatus: libraryStatus,
     enterLibrary: enterLibrary,
-    dungeon: function (kind) { var r = dungeonStart(kind); if (r === 'ok') ui.openTab('battle'); return r; },
-    sweep: function (kind) { var best = state.dungeon && state.dungeon.best && state.dungeon.best[kind]; var r = CW.sweep(state, kind, Date.now()); if (r && G.wallet) { G.wallet.queueDungeon({ kind: kind, kills: (best && best.kills) || 0, sweep: true }); walletFlush(); } if (r) { refreshStats(); snd.play('win'); save(); } return r; },
-    dunState: function () { return dun ? { kind: dun.kind, t: dun.t, kills: dun.kills, dmg: dun.dmg, name: dun.library ? '도서관 ' + dun.library.floor + '층' : dun.def.name, goal: dun.goal, level: dun.kind === 'mana' ? CW.golemLevel(state, dun.dmg) : 0 } : null; },
+    dungeon: enterExpedition,
+    cancelExpedition: function(){pendingExpedition++;},
+    sweep: function (kind) { var best = state.dungeon && state.dungeon.best && state.dungeon.best[kind]; var r = dun || boss ? null : CW.sweep(state,kind,Date.now()); if (r && G.wallet) { G.wallet.queueDungeon({ kind: kind, kills: (best && best.kills) || 0, sweep: true }); walletFlush(); } if (r) { refreshStats(); snd.play('win'); save(); } return r; },
+    expeditionRune: function(id) { if(!dun && CW.expeditions.selectRune(state,id)) save(); },
+    expeditionChest: function(kind) { if(dun)return null;var msg=CW.expeditions.treasure(state,kind);if(msg)save();return msg; },
+    expeditionWear: function() { var j=CW.expeditions.journal(state);if(!j.maps)return;j.wearing=!j.wearing;applyLook(false);save(); },
+    dunState: function () { return dun ? { kind: dun.kind, t: dun.t, kills: dun.kills, dmg: dun.dmg, finds:dun.finds, name: dun.library ? '도서관 ' + dun.library.floor + '층' : dun.def.name, goal: dun.goal, level: dun.kind === 'mana' ? CW.golemLevel(state, dun.dmg) : 0 } : null; },
     pull: function (n) { if (G.wallet) return walletDo('pull', { n: n }); var items = CW.pull(state, n); if (items) { refreshStats(); save(); } return items; },
     buy: function (i) { if (CW.FRIEND) return 0; if (G.wallet) return walletDo('buyShop', { i: i }); var g = CW.buy(state, i); save(); return g; },
     goStage: function (i) {

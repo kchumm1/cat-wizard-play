@@ -3469,6 +3469,40 @@ html.cw-calm #tabs>.tabneb,html.cw-calm #tabs::before,html.cw-calm #tabs::after,
 </script>
 <script src="js/update-screen.js"></script>
 <div id="topcap" aria-hidden="true"></div>
+<style id="expedition-css">
+.stagebg.expedition-bg,.stagebg.center-hunt.expedition-bg{border:0!important;border-image:none!important;background-size:cover!important;background-position:50% 53%!important}
+#sheet.expedition-sheet #panel{display:block;overflow-y:auto;padding:6px max(12px,env(safe-area-inset-right)) 16px max(12px,env(safe-area-inset-left))}
+#sheet.expedition-sheet #panel>*{flex-shrink:0}
+@media(orientation:portrait){#app #sheet.expedition-sheet{height:min(76%,760px);max-height:calc(100% - var(--tabh) - 20px)}}
+.expedition{--ex-edge:#6983a24f;--ex-paper:#171d35;display:grid;gap:10px;width:100%;margin:0 auto 10px;color:#fff5e2;font:400 15px/1.45 var(--display),sans-serif;text-shadow:none;letter-spacing:0;word-break:keep-all}
+.expedition *{box-sizing:border-box}
+.ex-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.ex-nav button,.ex-btn{margin:0;min-width:0;cursor:pointer;font:inherit;color:#ede6d8;border:1px solid var(--ex-edge);border-radius:10px;background:#202741;line-height:1.2;box-shadow:none;text-shadow:none}
+.ex-nav button{display:grid;justify-items:center;align-content:center;gap:3px;padding:5px 1px;font-size:13px;min-height:61px}
+#panel .ex-nav img{display:block;width:42px;height:40px;object-fit:contain}
+.ex-nav button[aria-pressed=true]{border-color:#e6c28b;color:#ffe2a5;background:linear-gradient(160deg,#584734,#2c293a)}
+.ex-card{--accent:#f7c474;overflow:hidden;border-radius:14px;border:1px solid var(--ex-edge);background:linear-gradient(135deg,#232438ed,#14182dee)}
+.ex-mana{--accent:#9ab7ff}.ex-gem{--accent:#7de8d9}.ex-rune{--accent:#d7abff}
+.ex-art{position:relative;isolation:isolate;overflow:hidden;height:clamp(104px,18svh,175px);text-align:left}
+.ex-art>img{width:100%;height:100%;object-fit:cover;object-position:50% 48%;display:block}
+.ex-art:after{content:"";position:absolute;inset:0;background:linear-gradient(95deg,#111029ca,transparent 74%),linear-gradient(0deg,#111129a3,transparent 65%)}
+.ex-art>div{position:absolute;bottom:12px;left:14px;right:10px;z-index:1}
+.ex-art small{color:var(--accent);font-size:12px}.ex-art h3{font:400 clamp(22px,5vw,33px)/1.1 var(--display);color:#fff7df;text-shadow:0 2px 5px #121020;margin:3px 0 0}
+.ex-copy{padding:12px 14px;display:grid;align-content:center;gap:8px;text-align:left}
+.ex-est{color:#c3bacb;font-size:12px;line-height:1.25}.ex-meta,.ex-goal{display:flex;justify-content:space-between;flex-wrap:wrap;align-items:center;gap:2px 8px;font-size:13px}
+.ex-meta{color:#d4cbd3}.ex-meta span:first-child,.ex-goal b{color:var(--accent)}
+.ex-copy p,.ex-map p{margin:0;font:inherit;line-height:1.43;color:#e3ddeb}.ex-copy p{font-size:14px}.ex-goal strong,.ex-goal b,.ex-map strong{font-weight:400}
+.ex-copy progress,.exp-hud progress{width:100%;height:6px;appearance:none;display:block;border:0;border-radius:9px;overflow:hidden;color:var(--accent);background:#0e1023}
+.ex-copy progress::-webkit-progress-bar,.exp-hud progress::-webkit-progress-bar{background:#101324}.ex-copy progress::-webkit-progress-value,.exp-hud progress::-webkit-progress-value{background:var(--accent,#e9b675);border-radius:8px}
+.ex-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:2px}.ex-btn{min-height:44px;padding:6px 10px;text-align:center;font-size:14px}
+.ex-btn.ex-primary{background:linear-gradient(#ffdeb1,#e4b87f);color:#342139;border-color:#edcd9e}.ex-btn:disabled{opacity:.48;cursor:default}
+.ex-pick{min-height:44px;text-align:left;color:#e9d0ff}.ex-map{padding:10px 13px;border:1px solid var(--ex-edge);border-radius:12px;background:#1a2038eb;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;text-align:left}
+.ex-map strong{font-size:16px}.ex-map p{color:#c9bed0;font-size:12px}.ex-pieces{display:flex;gap:3px}.ex-pieces span{display:grid;place-items:center;width:24px;height:25px;background:#30344c;border:1px solid #494759;border-radius:6px}.ex-pieces img{width:20px;height:20px;object-fit:contain;opacity:.37;filter:grayscale(1)}.ex-pieces .found{border-color:#d7b675}.ex-pieces .found img{opacity:1;filter:none}
+#app #dunHud.exp-hud{top:var(--exp-top,calc(var(--hudH) + 12px + var(--cap,0px) + env(safe-area-inset-top,0px)));display:grid;grid-template-columns:32px minmax(0,1fr) auto;align-items:center;white-space:normal;gap:4px 8px;padding:6px 10px;width:min(250px,calc(100% - 106px));color:#fff6e1;background:#201a32ed;line-height:1.18}
+.exp-hud img{grid-row:span 2;width:32px;height:32px;object-fit:contain}.exp-hud b,.exp-hud span{font-size:13px}.exp-hud progress{grid-column:2/4}
+@media(orientation:landscape){#app #sheet.expedition-sheet #panel{padding:4px 9px 12px}.expedition{gap:6px}.ex-nav button{grid-template-columns:auto auto;align-items:center;justify-content:center;gap:4px;min-height:44px;font-size:12px}#panel .ex-nav img{width:30px;height:31px}.ex-card{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)}.ex-art{height:100%;min-height:134px}.ex-art>div{left:8px;bottom:8px}.ex-art h3{font-size:clamp(18px,2.6vw,27px)}.ex-copy{padding:8px;gap:5px}.ex-copy p{font-size:13px}.ex-map{padding:7px 9px}.ex-meta,.ex-goal{font-size:12px}}
+@media(max-width:340px){.ex-copy{padding:9px 10px}.ex-nav button{font-size:12px}.ex-map{padding:8px}}
+</style>
 <div id="app">
   <div id="stage">
     <canvas id="cv" aria-label="전투 화면"></canvas>
@@ -3569,6 +3603,7 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script src="js/divine.js"></script>
 <script src="js/training.js"></script>
 <script src="js/dungeon.js"></script>
+<script src="js/expeditions.js"></script>
 <script src="js/library.js"></script>
 <script src="js/runes.js"></script>
 <script src="js/titles.js"></script>
@@ -3592,6 +3627,8 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script src="js/player-sync.js"></script>
 <script src="js/login-gate.js"></script>
 <script src="js/minions.js"></script>
+<script src="js/expedition-atlases.js"></script>
+<script src="js/expedition-puppet.js"></script>
 <script src="js/scene.js"></script>
 <script src="js/vfx.js"></script>
 <script src="js/mesh-skills6.js"></script>

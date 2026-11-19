@@ -293,6 +293,7 @@
     var bgEl = document.createElement('div'); bgEl.className = 'stagebg'; canvas.parentNode.insertBefore(bgEl, canvas);
     var bgReady = {}, desertLight = {value:0};
     function showBackdrop(id) {
+      bgEl.classList.toggle('expedition-bg',!!id && id.indexOf('expedition-')===0);
       bgEl.style.backgroundImage = id ? 'url(' + (CW.ART_BASE || 'art/') + id + '.webp)' : '';
       bgEl.style.setProperty('--field-art', bgEl.style.backgroundImage);
       bgEl.classList.toggle('desert', id === 'bg-desert');
@@ -329,6 +330,7 @@
     // staff, which moves with the staff bone only, as one stiff piece
     function rigGeometry(art, mode) {
       var key = (art.id || 'x') + (mode ? '|' + mode : ''); if (geoCache[key]) return geoCache[key];
+      if (art.puppet) return (geoCache[key] = CW.expeditionPuppet.geometry(art, T));
       var fine = !!(art.rig && art.rig.armL && art.rig.armL.cap), geo = new T.PlaneGeometry(art.aspect, 1, fine ? 48 : 14, fine ? 72 : 22); geo.translate(0, 0.5, 0);
       var n = geo.attributes.position.count, uv = geo.attributes.uv.array, w0 = new Float32Array(n * 4), w1 = new Float32Array(n * 4);
       if (art.rig && art.crop && CW.rigWeightsAt) for (var i = 0; i < n; i++) {
@@ -381,6 +383,7 @@
     function billboard(art, height, tint, role) {
       var w = height * art.aspect, mat = bbMaterial(art.tex, tint);
       mat.uniforms.uArtRole.value=role || 0;
+      if (art.puppet) CW.expeditionPuppet.prepare(art, mat);
       var m = new T.Mesh(rigGeometry(art), mat); m.scale.setScalar(height); m.renderOrder = 3; m.rotation.x = -TILT;
       var g = new T.Group(); g.add(m); g.rotation.order = 'YXZ'; g.rotation.y = orb.yaw;
       var sh = new T.Mesh(new T.CircleGeometry(w * 0.32, 20), new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false }));
@@ -389,6 +392,7 @@
       var seed = Math.random() * 6;
       g.userData = { body: m, u: mat.uniforms, shadow: sh, h: height, w: w, aspect: art.aspect, rig: art.rig, crop: art.crop, seed: seed, face: 1,
         bend: spring(170, 10), sq: spring(230, 13), lift: spring(95, 10), slide: spring(70, 11), light: new T.Color(0), anim: newAnim(seed) };
+      if (art.puppet) g.userData.puppet = art.puppet;
       if(role){
         g.userData.printRole=role;g.userData.shadowDisk=sh.geometry;
         g.userData.printPlane=new T.PlaneGeometry(w*1.12,w*.80);dressShadow(g);
@@ -723,8 +727,8 @@
         x: 0, z: 0, y: 0, vy: 0, tx: spot.x, tz: spot.z,
         state: 'enter', st: 0, speed: boss ? 1.5 : rr(2.6, 3.6), entry: entry, arrived: false, stun: 0, atk: 0, struck: false,
         flash: 0, frozen: 0, shocked: 0, freezeV: 0, phase: g.userData.seed, kx: spring(80, 9), face: 1, walk: 0, hurt: 0,
-        flyer: !!FLYERS[def.art.id], cheer: 0, vx: 0, vz: 0, sp: 0,
-        gait: GAITS[def.art.id] || 'walk', hopCd: 0, pvx: 0, pvz: 0, tilt: spring(120, 9), dartT: 0, dartOn: true, orbDir: 1, orbR: 2.4 };
+        flyer: !!def.flyer || !!FLYERS[def.art.id], cheer: 0, vx: 0, vz: 0, sp: 0,
+        gait: def.gait || GAITS[def.art.id] || 'walk', hopCd: 0, pvx: 0, pvz: 0, tilt: spring(120, 9), dartT: 0, dartOn: true, orbDir: 1, orbR: 2.4 };
       // come in from the nearest screen edge: left, right, the far side or the near side
       var ang = Math.atan2((spot.z - HB.z) / 1.15, spot.x - HB.x), cx = Math.cos(ang), cz = Math.sin(ang);
       // sideways every one (the boss too) comes in from the right edge, at about the depth it is heading for
@@ -735,6 +739,19 @@
       else { mob.x = spot.x + rr(-1, 1); mob.z = FIELD.z1 + rr(1.6, 2.4); }
       if (entry === 'leap') { mob.vy = rr(5.5, 7.5); mob.speed = rr(3.2, 4.2); }
       if (entry === 'drop') { mob.x = spot.x; mob.z = spot.z; mob.y = rr(4.5, 6.5); mob.speed = 0; }
+      if (def.id === 'exmob-gecko') mob.gait = 'crawl';
+      if (def.id === 'exmob-tablet') {
+        mob.gait = 'stomp'; mob.entry = 'unseal'; mob.state = 'unseal';
+        mob.x = spot.x; mob.z = spot.z; mob.y = mob.vy = 0;
+        mob.st = 0.85; g.userData.u.uBuried.value = 1.1;
+        if (hooks.burrowDust) hooks.burrowDust(mob, false);
+      }
+      if (def.id === 'exmob-mole') {
+        mob.x = spot.x; mob.z = spot.z;
+        mob.entry = 'burrow'; mob.state = 'burrow'; mob.st = 0.55;
+        g.visible = false;
+        if (hooks.burrowDust) hooks.burrowDust(mob, false);
+      }
       g.position.set(mob.x, mob.y, mob.z);
       if (def.regionBoss || boss) {
         var glow = new T.Sprite(new T.SpriteMaterial({ map: GLOW, color: def.regionBoss ? 0xff4f7a : 0xffd84a, transparent: true, depthWrite: false, blending: T.AdditiveBlending, opacity: def.regionBoss ? 0.75 : 0.45 }));
@@ -1050,10 +1067,40 @@
     // m.st: how long it may try to get there (a walk that keeps being shoved off its goal gives up and picks something else)
     function setGoal(m, x, z, speed, state) { var p = clampField({ x: x, z: z }); m.tx = p.x; m.tz = p.z; m.speed = speed; m.state = state; m.st = 3.5; }
     function nearHero(m, dist) { var dx = m.x - HB.x, dz = (m.z - HB.z) / 1.15, d = Math.sqrt(dx * dx + dz * dz) || 1; return { x: HB.x + dx / d * dist, z: HB.z + dz / d * dist * 1.15 }; }
+    function fleeMouse(m) {
+      var angle = Math.atan2(m.z - HB.z, m.x - HB.x);
+      var turns = [0, 0.95, -0.95, 1.6, -1.6], best, farthest = -1;
+      for (var i = 0; i < turns.length; i++) {
+        var a = angle + turns[i];
+        var p = clampField({ x: m.x + Math.cos(a) * 2.5, z: m.z + Math.sin(a) * 2.5 });
+        var distance = Math.hypot(p.x - HB.x, p.z - HB.z);
+        if (distance > farthest) { best = p; farthest = distance; }
+      }
+      setGoal(m, best.x, best.z, 3.4, 'flee');
+      m.arrived = true; m.st = 0.72; m.fleeReady = time + 2.4;
+      m.trailX = m.x; m.trailZ = m.z; m.coinsLeft = 2;
+      m.vx = m.vz = 0;
+    }
     function nextAction(m) {
       // left outside the picture (the camera moved with the wizard): walk back in first
       if (m.arrived && !inView(m)) { var cb = clampField({ x: m.x, z: m.z }); setGoal(m, cb.x * 0.9, cb.z, m.boss ? 1.5 : rr(1.5, 2.0), 'wander'); return; }
+      if (m.id === 'exmob-core' || m.id === 'exmob-bat') {
+        m.state = 'orbit'; m.orbR = m.id === 'exmob-core' ? 2.2 : rr(1.7, 2.8);
+        m.st = rr(1.4, 2.7); m.speed = m.id === 'exmob-core' ? 1.1 : 2.4;
+        if (Math.random() < 0.25) m.orbDir *= -1;
+        return;
+      }
+      if (m.id === 'exmob-gecko' || m.id === 'exmob-fox' || m.id === 'exmob-tablet') {
+        var isFox = m.id === 'exmob-fox', isStone = m.id === 'exmob-tablet';
+        var path = ringSpot(isFox ? 1.35 : 1.8, isStone ? 2.5 : 3.4, false);
+        setGoal(m, path.x, path.z, isStone ? 1.15 : isFox ? 3.2 : 2.3, 'wander');
+        return;
+      }
       if (m.boss) return bossAction(m);
+      if (m.id === 'exmob-mouse') {
+        var forage = ringSpot(1.6, 2.4, false);
+        setGoal(m, forage.x, forage.z, 1.65, 'wander'); return;
+      }
       var r = Math.random(), dH = Math.hypot(m.x - HB.x, m.z - HB.z), run = m.gait === 'skitter' ? 1.3 : m.gait === 'stomp' ? 0.75 : 1;
       if (dH > 4.3) { var c0 = nearHero(m, rr(2.0, 3.1)); setGoal(m, c0.x, c0.z, rr(1.7, 2.3) * run, 'wander'); }   // the wizard ran off: go after it
       else if (r < 0.28) { var w = freeSpot(false); setGoal(m, (m.x + w.x) / 2, (m.z + w.z) / 2, rr(0.9, 1.4) * run, 'wander'); }
@@ -1077,6 +1124,32 @@
       if (m.stun > 0) { m.stun -= dt; m.walk *= 0.8; m.vx *= 0.8; m.vz *= 0.8; m.sp = 0; return; }
       m.st -= dt;
       var st = m.state, moving = false, grounded = m.y <= 0.01;
+      if (st === 'unseal') {
+        var reveal = Math.min(1, Math.max(0, (0.76 - m.st) / 0.68));
+        d.u.uBuried.value = 1.1 * (1 - reveal * reveal * (3 - 2 * reveal));
+        if (m.st <= 0) {
+          m.arrived = true; m.state = 'idle'; m.st = 0.24; m.vy = 2.4;
+          if (hooks.burrowDust) hooks.burrowDust(m, true);
+        }
+        return;
+      }
+      if (st === 'burrow') {
+        if (m.st <= 0) {
+          g.visible = true; g.scale.y = 0.2;
+          m.vy = 4.6; m.state = 'surface'; m.st = 0.15;
+          if (hooks.burrowDust) hooks.burrowDust(m, true);
+        }
+        return;
+      }
+      if (st === 'surface') {
+        g.scale.y = Math.min(1, 1 - 0.8 * Math.max(0, m.st) / 0.15);
+        if (m.st <= 0) { m.arrived = true; m.state = 'idle'; m.st = 0.4; }
+        return;
+      }
+      if (m.id === 'exmob-mouse' && time >= (m.fleeReady || 0) &&
+          Math.hypot(m.x - HB.x, m.z - HB.z) < 2.7 && (m.arrived || inView(m))) {
+        fleeMouse(m); st = m.state;
+      }
       if (st === 'orbit') {
         // circle the wizard at about the distance it already keeps: the goal is always one step ahead on the circle
         var ox = HB.x - m.x, oz = HB.z - m.z, od = Math.sqrt(ox * ox + oz * oz) || 1, rad = (od - m.orbR) * 1.2;
@@ -1085,11 +1158,12 @@
         m.tx = cp.x; m.tz = cp.z;
         if (m.st <= 0) { nextAction(m); st = m.state; }
       }
-      if (st === 'enter' || st === 'wander' || st === 'charge' || st === 'back' || st === 'orbit') {
+      if (st === 'enter' || st === 'wander' || st === 'flee' || st === 'charge' || st === 'back' || st === 'orbit') {
         var dx = m.tx - m.x, dz = m.tz - m.z, dist = Math.sqrt(dx * dx + dz * dz);
         // a boss under fire is nudged by every hit and never lands right on the spot: near enough counts, and so does
         // having tried long enough (it used to stay stuck walking "back" a step short of its goal for the whole fight)
         if ((st === 'wander' || st === 'back') && ((m.boss && dist < 0.35) || m.st <= 0)) dist = 0;
+        if (st === 'flee' && m.st <= 0) dist = 0;
         var want = m.speed > 0 && dist > 0.05 ? Math.min(m.speed, dist * (st === 'charge' ? 6 : 2.5) + 0.3) : 0;
         var acc = Math.min(1, dt * (st === 'charge' ? 9 : gait === 'float' ? 2.6 : gait === 'skitter' ? 12 : 4.5));
         m.vx += ((dist > 1e-4 ? dx / dist * want : 0) - m.vx) * acc; m.vz += ((dist > 1e-4 ? dz / dist * want : 0) - m.vz) * acc;
@@ -1102,10 +1176,14 @@
           } else if (gait === 'stomp') mul = 0.4 + 1.15 * Math.abs(Math.sin(d.anim.ph));
           else if (gait === 'skitter') {
             m.dartT -= dt; if (m.dartT <= 0) { m.dartOn = !m.dartOn; m.dartT = m.dartOn ? rr(0.22, 0.42) : rr(0.1, 0.28); }
-            mul = m.dartOn || st === 'charge' ? 1.7 : 0;
+            mul = m.dartOn || st === 'charge' || st === 'flee' ? 1.7 : 0;
           }
           m.x += m.vx * mul * dt; m.z += m.vz * mul * dt; moving = mul > 0;
           if (gait === 'skitter' && moving) { var zz = Math.sin(time * 13 + m.phase) * 0.9 * dt; m.x += -dz / dist * zz; m.z += dx / dist * zz; }
+          if (st === 'flee' && m.coinsLeft && Math.hypot(m.x - m.trailX, m.z - m.trailZ) >= 0.5) {
+            if (hooks.mouseCoin) hooks.mouseCoin(m.trailX, m.trailZ);
+            m.trailX = m.x; m.trailZ = m.z; m.coinsLeft--;
+          }
           var msx = scrX(m.vx, m.vz); if (gait !== 'hop' && Math.abs(msx) > 0.25) m.face = msx < 0 ? 1 : -1;
           if (st === 'enter' && dist < 1.2 && m.boss) m.speed = Math.max(0.9, m.speed * 0.98);
         } else if (grounded || m.flyer || gait === 'float') {
@@ -1146,6 +1224,7 @@
     function separate() {
       for (var i = 0; i < mobs.length; i++) for (var j = i + 1; j < mobs.length; j++) {
         var a = mobs[i], b = mobs[j], need = (a.boss || b.boss) ? 0.9 : 0.5, dx = b.x - a.x, dz = (b.z - a.z) * 1.4, dd = Math.sqrt(dx * dx + dz * dz);
+        if (a.state === 'burrow' || b.state === 'burrow' || a.state === 'unseal' || b.state === 'unseal') continue;
         if (dd < need && dd > 1e-4) {
           var push = (need - dd) * 0.5, nx = dx / dd, nz = dz / dd;
           var wa = a.boss ? 0.15 : (b.boss ? 1.85 : 1), wb = 2 - wa;
@@ -1211,6 +1290,7 @@
       separate();
       mobs.forEach(function (m) {
         var g = m.group, d = g.userData, u = d.u, frozen = m.frozen > 0;
+        if (m.state === 'burrow') return;
         if (frozen) m.frozen -= dt;
         if (m.shocked > 0) m.shocked -= dt;
         // vertical motion: jumps, falls, flyers hover
@@ -1238,7 +1318,7 @@
         var P = { walk: frozen ? 0 : m.walk, speed: m.sp, stride: m.boss ? 0.42 : 0.22, air: m.y > 0.12, armL: -m.atk * 1.15, armR: m.atk * 0.3, hurt: m.hurt, cheer: m.cheer, stepRate: m.boss ? 0.65 : 1,
           flap: m.flyer ? 0.32 : m.boss ? 0.16 : 0.1, flapF: m.flyer ? 9 : 6, wingOpen: m.state === 'roar' ? 0.25 : 0 };
         if (m.pull !== undefined) { P.cheer = 1; P.hurt = 0.8; }
-        var stepped = frozen ? false : animRig(g, frozen ? 0 : dt, P);
+        var stepped = d.puppet ? CW.expeditionPuppet.pose(m, frozen ? 0 : dt) : !frozen && animRig(g, dt, P);
         if (stepped && m.boss && !m.flyer) { shake(0.05); if (hooks.step) hooks.step(new T.Vector3(m.x, 0.03, m.z), true); }
         else if (stepped && m.gait === 'stomp') { d.sq.v -= 1.5; if (hooks.step) hooks.step(new T.Vector3(m.x, 0.03, m.z), false); }
         if (frozen) { d.bend.v *= 0.5; d.sq.v *= 0.5; }
@@ -1250,6 +1330,11 @@
         stepSpring(m.kx, dt);
         var hover = m.flyer ? 0.4 + Math.sin(time * 2.4 + m.phase) * 0.12 : m.gait === 'float' ? 0.2 + Math.sin(time * 2.2 + m.phase) * 0.08 : 0;
         var bounce = m.y <= 0.01 ? Math.abs(Math.sin(d.anim.ph)) * (m.boss ? 0.035 : 0.035 + 0.06 * Math.min(1, m.sp / 3)) * d.anim.walk : 0;
+        if (d.puppet) {
+          if (m.id === 'exmob-bat') hover += Math.cos(d.anim.t * 9.5) * 0.075;
+          if (m.id === 'exmob-fox') bounce = m.y <= 0.01 ? Math.max(0, Math.cos(d.anim.ph)) * 0.12 * d.anim.walk : 0;
+          if (m.id === 'exmob-gecko') bounce *= 0.25;
+        }
         g.position.set(m.x + m.kx.x * 0.12 * cY, m.y + hover + bounce, m.z - m.kx.x * 0.12 * sY);
         // the body rocks with the way it moves: waddlers sway from foot to foot, heavy ones lurch, gliders bank into their turns
         var gz = 0, wkA = d.anim.walk, phA = d.anim.ph;
@@ -1262,6 +1347,8 @@
           if (m.y > 0.2 && !m.boss) gz += -m.vy * 0.015 * d.face;
           gz += Math.max(-0.45, Math.min(0.45, m.tilt.x));
         }
+        if (m.id === 'exmob-fox') gz += Math.sin(d.anim.ph) * d.anim.walk * 0.075;
+        if (m.id === 'exmob-bat') gz += Math.sin(d.anim.t*2.3) * 0.11;
         g.rotation.z = gz;
         d.shadow.position.y = 0.012 - g.position.y;
         d.shadow.scale.setScalar(Math.max(0.35, 1 - g.position.y * 0.35));
@@ -1276,7 +1363,7 @@
       for (var i = dying.length - 1; i >= 0; i--) {
         var m = dying[i], g = m.group, dd = g.userData; m.deadT += dt; var k2 = m.deadT / m.deadLife;
         driveBillboard(g, dt, { bend: 0, sq: 0 }, dd.face);
-        animRig(g, dt, { hurt: 1, cheer: 0.6, air: true });
+        if (!dd.puppet) animRig(g, dt, { hurt: 1, cheer: 0.6, air: true });
         m.x += m.fvx * dt; m.y += m.fvy * dt; m.fvy -= 15 * dt;
         if (m.y < 0) { m.y = 0; if (!m.bounced && m.fvy < -2) { m.bounced = true; m.fvy = -m.fvy * 0.35; m.fvx *= 0.5; m.fspin *= 0.4; } else m.fvy = 0; }
         g.position.set(m.x, m.y, m.z); g.rotation.z += m.fspin * dt;

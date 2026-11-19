@@ -124,7 +124,7 @@
     var one = main <= 1, d0 = 1.0;
     var nm = String(o.name || ''), len = nm.replace(/\s/g, '').length + nm.split(' ').length * 0.35;
     var tSize = Math.min(6.9, 30 / Math.max(1, len * 0.98));
-    var pic = o.kind === 'rune'
+    var pic = o.kind === 'rune' && !o.photo
       ? '<img class="dbk-temple" src="' + a + 'dbook-temple.webp" alt="" draggable="false" style="' + box(104, 300, 759, 739) + '">'
       : '<span class="dbk-photo' + (o.kind === 'library' ? ' library-photo' : '') + '" style="left:' + px(196) + ';top:' + py(338) + ';width:' + px(476) + '"><img src="' + a + (o.photo || 'ui-dungeon-' + o.kind) + '.webp" alt="" draggable="false"></span>';
     var rw = rows.map(function (r, i) {

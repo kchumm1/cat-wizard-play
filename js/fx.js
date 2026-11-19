@@ -251,7 +251,7 @@
     // on the field right then — also the ones that walked in after the cast began.
     function halfX(z) { return 2.2 + (3.8 - z) * 0.16; }
     function onField(m) { return m.z > -4.9 && m.z < 4.1 && Math.abs(m.x) < halfX(m.z) + 0.3 && m.y < 1.6; }
-    function liveMobs() { return sc.mobs().filter(function (m) { return m.alive && (m.arrived || onField(m)); }); }
+    function liveMobs() { return sc.mobs().filter(function (m) { return m.alive && (m.arrived || (m.entry !== 'burrow' && m.entry !== 'unseal' && onField(m))); }); }
     function gp(m) { return V(m.x, 0, m.z); }
     function near(list, x, z, max) { var best = null, bd = max === undefined ? Infinity : max * max; list.forEach(function (m) { var d = (m.x - x) * (m.x - x) + (m.z - z) * (m.z - z); if (d < bd) { bd = d; best = m; } }); return best; }
     // straight up on the screen: the camera looks down at the field, so "up" leans away from it
@@ -1439,6 +1439,12 @@
     }
 
     // ---------- reactions outside skills ----------
+    sc.hooks.mouseCoin = function (x, z) { coinPop(V(x, 0.24, z), 1); };
+    sc.hooks.burrowDust = function (m, emerging) {
+      var at = V(m.x, 0.05, m.z);
+      if (!emerging) scorch(at, 1.05, 0.85);
+      smoke(at, 0xb99059, Math.max(2, N(emerging ? 4 : 3)), { size: emerging ? 0.95 : 0.75, rise: 0.45, alpha: 0.8 });
+    };
     sc.hooks.land = function (pos, boss) { dust(pos, Math.max(1, Math.round((boss ? 6 : 2) * vx.quality())), boss ? 1.6 : 0.8); if (boss) gRing(pos, 0xffffff, 1.4, 0.35); };
     sc.hooks.step = function (pos, boss) { if (boss) { dust(pos, N(3), 1.1); gRing(pos, 0xffffff, 0.9, 0.25); } else if (Math.random() < 0.45) dust(pos, 1, 0.45); };
     // a monster claws at the wizard: slash marks fly at it and its magic barrier ripples

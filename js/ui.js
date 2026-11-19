@@ -328,25 +328,59 @@
       buttons.push({ label: '나중에 이어하기', fn: later });
       modal('<h2>' + title + '</h2><p>' + subtitle + '</p>', buttons, { variant: 'library' });
     }
+    var expeditionId='gold';
+    function expeditionPanel() {
+      var A=CW.ART_BASE || 'art/';
+      var s=G.state, exp=CW.expeditions, j=exp.journal(s), id=expeditionId, def=DATA.dungeons.find(function(d){return d.id===id;}), site=exp.places[id];
+      var pieces=exp.pieces(s), now=Date.now(), left=CW.ticketsLeft(s,id,now), best=s.dungeon.best[id], open=CW.kindOpen(s,id), busy=!!G.dunState();
+      var t=exp.track(s,id), labels={gold:'고양이 굴',mana:'마력의 탑',gem:'보석 동굴',rune:'룬의 신전'};
+      function expeditionIcon(k) {return '<img draggable="false" alt="" src="'+A+'exp-icon-'+k+'.webp">';}
+      function btn(attr,txt,inactive,style){return '<button type="button" '+attr+' class="ex-btn '+(style||'')+'"'+(inactive?' disabled':'')+'>'+txt+'</button>';}
+      var nav=exp.ids.map(function(k){return '<button type="button" data-ex-site="'+k+'" aria-pressed="'+(k===id)+'">'+expeditionIcon(k)+'<span>'+labels[k]+'</span></button>';}).join('');
+      var ticket=open?'입장권 '+left+'장':'전직 '+(def.unlockTier||DATA.dungeonConf.unlockTier)+'차에 열림';
+      var estimate=best && CW.dungeonReward(s,id,best);var expected=estimate && (estimate.gold || estimate.gems || estimate.mana || estimate.runeStone || 0);
+      var row=(best?'<small class="ex-est">소탕 예상 · '+site.reward.split(' · ')[0]+' +'+(id==='gold'?fmtG(expected):fmt(expected))+'</small>':'')+'<div class="ex-actions">'+btn('data-dgo="'+id+'"','입장',!open||!left||busy,'ex-primary')+btn('data-dsw="'+id+'"','소탕',!open||!left||!best||busy)+'</div>';
+      var pick=id==='rune' && open?btn('data-ex-runes="1"','새길 문양 · '+exp.target(s).name,busy,'ex-pick'):'';
+      var mapLine=j.maps?'완성 보물 · 원하는 전리품':'첫 완성 보물 · 유적 탐험가 냥이';
+      var mapBtn=pieces.length===4?btn('data-ex-chest="1"','보물방 열기',busy,'ex-primary'):'';
+      var dots=exp.ids.map(function(k){return '<span class="'+(pieces.includes(k)?'found':'')+'" title="'+labels[k]+'">'+expeditionIcon(k)+'</span>';}).join('');
+      return '<section class="expedition"><nav class="ex-nav" aria-label="탐험할 던전">'+nav+'</nav><article class="ex-card ex-'+id+'">'+
+        '<div class="ex-art"><img src="'+A+'expedition-'+id+'.webp" alt="'+site.goal+'" draggable="false"><div><small>'+site.theme+'</small><h3>'+def.name+'</h3></div></div>'+
+        '<div class="ex-copy"><div class="ex-meta"><span>'+site.reward+'</span><span>'+ticket+'</span></div><p>'+site.story+'</p>'+
+        '<div class="ex-goal"><strong>'+t.round+'차 탐험 · '+t.label+'</strong><b>'+t.points+'%</b></div><progress aria-label="탐험 진척" max="100" value="'+t.points+'"></progress>'+pick+row+'</div></article>'+
+        '<section class="ex-map"><div><strong>유적 보물 지도</strong><p>'+mapLine+'</p></div><div class="ex-pieces" aria-label="지도 조각 '+pieces.length+'개">'+dots+'</div>'+mapBtn+
+        (j.maps?btn('data-ex-wear="1"',j.wearing?'탐험복 벗기':'탐험복 입기',busy):'')+'</section></section>';
+    }
     function dungeonPanel() {
-      var s = G.state, now = Date.now();
-      if (!CW.dungeonOpen(s)) return lockedCard('dung', DATA.dungeonConf.unlockTier) + libraryDungeonCard();
-      var run = G.dunState();
-      return (run ? '<div class="notice">' + run.name + ' 진행 중</div>' : '') + guideRow('dungeon', '던전별 하루 입장권 ' + DATA.dungeonConf.tickets + '장 · 클리어하면 소탕 가능') + '<div class="dlist">' +
-        DATA.dungeons.map(function (d) {
-          var bonus = (s.dungeon && s.dungeon.bonus && s.dungeon.bonus[d.id]) || 0, left = CW.ticketsLeft(s, d.id, now) - bonus, best =s.dungeon && s.dungeon.best && s.dungeon.best[d.id];
-          var bestTxt = best ? (d.id === 'mana' ? '최고 피해 ' + fmt(best.dmg) : '최고 ' + best.kills + '마리') : '기록 없음';
-          var rw = best ? CW.dungeonReward(s, d.id, best) : null;
-          var rwTxt = rw ? (rw.gold ? '골드 +' + gh(rw.gold) : rw.gems ? '다이아 +' + fmt(rw.gems) : rw.runeStone ? '룬석 +' + fmt(rw.runeStone) + (rw.runes ? ' · 룬 ' + rw.runes + '개' : '') : '마력석 +' + fmt(rw.mana)) : '';
-          if (!CW.kindOpen(s, d.id)) return '<div class="dung dg-' + d.id + ' lockd"><div class="dicon">' + mi('dungeon', d) + '</div><div class="info"><div class="dname">' + d.name + '</div><div class="note">' + d.desc + '</div><div class="note">' + d.unlockTier + '차 전직 후 해금</div></div></div>';
-          return '<div class="dung dg-' + d.id + '"><div class="dicon">' + mi('dungeon', d) + '</div><div class="info"><div class="dname">' + d.name + '</div><div class="note">' + d.desc + '</div><div class="note">입장권 <b style="color:#fff">' + left + '/' + DATA.dungeonConf.tickets + '</b>' + (bonus ? ' <b style="color:#ffd76a">+' + bonus + '</b>' : '') + ' · ' + bestTxt + (rwTxt ? ' (' + rwTxt + ')' : '') + '</div></div>' +
-            '<div class="dbtns"><button class="buy' + ((left + bonus) && !run ? '' : ' off') + '" data-dgo="' + d.id + '">입장</button><button class="btn' + ((left + bonus) && best && !run ? '' : ' off') + '" data-dsw="' + d.id + '">소탕</button></div></div>';
-        }).join('') + libraryDungeonCard() + '</div>';
+      return expeditionPanel() + libraryDungeonCard();
     }
     // mana surge gauge over the skill row (no pop-up words: the user wants none)
     function surgeGauge(v, max) { var f = $('surgeFill'); if (f) f.style.width = Math.min(100, v / max * 100) + '%'; var g = $('surgeGauge'); if (g) g.classList.toggle('full', v >= max - 1); }
+    function placeExpeditionHud() {
+      var box=$('dunHud');
+      if(!box.classList.contains('exp-hud') || !box.offsetParent)return;
+      var stars=$('killBar').getBoundingClientRect(),parent=box.offsetParent;
+      if(!stars.height){box.style.removeProperty('--exp-top');return;}
+      var parentRect=parent.getBoundingClientRect(), scale=parentRect.height/parent.offsetHeight || 1;
+      box.style.setProperty('--exp-top',(Math.ceil((stars.bottom-parentRect.top)/scale)+12)+'px');
+    }
+    if(window.ResizeObserver){
+      var expObserver=new ResizeObserver(placeExpeditionHud);
+      [$('hud'),$('killBar'),$('stage')].forEach(function(node){expObserver.observe(node);});
+    }
+    window.addEventListener('resize',placeExpeditionHud);
     function dunHud(run) {
-      var el = $('dunHud'); if (!run) { el.className = ''; return; }
+      var el = $('dunHud'); if (!run) { el.className = ''; el.style.removeProperty('--exp-top'); return; }
+      if(CW.expeditions.places[run.kind]) {
+        var t=CW.expeditions.track(G.state,run.kind,run);
+        if(el.dataset.site!==run.kind || !el.classList.contains('exp-hud')){
+          el.className='on exp-hud';el.dataset.site=run.kind;
+          placeExpeditionHud();
+          el.innerHTML='<img alt="" src="'+(CW.ART_BASE || 'art/')+'exp-icon-'+run.kind+'.webp"><b></b><span></span><progress max="100" aria-label="탐험 진척"></progress>';
+        }
+        el.children[1].textContent=t.label;el.children[2].textContent=Math.ceil(Math.max(0,run.t))+'초';
+        el.children[3].value=t.points;return;
+      }
       el.className = 'on';
       el.innerHTML = '<b>' + run.name + '</b><span>' + Math.max(0, run.t).toFixed(1) + '초</span><span>' + (run.kind === 'mana' ? '피해 ' + fmt(run.dmg) + ' · 골렘 Lv.' + run.level : '처치 ' + run.kills + (run.goal ? ' / ' + run.goal : '')) + '</span>';
     }
@@ -397,7 +431,7 @@
     }
     var cosPrev = null;   // 코스튬 미리보기 (저장 안 함, 착용과 별개)
     function costumePanel() {
-      var s = G.state, own = s.costume.owned, wear = s.costume.wear;
+      var s = G.state, own = s.costume.owned, wear = CW.costumeLook(s).id;
       var cards = DATA.costumes.map(function (c) {
         var lv = own[c.id] || 0, img = (CW.ICO && CW.ICO.cosArt && CW.ICO.cosArt(c.id, true)) || G.costumeThumb(c.id), on = wear === c.id, max = lv >= DATA.costumeConf.maxLv, ns = CW.costumeStars(lv), cst = '';
         for (var ci = 0; ci < DATA.costumeConf.maxLv / DATA.costumeConf.starEvery; ci++) cst += '<i class="' + (ci < ns ? 'on' : '') + '">★</i>';
@@ -424,7 +458,9 @@
         '<p class="cs-lvrow"><span>' + (plv ? 'Lv.<span data-opv="cosl">' + plv + '</span>' : '미보유') + '</span><em class="cs-st">' + csStars + '</em><em>' + (plv ? (pmax ? '최대 레벨' : '다음 별까지 <b>' + toStar + '레벨</b>') : '') + '</em></p></div>' +
         '<div class="cs-act' + (plv ? '' : ' one') + '">' + pact + '</div></div>';   // one: 버튼 하나(구매)뿐 — ui-opal.js 설명
       // 승인 시안 순서: 전시 → 이름 → 효과 → 입기·강화 → 의상 목록 (수집 효과는 목록 아래)
-      return '<h3 class="ophide">코스튬</h3>' + stage + '<div class="cgrid">' + cards + '</div>' +
+      var explore=s.dungeon && s.dungeon.explore;
+      var expeditionOutfit=explore && explore.maps ? '<div class="ex-map"><div><strong>유적 탐험가 냥이</strong><p>보물 지도를 완성한 탐험가의 의상</p></div><button class="ex-btn" data-ex-wear="1">'+(explore.wearing?'탐험복 벗기':'탐험복 입기')+'</button></div>' : '';
+      return '<h3 class="ophide">코스튬</h3>' + expeditionOutfit + stage + '<div class="cgrid">' + cards + '</div>' +
         // 수집 카드 (2026-11-17, 사용자: 코스튬 수집 부분 이쁘게): 제목·개수 → 진행 막대 → 지금 효과 | 다음 하나 더
         (function () {
           var nAll = DATA.costumes.length, done = nOwn >= nAll;
@@ -2239,8 +2275,17 @@
         if (!l.run && l.practice && !G.dunState()) confirmBox(l.name, '오늘 보상은 이미 받았어요. 지금은 연습할 수 있어요.', '연습 시작', enter);
         else enter();
       }
+      else if(d.exSite) { G.cancelExpedition();expeditionId=d.exSite;renderPanel(true); }
+      else if(d.exRunes) { modal('<h2>새길 룬 문양</h2>',CW.expeditions.choices(G.state).map(function(r){return {label:r.name,fn:function(){G.expeditionRune(r.id);renderPanel(true);}};}).concat([{label:'닫기'}])); }
+      else if(d.exWear) {G.expeditionWear();renderPanel(true);}
+      else if(d.exChest) {
+        var first=!CW.expeditions.journal(G.state).maps;
+        function claimExpedition(k){var msg=G.expeditionChest(k);if(msg)toast(msg);renderPanel(true);hud();}
+        modal('<h2>유적 보물방</h2><p>'+(first?'네 조각이 한 장의 지도가 됐어요. 탐험가의 옷을 발견했어요!':'이번에 가져갈 전리품을 하나 골라요.')+'</p>',
+          (first?[{label:'탐험복 받기',pri:true,fn:function(){claimExpedition('');}}]:[['gold','골드'],['mana','마력석'],['rune','룬석']].map(function(o){return {label:o[1],fn:function(){claimExpedition(o[0]);}};})).concat([{label:'나중에'}]));
+      }
       else if (d.dgo) { var r3 = G.dungeon(d.dgo); if (r3 === 'busy') toast('진행 중인 보스전이나 던전을 먼저 마쳐 주세요.'); else if (r3 === 'ticket') toast('오늘 입장권을 모두 사용했어요.'); }
-      else if (d.dsw) { var r4 = G.sweep(d.dsw); if (!r4) toast('소탕할 수 없어요. 입장권과 클리어 기록을 확인해 주세요.'); else toast('소탕 완료 · ' + (r4.gold ? '골드 +' + fmtG(r4.gold) : r4.gems ? '다이아 +' + fmt(r4.gems) : r4.runeStone ? '룬석 +' + fmt(r4.runeStone) + (r4.got && r4.got.length ? ' · 룬 ' + r4.got.length + '개' : '') + (r4.overflow ? ' · 가방 초과 보상 룬석 +' + fmt(r4.overflow) : '') : '마력석 +' + fmt(r4.mana))); renderPanel(true); hud(); }
+      else if (d.dsw) { var r4 = G.sweep(d.dsw); if (!r4) toast('소탕할 수 없어요. 입장권과 클리어 기록을 확인해 주세요.'); else toast((r4.discovery ? r4.discovery+' · ' : '')+'소탕 완료 · ' + (r4.gold ? '골드 +' + fmtG(r4.gold) : r4.gems ? '다이아 +' + fmt(r4.gems) : r4.runeStone ? '룬석 +' + fmt(r4.runeStone) + (r4.got && r4.got.length ? ' · 룬 ' + r4.got.length + '개' : '') + (r4.overflow ? ' · 가방 초과 보상 룬석 +' + fmt(r4.overflow) : '') : '마력석 +' + fmt(r4.mana))); renderPanel(true); hud(); }
       else if (d.jump !== undefined) { moreSub = +d.jump; tierAnim = moreSub === 0; renderTop(); }
       else if (d.gsub) { gearSub = d.gsub; selSigil = selRune = null; rnBag = sgBag = false; renderTop(); }
       else if (d.relic) { G.later(G.summonRelics(+d.relic), function (rr) { if (!rr) toast('다이아가 부족해요.'); else { showRelics(rr); renderPanel(true); hud(); } }); }
@@ -2541,7 +2586,7 @@
       (DATA.marks || []).forEach(function (m) { out.push(A + 'rk-' + m.id + '.webp'); });
       (DATA.potions || []).forEach(function (p) { out.push(A + 'al-' + p.id + '.webp'); });
       Object.keys(DATA.elements || {}).forEach(function (e) { out.push(A + 'sk-el-' + e + '.webp'); });
-      ['gold', 'gem', 'mana', 'rune'].forEach(function (k) { out.push(A + 'ui-dungeon-' + k + '.webp'); });
+      ['gold', 'gem', 'mana', 'rune'].forEach(function (k) { out.push(A + 'exp-icon-' + k + '.webp'); });
       if (!CW.FRIEND) out.push(A + 'bg-sky5.webp');
       ['rk-badge', 'rk-paw', 'al-cauldron', 'mn-crystal', 'mn-paw', 'sk-cat', 'tr-state-lock'].forEach(function (n) { out.push(A + n + '.webp'); });
       // 스킬 목록 아이콘: 스킬마다 그리는 함수가 고르는 그림 그대로 (sk2-·sk-·그린 아이콘)
@@ -2569,7 +2614,8 @@
     function openTab(name) {
       if (name === 'gacha') ghdSeen = null;
       if (name === 'more' && tab !== 'more') tierAnim = true;   // 전직 cards slide in when 더보기 opens
-      tab = name; document.querySelectorAll('#tabs [data-tab]').forEach(function (x) { x.setAttribute('aria-selected', x.dataset.tab === name ? 'true' : 'false'); });
+      if(name!=='dungeon')G.cancelExpedition();
+      tab = name; $('sheet').classList.toggle('expedition-sheet',name==='dungeon'); document.querySelectorAll('#tabs [data-tab]').forEach(function (x) { x.setAttribute('aria-selected', x.dataset.tab === name ? 'true' : 'false'); });
       var open = name !== 'battle';
       $('sheet').classList.toggle('on', open); $('sheet').classList.toggle('tall', name !== 'more' && name !== 'gacha'); G.setSheet(open);
       $('sheet').classList.toggle('neb', name === 'gacha' || name === 'dungeon' || name === 'more');   // 뽑기·던전·더보기는 성운 바탕 (2026-11-16, the user: 색깔이 너무 튄다 / 여기랑 더보기 란도, 배경을)

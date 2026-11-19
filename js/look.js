@@ -59,6 +59,11 @@
       }
       g.putImageData(img, 0, 0);
     }
+    if(OUT && OUT.compass){
+      var gy=(VZ[1]-crop.y0)*k+H*.07, gx=W*(art.id==='hero-v3'?.54:.46), size=Math.max(3,W*.037);
+      g.save();g.translate(gx,gy);g.fillStyle='#654729';g.strokeStyle='#f4cd7f';g.lineWidth=size*.18;g.beginPath();g.arc(0,0,size,0,Math.PI*2);g.fill();g.stroke();
+      g.fillStyle='#a6fff2';g.beginPath();g.moveTo(0,-size*.83);g.lineTo(size*.32,size*.22);g.lineTo(0,size*.06);g.lineTo(-size*.32,size*.22);g.closePath();g.fill();g.restore();
+    }
     if (art.id && art.id !== 'hero') return c;
     var FX = look.fx;
     // costume horns and glowing eyes, painted on the wizard until the costume has its own drawn picture

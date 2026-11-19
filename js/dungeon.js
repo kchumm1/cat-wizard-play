@@ -36,13 +36,17 @@
   function value(r) { return (r.gold || 0) + (r.gems || 0) + (r.mana || 0) + (r.runeStone || 0); }
   function recordBest(state, kind, res) {
     var d = dstate(state, Date.now()), old = d.best[kind];
-    if (!old || value(dungeonReward(state, kind, res)) > value(dungeonReward(state, kind, old))) d.best[kind] = { kills: res.kills || 0, dmg: res.dmg || 0 };
+    if (!old || value(dungeonReward(state, kind, res)) > value(dungeonReward(state, kind, old))) { d.best[kind] = { kills: res.kills || 0, dmg: res.dmg || 0 }; if(res.finds)d.best[kind].finds=res.finds; }
   }
   function applyReward(state, r) { state.gold += r.gold || 0; state.gems += r.gems || 0; state.mana = (state.mana || 0) + (r.mana || 0); state.runeStone = (state.runeStone || 0) + (r.runeStone || 0); if (r.runes) { r.got = dep('runes').runeGive(state, r.runes); r.overflow = r.got.overflow; } }
   function sweep(state, kind, now) {
     var b = state.dungeon && state.dungeon.best && state.dungeon.best[kind];
     if (!b || !useTicket(state, kind, now)) return null;
-    var r = dungeonReward(state, kind, b); applyReward(state, r); return r;
+    var r = dungeonReward(state, kind, b);
+    var expedition = isNode ? require('./expeditions.js') : root.CW.expeditions;
+    expedition.finish(state,kind,b,r);
+    applyReward(state,r);
+    return r;
   }
   return { dungeonOpen: dungeonOpen, kindOpen: kindOpen, ticketsLeft: ticketsLeft, useTicket: useTicket, golemHp: golemHp, golemLevel: golemLevel, dungeonReward: dungeonReward, recordBest: recordBest, applyReward: applyReward, sweep: sweep };
 });
