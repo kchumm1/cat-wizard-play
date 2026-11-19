@@ -1343,10 +1343,12 @@
       var surgeBoost = surge ? 30 : 0, effectLevel = (lv || 0) + surgeBoost;
       var baseScale = 1.12 * (1 + 0.08 * (tier - 1));
       // no magic circles under any skill (2026-11-16, the user: '마법진은 빼자'; NO_CIRCLE was the list of skills without one)
-      var c = { sk: skill, noCircle: true, tier: tier, surgeBoost: surgeBoost, col: tint(skill.color, tier),
+      var palette = skill.id === 'waterBurst' ? CW.skillById('bubblePrison') : skill;
+      var castColor = tint(palette.color, tier);
+      var c = { sk: skill, noCircle: true, tier: tier, surgeBoost: surgeBoost, col: castColor,
         s: baseScale * (1 + 0.018 * surgeBoost), hitScale: baseScale * (1 + 0.018 * effectLevel),
         n: Math.min(2.4, 1 + 0.1 * (tier - 1) + 0.025 * effectLevel), sp: sp,
-        D: function (t) { return t / sp; }, deep: deep(tint(skill.color, tier)), from: sc.heroPaw(), targets: targets.slice(), hit: hit || function () { } };
+        D: function (t) { return t / sp; }, deep: deep(castColor), from: sc.heroPaw(), targets: targets.slice(), hit: hit || function () { } };
       c.center = crowdCenter(c.targets);
       c.epoch = epoch;
       // how many this cast may hit: the caller already chose (more on the field, the old count in dungeons — CW.targetCount)

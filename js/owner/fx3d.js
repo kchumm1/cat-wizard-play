@@ -588,7 +588,10 @@
     'offset.y+=aspect*tip*0.012*sin(uvT.x*6.0+uvT.y*2.1-uTime*0.87);',
     'gl_Position.xy=(cloudOrigin+width*offset)*gl_Position.w;',
   ].join('\n'));
+  // Colours of the bubble prison, shared with the geyser and its painted splash.
+  var BUBBLE_COLORS = 'const vec3 bubbleLight=vec3(0.8,0.96,1.0), bubbleBlue=vec3(0.34,0.7,0.98), bubbleEdge=vec3(0.17,0.48,0.88);';
   FS_BM.designWater = [
+    BUBBLE_COLORS,
     'varying vec4 vX; varying vec2 vT; uniform sampler2D uMap; uniform float uPaint;',
     'void main(){',
     'float tag=vUv.x, progress=vX.y, opacity=vX.x;',
@@ -635,10 +638,10 @@
     'float ripples=fb(vec3(across*14.0,along*4.0-uTime*2.0,vX.z));float bend=sin(travel+2.0*sin(lane))+2.4*(ripples-0.5);',
     'float current=0.5+0.5*sin(lane*3.0+0.58*bend+along*1.7);',
     'float fresnel=pow(1.0-abs(dot(normalize(vN),normalize(vV))),2.0);',
-    'vec3 color=mix(vec3(0.045,0.32,0.41),vec3(0.19,0.69,0.73),clamp(0.15+0.34*current+0.18*sun+0.48*ripples,0.0,1.0));',
+    'bool geyser=tag>1.5;vec3 color=mix(geyser?bubbleEdge:vec3(0.045,0.32,0.41),geyser?bubbleBlue:vec3(0.19,0.69,0.73),clamp(0.15+0.34*current+0.18*sun+0.48*ripples,0.0,1.0));',
     'float filament=0.5+0.5*sin(lane*8.0+1.6*bend+along*4.4);',
     'float foam=smoothstep(0.78,0.97,filament)*smoothstep(-0.35,0.8,sin(travel+lane*1.8));',
-    'color=mix(color,vec3(0.84,0.96,0.92),clamp(0.40*fresnel+0.53*foam+0.39*smoothstep(0.54,0.78,ripples)+(tag>2.5?0.17:0.0),0.0,0.9));',
+    'color=mix(color,geyser?bubbleLight:vec3(0.84,0.96,0.92),clamp(0.40*fresnel+0.53*foam+0.39*smoothstep(0.54,0.78,ripples)+(tag>2.5?0.17:0.0),0.0,0.9));',
     'float density=0.49+0.27*current+0.19*fresnel;',
     'gl_FragColor=vec4(color,opacity*density);}'
   ].join('\n');
@@ -649,7 +652,7 @@
   // runs (uv.y; across it vT/uv x), long white streaks of light in the lighter bands, and cream foam in curly patches
   // with their own thin navy edge — thickest toward a crest (uv.x 1) and on the whirls (uv.x 4, the bands turned into a
   // spiral). The navy outline round the whole shape is the outline layer (waterLine).
-  FS_BM.water = 'varying vec4 vX;varying vec2 vT;uniform float uFallsRing;void main(){' + WATER_CUT + F +
+  FS_BM.water = BUBBLE_COLORS + 'varying vec4 vX;varying vec2 vT;uniform float uFallsRing;void main(){' + WATER_CUT + F +
     'vec3 N=normalize(vWN);float lam=max(dot(N,normalize(vec3(0.45,0.85,0.3))),0.0),sh=lam>0.25?1.0:0.0,a=vX.x;' +
         // (5th, 2026-11-17, the user: 물 색이 물 같지 않다 → 얼음 스킬 색으로, 얼음 동굴처럼 묻히는 곳에서만 또렷하게) the 4th-tier
     // ice's clear blues and white — (8th, the user: 얼음 지역도 통일, 사막에서 뿌옇다) one colour in every region, a little
@@ -665,7 +668,7 @@
     // through it, a big soft window of light high on the left, a little one beside it, and the light bounced up at the
     // bottom right — no dark rim (it read as a dark ball)
     'else if(kind>1.5&&kind<2.5){float rm=pow(1.0-f,1.6);a*=0.14+0.72*smoothstep(0.08,0.85,rm);' +
-    'c=mix(vec3(0.8,0.96,1.0),vec3(0.34,0.7,0.98),smoothstep(0.1,0.75,rm));c=mix(c,vec3(0.17,0.48,0.88),smoothstep(0.84,0.97,rm));' +
+    'c=mix(bubbleLight,bubbleBlue,smoothstep(0.1,0.75,rm));c=mix(c,bubbleEdge,smoothstep(0.84,0.97,rm));' +
     'float cs=fb(vec3(vP.x*2.6+uTime*0.5,vP.y*2.6-uTime*0.8,vP.z*2.6+sd));c+=vec3(0.9,1.0,1.0)*smoothstep(0.62,0.78,cs)*0.22;a=max(a,smoothstep(0.62,0.78,cs)*0.3*vX.x);' +
     'float arc=dot(N,normalize(vec3(-0.5,0.62,0.6))),arc2=dot(N,normalize(vec3(-0.15,0.35,0.92))),bo=dot(N,normalize(vec3(0.55,-0.55,0.6)));' +
     'float hl=smoothstep(0.88,0.93,arc)+smoothstep(0.985,0.993,arc2)*0.9,bl=smoothstep(0.62,0.92,rm)*smoothstep(0.45,0.85,bo)*0.45;' +
@@ -2113,7 +2116,12 @@
       'float shF(vec2 p){ return shN(p) * 0.55 + shN(p * 2.07 + 3.1) * 0.3 + shN(p * 4.3 + 7.7) * 0.15; }\n';
     var FS_SHEET = SHEET_HEAD + SHEET_NOISE + 'uniform float uLive, uSwirl; uniform vec2 uFlow;\n' +
       'void main(){ if (vLoc.x < 0.0 || vLoc.x > 1.0 || vLoc.y < 0.0 || vLoc.y > 1.0) discard; vec2 l = heat();\n' +
-      ' if (uLive < 0.5) { vec4 c0 = cellAt(l); c0.a *= vA; if (c0.a < 0.01) discard; c0.rgb *= 1.0 + 0.1 * sin(uTime * 23.0 + vLoc.y * 7.0 + vSeed) * (0.4 + smoothstep(0.55, 1.0, c0.g)); gl_FragColor = c0; return; }\n' +
+      ' if (uLive < 0.5) { vec4 c0 = cellAt(l); c0.a *= vA; if (c0.a < 0.01) discard;\n' +
+      '#ifdef WATER_IMPACT_ATLAS\n' +
+      // Only frame 2 (bottom left) belongs to the geyser. Preserve the painted foam and alpha.
+      ' if (vCell.x < 0.5 && vCell.y < 0.5) { float light=dot(c0.rgb,vec3(0.21,0.72,0.07)); vec3 water=mix(bubbleEdge,bubbleBlue,smoothstep(0.1,0.58,light)); water=mix(water,bubbleLight,smoothstep(0.58,0.90,light)); c0.rgb=mix(water,vec3(1.0),smoothstep(0.85,1.0,light)); }\n' +
+      '#endif\n' +
+      ' c0.rgb *= 1.0 + 0.1 * sin(uTime * 23.0 + vLoc.y * 7.0 + vSeed) * (0.4 + smoothstep(0.55, 1.0, c0.g)); gl_FragColor = c0; return; }\n' +
       ' vec2 fw = uFlow, sd = vec2(-fw.y, fw.x); float along = dot(vLoc - 0.5, fw) + 0.5, across = dot(vLoc - 0.5, sd);\n' +
       // (3rd pass, the user: "it is mushy, not blazing") the pattern is stretched long along the flow and races up fast,
       // so it reads as tongues of flame shooting up rather than a slow wobble
@@ -2164,7 +2172,7 @@
       var g = new T.InstancedBufferGeometry().copy(new T.PlaneGeometry(1, 1)), fa = new Float32Array(cap * 3);
       g.setAttribute('iF', new T.InstancedBufferAttribute(fa, 3).setUsage(T.DynamicDrawUsage));
       var anc = new T.Vector2(S.anchor[0], S.anchor[1]), uT = { value: 0 }, grid = S.grid || 4;
-      var m = new T.ShaderMaterial({ uniforms: { uMap: { value: ph }, uAnchor: { value: anc }, uGrid: { value: grid }, uGrow: { value: 1 }, uLoop: { value: S.loop ? 1 : 0 }, uBlend: { value: S.blend ? 1 : 0 }, uTime: uT, uWob: { value: S.wob || 0 }, uLive: { value: S.live ? 1 : 0 }, uSwirl: { value: S.swirl || 0 }, uFlow: { value: new T.Vector2(S.flow ? S.flow[0] : 0, S.flow ? S.flow[1] : 1) } }, vertexShader: VS_SHEET, fragmentShader: FS_SHEET, transparent: true, depthWrite: false, depthTest: !S.foreground });
+      var m = new T.ShaderMaterial({ uniforms: { uMap: { value: ph }, uAnchor: { value: anc }, uGrid: { value: grid }, uGrow: { value: 1 }, uLoop: { value: S.loop ? 1 : 0 }, uBlend: { value: S.blend ? 1 : 0 }, uTime: uT, uWob: { value: S.wob || 0 }, uLive: { value: S.live ? 1 : 0 }, uSwirl: { value: S.swirl || 0 }, uFlow: { value: new T.Vector2(S.flow ? S.flow[0] : 0, S.flow ? S.flow[1] : 1) } }, vertexShader: VS_SHEET, fragmentShader: name === 'fx-wood-water-impact' ? '#define WATER_IMPACT_ATLAS\n' + BUBBLE_COLORS + '\n' + FS_SHEET : FS_SHEET, transparent: true, depthWrite: false, depthTest: !S.foreground });
       var mesh = new T.InstancedMesh(g, m, cap); mesh.instanceMatrix.setUsage(T.DynamicDrawUsage); mesh.frustumCulled = false; mesh.count = 0; mesh.visible = false; mesh.renderOrder = S.order; mesh.name = 'core3d sheet ' + name;
       group.add(mesh);
       // the glow of it: the same pictures (same places, same scenes) blurred and added under it
