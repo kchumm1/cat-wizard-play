@@ -36,7 +36,7 @@
     // includes areas the installed browser may not allow the game to use.
     var view = window.visualViewport;
     mount.style.height = portrait && view && view.scale === 1 ? view.height + 'px' : '';
-    mount.style.top = portrait && view && view.scale === 1 ? view.offsetTop + 'px' : mount.style.top;
+    if (portrait && view && view.scale === 1) mount.style.top = view.offsetTop + 'px';
   }
   function layout() {
     if (!frame) return;
