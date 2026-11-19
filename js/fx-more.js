@@ -287,6 +287,7 @@
       c.plain = true;
       sc.heroPose('raise', c.D(0.16), 0xff8a3a);
       var HC = sc.heroCenter(), cs = Math.min(1.3, c.s), hit = [];
+      var reachRatio = Math.min(1.3, c.hitScale) / cs;
       var T_GROW = c.D(0.42), T_RUN = c.D(1.1), T_FADE = c.D(0.8), END = T_GROW + T_RUN + T_FADE;
       // (2026-11-18, the user: "it plays on its own, as if made up above and wandering about") a streak of fire first runs
       // along the ground from the wizard's feet to where it rises (t < 0), so the wizard is seen to send it out
@@ -411,7 +412,7 @@
         }
         // whatever it touches is caught up in it
         if (grow > 0.6 && k < 0.6) {
-          var HR = 1.25 * cs + r1 * 0.3;
+          var HR = (1.25 * cs + r1 * 0.3) * reachRatio;
           c.pool().forEach(function (m) {
             if (hit.indexOf(m) >= 0) return; var g = gp(m), d = Math.hypot(g.x - P.x, (g.z - P.z) * 1.2);
             if (d > HR * (m.boss ? 1.5 : 1)) return; hit.push(m); caught(m);

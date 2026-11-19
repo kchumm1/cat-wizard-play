@@ -145,6 +145,7 @@
       // z -4.6 … 3.8) — it was as deep as the monsters happened to stand apart, another size at every cast, and a monster
       // off its end was hit with no water on it
       var DEP = 9.4, HT = 0.85 * s, cz = -0.4;
+      var hitDepth = 0.85 * Math.min(3.4, Math.max(2.6, c.hitScale)) * 0.95;
       // (design 2-tidal: a towering wave filling half the screen, coming in on a slant) it rises just inside the left side
       // (2026-11-17, the user: 타격이 잘 안 되고 파도가 중간에 멈춘다 — it eased to a stop by the last monster, and every
       // monster was hit in the first 0.13 s while the wave was still far) it rolls on at one speed from the left edge until
@@ -183,7 +184,7 @@
           LO.set(m.x - x, 0, m.z - cz).applyQuaternion(qi);
           // (9th) at the moment the lip reaches it, while it still shows in front of the water — it was hit only after the
           // wave had covered it
-          if (LO.z / SZ.z < -HITZ) return;
+          if (LO.z / hitDepth < -HITZ) return;
           hit.push(m);
           var g = gp(m), p = sc.mobPos(m);
           splash(g, 1.6 * (m.boss ? 1.5 : 1), c.D(0.55)); claws(V(g.x, 0, g.z), N(3, c), 0.9 * (m.boss ? 1.5 : 1)); spray(V(g.x, 0.5, g.z), N(4, c), 3, 1.1); whiteSpray(V(g.x, 0.6, g.z), N(10, c), 3.2); mist(g, N(2, c), 1.2);
@@ -356,6 +357,7 @@
       c.plain = true;
       sc.heroPose('slam', c.D(0.12), c.col);
       var RUMBLE = c.D(0.34), SHOOT = c.D(0.1), BURST = c.D(0.58), FALL = c.D(0.34), s = cap(c, 2.6, 3.4);
+      var liftRatio = Math.min(3.4, Math.max(2.6, c.hitScale)) / s;
       sc.shake(0.06); after(c.D(0.16), function () { sc.shake(0.1); }); after(c.D(0.28), function () { sc.shake(0.14); });
       // (in a crowd every burst keeps its shape, but each throws less loose water: twenty of them buried the field)
       var kq = Math.min(1, Math.max(0.25, 5 / list.length)), n = function (k) { return Math.max(1, Math.round(N(k, c) * kq)); };
@@ -371,7 +373,7 @@
           if (!shot) {
             var u = ease(tt / RUMBLE), Mr = MR * (0.35 + 0.65 * u), Mh = MH * (0.15 + 0.85 * u) * (1 + 0.12 * Math.sin(tt * 47)), jx = rr(-0.025, 0.025) * u, jz = rr(-0.02, 0.02) * u;
             mound.set(V(gx + jx, 0, gz + jz), q, V(2 * Mr, Mh, 2 * Mr * 0.9), 1, 1);
-            hold(m, gx, gz, 0.26 * Mh + 0.03 * Math.sin(tt * 40) * u);
+            hold(m, gx, gz, 0.26 * Mh * liftRatio + 0.03 * Math.sin(tt * 40) * u);
             bub += dt * (10 + 22 * u) * kq;
             while (bub >= 1) { bub -= 1; var a = rr(0, 6.283), r = rr(0.6, 1.05) * Mr; foam(V(gx + Math.cos(a) * r, 0, gz + Math.sin(a) * r * 0.8), rr(0.45, 0.75) * big, c.D(0.22)); }
             spurt += dt * 14 * u * kq;
@@ -392,7 +394,7 @@
             var strain = Math.max(0, Math.min(1, (tt - RUMBLE - SHOOT) / (BURST - RUMBLE - SHOOT))), thr = 1 + 0.05 * Math.sin(tt * 52) * strain;
             jet.set(V(gx, 0, gz), q, V(X * thr * (1 + 0.15 * strain), H * gr * (1 + 0.07 * strain), X * thr * (1 + 0.15 * strain)), 1, 1);
             // the monster rides up on its head
-            hold(m, gx, gz, H * gr * 0.93 - 0.25 + 0.05 * Math.sin(tt * 30));
+            hold(m, gx, gz, H * liftRatio * gr * 0.93 - 0.25 + 0.05 * Math.sin(tt * 30));
             if (gu > 1 && Math.random() < dt * 26 * kq) { spray(V(gx, H * 0.95, gz), 1, 2.4, 1.0); whiteSpray(V(gx, H * 0.97, gz), 2, 2.2); }
             if (gu > 1) contact(g, 0.9 * big, dt, 8 * kq);
             if (tt < BURST) return false;
