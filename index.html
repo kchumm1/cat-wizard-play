@@ -31,6 +31,7 @@ if ('serviceWorker' in navigator) (function () {
 </script>
 </head>
 <body>
+<script src="js/display-host.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Jua&family=Noto+Sans+KR:wght@400;500;700;800;900&family=Noto+Serif+KR:wght@500;700&family=Gowun+Batang:wght@400;700&display=swap">
 <style>
@@ -3536,7 +3537,7 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script src="js/perfmon.js"></script>
 <script src="js/owner-sync.js"></script>
 <script src="js/player-sync.js"></script>
-<script src="js/owner/login-gate.js"></script>
+<script src="js/login-gate.js"></script>
 <script src="js/minions.js"></script>
 <script src="js/scene.js"></script>
 <script src="js/vfx.js"></script>
@@ -3573,13 +3574,15 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script src="js/ui-opal.js"></script>
 <script src="js/opal-rune-sigil.js"></script>
 <script src="js/opal-divine.js"></script>
-<script src="js/owner/dungeon-book.js"></script>
-<script src="js/owner/ui.js"></script>
+<script src="js/dungeon-book.js"></script>
+<script src="js/ui.js"></script>
 <script src="js/wallet-fields.js"></script>
 <script src="js/wallet-actions.js"></script>
 <script src="js/wallet-rules.js"></script>
 <script src="js/wallet.js"></script>
-<script src="js/owner/main.js"></script>
+<script src="js/main.js"></script>
+
+</template>
 <script>
 if ('serviceWorker' in navigator) addEventListener('load', function () {
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (reg) {

@@ -25,10 +25,12 @@
   function idOk(id) { return ID_RE.test(String(id || '')); }
   function pwOk(pw) { pw = String(pw || ''); return pw.length >= 8 && pw.length <= 72; }
   // what the screen says for each refusal (the server's msg or the Auth error code)
+  var SUSPENDED = '이용이 정지된 계정이에요.';
   function say(code, msg) {
+    if (msg === 'suspended') return SUSPENDED;
     if (msg === 'taken') return '이미 있는 아이디예요. 다른 아이디로 해 주세요.';
     if (msg === 'id') return '아이디는 영어 소문자와 숫자 3~16자로 해 주세요.';
-    if (msg === 'pw') return '비밀번호는 8자 이상으로 해 주세요.';
+    if (msg === 'pw') return '비밀번호는 8자 이상, 72바이트 이내로 입력해 주세요.';
     if (code === 429) return '잠시 뒤에 다시 해 주세요.';
     if (code === 400 || code === 401) return '아이디나 비밀번호가 맞지 않아요.';
     return NET;
@@ -72,8 +74,15 @@
       memSid = v; return v;
     }
     function mark(t) { if (t) put(MARK, String(t)); return get(MARK) || ''; }
-    var kicked = false;
+    var kicked = false, accountSuspended = false;
     function isKicked() { return kicked; }
+    function suspended(r) {
+      if (r.code !== 403 || r.j.msg !== 'suspended') return false;
+      kicked = true; accountSuspended = true;
+      root.CW_NOSAVE = true;
+      if (o.onSuspended) o.onSuspended();
+      return true;
+    }
     // this device's own (anonymous) account with a usable token: its own, or a new one when the device has none yet
     function deviceAccount() {
       var a = auth();
@@ -121,7 +130,7 @@
         var a = r.ok ? rec(r.j, id) : null;
         if (!a) return { ok: false, msg: say(r.code, '') };
         return req(ACCOUNT, { act: 'enter', info: info() }, { Authorization: 'Bearer ' + a.access }).then(function (e) {
-          if (!e.ok) return { ok: false, msg: e.code === 404 ? say(400, '') : NET };
+          if (!e.ok) return { ok: false, msg: e.code === 404 ? say(400, '') : say(e.code, e.j.msg) };
           var mine = get(SAVE), data = e.j.data && typeof e.j.data === 'object' ? JSON.stringify(e.j.data) : '';
           if (mine && mine !== data) put('cw-save-login-bak', mine);   // what this device had before: kept, in case it was something
           root.CW_NOSAVE = true;
@@ -147,6 +156,7 @@
       return current().then(function (a) {
         if (!a) return { skip: 'noauth' };
         return req(ACCOUNT, { act: 'open', sid: sid(), mark: mark(), info: info() }, { Authorization: 'Bearer ' + a.access }).then(function (r) {
+          if (suspended(r)) return { ok: false, suspended: true };
           if (!r.ok) return { ok: false, code: r.code };
           kicked = false;
           if (r.j.adopt && r.j.data && typeof r.j.data === 'object') {
@@ -170,6 +180,7 @@
       return current().then(function (a) {
         if (!a) return { skip: 'noauth' };
         return req(ACCOUNT, { act: 'check', sid: sid() }, { Authorization: 'Bearer ' + a.access }).then(function (r) {
+          if (suspended(r)) return { ok: false, suspended: true };
           if (r.ok && r.j.mine === false) { kicked = true; if (o.onKicked) { try { o.onKicked(); } catch (e) { /* shown anyway next time */ } } return { ok: true, kicked: true }; }
           return { ok: r.ok, kicked: false };
         });
@@ -201,24 +212,24 @@
         return { ok: true, sent: sent };
       });
     }
-    return { loginId: loginId, loggedIn: loggedIn, hasSave: hasSave, hasProgress: hasProgress, signup: signup, login: login, changePassword: changePassword, logout: logout, open: open, check: check, sid: sid, isKicked: isKicked };
+    return { loginId: loginId, loggedIn: loggedIn, hasSave: hasSave, hasProgress: hasProgress, signup: signup, login: login, changePassword: changePassword, logout: logout, open: open, check: check, sid: sid, isKicked: isKicked, isSuspended: function () { return accountSuspended; } };
   }
 
   // ---------- the screen ----------
   var CSS = '#cwLogin{position:fixed;inset:0;z-index:100000;overflow:auto;-webkit-overflow-scrolling:touch;background:#16213a url("art/ui-up-bg.webp") center/cover no-repeat;color:#fff7e6;font-family:"Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;'
     + 'padding:calc(env(safe-area-inset-top,0px) + 16px) calc(env(safe-area-inset-right,0px) + 16px) calc(env(safe-area-inset-bottom,0px) + 16px) calc(env(safe-area-inset-left,0px) + 16px);-webkit-tap-highlight-color:transparent;overscroll-behavior:contain}'
     + '/* 2026-11-18 형: 로그인할 때 위로 밀리고 아래로 당겨져 → the card sits near the top instead of the middle (the iPhone keyboard changes the height, and a centred card jumped with it), and the message line keeps two lines of room so a new message does not move the buttons */'
-    + '#cwLogin *{box-sizing:border-box}#cwLogin .lg-wrap{display:flex;align-items:flex-start;justify-content:center;padding-top:40px}'
-    + '#cwLogin .lg-card{width:100%;max-width:380px;padding:22px 18px 18px;border-radius:20px;background:rgba(18,26,52,.62);border:1px solid rgba(255,230,170,.34);box-shadow:0 10px 40px rgba(6,10,28,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}'
-    + '#cwLogin h1{margin:0;text-align:center;font:900 38px/1.1 Georgia,"Malgun Gothic",serif;color:#ffe9b0;text-shadow:0 2px 12px rgba(10,16,40,.7)}'
-    + '#cwLogin .lg-sub{margin:8px 0 16px;text-align:center;font-size:14px;color:#f2dfae}'
-    + '#cwLogin label{display:block;margin:10px 0 5px;font-size:13px;color:#f2dfae}'
+    + '#cwLogin *{box-sizing:border-box}#cwLogin .lg-wrap{display:flex;align-items:flex-start;justify-content:center;padding-top:clamp(0px,4vh,28px)}'
+    + '#cwLogin .lg-card{width:100%;max-width:420px;padding:22px 20px 16px;border-radius:20px;background:rgba(18,26,52,.87);border:1px solid rgba(255,230,170,.34);box-shadow:0 10px 40px rgba(6,10,28,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}'
+    + '#cwLogin .lg-brand{text-align:center;font-size:14px;font-weight:800;color:#ffe2a0;margin-bottom:8px}#cwLogin h1{margin:0;text-align:center;font:800 27px/1.25 "Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;color:#fff4d4;word-break:keep-all}'
+    + '#cwLogin .lg-sub{margin:8px 0 16px;text-align:center;font-size:14px;line-height:1.55;color:#f5e8c8;word-break:keep-all}'
+    + '#cwLogin label{display:block;margin:12px 0 6px;font-size:14px;font-weight:700;color:#fff0cf}'
     + '#cwLogin input{display:block;width:100%;height:50px;padding:0 14px;border-radius:12px;border:1px solid rgba(255,230,170,.45);background:rgba(255,250,235,.95);color:#3b3027;font:16px "Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;-webkit-appearance:none;appearance:none;outline:none;touch-action:manipulation}'
     + '#cwLogin input:focus{border-color:#ffd986;box-shadow:0 0 0 3px rgba(255,217,134,.35)}'
-    + '#cwLogin .lg-msg{min-height:38px;margin:10px 2px 0;font-size:13px;line-height:1.45;color:#ffb4a0;word-break:keep-all}#cwLogin .lg-msg.ok{color:#bfe8c4}'
+    + '#cwLogin .lg-msg{min-height:19px;margin:9px 2px 0;font-size:14px;line-height:1.45;color:#ffb4a0;word-break:keep-all}#cwLogin .lg-msg.ok{color:#bfe8c4}'
     + '#cwLogin .lg-note{margin:6px 2px 0;font-size:12px;line-height:1.5;color:#d9cba4;word-break:keep-all}'
     + '#cwLogin button{display:block;width:100%;min-height:50px;margin-top:12px;border-radius:13px;font:800 16px "Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;cursor:pointer;touch-action:manipulation;-webkit-appearance:none;appearance:none}'
-    + '#cwLogin .lg-go{border:1px solid #d9b873;background:linear-gradient(#7aa0b8,#52809f);color:#fff7df;box-shadow:0 3px 0 #38617d}#cwLogin .lg-go:active{transform:translateY(2px);box-shadow:0 1px 0 #38617d}'
+    + '#cwLogin .lg-go{border:1px solid #d9b873;background:linear-gradient(#efd291,#e7b86d);color:#382715;box-shadow:0 3px 0 #98703c}#cwLogin .lg-go:active{transform:translateY(2px);box-shadow:0 1px 0 #98703c}'
     + '#cwLogin .lg-alt{border:1px solid rgba(255,230,170,.4);background:transparent;color:#f2dfae;font-weight:700}'
     + '#cwLogin button[disabled]{opacity:.55}'
     + '#cwLogin .lg-link{min-height:44px;margin-top:6px;border:0;background:transparent;color:#d9cba4;font-weight:600;font-size:14px;text-decoration:underline;text-underline-offset:3px}'
@@ -236,28 +247,28 @@
       + '<h1>냥법사</h1><div class="lg-sub" data-k="sub"></div>'
       + '<label for="lgId">아이디</label><input id="lgId" name="username" type="text" inputmode="latin" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="16" placeholder="영어 소문자·숫자 3~16자">'
       + '<div data-k="pwBox"><label for="lgPw" data-k="pwLabel">비밀번호</label><input id="lgPw" name="password" type="password" autocomplete="current-password" maxlength="72" placeholder="8자 이상"></div>'
-      + '<div data-k="pw2" hidden><label for="lgPw2">비밀번호 한 번 더</label><input id="lgPw2" name="password2" type="password" autocomplete="new-password" maxlength="72"></div>'
+      + '<div data-k="pw2" hidden><label for="lgPw2">비밀번호 확인</label><input id="lgPw2" name="password2" type="password" autocomplete="new-password" maxlength="72"></div>'
       + '<div class="lg-note" data-k="note"></div><div class="lg-msg" data-k="msg" role="alert" aria-live="polite"></div>'
       + '<button type="submit" class="lg-go" data-k="go"></button><button type="button" class="lg-alt" data-k="alt"></button><button type="button" class="lg-link" data-k="forgot">비밀번호를 잊었어요</button></form></div>';
     doc.body.appendChild(el);
     function q(k) { return el.querySelector('[data-k="' + k + '"]'); }
     var idI = el.querySelector('#lgId'), pwI = el.querySelector('#lgPw'), pw2I = el.querySelector('#lgPw2');
     function msg(t, ok) { var m = q('msg'); m.textContent = t || ''; m.className = 'lg-msg' + (ok ? ' ok' : ''); }
-    var FORGOT = '비밀번호를 잊었으면 운영자에게 말해 주세요. 임시 비밀번호를 받아 로그인하면 키우던 캐릭터 그대로 이어서 할 수 있어요.';
+    var FORGOT = '운영자에게 아이디를 알려 주세요. 받은 임시 비밀번호로 로그인한 뒤 새 비밀번호를 정해 주세요.';
     function paint() {
       var reg = mode === 'signup', ch = mode === 'change';
-      q('sub').textContent = ch ? '새 비밀번호를 정해 주세요' : reg ? '새 아이디를 만들어요' : '아이디로 로그인해요';
+      q('sub').textContent = ch ? '새 비밀번호를 정해 주세요' : reg ? '회원가입' : '로그인';
       el.querySelector('label[for="lgId"]').hidden = ch; idI.hidden = ch;
       q('pw2').hidden = !(reg || ch);
       q('pwLabel').textContent = ch ? '새 비밀번호' : '비밀번호';
       pwI.setAttribute('autocomplete', reg || ch ? 'new-password' : 'current-password');
-      q('go').textContent = ch ? '비밀번호 바꾸고 시작하기' : reg ? '아이디 만들기' : '로그인';
+      q('go').textContent = ch ? '비밀번호 바꾸고 시작하기' : reg ? '가입하기' : '로그인';
       q('alt').hidden = ch;
-      q('alt').textContent = reg ? '이미 아이디가 있어요' : '새 아이디 만들기';
+      q('alt').textContent = reg ? '로그인으로 돌아가기' : '회원가입';
       q('forgot').hidden = mode !== 'login';
       q('note').textContent = ch ? '임시 비밀번호로 들어왔어요. 앞으로 쓸 비밀번호를 정해 주세요. 캐릭터는 그대로예요.'
-        : reg ? (gate.hasProgress() ? '지금 이 기기에서 키우던 캐릭터가 이 아이디에 이어져요. ' : '처음부터 시작해요. ') + '비밀번호는 설정에서 바꿀 수 있어요.'
-        : '다른 기기에서도 같은 아이디로 로그인하면 같은 캐릭터가 나와요.';
+        : reg ? (gate.hasProgress() ? '지금 이 기기에서 키우던 캐릭터가 이 아이디에 이어져요. ' : '새 캐릭터로 시작해요. ') + '비밀번호는 설정에서 바꿀 수 있어요.'
+        : '같은 아이디로 모험을 이어가세요.';
       msg('');
     }
     function lock(b) { busy = b; q('go').disabled = b; q('alt').disabled = b; q('forgot').disabled = b; }
@@ -296,9 +307,20 @@
   function kickedScreen(o) {
     o = o || {};
     var doc = o.doc || root.document;
-    if (!doc || doc.getElementById('cwLogin')) return;
+    if (!doc) return;
+    var previous = doc.getElementById('cwLogin');
+    if (previous && !o.suspended) return;
+    if (previous) previous.remove();
     if (!doc.getElementById('cwLoginCss')) { var st = doc.createElement('style'); st.id = 'cwLoginCss'; st.textContent = CSS; doc.head.appendChild(st); }
     var el = doc.createElement('div'); el.id = 'cwLogin'; el.setAttribute('role', 'alertdialog'); el.setAttribute('aria-modal', 'true');
+    if (o.suspended) {
+      el.innerHTML = '<div class="lg-wrap"><div class="lg-card"><h1>냥법사</h1><div class="lg-sub">계정 이용 정지</div>'
+        + '<p class="lg-note">이용이 정지된 계정이에요. 정지가 풀린 뒤 다시 확인해 주세요.</p>'
+        + '<button type="button" class="lg-go">다시 확인</button></div></div>';
+      doc.body.appendChild(el);
+      el.querySelector('button').onclick = function () { if (o.reload) o.reload(); };
+      return;
+    }
     el.innerHTML = '<div class="lg-wrap"><div class="lg-card"><h1>냥법사</h1><div class="lg-sub">다른 기기에서 접속했어요</div>'
       + '<div class="lg-note">같은 아이디로 다른 기기에서 게임을 열어서, 이 기기는 연결이 끊겼어요. 이 기기에서 계속하면 다른 기기에서 한 진행을 받아 와서 이어서 해요.</div>'
       + '<button type="button" class="lg-go">이 기기에서 계속하기</button></div></div>';
@@ -322,6 +344,7 @@
     env = env || {};
     if (env.friend || !env.allowed) return null;
     var g = createGate({ store: env.store, fetch: env.fetch, now: env.now, reload: env.reload, info: env.info,
+      onSuspended: function () { if (env.doc !== false) kickedScreen({ doc: env.doc, reload: env.reload, suspended: true }); },
       onKicked: function () { if (env.doc !== false) kickedScreen({ doc: env.doc, reload: env.reload }); },
       onAdopt: function () { if (env.doc !== false) busyScreen('다른 기기에서 한 진행을 받아 오는 중이에요…', { doc: env.doc }); } });
     if (!g.loggedIn()) { if (env.doc !== false) openScreen(g, { doc: env.doc, reload: env.reload }); return g; }

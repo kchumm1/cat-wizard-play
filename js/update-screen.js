@@ -17,7 +17,7 @@
     var list = waiting; waiting = [];
     list.forEach(function (fn) { try { fn(); } catch (e) { setTimeout(function () { throw e; }); } });
   }
-  var skip = !el || root !== root.top || /[?&]noupdate\b/.test(location.search);
+  var skip = !el || (root !== root.top && !root.CWPlayViewport) || /[?&]noupdate\b/.test(location.search);
   if (skip) { if (el) el.parentNode.removeChild(el); start(); return; }
 
   var $ = function (id) { return document.getElementById(id); };

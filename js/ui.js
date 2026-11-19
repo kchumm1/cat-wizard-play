@@ -302,9 +302,35 @@
         '<button class="buy mcup' + (ok ? '' : ' off') + '" data-circle="1"><i class="sp a"></i><span class="t">레벨업</span><i class="sep"></i><span class="c"><i class="gem"></i>' + fmt(cost) + '</span><i class="sp z"></i></button>' +
         '<p class="mch' + (ok ? '' : ' bad') + '">' + (ok ? (max ? '스킬 피해만 계속 올라요 · ' : '') + '길게 누르면 연속 강화돼요.' : '마력석이 부족해요 · 보스 / 마력의 탑에서 얻어요') + '</p>';
     }
+    function libraryDungeonCard() {
+      var l = G.libraryStatus(); if (!l) return '';
+      var A = CW.ART_BASE || 'art/';
+      var active = G.dunState(), saved = l.run;
+      var status = saved ? (saved.finished ? '보상 정산 대기' : (saved.cards ? (saved.cleared ? saved.cleared + '층 돌파 · 카드 선택 대기' : '첫 마법 선택 대기') : saved.floor + '층 진행 저장됨'))
+        : l.practice ? '오늘 보상 수령 완료' : '하루 보상 1회 · 입장 무제한';
+      return '<div class="dung dg-library"><div class="dicon library-icon"><img src="' + A + 'bg-sky5.webp" alt="" draggable="false"></div>' +
+        '<div class="info"><div class="dname">' + l.name + '</div><div class="note">마법을 골라 10층을 돌파해요.</div><div class="note">' + status + '</div></div>' +
+        '<div class="dbtns"><button class="buy' + (active ? ' off' : '') + '" data-library>' +
+        (saved ? (saved.finished ? '결과 보기' : '이어하기') : l.practice ? '연습 시작' : '입장') + '</button></div></div>';
+    }
+    function libraryCards(run, choose, later) {
+      var A = CW.ART_BASE || 'art/';
+      var title = run.cleared ? run.cleared + '층 돌파' : '첫 마법을 고르세요';
+      var subtitle = run.cleared ? '다음 층으로 가기 전에 한 장을 고르세요.' : '마법 한 장을 고르면 자동 전투가 시작돼요.';
+      var buttons = run.cards.map(function (c, index) {
+        var pic = c.art ? '<img src="' + A + 'sk-' + c.art + '.webp" alt="" draggable="false">' : '<span class="library-empty-icon" aria-hidden="true"></span>';
+        var text = c.amounts ? Object.keys(c.amounts).map(function (key) {
+          return '+' + (key === 'gold' ? CW.fmtGold : CW.fmt)(c.amounts[key]) + ' ' + CW.library.labels[key];
+        }).join(' · ') : c.text;
+        return { label: pic + '<span class="library-copy"><small>' + c.label + '</small><strong>' + c.name + '</strong><span>' + text + '</span>' +
+          (c.note ? '<small>' + c.note + '</small>' : '') + '</span>', fn: function () { choose(index); } };
+      });
+      buttons.push({ label: '나중에 이어하기', fn: later });
+      modal('<h2>' + title + '</h2><p>' + subtitle + '</p>', buttons, { variant: 'library' });
+    }
     function dungeonPanel() {
       var s = G.state, now = Date.now();
-      if (!CW.dungeonOpen(s)) return lockedCard('dung', DATA.dungeonConf.unlockTier);
+      if (!CW.dungeonOpen(s)) return lockedCard('dung', DATA.dungeonConf.unlockTier) + libraryDungeonCard();
       var run = G.dunState();
       return (run ? '<div class="notice">' + run.name + ' 진행 중</div>' : '') + guideRow('dungeon', '던전별 하루 입장권 ' + DATA.dungeonConf.tickets + '장 · 클리어하면 소탕 가능') + '<div class="dlist">' +
         DATA.dungeons.map(function (d) {
@@ -315,14 +341,14 @@
           if (!CW.kindOpen(s, d.id)) return '<div class="dung dg-' + d.id + ' lockd"><div class="dicon">' + mi('dungeon', d) + '</div><div class="info"><div class="dname">' + d.name + '</div><div class="note">' + d.desc + '</div><div class="note">' + d.unlockTier + '차 전직 후 해금</div></div></div>';
           return '<div class="dung dg-' + d.id + '"><div class="dicon">' + mi('dungeon', d) + '</div><div class="info"><div class="dname">' + d.name + '</div><div class="note">' + d.desc + '</div><div class="note">입장권 <b style="color:#fff">' + left + '/' + DATA.dungeonConf.tickets + '</b>' + (bonus ? ' <b style="color:#ffd76a">+' + bonus + '</b>' : '') + ' · ' + bestTxt + (rwTxt ? ' (' + rwTxt + ')' : '') + '</div></div>' +
             '<div class="dbtns"><button class="buy' + ((left + bonus) && !run ? '' : ' off') + '" data-dgo="' + d.id + '">입장</button><button class="btn' + ((left + bonus) && best && !run ? '' : ' off') + '" data-dsw="' + d.id + '">소탕</button></div></div>';
-        }).join('') + '</div>';
+        }).join('') + libraryDungeonCard() + '</div>';
     }
     // mana surge gauge over the skill row (no pop-up words: the user wants none)
     function surgeGauge(v, max) { var f = $('surgeFill'); if (f) f.style.width = Math.min(100, v / max * 100) + '%'; var g = $('surgeGauge'); if (g) g.classList.toggle('full', v >= max - 1); }
     function dunHud(run) {
       var el = $('dunHud'); if (!run) { el.className = ''; return; }
       el.className = 'on';
-      el.innerHTML = '<b>' + run.name + '</b><span>' + Math.max(0, run.t).toFixed(1) + '초</span><span>' + (run.kind === 'mana' ? '피해 ' + fmt(run.dmg) + ' · 골렘 Lv.' + run.level : '처치 ' + run.kills) + '</span>';
+      el.innerHTML = '<b>' + run.name + '</b><span>' + Math.max(0, run.t).toFixed(1) + '초</span><span>' + (run.kind === 'mana' ? '피해 ' + fmt(run.dmg) + ' · 골렘 Lv.' + run.level : '처치 ' + run.kills + (run.goal ? ' / ' + run.goal : '')) + '</span>';
     }
     var STAT_KO = { atk: '기본 공격력', criticalRate: '크리티컬 확률', criticalDmg: '크리티컬 피해', criticalDmgPct: '크리티컬 피해', potion: '분노의 물약', potionGold: '황금 물약', potionXp: '지혜의 물약', megaRate: '노바 크리티컬 확률', megaDmg: '노바 크리티컬 피해', ultimateRate: '오라 크리티컬 확률', ultimateDmg: '오라 크리티컬 피해', alphaRate: '제로 크리티컬 확률', alphaDmg: '제로 크리티컬 피해', atkPct: '공격력', critRate: '치명타 확률', critDmg: '치명타 피해', superRate: '테라 크리티컬 확률', superDmg: '테라 크리티컬 피해', ultraRate: '루나 크리티컬 확률', ultraDmg: '루나 크리티컬 피해', hyperRate: '솔라 크리티컬 확률', hyperDmg: '솔라 크리티컬 피해', bossDmg: '보스 피해', normalDmg: '일반 몬스터 피해', skillDmg: '스킬 피해', goldMul: '골드 획득', xpMul: '경험치 획득', speed: '공격 속도', weakDmg: '약점 피해', surgeDmg: '폭주 피해', surgeRate: '폭주 충전 속도', finalPct: '모든 피해' };
     // crit tiers (2026-11-16): rate, '배' damage and '%' damage of every tier
@@ -1092,7 +1118,7 @@
     function modal(html, buttons, opts) {
       opts = opts || {};
       var card = $('modalCard');
-      card.className = 'card' + (opts.variant === 'guide' ? ' guide-card' : opts.variant === 'danger' ? ' guide-card danger' : '');
+      card.className = 'card' + (opts.variant === 'guide' ? ' guide-card' : opts.variant === 'danger' ? ' guide-card danger' : opts.variant === 'library' ? ' library-card' : '');
       card.innerHTML = (opts.close ? '<button class="guide-x" data-mx aria-label="닫기">×</button>' : '') + html + '<div class="btns">' + buttons.map(function (b, i) { return '<button class="btn ' + (b.pri ? 'pri' : '') + '" data-mb="' + i + '">' + b.label + '</button>'; }).join('') + '</div>';
       if (opts.close) card.dataset.closable = '1'; else delete card.dataset.closable;
       $('modal').hidden = false;
@@ -1515,7 +1541,24 @@
       var st = s.settings;
       // 화면 성능 (2026-11-17, 발열): everything about how hard the screen works, in one group (화질, 화면 빈도, 절전, 안티앨리어싱)
       var aaNow = !!(CW.aaOn && CW.aaOn());
-      var perf = '<div class="subh">화면 성능</div><div class="list">' +
+      var settings = '<h3>설정</h3><div class="subh">내 캐릭터</div><div class="list">' +
+        '<div class="row"><div class="info"><div class="name">닉네임</div><div class="desc">' + esc(G.nickName()) + '</div></div></div>' +
+        (G.loginGate && G.loginGate.loggedIn() ? '<div class="row"><div class="info"><div class="name">비밀번호 변경</div><div class="desc">로그인할 때 쓰는 비밀번호를 바꿔요.</div></div><button class="btn" data-act="pwchange">변경</button></div>' : '') +
+        (G.loginGate && G.loginGate.loggedIn() ? '<div class="row"><div class="info"><div class="name">로그아웃</div><div class="desc">다른 아이디로 들어갈 수 있어요. 진행은 아이디에 저장돼 있어요.</div></div><button class="btn" data-act="logout">로그아웃</button></div>' : '') +
+        '</div><div class="subh">전투와 소리</div><div class="list">' +
+        '<div class="row"><div class="info"><div class="name">보스 자동 도전</div><div class="desc">끄면 도전 버튼을 눌러 보스전을 시작해요.</div></div><button class="btn" data-set="autoBoss">' + (st.autoBoss === false ? '꺼짐' : '켜짐') + '</button></div>' +
+        '<div class="row"><div class="info"><div class="name">효과음</div></div><button class="btn" data-set="sound">' + (st.sound ? '켜짐' : '꺼짐') + '</button></div>' +
+        '</div><div class="subh">화면 설정</div><div class="list">' +
+        '<div class="row"><div class="info"><div class="name">화면 방향</div></div><div class="sbtns">' +
+          ['portrait', 'landscape'].map(function (mode) {
+            var selected = (root.CWDisplay ? root.CWDisplay.get() : 'portrait') === mode;
+            return '<button class="btn' + (selected ? ' on' : '') + '" aria-pressed="' + selected + '" data-set="' + mode + '">' + (mode === 'portrait' ? '세로모드' : '가로모드') + '</button>';
+          }).join('') + '</div></div>' +
+        (!CW.FRIEND && root.__cwFit && document.documentElement.classList.contains('under') ? '<div class="row"><div class="info"><div class="name">하단 메뉴 위치</div><div class="desc">메뉴가 잘리면 ‘안쪽’을 선택해 주세요.</div></div><button class="btn" data-set="bottomFit">' + (bottomInside() ? '안쪽' : '맨 아래') + '</button></div>' : '') +
+        '<div class="row"><div class="info"><div class="name">화면 표현</div><div class="desc">기본 3D 또는 픽셀 스타일</div></div><button class="btn" data-set="pixel">' + (st.pixel ? '픽셀 스타일' : '기본 3D') + '</button></div>' +
+        // 가로 시점 (2026-11-17): only while the phone is sideways (upright the screen is as it was)
+        (CW.isLand && CW.isLand() ? '<div class="row"><div class="info"><div class="name">가로 화면 시점</div><div class="desc">옆에서: 냥법사 왼쪽, 몬스터 오른쪽으로 길게<br>멀리서: 앞에서 넓게 내려다봐요</div></div>' +
+          '<div class="sbtns"><button class="btn' + (st.landView === 'far' ? '' : ' on') + '" data-set="landSide">옆에서</button><button class="btn' + (st.landView === 'far' ? ' on' : '') + '" data-set="landFar">멀리서</button></div></div>' : '') +
         '<div class="row"><div class="info"><div class="name">화질</div><div class="desc">화면이 끊기면 화질을 낮춰 보세요.</div></div><button class="btn" data-set="quality">' + ({ auto: '자동', high: '높음', mid: '보통', low: '낮음' })[st.quality] + '</button></div>' +
         // 60 is held to 60 even on a 120 Hz phone; 120 draws every refresh of a fast screen (warmer)
         '<div class="row"><div class="info"><div class="name">화면 빈도</div><div class="desc">120은 더 부드럽지만 폰이 더 뜨거워져요.' + (G.screenHz && G.screenHz() ? '<br>지금 화면 ' + G.screenHz() + 'Hz' : '') + '</div></div>' +
@@ -1524,24 +1567,11 @@
         '<div class="row"><div class="info"><div class="name">절전 모드</div><div class="desc">화질을 유지하며 화면 재생 빈도를 낮춰요.</div></div><button class="btn" data-set="fpsCap">' + ({ 50: '50장', 40: '40장', 30: '30장' }[(st.fpsCap || 60)] || '끄기') + '</button></div>' +
         '<div class="row"><div class="info"><div class="name">안티앨리어싱</div><div class="desc">테두리를 매끄럽게 해요. 끄면 폰이 덜 뜨거워져요.<br>바꾸면 게임을 다시 불러와요.</div></div>' +
           '<div class="sbtns"><button class="btn' + (aaNow ? ' on' : '') + '" data-set="aaOn">켜기</button><button class="btn' + (aaNow ? '' : ' on') + '" data-set="aaOff">끄기</button></div></div>' +
-        '</div><div class="subh">게임</div>';
-      var settings = '<h3>설정</h3>' + perf + '<div class="list">' +
-        '<div class="row"><div class="info"><div class="name">닉네임</div><div class="desc">' + esc(G.nickName()) + '</div></div><button class="btn" data-act="nick">변경</button></div>' +
-        (G.loginGate && G.loginGate.loggedIn() ? '<div class="row"><div class="info"><div class="name">비밀번호 변경</div><div class="desc">로그인할 때 쓰는 비밀번호를 바꿔요.</div></div><button class="btn" data-act="pwchange">변경</button></div>' : '') +
-        (G.loginGate && G.loginGate.loggedIn() ? '<div class="row"><div class="info"><div class="name">로그아웃</div><div class="desc">다른 아이디로 들어갈 수 있어요. 진행은 아이디에 저장돼 있어요.</div></div><button class="btn" data-act="logout">로그아웃</button></div>' : '') +
-        '<div class="row"><div class="info"><div class="name">화면 표현</div><div class="desc">기본 3D 또는 픽셀 스타일</div></div><button class="btn" data-set="pixel">' + (st.pixel ? '픽셀 스타일' : '기본 3D') + '</button></div>' +
-        // 가로 시점 (2026-11-17): only while the phone is sideways (upright the screen is as it was)
-        (CW.isLand && CW.isLand() ? '<div class="row"><div class="info"><div class="name">가로 화면 시점</div><div class="desc">옆에서: 냥법사 왼쪽, 몬스터 오른쪽으로 길게<br>멀리서: 앞에서 넓게 내려다봐요</div></div>' +
-          '<div class="sbtns"><button class="btn' + (st.landView === 'far' ? '' : ' on') + '" data-set="landSide">옆에서</button><button class="btn' + (st.landView === 'far' ? ' on' : '') + '" data-set="landFar">멀리서</button></div></div>' : '') +
-        '<div class="row"><div class="info"><div class="name">효과음</div></div><button class="btn" data-set="sound">' + (st.sound ? '켜짐' : '꺼짐') + '</button></div>' +
         dmgRow('dmgSize', '대미지 글씨 크기', '작게 하면 몬스터가 잘 보여요', st.dmgSize === undefined ? 60 : st.dmgSize, 30, 120) +
         dmgRow('dmgAlpha', '대미지 글씨 투명도', '낮출수록 글씨가 비쳐 보여요', st.dmgAlpha === undefined ? 85 : st.dmgAlpha, 10, 100) +
-        '<div class="row"><div class="info"><div class="name">보스 자동 도전</div><div class="desc">끄면 도전 버튼을 눌러 보스전을 시작해요.</div></div><button class="btn" data-set="autoBoss">' + (st.autoBoss === false ? '꺼짐' : '켜짐') + '</button></div>' +
-        // only in an iPhone home-screen app whose page lies under the clock (an icon added the old way), where the page
-        // may be stretched to the screen (tools/build-site.cjs)
-        (!CW.FRIEND && root.__cwFit && document.documentElement.classList.contains('under') ? '<div class="row"><div class="info"><div class="name">하단 메뉴 위치</div><div class="desc">메뉴가 잘리면 ‘안쪽’을 선택해 주세요.</div></div><button class="btn" data-set="bottomFit">' + (bottomInside() ? '안쪽' : '맨 아래') + '</button></div>' : '') +
+        '</div><div class="subh">게임 정보</div><div class="list">' +
         couponRow() + (G.storageOk() ? '' : '<p class="note">이 브라우저에서는 진행을 저장할 수 없어요.<br>창을 닫으면 진행이 사라져요.</p>') + '</div>' +
-        (CW.FRIEND ? '' : '<details class="fold"' + (foldOpen ? ' open' : '') + '><summary>문제 확인용</summary><div class="list">' +
+        (CW.FRIEND || !G.loginGate || G.loginGate.loginId() !== 'nyangops' ? '' : '<div class="subh">운영자 전용</div><details class="fold"' + (foldOpen ? ' open' : '') + '><summary>문제 확인용</summary><div class="list">' +
         '<div class="row"><div class="info"><div class="name">게임 버전</div><div class="desc">새 버전은 앱을 다시 열 때 적용돼요.</div></div><b class="appver" id="appVer">' + appVersion() + '</b></div>' +
         lastErrorRow() + hitchRow() + perfRows() + ownerSyncRow() + playerSyncRow() +
         '<div class="row"><div class="info"><div class="name">화면 높이</div><div class="desc" id="scrInfo">' + screenInfo() + '</div></div></div>' +
@@ -2174,6 +2204,12 @@
       else if (d.tal) { selTalent = d.tal; renderPanel(true); }
       else if (d.act === 'treset') { G.talentReset(); toast('특성 포인트를 초기화했어요.'); renderPanel(true); }
       else if (d.act === 'rankup') { var rr2 = CW.rankReady(G.state); if (G.rankUp() && (!CW.opalUI || CW.opalUI.fx('rankup') || 1)) toast(DATA.rankConf.names[G.state.rank] + ' 승급 완료'); else toast(rr2.why === 'marks' ? '기본 징표 6개를 최대 레벨로 강화해 주세요.' : rr2.why === 'level' ? '계정 Lv.' + rr2.need + '이 필요해요.' : rr2.why === 'mana' ? '마력석이 부족해요.' : '최고 계급에 도달했어요.'); renderPanel(true); }
+      else if (d.library !== undefined) {
+        var l = G.libraryStatus(); if (!l) return;
+        var enter = function () { if (G.enterLibrary() === 'busy') toast('진행 중인 보스전이나 던전을 먼저 마쳐 주세요.'); };
+        if (!l.run && l.practice && !G.dunState()) confirmBox(l.name, '오늘 보상은 이미 받았어요. 지금은 연습할 수 있어요.', '연습 시작', enter);
+        else enter();
+      }
       else if (d.dgo) { var r3 = G.dungeon(d.dgo); if (r3 === 'busy') toast('진행 중인 보스전이나 던전을 먼저 마쳐 주세요.'); else if (r3 === 'ticket') toast('오늘 입장권을 모두 사용했어요.'); }
       else if (d.dsw) { var r4 = G.sweep(d.dsw); if (!r4) toast('소탕할 수 없어요. 입장권과 클리어 기록을 확인해 주세요.'); else toast('소탕 완료 · ' + (r4.gold ? '골드 +' + fmtG(r4.gold) : r4.gems ? '다이아 +' + fmt(r4.gems) : r4.runeStone ? '룬석 +' + fmt(r4.runeStone) + (r4.got && r4.got.length ? ' · 룬 ' + r4.got.length + '개' : '') + (r4.overflow ? ' · 가방 초과 보상 룬석 +' + fmt(r4.overflow) : '') : '마력석 +' + fmt(r4.mana))); renderPanel(true); hud(); }
       else if (d.jump !== undefined) { moreSub = +d.jump; tierAnim = moreSub === 0; renderTop(); }
@@ -2345,6 +2381,7 @@
         }
         if (d.set === 'fpsCap') G.setSetting('fpsCap', { 50: 40, 40: 30, 30: 60 }[st.fpsCap || 60] || 50);
         if (d.set === 'landSide') G.setSetting('landView', 'side');
+        if ((d.set === 'portrait' || d.set === 'landscape') && root.CWDisplay) root.CWDisplay.set(d.set);
         if (d.set === 'landFar') G.setSetting('landView', 'far');
         if (d.set === 'fps60') G.setSetting('fpsCap', 60);
         if (d.set === 'fps120') G.setSetting('fpsCap', 120);
@@ -2473,6 +2510,7 @@
       (DATA.potions || []).forEach(function (p) { out.push(A + 'al-' + p.id + '.webp'); });
       Object.keys(DATA.elements || {}).forEach(function (e) { out.push(A + 'sk-el-' + e + '.webp'); });
       ['gold', 'gem', 'mana', 'rune'].forEach(function (k) { out.push(A + 'ui-dungeon-' + k + '.webp'); });
+      if (!CW.FRIEND) out.push(A + 'bg-sky5.webp');
       ['rk-badge', 'rk-paw', 'al-cauldron', 'mn-crystal', 'mn-paw', 'sk-cat', 'tr-state-lock'].forEach(function (n) { out.push(A + n + '.webp'); });
       // 스킬 목록 아이콘: 스킬마다 그리는 함수가 고르는 그림 그대로 (sk2-·sk-·그린 아이콘)
       (DATA.skills || []).forEach(function (sk) { var m = /src="([^"]+)"/.exec((CW.ICO.skill && CW.ICO.skill(sk.id)) || ''); if (m) out.push(m[1]); });
@@ -2833,7 +2871,7 @@
       profTheme(getComputedStyle(document.documentElement).getPropertyValue('--capc').trim());
     }
     document.querySelector('#hud .nh-prof').addEventListener('click', function () { G.sound('click'); openStats(); });
-    return { surgeGauge: surgeGauge, dunHud: dunHud, gainLog: gainLog, openTab: openTab, hud: hud, slots: slots, renderPanel: renderPanel, toast: toast, banner: banner, showOffline: showOffline, showDaily: showDaily, showTierUp: showTierUp, showGacha: showGacha, modal: modal, currentTab: function () { return tab; } };
+    return { surgeGauge: surgeGauge, dunHud: dunHud, gainLog: gainLog, openTab: openTab, hud: hud, slots: slots, renderPanel: renderPanel, toast: toast, banner: banner, showOffline: showOffline, showDaily: showDaily, showTierUp: showTierUp, showGacha: showGacha, modal: modal, libraryCards: libraryCards, currentTab: function () { return tab; } };
   }
   CW.createUI = createUI;
 })(this);

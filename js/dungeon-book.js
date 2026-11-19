@@ -31,6 +31,7 @@
     '.dbk-temple{animation:dbkPic .6s ease-out .75s both}',
     '.dbk-photo{display:block;padding:.9cqw .9cqw 2.4cqw;background:#fffaf0;box-shadow:0 .5cqw 1.2cqw rgba(70,40,15,.35),inset 0 0 0 .15cqw rgba(160,120,70,.25);transform:rotate(-3deg);animation:dbkDrop .6s cubic-bezier(.2,1.3,.45,1) .75s both}',
     '.dbk-photo img{display:block;width:100%;height:auto;border-radius:.3cqw}',
+    '.dbk-photo.library-photo img{aspect-ratio:1.48;object-fit:cover;object-position:center 25%}',
     '.dbk-photo::before,.dbk-photo::after{content:"";position:absolute;top:-1cqw;width:7cqw;height:2.2cqw;background:rgba(214,196,150,.78);box-shadow:0 .1cqw .3cqw rgba(90,60,20,.18)}',
     '.dbk-photo::before{left:-1.6cqw;transform:rotate(-32deg)}.dbk-photo::after{right:-1.6cqw;transform:rotate(30deg)}',
     '.dbk-photo span{position:absolute;left:0;right:0;bottom:.45cqw;text-align:center;font-size:max(9px,1.7cqw);color:#7b5a3a}',
@@ -52,6 +53,7 @@
     '.dbk-glow{position:absolute;inset:-18%;border-radius:50%;background:radial-gradient(closest-side,var(--gl,rgba(255,226,140,.75)),transparent);animation:dbkGlow 2.2s ease-in-out calc(var(--d) + .5s) infinite;opacity:0}',
     '.dbk-sp{position:absolute;width:2.2cqw;height:2.2cqw;opacity:0;animation:dbkSp 2.4s ease-in-out infinite}',
     '.dbk-sp svg{width:100%;height:100%;fill:#ffe9a8;filter:drop-shadow(0 0 .4cqw #ffd36a)}',
+    '.dbk-tx small{font-size:max(9px,1.7cqw);line-height:1;color:#6d4626}',
     '.dbk-tx{display:flex;flex-direction:column;align-items:flex-start;gap:.6cqw;min-width:0;width:100%}',
     '.dbk-v{white-space:nowrap;line-height:1;font-size:var(--fs,4.4cqw);color:#5a2f14;text-shadow:0 .12cqw 0 rgba(255,240,210,.8);animation:dbkUp .35s ease-out calc(var(--d) + .2s) both}',
     '.dbk-v em{font-style:normal;display:inline-block}',
@@ -124,7 +126,7 @@
     var tSize = Math.min(6.9, 30 / Math.max(1, len * 0.98));
     var pic = o.kind === 'rune'
       ? '<img class="dbk-temple" src="' + a + 'dbook-temple.webp" alt="" draggable="false" style="' + box(104, 300, 759, 739) + '">'
-      : '<span class="dbk-photo" style="left:' + px(196) + ';top:' + py(338) + ';width:' + px(476) + '"><img src="' + a + 'ui-dungeon-' + o.kind + '.webp" alt="" draggable="false"></span>';
+      : '<span class="dbk-photo' + (o.kind === 'library' ? ' library-photo' : '') + '" style="left:' + px(196) + ';top:' + py(338) + ';width:' + px(476) + '"><img src="' + a + (o.photo || 'ui-dungeon-' + o.kind) + '.webp" alt="" draggable="false"></span>';
     var rw = rows.map(function (r, i) {
       var d = (d0 + i * 0.35).toFixed(2) + 's';
       var big = r.sub ? '' : one ? '--ic:16cqw;--fs:4.8cqw;' : '';
@@ -132,10 +134,10 @@
       return '<div class="dbk-r' + (r.sub ? ' sub' : one ? ' one' : '') + '" style="--d:' + d + ';' + big + '--gl:' + (GLOW[r.ico] || GLOW.gold) + '">' +
         '<div class="dbk-ic">' + (r.sub ? '' : '<i class="dbk-glow"></i><span class="dbk-ray">' + RAYS + '</span>') + '<span class="icw">' + icon(r.ico) + '</span>' + sp + '</div>' +
         '<div class="dbk-tx"><div class="dbk-v">' + esc(r.label) + ' <em data-n="' + i + '">' + esc(r.fmt(r.sub ? r.value : 0)) + '</em>' + esc(r.unit || '') + '</div>' +
-        (r.sub ? '' : '<img class="dbk-vine" src="' + a + 'dbook-vine.webp" alt="" draggable="false">') + '</div></div>';
+        (r.detail ? '<small>' + esc(r.detail) + '</small>' : r.sub ? '' : '<img class="dbk-vine" src="' + a + 'dbook-vine.webp" alt="" draggable="false">') + '</div></div>';
     }).join('');
     var dust = ''; for (var k = 0; k < 9; k++) dust += '<i style="left:' + (8 + k * 10.5) + '%;animation-delay:' + (2.4 + k * 0.37).toFixed(2) + 's"></i>';
-    var help = '소탕으로 최고 기록의 보상을 바로 받을 수 있어요.';
+    var help = o.help === undefined ? '소탕으로 최고 기록의 보상을 바로 받을 수 있어요.' : esc(o.help);
     var el = document.createElement('div'); el.id = 'dbook'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', nm + ' 보상');
     el.innerHTML = '<div class="dbk"><div class="dbk-in">' +
       '<img class="dbk-base" src="' + a + 'dbook-base.webp" alt="" draggable="false">' +
@@ -146,7 +148,7 @@
       '<div class="dbk-h" style="' + box(250, 748, 604, 834) + '">' + help + '</div>' +
       '<div class="dbk-rw" style="' + box(830, 112, 1392, 626) + '">' + rw + '</div>' +
       '<div class="dbk-dust">' + dust + '</div>' +
-      '<div class="dbk-tk" style="' + box(655, 738, 950, 836) + '">남은 입장권<b>' + esc(o.tickets) + '</b>장</div>' +
+      (o.tickets == null ? '' : '<div class="dbk-tk" style="' + box(655, 738, 950, 836) + '">남은 입장권<b>' + esc(o.tickets) + '</b>장</div>') +
       '<button class="dbk-seal" type="button" aria-label="확인" style="' + box(1165, 612, 1439, 873) + '"><i><img src="' + a + 'dbook-seal.webp" alt="" draggable="false"></i></button>' +
       '</div></div><p class="dbk-cap">' + help + '</p>';
     document.body.appendChild(el);

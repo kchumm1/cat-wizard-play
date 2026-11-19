@@ -5,7 +5,8 @@
 
   var storage = null;
   try { storage = root.localStorage; storage.setItem('cw-probe', '1'); storage.removeItem('cw-probe'); } catch (e) { storage = null; }
-  var state = CW.migrateBag(CW.load(storage) || CW.newState());
+  var state = CW.migrateBag(CW.load(storage) || Object.assign(CW.newState(), { needsFirstNick: true }));
+  initLibrarySave(state);
   // 한 종류에 하나 (2026-11-18, js/sigil.js · js/runes.js): a save that wore an option or a rune kind twice keeps the strongest
   function oneOfEach(s) { if (CW.sigilDedupe && s.sigil) CW.sigilDedupe(s); if (CW.runeDedupe && s.runeBag) CW.runeDedupe(s); return s; }
   oneOfEach(state);
@@ -119,7 +120,7 @@
   }
   function hexCss(h) { return '#' + ('000000' + h.toString(16)).slice(-6); }
   function isBright(R) { var c = new T.Color(R.sky); return c.r * 0.3 + c.g * 0.59 + c.b * 0.11 > 0.55; }
-  function save() { CW.save(state, storage); }
+  function save() { return !libraryStale() && CW.save(state, storage); }
 
   // ---------- stage & region ----------
   function syncRegion() {
@@ -226,6 +227,7 @@
     return list;
   }
   function onHit(skill, mul, book) {
+    var libraryHit = false;
     return function (mob, frac, power) {
       if (!mob || !mob.alive) return;
       var ct = CW.rollCrit(st), crit = ct > 0;
@@ -266,6 +268,7 @@
       gained.dmg = Math.max(gained.dmg, dmg);
       snd.play(crit ? 'crit' : 'hit');
       if (mob.hp <= 0) onDeath(mob, skill);
+      if (dun && dun.magic) { dun.magic.hit(mob, dmg, !libraryHit); libraryHit = true; }
     };
   }
   // monster codex (2026-11-15): the first kill of each kind is written down, in stage fights and dungeons alike;
@@ -280,6 +283,7 @@
   function onDeath(mob, skill) {
     sc.killMob(mob, skill.color, mob.boss);
     var pos = sc.mobPos(mob);
+    if (dun && dun.library) { dun.kills++; dun.magic.death(mob); return; }
     dexKill(mob.id);
     if (mob.boss && boss && boss.mob === mob) { bossWin(pos); return; }
     if (dun) { dun.kills++; if (CW.idleNote) CW.idleNote({ kill: 1 }); if (dun.kind === 'gold') { fx.coinPop(pos, 4); flyCoins(pos, 2); } else fx.coinPop(pos, 2); snd.play('kill'); return; }
@@ -400,7 +404,150 @@
     ui.banner(def.name); snd.play('boss'); save();
     return 'ok';
   }
+
+  // ---------- 뒤틀린 마법 도서관 ----------
+  var library = CW.library, libraryRegion = DATA.skyRegions[4];
+  var libraryMobs = libraryRegion.monsters.slice(0, 5);
+  var rewardDaySeen = state.library.lastRewardDay;
+  function libraryOpen() { return !CW.FRIEND && (CW.dungeonOpen(state) || root.CW_LIBRARY_PREVIEW === true); }
+  function libraryDay() { return library.dayKey(Date.now()); }
+  function initLibrarySave(s) {
+    if (!s.library || typeof s.library !== 'object' || Array.isArray(s.library)) s.library = {};
+    if (typeof s.library.lastRewardDay !== 'string') s.library.lastRewardDay = '';
+    if (!s.library.run || typeof s.library.run !== 'object') s.library.run = null;
+  }
+  function libraryStale() {
+    if (!storage) return false;
+    var saved = CW.load(storage), day = saved && saved.library && saved.library.lastRewardDay;
+    return !!day && library.canReward(day, rewardDaySeen);
+  }
+  function libraryStatus() {
+    if (!libraryOpen()) return null;
+    return { name: library.name, run: state.library.run, practice: !library.canReward(libraryDay(), state.library.lastRewardDay) };
+  }
+  function enterLibrary() {
+    if (!libraryOpen()) return 'locked';
+    if (dun || boss || state.bossTry || librarySettling) return 'busy';
+    if (libraryStale()) { ui.toast('다른 탭에서 보상을 받았어요. 새로고침한 뒤 다시 들어와 주세요.'); return; }
+    if (!state.library.run) {
+      state.library.run = library.newRun(libraryStatus().practice, library.rewardRates(state, CW));
+      if (!save()) { state.library.run = null; ui.toast('진행을 저장할 수 없어요. 브라우저 저장을 확인해 주세요.'); return; }
+    }
+    var run = state.library.run;
+    ui.openTab('battle');
+    if (run.finished) { settleLibrary(); return; }
+    clearField(true);
+    sc.setRegion(14, libraryRegion); fx.setRegion(libraryRegion); fx.setBright(isBright(libraryRegion));
+    libraryMobs.forEach(needArt);
+    dun = { kind: 'library', def: { name: library.name }, library: run, t: library.seconds, sp: 0, kills: 0 };
+    if (run.cards) showLibraryCards();
+    else startLibraryFloor();
+    return 'ok';
+  }
+  function startLibraryFloor() {
+    var d = dun, run = d.library;
+    d.goal = 3 + Math.floor((run.floor - 1) / 3) + (run.room === 'crowd' ? 2 : run.room === 'guard' ? -1 : 0);
+    d.hp = CW.stageMonsterHp({ stage: Math.max(0, state.best), diff: state.diff }) *
+      (0.53 + run.floor * 0.032) / CW.DUN_CROWD * (run.room === 'crowd' ? 0.68 : run.room === 'guard' ? 1.65 : 1);
+    d.t = library.seconds; d.sp = 0; d.kills = 0; d.fxAt = 0; castT = 0.2;
+    var skill = state.slots.map(CW.skillById).find(Boolean);
+    var first = skill ? CW.hitDamage(st, skill, { boss: false, critTier: 0, even: true }) : 0;
+    d.magic = library.combat(run.powers, libraryTargets, libraryStrike, first);
+  }
+  function libraryTargets() { return aliveMobs().filter(function (mob) { return mob.arrived; }); }
+  function libraryStrike(mob, dmg, color) {
+    if (!mob || !mob.alive || !(dmg > 0)) return;
+    mob.hp -= dmg;
+    sc.damageText(sc.mobTop(mob), CW.fmt(dmg), 0, hexCss(color));
+    if (clockT >= dun.fxAt) {
+      dun.fxAt = clockT + 0.35;
+      fx.minionBurst(sc.mobPos(mob), 1, color);
+    }
+    if (mob.hp <= 0) onDeath(mob, { color: color });
+  }
+  function libraryTick(dt) {
+    var d = dun, run = d.library;
+    if (run.cards) return;
+    d.t -= dt;
+    if (d.t <= 0) {
+      clearField(true);
+      if (d.kills >= d.goal) library.clearFloor(run, library.seconds);
+      if (d.kills < d.goal || run.cleared === library.floors) run.finished = true;
+      if (run.finished) { leaveLibrary(); settleLibrary(); }
+      else {
+        save();
+        showLibraryCards();
+      }
+      return;
+    }
+    d.sp -= dt;
+    if (d.sp <= 0 && aliveMobs().length < 6) {
+      var id = libraryMobs[(d.kills + Math.floor(Math.random() * libraryMobs.length)) % libraryMobs.length];
+      var pic = mobArt(id, DATA.regions[0].monsters[0]);
+      if (pic) sc.spawnMob({ art: pic, id: id, tint: 0xd8b7ff, hp: d.hp, height: fitHeight(pic, 0.95), entry: 'run' });
+      d.sp = 0.46;
+    }
+    d.magic.tick(dt);
+  }
+  function leaveLibrary() {
+    dun = null; clearField(true); region = -1; syncRegion(); restT = 0.6; ui.dunHud(null);
+  }
+  function showLibraryCards() {
+    var run = dun.library;
+    ui.libraryCards(run, function (index) {
+      var next = JSON.parse(JSON.stringify(run));
+      if (!library.choose(next, index)) return;
+      state.library.run = next;
+      if (!save()) {
+        state.library.run = run;
+        ui.toast('선택을 저장하지 못했어요.');
+        showLibraryCards();
+        return;
+      }
+      dun.library = next;
+      startLibraryFloor();
+    }, function () { leaveLibrary(); ui.openTab('dungeon'); });
+  }
+  var librarySettling = false;
+  function settleLibrary() {
+    if (librarySettling) return;
+    var run = state.library.run;
+    librarySettling = true;
+    function finish() {
+      if (state.library.run !== run) return;
+      if (libraryStale()) { ui.toast('다른 탭에서 보상을 받았어요. 새로고침해 주세요.'); return; }
+      var day = libraryDay(), total = run.practice || !library.canReward(day, state.library.lastRewardDay) ? {} : library.rewardTotal(run);
+      var oldDay = state.library.lastRewardDay, before = {};
+      Object.keys(total).forEach(function (key) { before[key] = state[key]; state[key] = (state[key] || 0) + total[key]; });
+      if (Object.keys(total).length) state.library.lastRewardDay = day;
+      state.library.run = null;
+      if (!save()) {
+        Object.keys(before).forEach(function (key) { state[key] = before[key]; });
+        state.library.run = run; state.library.lastRewardDay = oldDay;
+        ui.toast('보상을 저장하지 못했어요. 던전에서 다시 시도해 주세요.');
+        return;
+      }
+      rewardDaySeen = state.library.lastRewardDay;
+      var fusions = Object.keys(library.fusions).filter(function (id) { return run.powers[id]; }).map(function (id) { return library.fusions[id][2]; });
+      var help = fusions.length ? '완성 융합 · ' + fusions.join(' · ') : '';
+      if (!Object.keys(total).length) help = (run.practice ? '연습 완료' : '받을 반복 보상 없음') + (help ? ' · ' + help : '');
+      var rewards = Object.keys(total).map(function (key) {
+        var fmt = key === 'gold' ? CW.fmtGold : CW.fmt;
+        var extra = total[key] - library.whole(run.base[key]);
+        return { ico: key, label: library.labels[key], value: total[key], fmt: function (v) { return '+' + fmt(v); },
+          detail: extra > 0 ? '카드 +' + fmt(extra) : '' };
+      });
+      CW.dungeonBook({ kind: 'library', photo: 'bg-sky5', name: library.name, stat: ['돌파', run.cleared, ' / ' + library.floors + '층'],
+        rewards: rewards, help: help, onClose: function () { snd.play('click'); ui.openTab('dungeon'); } });
+      ui.hud();
+    }
+    var locks = root.navigator && root.navigator.locks;
+    var work = locks ? locks.request('cw-library-reward', finish) : Promise.resolve().then(finish);
+    work.catch(noteError).finally(function () { librarySettling = false; });
+  }
+
   function dunTick(dt) {
+    if (dun.library) { libraryTick(dt); return; }
     dun.t -= dt;
     if (dun.kind !== 'mana') {
       var alive = aliveMobs().length;
@@ -586,9 +733,11 @@
     markUp: function (id) { var ok = CW.markUp(state, id); if (ok) { refreshStats(); snd.play('click'); } return ok; },
     rankUp: function () { var ok = CW.rankUp(state); if (ok) { refreshStats(); snd.play('tier'); fx.levelUp(state.tier, 0xffd84a); save(); } return ok; },
     circleUp: function () { var t = CW.circleTier(state), ok = CW.circleUp(state); if (ok) { refreshStats(); snd.play('click'); if (CW.circleTier(state) > t) { fx.levelUp(state.tier, 0x6fb8ff); ui.banner((CW.circleTier(state) + 1) + '서클 달성!'); save(); } } return ok; },
+    libraryStatus: libraryStatus,
+    enterLibrary: enterLibrary,
     dungeon: function (kind) { var r = dungeonStart(kind); if (r === 'ok') ui.openTab('battle'); return r; },
     sweep: function (kind) { var best = state.dungeon && state.dungeon.best && state.dungeon.best[kind]; var r = CW.sweep(state, kind, Date.now()); if (r && G.wallet) { G.wallet.queueDungeon({ kind: kind, kills: (best && best.kills) || 0, sweep: true }); walletFlush(); } if (r) { refreshStats(); snd.play('win'); save(); } return r; },
-    dunState: function () { return dun ? { kind: dun.kind, t: dun.t, kills: dun.kills, dmg: dun.dmg, name: dun.def.name, level: dun.kind === 'mana' ? CW.golemLevel(state, dun.dmg) : 0 } : null; },
+    dunState: function () { return dun ? { kind: dun.kind, t: dun.t, kills: dun.kills, dmg: dun.dmg, name: dun.library ? '도서관 ' + dun.library.floor + '층' : dun.def.name, goal: dun.goal, level: dun.kind === 'mana' ? CW.golemLevel(state, dun.dmg) : 0 } : null; },
     pull: function (n) { if (G.wallet) return walletDo('pull', { n: n }); var items = CW.pull(state, n); if (items) { refreshStats(); save(); } return items; },
     buy: function (i) { if (CW.FRIEND) return 0; if (G.wallet) return walletDo('buyShop', { i: i }); var g = CW.buy(state, i); save(); return g; },
     goStage: function (i) {
@@ -597,6 +746,7 @@
       clearField(true); syncRegion(); if (state.bossTry) startBoss(); save(); return true;
     },
     setDifficulty: function (d) {
+      if (dun && dun.library) return false;
       if (!CW.setDifficulty(state, d)) return false;
       clearField(true); region = -1; syncRegion(); refreshStats(); smallKills = 0; save(); ui.banner(CW.diffOf(state).name); return true;
     },
@@ -608,7 +758,7 @@
     // slider being dragged: show the numbers at that value right away, save when the finger lifts
     previewDamage: function (size, alpha) { sc.setDamageStyle(size / 100, alpha / 100); },
     showDamageSample: function () { var h = sc.heroCenter(); for (var i = 0; i < 3; i++) sc.damageText(h.clone().add(new T.Vector3(0.9 + i * 0.5, 0.6 + i * 0.25, 0)), ['1,234', '5.6만', '78억'][i], i); },
-    reset: function () { CW.clearSave(storage); state = CW.newState(); if (CW.dexDot) CW.dexDot(false); rot = CW.rotation(state); refreshStats(); clearField(true); region = -1; syncRegion(); sc.setTierAura(1); ui.renderPanel(true); ui.slots(); save(); cloudPush(true); ui.toast('새 모험을 시작해요'); },
+    reset: function () { CW.clearSave(storage); state = CW.newState(); initLibrarySave(state); rewardDaySeen = ''; if (dun && dun.library) dun = null; if (CW.dexDot) CW.dexDot(false); rot = CW.rotation(state); refreshStats(); clearField(true); region = -1; syncRegion(); sc.setTierAura(1); ui.renderPanel(true); ui.slots(); save(); cloudPush(true); ui.toast('새 모험을 시작해요'); },
     storageOk: function () { return !!storage; },
     exportSave: function () { save(); return CW.exportCode(state); },
     importSave: function (code) { var st2 = CW.importCode(code); if (!st2 || !adopt(JSON.stringify(st2))) return false; save(); cloudPush(true); return true; },
@@ -764,7 +914,7 @@
     for (var i = pendingTier.length - 1; i >= 0; i--) { if (!calm) break; pendingTier[i].at -= dt; if (pendingTier[i].at <= 0) { doTierUp(pendingTier[i].tier); pendingTier.splice(i, 1); } }
     // how many little ones: only in a plain stage fight (not a boss, not a dungeon), fewer on a phone and at lower quality
     if (mins) mins.setWant(dun || boss || state.bossTry ? 0 : CW.minionCap(sc.getQuality(), CW.PHONE), minionPick);
-    if (dun) dunTick(dt);
+    if (dun) { dunTick(dt); if (dun && dun.library && dun.library.cards) return; }
     else if (restT > 0) { restT -= dt; if (restT <= 0) syncRegion(); }
     else if (boss) {
       if (boss.mob.arrived) boss.time -= dt;
@@ -831,6 +981,7 @@
     // the next frame is asked for first, and each part runs on its own: one error used to end the game loop for good
     // (the picture stood still until the app was reopened)
     requestAnimationFrame(frame);
+    if (loginGate && loginGate.isSuspended()) return;
     // fewer frames on purpose (절전 / menu open / no touch for a while / no monster / 방치모드): this refresh is skipped
     if (ready) {
       pace.setQuiet(!dun && !boss && !preview && aliveMobs().length === 0);
@@ -880,6 +1031,18 @@
 
   // ---------- leaving and coming back ----------
   function giveOffline() {
+    if (state.needsFirstNick) {
+      if (loginGate && !loginGate.loggedIn()) return;
+      ui.modal('<h2>닉네임 설정</h2><p>캐릭터 이름을 1~8글자로 입력해 주세요.</p><input class="nickin" maxlength="8" aria-label="닉네임" autocomplete="off">', [{
+        label: '모험 시작', pri: true, fn: function () {
+          var name = $('modalCard').querySelector('.nickin').value.trim();
+          if (!name) { giveOffline(); ui.toast('닉네임을 입력해 주세요.'); return; }
+          delete state.needsFirstNick;
+          G.setNick(name); ui.hud(); giveOffline();
+        }
+      }], { variant: 'guide' });
+      return;
+    }
     begun = true;   // (모험 시작 pressed: an owed job celebration may play — state.tierShow)
     var r = CW.offlineReward(state, Date.now());
     if (r.seconds < 60) { ui.showDaily(true); return; }
@@ -919,6 +1082,9 @@
   }
   function adopt(json) {
     var loaded = CW.load({ getItem: function () { return json; } }); if (!loaded) return false; CW.migrateBag(loaded); if (CW.dexBackfill) CW.dexBackfill(loaded); oneOfEach(loaded);
+    if (dun && dun.library) { dun = null; $('modal').hidden = true; }
+    initLibrarySave(loaded);
+    loaded.library.lastRewardDay = library.canReward(state.library.lastRewardDay, loaded.library.lastRewardDay) ? state.library.lastRewardDay : loaded.library.lastRewardDay;
     state = friendCap(loaded); if (CW.lateTier) CW.lateTier(state, CW.FRIEND);   // 11차 물: a save brought in (the celebration: state.tierShow)
     rot = CW.rotation(state); refreshStats(); pendingTier.length = 0; preview = null;
     clearField(true); region = -1; restT = 0.4;
