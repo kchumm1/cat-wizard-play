@@ -1118,7 +1118,7 @@
     function modal(html, buttons, opts) {
       opts = opts || {};
       var card = $('modalCard');
-      card.className = 'card' + (opts.variant === 'guide' ? ' guide-card' : opts.variant === 'danger' ? ' guide-card danger' : opts.variant === 'library' ? ' library-card' : '');
+      card.className = 'card' + (opts.variant === 'coupon' ? ' coupon-card' : opts.variant === 'guide' ? ' guide-card' : opts.variant === 'danger' ? ' guide-card danger' : opts.variant === 'library' ? ' library-card' : '');
       card.innerHTML = (opts.close ? '<button class="guide-x" data-mx aria-label="닫기">×</button>' : '') + html + '<div class="btns">' + buttons.map(function (b, i) { return '<button class="btn ' + (b.pri ? 'pri' : '') + '" data-mb="' + i + '">' + b.label + '</button>'; }).join('') + '</div>';
       if (opts.close) card.dataset.closable = '1'; else delete card.dataset.closable;
       $('modal').hidden = false;
@@ -1545,8 +1545,9 @@
         '<div class="row"><div class="info"><div class="name">닉네임</div><div class="desc">' + esc(G.nickName()) + '</div></div></div>' +
         (G.loginGate && G.loginGate.loggedIn() ? '<div class="row"><div class="info"><div class="name">비밀번호 변경</div><div class="desc">로그인할 때 쓰는 비밀번호를 바꿔요.</div></div><button class="btn" data-act="pwchange">변경</button></div>' : '') +
         (G.loginGate && G.loginGate.loggedIn() ? '<div class="row"><div class="info"><div class="name">로그아웃</div><div class="desc">다른 아이디로 들어갈 수 있어요. 진행은 아이디에 저장돼 있어요.</div></div><button class="btn" data-act="logout">로그아웃</button></div>' : '') +
-        '</div><div class="subh">전투와 소리</div><div class="list">' +
+        '</div><div class="subh">전투</div><div class="list">' +
         '<div class="row"><div class="info"><div class="name">보스 자동 도전</div><div class="desc">끄면 도전 버튼을 눌러 보스전을 시작해요.</div></div><button class="btn" data-set="autoBoss">' + (st.autoBoss === false ? '꺼짐' : '켜짐') + '</button></div>' +
+        '</div><div class="subh">소리</div><div class="list">' +
         '<div class="row"><div class="info"><div class="name">효과음</div></div><button class="btn" data-set="sound">' + (st.sound ? '켜짐' : '꺼짐') + '</button></div>' +
         '</div><div class="subh">화면 설정</div><div class="list">' +
         '<div class="row"><div class="info"><div class="name">화면 방향</div></div><div class="sbtns">' +
@@ -1569,7 +1570,6 @@
           '<div class="sbtns"><button class="btn' + (aaNow ? ' on' : '') + '" data-set="aaOn">켜기</button><button class="btn' + (aaNow ? '' : ' on') + '" data-set="aaOff">끄기</button></div></div>' +
         dmgRow('dmgSize', '대미지 글씨 크기', '작게 하면 몬스터가 잘 보여요', st.dmgSize === undefined ? 60 : st.dmgSize, 30, 120) +
         dmgRow('dmgAlpha', '대미지 글씨 투명도', '낮출수록 글씨가 비쳐 보여요', st.dmgAlpha === undefined ? 85 : st.dmgAlpha, 10, 100) +
-        '</div><div class="subh">게임 정보</div><div class="list">' +
         couponRow() + (G.storageOk() ? '' : '<p class="note">이 브라우저에서는 진행을 저장할 수 없어요.<br>창을 닫으면 진행이 사라져요.</p>') + '</div>' +
         (CW.FRIEND || !G.loginGate || G.loginGate.loginId() !== 'nyangops' ? '' : '<div class="subh">운영자 전용</div><details class="fold"' + (foldOpen ? ' open' : '') + '><summary>문제 확인용</summary><div class="list">' +
         '<div class="row"><div class="info"><div class="name">게임 버전</div><div class="desc">새 버전은 앱을 다시 열 때 적용돼요.</div></div><b class="appver" id="appVer">' + appVersion() + '</b></div>' +
@@ -1648,7 +1648,7 @@
     }
     // 쿠폰 (2026-11-18): only while the server wallet is on (형꺼 for now); the server checks the code (js/main.js G.coupon)
     function couponRow() {
-      if (!G.wallet) return '';
+      if (CW.FRIEND) return '';
       return '<div class="row"><div class="info"><div class="name">쿠폰 입력</div><div class="desc">이벤트 쿠폰 번호를 넣으면 선물 상자가 가방에 들어와요.</div></div><button class="btn" data-act="coupon">입력</button></div>';
     }
     // 모든 플레이어 저장 (2026-11-18, js/player-sync.js, main.js G.playerSync): only a status line, 형꺼 only
@@ -2306,16 +2306,17 @@
         toast('서버 저장을 불러오고 있어요…');
         G.ownerSync.fetchSave('top').then(function (r) { if (r && r.ok) ownRestore(r); else toast('불러오지 못했어요' + (r && r.msg ? ': ' + r.msg : '.')); });
       }
-      else if (d.act === 'coupon' && G.wallet) {
+      else if (d.act === 'coupon' && !CW.FRIEND) {
         modal('<h2>쿠폰 입력</h2><p class="guide-lead">받은 쿠폰 번호를 넣어 주세요.</p><input class="nickin cpin" type="text" inputmode="latin" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" placeholder="쿠폰 번호">',
           [{ label: '취소' }, { label: '받기', pri: true, fn: function () {
             var code = CW.couponCode($('modalCard').querySelector('.cpin').value);
             if (!code) { toast('쿠폰 번호를 다시 확인해 주세요. (영어·숫자 6~16자)'); return; }
+            if (!G.wallet) { toast('쿠폰을 받으려면 서버 지갑 연결이 필요해요.'); return; }
             G.later(G.coupon(code), function (r) {
               if (r && r.box) { toast('쿠폰 선물이 가방에 들어왔어요 · 가방에서 열어 받아요'); if (CW.chestBadge) CW.chestBadge(); hud(); renderPanel(true); return; }
               toast('쿠폰을 쓸 수 없어요. 번호·기간을 확인하거나, 이미 쓴 쿠폰인지 확인해 주세요.');
             });
-          } }]);
+          } }], { variant: 'coupon' });
       }
       else if (d.act === 'ownkey') {
         modal('<h2>Claude에게 저장 보내기</h2><p class="guide-lead">Claude가 알려 준 열쇠를 붙여 넣으세요. 이 기기에만 보관돼요.</p><input class="nickin owkin" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="열쇠">',
@@ -2377,6 +2378,7 @@
         if (d.set === 'autoBoss') G.setSetting('autoBoss', st.autoBoss === false);
         if (d.set === 'bottomFit') {
           try { if (bottomInside()) localStorage.removeItem('cw-bottom'); else localStorage.setItem('cw-bottom', 'inside'); } catch (e) {}
+          if (root.CWDisplay) root.CWDisplay.refresh();
           if (root.__cwFit) root.__cwFit(); root.dispatchEvent(new Event('resize'));
         }
         if (d.set === 'fpsCap') G.setSetting('fpsCap', { 50: 40, 40: 30, 30: 60 }[st.fpsCap || 60] || 50);

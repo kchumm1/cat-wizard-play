@@ -8,9 +8,23 @@
 
   var mode = 'portrait';
   try { if (localStorage.getItem('cw-display-mode') === 'landscape') mode = 'landscape'; } catch (e) {}
-  var frame, mount;
+  var frame, mount, topInset;
+  function fitMount() {
+    var portrait = mode === 'portrait' && innerWidth <= innerHeight;
+    // In upright play the inner game already positions the HUD and home bar.
+    // Reserve cutouts in the host only for the other (possibly rotated) layouts.
+    mount.style.inset = portrait ? '0' : 'env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)';
+    var inside = false;
+    try { inside = localStorage.getItem('cw-bottom') === 'inside'; } catch (e) {}
+    var height = Math.max(screen.width, screen.height);
+    var standalone = navigator.standalone || matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches;
+    var stretch = portrait && standalone && topInset.offsetHeight > 0 && !inside && height >= innerHeight && height - innerHeight <= 120;
+    mount.style.position = stretch ? 'absolute' : 'fixed';
+    mount.style.height = stretch ? height + 'px' : '';
+  }
   function layout() {
     if (!frame) return;
+    fitMount();
     var w = mount.clientWidth, h = mount.clientHeight;
     var landscape = mode === 'landscape';
     var rotate = (w > h) !== landscape;
@@ -25,6 +39,7 @@
     frame.style.transform = 'translate(-50%, -50%)' + (rotate ? ' rotate(' + (landscape ? 90 : -90) + 'deg)' : '');
   }
   window.CWDisplay = {
+    refresh: layout,
     get: function () { return mode; },
     set: function (value) {
       if (value !== 'landscape' && value !== 'portrait') return;
@@ -40,11 +55,16 @@
     document.getElementById('cw-game-source').remove();
     document.documentElement.style.cssText += ';margin:0;background:#0f1019;overflow:hidden';
     mount = document.createElement('main');
-    mount.style.cssText = 'position:fixed;top:env(safe-area-inset-top,0px);right:env(safe-area-inset-right,0px);bottom:env(safe-area-inset-bottom,0px);left:env(safe-area-inset-left,0px);overflow:hidden';
+    mount.style.cssText = 'position:fixed;inset:0;overflow:hidden';
+    topInset = document.createElement('i');
+    topInset.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;height:env(safe-area-inset-top,0px)';
+    document.body.appendChild(topInset);
     frame = document.createElement('iframe'); frame.id = 'cw-play-viewport'; frame.title = '냥법사 게임';
     frame.style.cssText = 'position:absolute;left:50%;top:50%;border:0;display:block';
     var url = new URL(location.href); url.searchParams.set('cwViewport', '1'); frame.src = url.href;
     document.body.appendChild(mount); layout(); mount.appendChild(frame);
     new ResizeObserver(layout).observe(mount);
+    window.addEventListener('resize', layout);
+    window.addEventListener('pageshow', layout);
   });
 })();
