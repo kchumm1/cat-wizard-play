@@ -981,6 +981,7 @@
     // the next frame is asked for first, and each part runs on its own: one error used to end the game loop for good
     // (the picture stood still until the app was reopened)
     requestAnimationFrame(frame);
+    if (loginGate && loginGate.isSuspended()) return;
     // fewer frames on purpose (절전 / menu open / no touch for a while / no monster / 방치모드): this refresh is skipped
     if (ready) {
       pace.setQuiet(!dun && !boss && !preview && aliveMobs().length === 0);
