@@ -272,7 +272,12 @@
     renderer.setClearColor(0x000000, 0);
     var bgEl = document.createElement('div'); bgEl.className = 'stagebg'; canvas.parentNode.insertBefore(bgEl, canvas);
     var bgReady = {};
-    function showBackdrop(id) { bgEl.style.backgroundImage = id ? 'url(' + (CW.ART_BASE || 'art/') + id + '.webp)' : ''; bgEl.style.display = id ? 'block' : 'none'; document.documentElement.classList.toggle('picbg', !!id); }
+    function showBackdrop(id) {
+      bgEl.style.backgroundImage = id ? 'url(' + (CW.ART_BASE || 'art/') + id + '.webp)' : '';
+      bgEl.style.display = id ? 'block' : 'none';
+      document.documentElement.classList.toggle('picbg', !!id);
+      if (window.CWDisplay && window.CWDisplay.showBackdrop) window.CWDisplay.showBackdrop(bgEl);
+    }
     function setRegion(r, regionData) {
       if (r === region) return; region = r;
       if (!painted) painted = CW.createWorld(scene, { tilt: TILT, halfX: halfX, field: FIELD });
