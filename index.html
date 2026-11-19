@@ -2907,18 +2907,15 @@ html.fullh #chestfx{position:absolute;bottom:auto;height:var(--apph)}
    bottom right (the right thumb), and a menu opens as a drawer from the right so the fight stays in sight on the left.
    Portrait is untouched: every rule is inside this one media query, and js/land.js asks the same question (CW.isLand). */
 @media (orientation:landscape) and (min-aspect-ratio:6/5){
-  :root{--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px);--sb:env(safe-area-inset-bottom,0px);--st:env(safe-area-inset-top,0px);--qw:58px;--tw:52px;--dw:min(390px,48vw);--el:var(--sl);--er:var(--sr)}
-  /* the two columns stand inside the safe gaps (--el, --er). The side without the notch (js/land.js: notchL / notchR)
-     has only the round corner, so its column goes right to the edge (형: 핸드폰 끝쪽에 붙힌다는 느낌으로 · 더 넓게 →
-     좀 더 많이 붙이고); the notch side keeps the whole gap, or the Dynamic Island would sit on the middle tabs */
-  html.notchL{--er:calc(var(--sr) * .12)}
-  html.notchR{--el:calc(var(--sl) * .12)}
+  :root{--sl:var(--play-safe-left,env(safe-area-inset-left,0px));--sr:var(--play-safe-right,env(safe-area-inset-right,0px));--sb:var(--play-safe-bottom,env(safe-area-inset-bottom,0px));--st:var(--play-safe-top,env(safe-area-inset-top,0px));--qw:58px;--tw:52px;--dw:min(390px,48vw);--el:var(--sl);--er:var(--sr)}
+  /* The field and both rails reach the physical edges. Reserve cutouts inside the controls. */
   #app{max-width:none}
   /* the region's picture is upright (about 9:16): stretched to a sideways screen it was squashed flat, so it covers
      the screen instead, keeping its middle (the ground the fight stands on) */
   .stagebg{background-size:cover!important;background-position:50% 55%!important}
   /* left column: 지도 · 룬 · 신성력 · 도감 · 우편함 · 공지 · 방치, all seven always in reach */
-  #quick{left:calc(var(--el) + 6px)!important;right:auto!important;top:calc(var(--st) + 6px)!important;bottom:calc(var(--sb) + 6px);width:calc(var(--qw) - 8px);display:flex;flex-direction:column;justify-content:space-between;align-items:center;gap:0!important}
+  #quick{left:calc(var(--el) + 4px)!important;right:auto!important;top:calc(var(--st) + 6px)!important;bottom:calc(var(--sb) + 6px);width:48px;display:flex;flex-direction:column;justify-content:space-between;align-items:center;gap:0!important}
+  html.iphone #quick{left:6px!important}
   #quick button{width:48px!important;padding:3px 0 2px!important;border-radius:13px!important}
   /* (형 2026-11-18, 갤럭시 가로: 주소창이 보이면 높이가 300쯤 → 여덟 칸이 넘쳐 방치가 잘림) the pictures and names follow the
      screen's height: 22px / 10px from 360 up, down to 15px / 8.5px, so all eight stay in the column */
@@ -2939,7 +2936,7 @@ html.fullh #chestfx{position:absolute;bottom:auto;height:var(--apph)}
   /* (형: 아이콘들을 가운데 정렬) the pictures stand in the middle of the column you see: without a notch at this edge the
      column reaches the edge and its tabs fill all of it; with the notch here it stands just inside the notch's gap as a
      rounded panel of its own, the field showing under the notch as it does at the left */
-  #tabs{left:auto!important;right:var(--er);top:0;bottom:0;width:var(--tw);height:auto;display:grid;grid-template-columns:1fr!important;grid-template-rows:repeat(7,minmax(0,1fr));gap:0!important;padding:calc(var(--st) + 10px) 0 calc(var(--sb) + 4px) 0!important;border-radius:0!important;box-shadow:-1px 0 0 rgba(255,255,255,.35),-8px 0 22px rgba(40,20,100,.35)!important;
+  #tabs{left:auto!important;right:0;top:0;bottom:0;width:calc(var(--tw) + var(--er));height:auto;display:grid;grid-template-columns:1fr!important;grid-template-rows:repeat(7,minmax(0,1fr));gap:0!important;padding:calc(var(--st) + 10px + min(8px,var(--sl) + var(--sr))) var(--er) calc(var(--sb) + 6px) 0!important;border-radius:0!important;box-shadow:-1px 0 0 rgba(255,255,255,.35),-8px 0 22px rgba(40,20,100,.35)!important;
     /* the same nebula as the upright tab bar (mn-neb-fill, the stars in ::after), sized to the tall column and drifting
        up and down instead of across */
     background:linear-gradient(270deg,rgba(40,24,96,.28),rgba(24,14,64,.5)),url(art/mn-neb-fill.webp) 50% 20%/auto 150%!important;animation:tabnebV 46s ease-in-out infinite alternate!important}
@@ -2951,7 +2948,6 @@ html.fullh #chestfx{position:absolute;bottom:auto;height:var(--apph)}
      its old spacing */
   html.notchL #tabs{padding-top:calc(var(--st) + 10px + min(16px, var(--sr)))!important;padding-bottom:calc(var(--sb) + 4px + min(8px, var(--sr)))!important}
   html.notchR #quick{top:calc(var(--st) + 6px + min(14px, var(--sl)))!important;bottom:calc(var(--sb) + 6px + min(6px, var(--sl)))}
-  html.notchR #tabs{top:6px;bottom:6px;border-radius:20px!important;padding-top:calc(var(--st) + 6px)!important;padding-bottom:calc(var(--sb) + 2px)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.28),0 6px 18px rgba(40,20,100,.4)!important}
   #tabs button{min-height:0;padding:0!important}
   /* a thin column (형: 가로모드는 화면을 더 넓게 보는 거니까 좀 더 줄이고): smaller pictures, names and halo */
   #tabs button img.ico,#tabs button svg{width:clamp(18px,7vh,25px)!important;height:clamp(18px,7vh,25px)!important}
@@ -3023,7 +3019,7 @@ html.fullh #chestfx{position:absolute;bottom:auto;height:var(--apph)}
   /* (형 2026-11-17: 스킬 네모 창이 폭주 게이지바를 살짝 가린다 → 스킬 네모들을 살짝 밑으로) the four squares sit 9px lower,
      with a wider gap above them, so the picked one floating up stays clear of the 폭주 bar; the bar itself stays put.
      They are at the right, away from the home bar in the middle of the bottom edge */
-  #skillbar{left:calc(var(--el) + var(--qw))!important;right:calc(var(--er) + var(--tw))!important;bottom:0!important;padding:0 10px max(4px, calc(var(--sb) - 3px))!important;display:grid!important;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto;align-items:end;justify-items:end;gap:4px 10px!important;background:none!important}
+  #skillbar{left:calc(var(--el) + var(--qw))!important;right:calc(var(--er) + var(--tw))!important;bottom:0!important;padding:0 12px max(8px, var(--sb))!important;display:grid!important;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto;align-items:end;justify-items:end;gap:4px 10px!important;background:none!important}
   #qrow{display:contents!important}
   #quest{grid-column:1;grid-row:3;justify-self:start;align-self:end;max-width:100%}
   #pre{grid-column:2;grid-row:1}

@@ -3,12 +3,26 @@
 (function () {
   var host;
   try { host = window.frameElement && window.frameElement.id === 'cw-play-viewport' && parent.CWDisplay; } catch (e) {}
-  if (host) { window.CWDisplay = host; window.CWPlayViewport = true; return; }
+  if (host) { window.CWDisplay = host; window.CWPlayViewport = true; host.attachViewport(document.documentElement); return; }
   if (window !== window.top) return;
 
   var mode = 'portrait';
   try { if (localStorage.getItem('cw-display-mode') === 'landscape') mode = 'landscape'; } catch (e) {}
-  var frame, mount, topInset, backdropElement, lastLayout;
+  var frame, mount, topInset, backdropElement, lastLayout, gameRoot;
+  function fitControls(rotated) {
+    if (!gameRoot) return;
+    var safe = getComputedStyle(topInset);
+    var left = safe.paddingLeft, right = safe.paddingRight;
+    var top = safe.height, bottom = safe.paddingBottom;
+    var angle = typeof window.orientation === 'number' ? window.orientation : screen.orientation && screen.orientation.angle;
+    if (!rotated && left === right && (angle === 90 || angle === -90 || angle === 270)) {
+      if (angle === 90) right = '0px'; else left = '0px';
+    }
+    var values = rotated ? [top, bottom, right, left] : [left, right, top, bottom];
+    ['left', 'right', 'top', 'bottom'].forEach(function (side, i) {
+      gameRoot.style.setProperty('--play-safe-' + side, values[i]);
+    });
+  }
   function fitBackdrop(portrait) {
     if (!mount) return;
     var edge = mount.getBoundingClientRect().bottom;
@@ -31,7 +45,7 @@
   function fitMount() {
     var portrait = mode === 'portrait' && innerWidth <= innerHeight;
     // In upright play the inner game already positions the HUD and home bar.
-    // Reserve cutouts in the host only for the other (possibly rotated) layouts.
+    // Landscape reserves cutouts inside the controls so the field can fill its frame.
     // Old iPhone home-screen apps can paint normal-flow content below their
     // fixed viewport. Size the document and game together, not just the artwork.
     var height = screen.height;
@@ -42,7 +56,7 @@
     mount.style.position = fullPage ? 'relative' : 'fixed';
     mount.style.height = fullPage ? '100%' : '';
     frame.style.position = fullPage ? 'relative' : 'absolute';
-    mount.style.inset = portrait ? '0' : 'env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)';
+    mount.style.inset = (portrait || mode === 'landscape') ? '0' : 'env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)';
   }
   function layout() {
     if (!frame) return;
@@ -57,6 +71,7 @@
       height = landscape ? Math.min(h, Math.round(w * 0.60)) : h;
       rotate = false;
     }
+    if (landscape) fitControls(rotate);
     var key = [width, height, mode, rotate, screen.height].join('/');
     if (key === lastLayout) return;
     lastLayout = key;
@@ -68,6 +83,7 @@
   }
   window.CWDisplay = {
     refresh: layout,
+    attachViewport: function (element) { gameRoot = element; layout(); },
     showBackdrop: function (element) {
       backdropElement = element;
       fitBackdrop(mode === 'portrait' && innerWidth <= innerHeight);
@@ -88,7 +104,7 @@
     document.documentElement.style.cssText += ';margin:0;background:#0f1019;overflow:hidden';
     document.body.style.margin = '0';
     topInset = document.createElement('i');
-    topInset.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;height:env(safe-area-inset-top,0px)';
+    topInset.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;box-sizing:content-box;height:env(safe-area-inset-top,0px);padding:0 env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)';
     document.body.appendChild(topInset);
     mount = document.createElement('main');
     mount.style.cssText = 'position:fixed;inset:0;overflow:hidden';

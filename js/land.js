@@ -9,6 +9,7 @@
   var Q = '(orientation:landscape) and (min-aspect-ratio:6/5)';
   var mq = root.matchMedia ? root.matchMedia(Q) : null;
   var fns = [], de = document.documentElement;
+  if (/iPhone/.test(root.navigator && root.navigator.userAgent)) de.classList.add('iphone');
   CW.isLand = function () { return !!(mq && mq.matches); };
   CW.onLand = function (fn) { fns.push(fn); };
   // Which side the notch (or the Dynamic Island) is on: an iPhone held sideways keeps the same safe gap at both edges,
