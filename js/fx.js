@@ -434,7 +434,7 @@
       // (2026-11-18) redrawn like the pillar: scenes 1-4 the ball swirling together, 5-12 flying (looped), 13-16 its head
       // going white-hot just before it hits. form (0..1): how far it has swirled together (left out: it forms by itself in
       // its first 0.1 s); end (0..1): how close it is to hitting
-      var pic = o.kind !== 'sun' && P3.sheetFx ? P3.sheetFx('fx-flyball') : null, pf = Math.random() * 8, vv = V(0, -1, 0), age = 0;
+      var pic = o.kind !== 'sun' && P3.sheetFx ? P3.sheetFx('fx-flyball', o.redCore) : null, pf = Math.random() * 8, vv = V(0, -1, 0), age = 0;
       return {
         set: function (p, v, dt, k, form, end) {
           var Lk = L * (k === undefined ? 1 : Math.max(0.01, k));
@@ -689,16 +689,16 @@
               if (ib && ib.ready()) {
                 var it = 0, lf = Math.random() * 8, IW = Math.min(2.4, 1.5 * S_), T1 = c.D(0.08), T2 = c.D(0.2), T3 = c.D(0.4);
                 tick(function (dt2) { it += dt2; lf += dt2 * 18; ib.set(g, IW, it < T1 ? it / T1 * 4 : it < T1 + T2 ? 4 + lf % 8 : 12 + Math.min(3.99, (it - T1 - T2) / T3 * 4), 0, 1); if (it < T1 + T2 + T3) return false; ib.kill(); return true; });
-                P3.blast(g, { size: 0.3 * S_, col: 0xff8a2b, flash: false, chips: 3, ring: 1.6, life: 0.4 });
+                P3.blast(g, { size: 0.3 * S_, col: 0xff8a2b, flash: false, chips: 3, ring: 1.6, ringAlpha: 0.18, crater: false, life: 0.4 });
               } else {
                 if (ib) ib.kill();
                 if (!toonBoom(g, 0.52 * S_)) P3.blast(g, { size: 0.4 * S_, col: 0xff8a2b, chips: 3, ring: 2.0, life: 0.6 });
                 if (P3.fireBoom) P3.fireBoom(g, 0.62 * S_, c.D(1.0));
               }
-              if (P3.lavaMark) P3.lavaMark(g, 1.0 * S_, c.D(1.1));
+              P3.fireGround(g, 2.1 * S_, c.D(1.05));
               sparks(p, [0xffe080, 0xff8a2b], N(8, c), 5, { size: 0.15, stretch: 0.14 });
               embers(p, [0xffe080, 0xff6a2b], N(6, c), { speed: 2.4, up: 2.2 });
-              scorch(g, 1.0 * S_, 2.2); sc.light(p, 0xff8a3a, 1.6, 0.35); sc.shake(0.12);
+              sc.light(p, 0xff8a3a, 1.6, 0.35); sc.shake(0.12);
               c.hit(mob, 1, 1.6);
             } });
         });

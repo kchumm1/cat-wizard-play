@@ -2094,12 +2094,12 @@
     // top), its flames flicker, and a soft glow of its own colours spills round it (uGrow > 1: the glow layer, drawn
     // added, a blurred copy a little bigger than the picture)
     var VS_SHEET = [
-      'attribute vec3 iF; uniform vec2 uAnchor; uniform float uGrow, uLoop, uBlend, uGrid; varying vec4 vCell; varying vec2 vLoc; varying float vA, vK, vSeed;',
+      'attribute vec4 iF; varying float vRedCore; uniform vec2 uAnchor; uniform float uGrow, uLoop, uBlend, uGrid; varying vec4 vCell; varying vec2 vLoc; varying float vA, vK, vSeed;',
       'void main(){',
       '  vec4 mv = modelViewMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0); float s = length(instanceMatrix[0].xyz);',
       '  vec2 q = position.xy * uGrow - uAnchor;',
       '  float c = cos(iF.z), n = sin(iF.z); mv.xy += vec2(q.x * c - q.y * n, q.x * n + q.y * c) * s;',
-      '  gl_Position = projectionMatrix * mv; vA = iF.y; float f0 = floor(iF.x + 0.001), f1 = uLoop > 0.5 && f0 > 10.5 && f0 < 11.5 ? 4.0 : (uGrid < 3.0 ? f0 : min(15.0, f0 + 1.0));',
+      '  gl_Position = projectionMatrix * mv; vA = iF.y; vRedCore = iF.w; float f0 = floor(iF.x + 0.001), f1 = uLoop > 0.5 && f0 > 10.5 && f0 < 11.5 ? 4.0 : (uGrid < 3.0 ? f0 : min(15.0, f0 + 1.0));',
       '  vK = (iF.x - f0) * uBlend; vSeed = instanceMatrix[3].x * 1.7 + instanceMatrix[3].z;',
       '  vCell = vec4(mod(f0, uGrid), uGrid - 1.0 - floor(f0 / uGrid), mod(f1, uGrid), uGrid - 1.0 - floor(f1 / uGrid)); vLoc = position.xy * uGrow + 0.5; }'].join('\n');
     var SHEET_HEAD = 'uniform sampler2D uMap; uniform float uTime, uWob, uGrid; varying vec4 vCell; varying vec2 vLoc; varying float vA, vK, vSeed;\n' +
@@ -2114,7 +2114,7 @@
     var SHEET_NOISE = 'float shH(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\n' +
       'float shN(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(shH(i), shH(i + vec2(1.0, 0.0)), f.x), mix(shH(i + vec2(0.0, 1.0)), shH(i + 1.0), f.x), f.y); }\n' +
       'float shF(vec2 p){ return shN(p) * 0.55 + shN(p * 2.07 + 3.1) * 0.3 + shN(p * 4.3 + 7.7) * 0.15; }\n';
-    var FS_SHEET = SHEET_HEAD + SHEET_NOISE + 'uniform float uLive, uSwirl; uniform vec2 uFlow;\n' +
+    var FS_SHEET = SHEET_HEAD + SHEET_NOISE + 'varying float vRedCore; uniform float uLive, uSwirl; uniform vec2 uFlow;\n' +
       'void main(){ if (vLoc.x < 0.0 || vLoc.x > 1.0 || vLoc.y < 0.0 || vLoc.y > 1.0) discard; vec2 l = heat();\n' +
       ' if (uLive < 0.5) { vec4 c0 = cellAt(l); c0.a *= vA; if (c0.a < 0.01) discard;\n' +
       '#ifdef WATER_IMPACT_ATLAS\n' +
@@ -2150,12 +2150,15 @@
       // streaks of flame shooting up through it, darker gaps between; a tornado's winding strands only a little brighter
       // than the gaps and never white (bright diagonal bands read as candy stripes)
       ' h = clamp(h * mix(0.55 + 0.7 * fl, 0.78 + 0.28 * fl, uSwirl), 0.0, 1.0 - 0.22 * uSwirl);\n' +
-      // (2026-11-18, the user: "the fire's colour should stand out more") deeper, purer colours: crimson, a vivid red-orange,
-      // deep orange, bright yellow; white only in the very hottest specks (pale yellow over a bright region read washed out)
-      ' vec3 col = mix(vec3(0.62, 0.02, 0.0), vec3(1.0, 0.16, 0.0), smoothstep(0.0, 0.3, h));\n' +
-      ' col = mix(col, vec3(1.0, 0.42, 0.0), smoothstep(0.3, 0.55, h)); col = mix(col, vec3(1.0, 0.78, 0.08), smoothstep(0.58, 0.82, h)); col = mix(col, vec3(1.0, 0.97, 0.75), smoothstep(0.93, 1.0, h));\n' +
+      // Keep the red envelope and reserve lemon yellow for moving streaks inside the flame.
+      ' float center = 1.0 - smoothstep(0.09, 0.35, abs(across + (n2 - 0.5) * 0.22));\n' +
+      ' float innerHeat = (0.50 * h + 0.30 * h0 + 0.20 * fl) * mix(0.38, 1.0, center);\n' +
+      ' innerHeat -= vRedCore * (0.08 + 0.14 * smoothstep(0.025,0.19,abs(across + (n2-0.5)*0.22)));\n' +
+      ' vec3 col = mix(vec3(0.67,0.055,0.012),vec3(1.0,0.19,0.012),smoothstep(0.15,0.78,h));\n' +
+      ' col = mix(col,vec3(1.0,0.42,0.012),smoothstep(0.52,0.70,innerHeat));\n' +
+      ' col = mix(col,vec3(1.0,0.93,0.08),smoothstep(0.71,0.79,innerHeat));\n' +
       // a dark crimson rim round the fire, so its shape stands out even over a bright region
-      ' float rim = 1.0 - smoothstep(0.27, 0.42, v); col = mix(col, vec3(0.5, 0.02, 0.0), rim * 0.55 * (1.0 - smk));\n' +
+      ' col.g *= mix(1.0,0.67+0.33*smoothstep(0.71,0.79,innerHeat),vRedCore); float rim = 1.0 - smoothstep(0.27, 0.42, v); col = mix(col, vec3(0.5, 0.02, 0.0), rim * 0.55 * (1.0 - smk));\n' +
       // fire that reaches the edge of its scene fades out there instead of being cut off straight
       ' a *= smoothstep(0.0, 0.06, vLoc.x) * smoothstep(1.0, 0.94, vLoc.x) * smoothstep(1.0, 0.94, vLoc.y) * smoothstep(0.0, 0.03, vLoc.y);\n' +
       ' vec3 sc = vec3(dot(c.rgb, vec3(0.34))) * (0.8 + 0.4 * n) + vec3(0.04, 0.02, 0.0); float sa = m * (0.45 + 0.55 * n);\n' +
@@ -2164,13 +2167,13 @@
     var FS_SHEET_GLOW = SHEET_HEAD + 'uniform float uGlow; void main(){ vec2 l = vLoc; float r = 0.045;' +
       ' vec4 c = cellAt(l + vec2(r, 0.0)) + cellAt(l - vec2(r, 0.0)) + cellAt(l + vec2(0.0, r)) + cellAt(l - vec2(0.0, r)); c *= 0.25;' +
       ' float a = c.a * vA * uGlow * (0.85 + 0.15 * sin(uTime * 17.0 + vSeed)); if (a < 0.01) discard;' +
-      ' vec3 col = mix(vec3(1.0, 0.22, 0.02), vec3(1.0, 0.6, 0.12), smoothstep(0.4, 0.9, c.g)) * smoothstep(0.15, 0.5, max(c.r, c.g)) * 1.35;' +
+      ' vec3 col = mix(vec3(0.90, 0.06, 0.008), vec3(1.0, 0.28, 0.015), smoothstep(0.4, 0.9, c.g)) * smoothstep(0.15, 0.5, max(c.r, c.g)) * 1.35;' +
       ' gl_FragColor = vec4(col * a, 0.0); }';
     function sheetLayer(name) {
       var L = sheetL[name]; if (L) return L;
       var S = SHEETS[name], cap = 32, ph = new T.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1); ph.needsUpdate = true;
-      var g = new T.InstancedBufferGeometry().copy(new T.PlaneGeometry(1, 1)), fa = new Float32Array(cap * 3);
-      g.setAttribute('iF', new T.InstancedBufferAttribute(fa, 3).setUsage(T.DynamicDrawUsage));
+      var g = new T.InstancedBufferGeometry().copy(new T.PlaneGeometry(1, 1)), fa = new Float32Array(cap * 4);
+      g.setAttribute('iF', new T.InstancedBufferAttribute(fa, 4).setUsage(T.DynamicDrawUsage));
       var anc = new T.Vector2(S.anchor[0], S.anchor[1]), uT = { value: 0 }, grid = S.grid || 4;
       var m = new T.ShaderMaterial({ uniforms: { uMap: { value: ph }, uAnchor: { value: anc }, uGrid: { value: grid }, uGrow: { value: 1 }, uLoop: { value: S.loop ? 1 : 0 }, uBlend: { value: S.blend ? 1 : 0 }, uTime: uT, uWob: { value: S.wob || 0 }, uLive: { value: S.live ? 1 : 0 }, uSwirl: { value: S.swirl || 0 }, uFlow: { value: new T.Vector2(S.flow ? S.flow[0] : 0, S.flow ? S.flow[1] : 1) } }, vertexShader: VS_SHEET, fragmentShader: name === 'fx-wood-water-impact' ? '#define WATER_IMPACT_ATLAS\n' + BUBBLE_COLORS + '\n' + FS_SHEET : FS_SHEET, transparent: true, depthWrite: false, depthTest: !S.foreground });
       var mesh = new T.InstancedMesh(g, m, cap); mesh.instanceMatrix.setUsage(T.DynamicDrawUsage); mesh.frustumCulled = false; mesh.count = 0; mesh.visible = false; mesh.renderOrder = S.order; mesh.name = 'core3d sheet ' + name;
@@ -2192,8 +2195,8 @@
       }, undefined, function () { });
       return L;
     }
-    function sheetFx(name) {
-      var L = sheetLayer(name), h = { p: new T.Vector3(), s: 1, f: 0, a: 0, al: 0, dead: false };
+    function sheetFx(name, redCore) {
+      var L = sheetLayer(name), h = { p: new T.Vector3(), s: 1, f: 0, a: 0, al: 0, redCore: redCore ? 1 : 0, dead: false };
       L.list.push(h);
       return {
         set: function (pos, size, frame, angle, alpha) { h.p.copy(pos); h.s = size; h.f = frame; h.a = angle || 0; h.al = alpha === undefined ? 1 : alpha; },
@@ -2211,7 +2214,7 @@
         for (var j = 0; j < L.list.length && n < L.cap; j++) {
           var h = L.list[j]; if (h.al <= 0.001) continue;
           // (the scene with its fraction: the shader melts it into the next one)
-          BOOM_S.setScalar(h.s); L.mesh.setMatrixAt(n, BOOM_M.compose(h.p, BOOM_Q, BOOM_S)); L.fa[n * 3] = ((h.f % 16) + 16) % 16; L.fa[n * 3 + 1] = h.al; L.fa[n * 3 + 2] = h.a; n++;
+          BOOM_S.setScalar(h.s); L.mesh.setMatrixAt(n, BOOM_M.compose(h.p, BOOM_Q, BOOM_S)); L.fa[n * 4] = ((h.f % 16) + 16) % 16; L.fa[n * 4 + 1] = h.al; L.fa[n * 4 + 2] = h.a; L.fa[n * 4 + 3] = h.redCore; n++;
         }
         L.uT.value = time;
         L.mesh.count = n; L.mesh.visible = n > 0 && L.ready; L.mesh.instanceMatrix.needsUpdate = true; L.g.attributes.iF.needsUpdate = true;
@@ -2221,6 +2224,86 @@
     // the ground where fire landed, seen from above (art/fx-lavamark.webp: cracked glowing lava in a ring of low flame):
     // lavaMark(pos, size, life) lies flat on the ground, flickers and fades
     // (pic 'fx-watermark': the 11th-tier water's wet mark instead, art/fx-watermark.webp; it does not flicker)
+    // The wide red bed cools first. The brightest flecks in the ground texture linger.
+    var fireGroundShader = [
+      'uniform sampler2D uMap; uniform float uAge;',
+      'void main(){',
+      '  vec3 coal = texture2D(uMap, vUv).rgb;',
+      '  vec2 p = vUv * 2.0 - 1.0;',
+      // Advance the lit area through stationary coals, then let it cool in place.
+      '  float reach = mix(0.46, 1.0, smoothstep(0.0, 0.23, uAge));',
+      '  float edge = 1.0 - smoothstep(0.40, 0.99, length(p) / reach + 0.14 * (0.5 - coal.r));',
+      '  float bed = edge * (0.21 + 0.78 * smoothstep(0.26, 0.96, coal.r)) * (1.0 - smoothstep(0.29, 0.82, uAge));',
+      '  float spark = smoothstep(0.26, 0.62, coal.g) * edge * (1.0 - smoothstep(0.68, 1.0, uAge));',
+      '  float alpha = max(bed, spark) * smoothstep(0.0, 0.055, uAge);',
+      '  if (alpha < 0.008) discard;',
+      '  vec3 color = mix(vec3(0.36,0.032,0.008), vec3(1.0,0.23,0.018), smoothstep(0.62, 1.0, coal.r) * (1.0 - 0.65*uAge));',
+      '  color = mix(color,vec3(1.0,0.76,0.24),spark);',
+      '  gl_FragColor = vec4(color,alpha);',
+      '}'
+    ].join('\n');
+    // A shell of flame travelling just above the floor. Its front breaks into tongues
+    // and opens gaps as it cools, so the monster can be seen through the dying fire.
+    var infernoFrontShader = [
+      'uniform float uAge, uSeed; uniform sampler2D uFlames;',
+      'void main(){',
+      '  vec2 p = vP.xz; float r = length(p);',
+      '  float angle = atan(p.y, p.x + 0.0001);',
+      '  float lobe = 0.50 + 0.21*sin(5.0*angle + uSeed) + 0.15*sin(8.0*angle - uSeed) + 0.10*sin(3.0*angle + 2.0*uAge);',
+      '  float curl = n3(vec3(p*4.4 + uSeed, uAge*2.0));',
+      '  vec2 uv = vec2(angle/6.2831853 + 0.012*curl + uSeed, r*0.48 - 0.30*uAge + 0.05*curl);',
+      '  vec3 ink = texture2D(uFlames,fract(uv)).rgb;',
+      '  vec3 backFlame = texture2D(uFlames,fract(vec2(uv.x*2.0+0.37,uv.y+0.24-0.14*uAge))).rgb;',
+      '  float tongue = mix(0.55,0.76*ink.r+0.24*ink.g,smoothstep(0.08,0.38,r));',
+      '  float front = 0.56 + 0.25*lobe + 0.20*tongue + 0.07*curl;',
+      '  float inside = front - r;',
+      '  float tail = smoothstep(0.37, 1.0, uAge);',
+      '  float fuel = inside + 0.12*backFlame.r - tail*(0.80 + 0.40*(1.0-tongue) + curl*0.20);',
+      '  float alpha = smoothstep(-0.015, 0.025, inside) * smoothstep(-0.05, 0.035, fuel);',
+      '  alpha *= (1.0-smoothstep(0.63,0.99,uAge)) * mix(1.0, smoothstep(0.05,0.52,max(tongue,0.78*backFlame.r)), smoothstep(0.08,0.42,uAge)); if(alpha < 0.012) discard;',
+      '  float folds = 0.5+0.5*sin(angle*5.0 + r*7.0 + 3.2*curl + uSeed);',
+      '  float hot = (1.0-smoothstep(0.03,0.66,r))*(1.0-smoothstep(0.08,0.56,uAge));',
+      '  hot += (0.12*folds + 0.52*ink.g)*smoothstep(0.01,0.18,inside)*(1.0-0.8*tail);',
+      '  vec3 col = mix(vec3(0.69,0.04,0.008),vec3(1.0,0.18,0.014),0.18+0.56*tongue+0.26*folds);',
+      '  col = mix(col,vec3(1.0,0.24,0.012),smoothstep(0.42,0.67,hot));',
+      '  float crest = 1.0-smoothstep(0.02,0.22,abs(inside-0.18+0.12*curl));',
+      '  float heatPulse = smoothstep(0.01,0.17,uAge)*(1.0-smoothstep(0.48,0.84,uAge));',
+      '  float veins = smoothstep(0.35,0.83,0.45*ink.g+0.62*backFlame.g+0.15*folds);',
+      '  col = mix(col,vec3(0.73,0.042,0.012),heatPulse*(1.0-veins)*0.54);',
+      '  col = mix(col,vec3(0.99,0.18,0.014),heatPulse*veins*0.74);',
+      '  col = mix(col,vec3(1.0,0.36,0.025),heatPulse*crest*veins*0.80);',
+      '  col = mix(col,vec3(1.0,0.87,0.065),smoothstep(0.68,0.93,hot)*(1.0-smoothstep(0.07,0.32,r)));',
+      '  gl_FragColor=vec4(col,alpha);',
+      '}'
+    ].join('\n');
+    function infernoFront(pos, size, life) {
+      var flames = toonPaint('fx-firetile');
+      var material = mat(infernoFrontShader, { uFlames: { value: null }, uAge: { value: 0 }, uSeed: { value: Math.random() * 6.283 } }, { normal: true });
+      var part = add(new T.Mesh(GEO.dome, material), { life: life, order: 5, upd: function (dt, t) {
+        var age = Math.min(1, t / life), spread = 1 - Math.pow(1 - age, 3);
+        var radius = size * (0.20 + 1.72 * spread);
+        part.mesh.scale.set(radius, size * (0.12 + 0.40 * Math.sin(Math.PI * spread)), radius);
+        material.uniforms.uAge.value = age;
+        material.uniforms.uFlames.value = flames.map.value;
+      } });
+      material.uniforms.uFlames.value = flames.map.value;
+      part.mesh.name = 'inferno front';
+      part.mesh.position.set(pos.x, 0.07, pos.z);
+      part.mesh.scale.set(0.2 * size, 0.14 * size, 0.2 * size);
+    }
+    function fireGround(pos, size, life) {
+      var coals = skin('fx-pillar-embers');
+      var material = mat(fireGroundShader, { uMap: { value: null }, uAge: { value: 0 } }, { normal: true });
+      var ground = add(new T.Mesh(PLANE_FLAT, material), { order: 2.2, life: life, upd: function (dt, t) {
+        material.uniforms.uMap.value = coals.tex;
+        material.uniforms.uAge.value = t / life;
+      } });
+      material.uniforms.uMap.value = coals.tex;
+      ground.mesh.name = 'fire embers';
+      ground.mesh.position.set(pos.x, 0.035, pos.z);
+      ground.mesh.rotation.set(-Math.PI / 2, 0, Math.random() * 6.283);
+      ground.mesh.scale.set(size, size * 0.82, 1);
+    }
     var markTex = {};
     function lavaMark(pos, size, life, pic) {
       pic = pic || 'fx-lavamark'; var wet = pic !== 'fx-lavamark';
@@ -2353,7 +2436,7 @@
       fbLayer().list.push({ x: 0, z: -40, t: 0, s: 1, span: 1 }); drawFireBoom(0);
       ['fx-firetile', 'fx-firecore', 'fx-smoketile', 'fx-fireedge', 'fx-fireswirl'].forEach(toonPaint);
       var shWarm = Object.keys(SHEETS).filter(function (k) { return !CW.FRIEND || !SHEETS[k].highTier; }).map(function (k) { var h = sheetFx(k); h.set(far, 1, 0, 0, 1); return h; }); drawSheets();
-      lavaMark(far, 1, 1); if (!CW.FRIEND) lavaMark(far, 1, 1, 'fx-watermark');
+      infernoFront(far, 1, 1); fireGround(far, 1, 1); lavaMark(far, 1, 1); if (!CW.FRIEND) lavaMark(far, 1, 1, 'fx-watermark');
       for (var ek = 0; ek < 7; ek++) emblem(ek, { col: 0xff8a3a, deep: 0x8a2a10 }).set(far, 0.5, 0); glassOrb({ kind: 0, col: 0xff8a3a, deep: 0x8a2a10 }).set(far, 0.5, 0, 1); elemRing({ cols: [0xff0000, 0xffff00, 0xff00ff, 0x00ffff, 0x00ff00] }).set(far, 1, 0, 0, 1); var xst = xs.length; crystal({ pos: far });
       drawSpikes(0); layoutSmoke(sc.camera, true); drawChips(0); drawCrystals(0);   // the layers must be drawing copies when compiled, so their (instanced) programs are built too
       sc.renderer.compile(sc.scene, sc.camera);
@@ -2362,7 +2445,7 @@
       bmWarm.forEach(function (h) { h.kill(); }); drawBM(); if (boomL) { boomL.list.length = 0; drawBoom(0); } fbL.list.length = 0; drawFireBoom(0); shWarm.forEach(function (h) { h.kill(); }); drawSheets();
       if (sc.warmLens) sc.warmLens();
     }
-    return { boom: boom, fireBoom: fireBoom, sheetFx: sheetFx, stormPaint: function () { return skin('fx-storm-atlas').tex; }, screenAngle: screenAngle, lavaMark: lavaMark, beam: beam, orb: orb, moon: moon, rock: rock, fireball: fireball, column: column, twister: twister, toonFire: toonFire, ringWall: ringWall, fireWave: fireWave, picWave: picWave, waveShards: waveShards, seqWave: seqWave, iceSpear: iceSpear, iceSpikes: iceSpikes, iceSpike: iceSpike, mark: mark, impact: impactP, puff: puff, blast: blast, chip: chip, hole: hole, emblem: emblem, glassOrb: glassOrb, elemRing: elemRing, crystal: crystal, fluffBall: fluffBall, yarnBall: yarnBall, bm: bm, update: update,
+    return { boom: boom, fireBoom: fireBoom, sheetFx: sheetFx, stormPaint: function () { return skin('fx-storm-atlas').tex; }, screenAngle: screenAngle, lavaMark: lavaMark, fireGround: fireGround, infernoFront: infernoFront, beam: beam, orb: orb, moon: moon, rock: rock, fireball: fireball, column: column, twister: twister, toonFire: toonFire, ringWall: ringWall, fireWave: fireWave, picWave: picWave, waveShards: waveShards, seqWave: seqWave, iceSpear: iceSpear, iceSpikes: iceSpikes, iceSpike: iceSpike, mark: mark, impact: impactP, puff: puff, blast: blast, chip: chip, hole: hole, emblem: emblem, glassOrb: glassOrb, elemRing: elemRing, crystal: crystal, fluffBall: fluffBall, yarnBall: yarnBall, bm: bm, update: update,
       // for checks: the live copies of a Blender mesh kind ({ p, q, s, a })
       bmList: function (kind) { var L = bmLayers[kind]; return L ? L.list.filter(function (h) { return !h.dead && h.a > 0.002; }) : []; }, clear: clear, warm: warm, setBright: function (v) { bright = !!v; }, setBatchSmoke: function (v) { batchSmoke = !!v; }, setBatchChips: function (v) { batchChips = !!v; },
       count: function () { return bmCount() + parts.length + xs.length + spikes.length + chips[0].length + chips[1].length + chips[2].length; }, spikeTops: spikeTops,

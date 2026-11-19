@@ -163,6 +163,7 @@
     // =================================================================== 2차: 불
     // Fire pillars: the ground glows and cracks under three monsters, then a column of fire comes up out of each crack.
     S.pillars = function (c) {
+      c.plain = true;   // This skill supplies its own contact light. Avoid a second white flash.
       var list = c.pool(); if (!list.length) return;
       sc.heroPose('raise', c.D(0.14), 0xff8a3a);
       list.forEach(function (mob, i) {
@@ -182,7 +183,7 @@
           // into smoke) standing on the crack; the 3D one only until the picture has come
           var pp = P3.sheetFx ? P3.sheetFx('fx-pillar') : null, pfr = Math.random() * 8;
           var R = 0.62 * Math.min(1.4, c.s), H2 = Math.min(7.5, 5.0 * c.s), ct = 0, CT = c.D(0.62), base = g.clone();
-          P3.blast(V(g.x, 0, g.z), { size: 0.38 * Math.min(1.4, c.s), col: 0xff5a14, low: 0x5a0a08, hotness: 0.2, flash: false, chips: 4, ring: 2.4, life: 0.5, crater: true });
+          P3.blast(V(g.x, 0, g.z), { size: 0.38 * Math.min(1.4, c.s), col: 0xff5a14, low: 0x5a0a08, hotness: 0.2, flash: false, chips: 4, ring: 2.4, ringAlpha: 0.16, life: 0.5, crater: false });
           tick(function (dt) {
             ct += dt; if (mob.alive) { var gg = gp(mob); base.x = gg.x; base.z = gg.z; }
             var up = Math.min(1, ct / c.D(0.07)), burn = Math.max(0, (ct - CT * 0.5) / (CT * 0.5)), roar = 1 + Math.sin(ct * 38) * 0.05;
@@ -205,10 +206,11 @@
           // (no balls of fire thrown up the column: the user found them odd, 2026-11-16)
           for (var f = 0; f < N(16, c); f++) E({ pos: V(g.x + rr(-0.35, 0.35), rr(0.2, 1.2), g.z + rr(-0.1, 0.1)), vel: V(rr(-1.2, 1.2), rr(12, 22), 0), frame: pick(['dot', 'dot', 'streak']), color: [0xffe080, 0xff6a2b], size: [rr(0.06, 0.13), 0.02], life: rr(0.35, 0.6), grav: 8, stretch: 0.06 });
           sc.shake(0.18); sc.punch(0.05);
-          flare(q, 0xffffff, 1.4 * c.s, 0.15, { white: true }); gRing(g, 0xff7a2b, 2.6 * c.s, 0.45); scorch(g, 1.3 * c.s, 2.4); if (P3.lavaMark) P3.lavaMark(g, 1.5 * Math.min(1.5, c.s), c.D(1.3));
+          flare(q, 0xffbd39, 0.88 * c.s, 0.11, { alpha: 0.76 });
+          P3.fireGround(g, 2.72 * Math.min(1.5, c.s), c.D(1.3));
           smoke(V(g.x, 0.6, g.z), [0x6a5a54, 0x2e2624], N(5, c), { size: 1.0, rise: 1.6, speed: 0.8, life: 1.2 });
           embers(q, [0xffe080, 0xff6a2b], N(10, c), { speed: 2.6, up: 3.5 });
-          sc.light(q, 0xff8a3a, 1.8, 0.4); heavy(0.9); if (!i) sc.flash('rgba(255,170,90,0.3)', 0.2);
+          sc.light(q, 0xff8a3a, 1.8, 0.4); heavy(0.9); if (!i) sc.flash('rgba(255,131,36,0.12)', 0.12);
           c.hit(mob, 1, 1.5);
         });
       });
@@ -314,7 +316,7 @@
       // (2026-11-18, "too much like a picture") a second one just behind it, four scenes on and a little wider, faint: the
       // two read as the near and far side of one turning body; dust and embers off the ground are sucked in round its foot
       var tback = tpic && P3.sheetFx('fx-tornado'), suckT = 0;
-      var tw = toonOn() || picOn() ? null : P3.twister({}), spin = Math.random() * 6.283, P = start.clone(), trailT = 0, emT = 0, chipT = 0, tgT = 0, lightT = 0, flung = false;
+      var tw = toonOn() || picOn() ? null : P3.twister({}), spin = Math.random() * 6.283, P = start.clone(), trailT = 0, lastGround = null, emT = 0, chipT = 0, tgT = 0, lightT = 0, flung = false;
       // a monster caught up in it: little flames whirl up round it and sparks fly. Only a boss, and the last monster it
       // reaches, get the big effect (a column of fire, a ring on the ground): one under every monster cluttered the whirl
       var nAll = Math.max(1, c.pool().length);
@@ -324,7 +326,7 @@
         embers(q2, [0xffc060, 0xff3a0c], N(big ? 5 : 3, c), { speed: 2.4, up: 3.0 });
         if (big) {
           var jet = P3.column({ col: 0xff2a0a, hot: 0xff6a14, flare: true, speed: 3.6 }); tick(function (dt2) { jt += dt2; var up = Math.min(1, jt / c.D(0.05)); jet.set(base, hb * up, (m.boss ? 0.55 : 0.36) * cs, Math.max(0, (jt - JT * 0.35) / (JT * 0.65))); if (jt < JT) return false; jet.kill(); return true; });
-          gRing(g2, 0xff6a20, 1.4 * c.s, 0.35); sc.shake(0.08);
+          gGlow(g2, 0xff851d, 1.4 * c.s, 0.27); sc.shake(0.08);
         }
         c.hit(m, 1, 1.5);
       }
@@ -406,8 +408,12 @@
           }
           // rocks and dust thrown out at its foot
           chipT -= dt; if (chipT <= 0 && grow > 0.5) { chipT = 0.1; P3.chip(V(P.x, 0, P.z), 0.6 * cs, 0xff7a1a, false); }
-          // a scorched, glowing trail behind it
-          trailT -= dt; if (trailT <= 0) { trailT = 0.07; var g3 = V(P.x, 0, P.z); E({ sys: 'gadd', pos: V(g3.x, 0.035, g3.z), frame: 'glow', color: [0xffa040, 0xc8301a], size: [1.0 * cs, 1.8 * cs * (0.5 + 0.5 * grow)], life: 0.5, rot: 0, alpha: 0.45, fadeIn: 0.2 }); if (grow > 0.8 && Math.random() < 0.5) scorch(g3, 0.9 * cs, 1.6); }
+          // Leave a short bed of heat where the funnel passes; do not stack patches while it stands still.
+          trailT -= dt;
+          if (grow > 0.45 && trailT <= 0 && (!lastGround || lastGround.distanceTo(P) >= 0.85 * cs)) {
+            P3.fireGround(P, 2.15 * cs, c.D(0.64));
+            lastGround = P.clone(); trailT = c.D(0.25);
+          }
           lightT -= dt; if (lightT <= 0) { lightT = 0.25; sc.light(V(P.x, H * 0.4, P.z), 0xff3a12, 0.7, 0.35); }
         }
         // whatever it touches is caught up in it
@@ -438,14 +444,10 @@
     // Inferno shell: one huge fireball is lobbed high, comes down on a monster and takes the ground around it with it.
     S.inferno = function (c) {
       var mob = c.pool()[0]; if (!mob) return;
-      // real 3D (2026-11-16): a big ball of toon fire lobbed high comes down on the monster. Where it lands (the user: "it
-      // has to feel like it blows up"): the world catches its breath and shakes hard, a wide crown of toon fire is flung
-      // out at once with a taller one bursting up inside it, the ground all round bursts a beat later, a ring of heat races
-      // out over the ground, rock and burning bits are thrown out in arcs, and the smoke climbs into a column
       c.plain = true;
       sc.heroPose('toss', c.D(0.22), 0xff6a2b);
       // the big ball swells over the paw, its flames streaming up, fire whirling into it
-      var S_ = Math.min(1.6, 1.3 * c.s), LB = Math.min(2.3, 1.5 * S_), ball = K.toonBall(LB, { glow: 1.1, thick: true }), hold = 0, HOLD = c.D(0.26), thrown = false, hp = V(), UPV = V(0, -1, 0);
+      var S_ = Math.min(1.6, 1.3 * c.s), LB = Math.min(2.3, 1.5 * S_), ball = K.toonBall(LB, { glow: 1.1, thick: true, redCore: true, col: 0xef310c }), hold = 0, HOLD = c.D(0.26), thrown = false, hp = V(), UPV = V(0, -1, 0);
       function ballAt() { return hp.copy(sc.heroPaw()).add(V(0, 0.75 + 0.35 * Math.min(1, hold / HOLD), 0)); }
       var tip = ballAt().clone();
       // (2026-11-18) small and faint: over a bright region a big one read as a flat orange disc behind the ball
@@ -471,51 +473,22 @@
           onHit: function (p) {
             var g = V(p.x, 0, p.z);
             ball.kill();
-            // the instant it lands
-            sc.climax(0.45, 0.3); sc.flash('rgba(255,140,50,0.42)', 0.24); sc.shake(0.55); sc.punch(0.13); sc.light(p, 0xff8a3a, 2.6, 0.5);
-            // (2026-11-18) the burst is the user's painted landing (art/fx-impact.webp, laid out like the pillar: 1 the white
-            // flash, 2-4 flung wide and up, 5-12 roaring, 13-16 a mushroom of smoke), with small ones of it bursting round
-            // it a beat later; the 3D domes only until the picture has come
-            var ip = P3.sheetFx ? P3.sheetFx('fx-impact') : null;
-            if (ip && ip.ready()) {
-              var playImpact = function (h, q, W, T1, T2, T3) {
-                var it = 0, lf = Math.random() * 8;
-                tick(function (dt2) {
-                  it += dt2; lf += dt2 * 18;
-                  var fr = it < T1 ? it / T1 * 4 : it < T1 + T2 ? 4 + lf % 8 : 12 + Math.min(3.99, (it - T1 - T2) / T3 * 4);
-                  h.set(q, W * (it < T1 ? 0.85 + 0.15 * it / T1 : 1), fr, 0, 1);
-                  // (living fire) real tongues of flame and embers keep rising off it while it roars
-                  if (it > T1 * 0.5 && it < T1 + T2 + T3 * 0.4 && Math.random() < dt2 * 60 * W / 4 * c.n) E({ pos: V(q.x + rr(-0.32, 0.32) * W, rr(0.1, 0.5) * W, q.z + rr(-0.1, 0.1)), vel: V(rr(-0.6, 0.6), rr(2.5, 5) * Math.min(1.5, W / 2.5), 0), frame: pick(['flame', 'flame', 'dot']), color: [0xffd060, 0xff3a0c], size: [rr(0.25, 0.5) * W / 3, 0.04], life: rr(0.3, 0.55), drag: 1.2, stretch: 0.03 });
-                  if (it < T1 + T2 + T3) return false; h.kill(); return true;
-                });
-              };
-              playImpact(ip, g, Math.min(4.0, 2.5 * S_), c.D(0.12), c.D(0.55), c.D(0.6));
-              // (2026-11-18) a wall of dust thrown out flat along the ground from under it, and dark smoke rolling up behind
-              for (var d = 0; d < N(18, c); d++) { var da = d / N(18, c) * 6.283 + rr(-0.15, 0.15); E({ sys: 'norm', pos: V(g.x + Math.cos(da) * 0.5, rr(0.1, 0.35), g.z + Math.sin(da) * 0.4), vel: V(Math.cos(da) * rr(5, 8), rr(0.3, 1.2), Math.sin(da) * rr(3.5, 6)), frame: 'smoke', color: [0x9a7a5a, 0x5a4636], size: [0.35 * S_, rr(0.9, 1.4) * S_], ease: 1, life: rr(0.6, 0.9), alpha: 0.4, drag: 3.2, fadeIn: 0.05 }); }
-              smoke(V(g.x, 1.2 * S_, g.z), [0x4a3a34, 0x221a18], N(6, c), { size: 1.3 * S_, rise: 2.2, speed: 0.9, life: 1.4 });
-              for (var f = 0; f < 6; f++) (function (f) {
-                var a = f / 6 * 6.283 + rr(-0.25, 0.25), q = V(g.x + Math.cos(a) * 1.5 * S_, 0, g.z + Math.sin(a) * 1.1 * S_);
-                after(c.D(0.05 + f * 0.018), function () { playImpact(P3.sheetFx('fx-impact'), q, 0.7 * S_, c.D(0.08), c.D(0.18), c.D(0.32)); scorch(q, 0.7, 2); });
-              })(f);
-            } else {
-              if (ip) ip.kill();
-              // the burst: flung out wide at once, a taller one bursting up inside it
-              if (!K.toonBoom(g, 0.95 * S_, { tall: 1.25, climb: 1.4, grow: 0.06, spread: 0.55, end: 1.05 })) P3.blast(g, { size: 0.6 * S_, col: 0xff7a1a, chips: 6, ring: 2.6, life: 0.8 });
-              if (P3.fireBoom) P3.fireBoom(g, 0.95 * S_, c.D(1.5));
-              // the ground all round bursts a beat later, flung outward
-              for (var f2 = 0; f2 < 6; f2++) (function (f) {
-                var a = f / 6 * 6.283 + rr(-0.25, 0.25), q = V(g.x + Math.cos(a) * 1.3 * S_, 0, g.z + Math.sin(a) * 1.0 * S_);
-                after(c.D(0.05 + f * 0.018), function () { K.toonBoom(q, 0.32 * S_, { tall: 1.35, grow: 0.05, spread: 0.45, end: 0.55, lite: true }); scorch(q, 0.7, 2); });
-              })(f2);
-            }
-            // a ring of heat racing out over the ground; the crater, and rock thrown up
-            gRing(g, 0xff7a2b, 4.4 * S_, 0.45); gRing(g, 0xffc040, 2.4 * S_, 0.3); gGlow(g, 0xff6a1a, 2.2 * S_, 0.45);
-            P3.blast(g, { size: 0.3 * S_, col: 0xff7a1a, flash: false, chips: 8, ring: 0, life: 0.45, crater: true });
+            // One contact point: the hot core opens first, the red flame runs out
+            // at floor level, then smoke rises through the exposed center.
+            sc.climax(0.45, 0.3); sc.shake(0.46); sc.punch(0.11);
+            sc.light(p, 0xff4017, 2.5, 0.36);
+            flare(p, 0xff791d, 1.35 * S_, c.D(0.10), { alpha: 0.90 });
+            P3.infernoFront(g, S_, c.D(0.62));
+            P3.fireGround(g, 3.4 * S_, c.D(1.45));
+            after(c.D(0.29), function () {
+              smoke(V(g.x, 0.24 * S_, g.z), [0x754b37, 0x443633], N(5, c), {
+                size: 0.90 * S_, rise: 2.0, speed: 0.65, life: c.D(0.90)
+              });
+            });
             // burning bits thrown out in arcs, falling over a wide area; sparks and embers
-            for (var b = 0; b < N(14, c); b++) E({ sys: b % 2 ? 'col' : 'add', pos: p.clone().add(rdir(0.2)), vel: V(rr(-5.5, 5.5), rr(3, 6.5), rr(-3.5, 3.5)), frame: 'flame', color: [0xffe080, 0xff7a1a, 0xc8301a], size: [rr(0.28, 0.45) * S_, 0.08], life: rr(0.7, 1.1), grav: 9, drag: 0.6, spin: rr(-5, 5), fadeOut: 0.3 });
-            sparks(p, [0xffe080, 0xff8a2b], N(16, c), 7.5, { size: 0.2, stretch: 0.16 });
-            embers(p, [0xffe080, 0xff6a2b], N(12, c), { speed: 3.4, up: 3.2 });
-            scorch(g, 1.8 * S_, 2.6); if (P3.lavaMark) P3.lavaMark(g, 2.4 * S_, c.D(2.0));
+            for (var b = 0; b < N(8, c); b++) E({ sys: b % 2 ? 'col' : 'add', pos: p.clone().add(rdir(0.2)), vel: V(rr(-5.5, 5.5), rr(3, 6.5), rr(-3.5, 3.5)), frame: 'flame', color: [0xffe080, 0xff7a1a, 0xc8301a], size: [rr(0.28, 0.45) * S_, 0.08], life: rr(0.7, 1.1), grav: 9, drag: 0.6, spin: rr(-5, 5), fadeOut: 0.3 });
+            sparks(p, [0xffe080, 0xff8a2b], N(10, c), 7.5, { size: 0.2, stretch: 0.16 });
+            embers(p, [0xffe080, 0xff6a2b], N(8, c), { speed: 3.4, up: 3.2 });
             c.hit(mob, 1, 2); c.splash(mob, 2.0, 1.2);
           } });
       });
