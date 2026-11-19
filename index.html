@@ -2915,7 +2915,7 @@ html.fullh #chestfx{position:absolute;bottom:auto;height:var(--apph)}
   .stagebg{background-size:cover!important;background-position:50% 55%!important}
   /* left column: 지도 · 룬 · 신성력 · 도감 · 우편함 · 공지 · 방치, all seven always in reach */
   #quick{left:calc(var(--el) + 4px)!important;right:auto!important;top:calc(var(--st) + 6px)!important;bottom:calc(var(--sb) + 6px);width:48px;display:flex;flex-direction:column;justify-content:space-between;align-items:center;gap:0!important}
-  html.iphone #quick{left:6px!important}
+  html.iphone #quick{left:max(6px,var(--sl))!important}
   #quick button{width:48px!important;padding:3px 0 2px!important;border-radius:13px!important}
   /* (형 2026-11-18, 갤럭시 가로: 주소창이 보이면 높이가 300쯤 → 여덟 칸이 넘쳐 방치가 잘림) the pictures and names follow the
      screen's height: 22px / 10px from 360 up, down to 15px / 8.5px, so all eight stay in the column */
@@ -2952,6 +2952,33 @@ html.fullh #chestfx{position:absolute;bottom:auto;height:var(--apph)}
   /* a thin column (형: 가로모드는 화면을 더 넓게 보는 거니까 좀 더 줄이고): smaller pictures, names and halo */
   #tabs button img.ico,#tabs button svg{width:clamp(18px,7vh,25px)!important;height:clamp(18px,7vh,25px)!important}
   #tabs button span{font-size:clamp(8.5px,2.8vh,10px)!important;line-height:1.15!important;margin-top:1px}
+  /* Keep the coloured rail one column wide. The scene fills the glass around it. */
+  html.iphone{--er:0px}
+  html.iphone #tabs{right:0;width:var(--tw);padding-right:0!important}
+  /* A possible camera at the right needs a clear middle section. On short
+     viewports keep ordinary touch targets by moving the slim rail inside it. */
+  html.iphone.right-cutout{--er:var(--sr)}
+  html.iphone.right-cutout #tabs{right:var(--er)}
+  @media (min-height:390px){
+    html.iphone.right-cutout{--er:0px}
+    html.iphone.right-cutout #tabs{
+      --camera-gap: min(46vh,180px);
+      --rail-half:calc((100% - var(--camera-gap)) / 2);
+      padding:0!important;
+      grid-template-rows:repeat(3,calc((var(--rail-half) - 6px) / 3)) var(--camera-gap) repeat(4,calc((var(--rail-half) - 6px) / 4));
+      align-content:center;
+    }
+    html.iphone.right-cutout #tabs [data-tab="battle"]{grid-row:1}
+    html.iphone.right-cutout #tabs [data-tab="up"]{grid-row:2}
+    html.iphone.right-cutout #tabs [data-tab="skill"]{grid-row:3}
+    html.iphone.right-cutout #tabs [data-tab="gear"]{grid-row:5}
+    html.iphone.right-cutout #tabs [data-tab="gacha"]{grid-row:6}
+    html.iphone.right-cutout #tabs [data-tab="dungeon"]{grid-row:7}
+    html.iphone.right-cutout #tabs [data-tab="more"]{grid-row:8}
+    html.iphone.right-cutout #tabs button{justify-content:center;gap:0}
+    html.iphone.right-cutout #tabs button img.ico,html.iphone.right-cutout #tabs button svg{width:17px!important;height:17px!important;animation:none!important;transform:none!important}
+    html.iphone.right-cutout #tabs button span{font-size:9px!important;margin:0!important;line-height:1!important}
+  }
   #tabs button[aria-selected=true]::before{width:36px!important;height:36px!important;margin-left:-18px!important}
   /* menu heads made thin (형: 머리 부분이 커서 훈련 목록이 2~3줄만): the title line, the ×1/×10/×100 row and the sub-tabs
      at the bottom; the 길게 누르면 연속 강화 hint goes (it is in 성장 가이드 too) */
