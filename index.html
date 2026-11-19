@@ -2936,7 +2936,7 @@ html.fullh #chestfx{position:absolute;bottom:auto;height:var(--apph)}
   /* (형: 아이콘들을 가운데 정렬) the pictures stand in the middle of the column you see: without a notch at this edge the
      column reaches the edge and its tabs fill all of it; with the notch here it stands just inside the notch's gap as a
      rounded panel of its own, the field showing under the notch as it does at the left */
-  #tabs{left:auto!important;right:0;top:0;bottom:0;width:calc(var(--tw) + var(--er));height:auto;display:grid;grid-template-columns:1fr!important;grid-template-rows:repeat(7,minmax(0,1fr));gap:0!important;padding:calc(var(--st) + 10px + min(8px,var(--sl) + var(--sr))) var(--er) calc(var(--sb) + 6px) 0!important;border-radius:0!important;box-shadow:-1px 0 0 rgba(255,255,255,.35),-8px 0 22px rgba(40,20,100,.35)!important;
+  #tabs{left:auto!important;right:0;top:0;bottom:0;width:calc(var(--tw) + var(--er));height:auto;display:grid;grid-template-columns:1fr!important;grid-template-rows:repeat(7,minmax(0,1fr));gap:0!important;padding:calc(var(--st) + 10px + min(8px,var(--sl) + var(--sr))) var(--er) calc(var(--sb) + 6px) 0!important;border-radius:12px!important;box-shadow:-1px 0 0 rgba(255,255,255,.35),-8px 0 22px rgba(40,20,100,.35)!important;
     /* the same nebula as the upright tab bar (mn-neb-fill, the stars in ::after), sized to the tall column and drifting
        up and down instead of across */
     background:linear-gradient(270deg,rgba(40,24,96,.28),rgba(24,14,64,.5)),url(art/mn-neb-fill.webp) 50% 20%/auto 150%!important;animation:tabnebV 46s ease-in-out infinite alternate!important}
@@ -2958,7 +2958,9 @@ html.fullh #chestfx{position:absolute;bottom:auto;height:var(--apph)}
   html.iphone #tabs button{align-items:center;justify-content:center}
   /* Keep all seven equal rows together when the camera occupies the right edge. */
   html.iphone.right-cutout{--er:var(--sr)}
-  html.iphone.right-cutout #tabs{right:0;width:calc(var(--tw) + var(--er));box-sizing:border-box;border-right:var(--er) solid #1b2b39;border-radius:0!important}
+  html.iphone.right-cutout #tabs{right:0;width:calc(var(--tw) + var(--er));box-sizing:border-box;border-right:var(--er) solid #1b2b39;border-radius:12px 0 0 12px!important}
+  /* Round the blue strip where it meets the solid camera gutter. */
+  html.iphone.right-cutout #app::after{content:"";position:absolute;top:0;bottom:0;right:var(--er);width:12px;z-index:7;pointer-events:none;background:radial-gradient(circle at bottom left,transparent 11.5px,#1b2b39 12.5px) top/100% 12px no-repeat,radial-gradient(circle at top left,transparent 11.5px,#1b2b39 12.5px) bottom/100% 12px no-repeat}
   #tabs button[aria-selected=true]::before{width:36px!important;height:36px!important;margin-left:-18px!important}
   /* menu heads made thin (형: 머리 부분이 커서 훈련 목록이 2~3줄만): the title line, the ×1/×10/×100 row and the sub-tabs
      at the bottom; the 길게 누르면 연속 강화 hint goes (it is in 성장 가이드 too) */
