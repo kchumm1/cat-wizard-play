@@ -1405,7 +1405,7 @@
       var shape = S[skill.shape] || S.bolt3;
       // monsters are split finer than the skill data (CW.hitCount): a one-monster spell strikes each of its targets in turn,
       // the same picture 0.09 s apart; a target that fell in the meantime gives way to one still standing that no copy aims at
-      if (skill.targets === 1 && c.targets.length > 1) {
+      if (skill.targets === 1 && c.targets.length > 1 && skill.shape !== 'flytrap') {
         var aimed = c.targets.slice(), splashed = [];   // splashed: [monster, share taken] across the copies
         aimed.forEach(function (m0, i) {
           var go = function () {

@@ -119,7 +119,7 @@
       // 깃털비, flytrap ← 재탄생의 불꽃 (덩굴 조이기 until the user turned it down twice), worldTree ← 불사조 강림; old saves move over in js/state.js). Real 3D: shapes made
       // in Blender (js/mesh-wood.js), the scenes in js/fx-wood.js (docs/superpowers/specs/2026-11-16-tier10-wood-scenes.md)
       { id: 'rootSpikes', name: '뿌리 가시', tier: 10, el: 'wood', dur: 0.9, mult: 27, targets: 99, shape: 'rootSpikes', status: null, color: 0x7a5230, how: '땅속을 기어간 뿌리가 몬스터마다 가시로 솟아요' },
-      { id: 'flytrap', name: '식인 꽃', tier: 10, el: 'wood', dur: 0.95, mult: 57, targets: 1, splash: 0.3, shape: 'flytrap', status: null, color: 0xd8283a, how: '거대한 파리지옥이 솟아 덥석 물고 씹다가 뱉어요' },
+      { id: 'flytrap', name: '수호목의 흰 울림', tier: 10, el: 'wood', dur: 0.95, mult: 57, targets: 1, splash: 0.3, shape: 'flytrap', status: null, color: 0xe6efcf, how: '수호 순록이 나무 앞에 서서 흰 반원 충격파를 한 번 쏴요' },
       { id: 'leafBlades', name: '나뭇잎 칼날 폭풍', tier: 10, el: 'wood', dur: 0.95, mult: 26, targets: 99, shape: 'leafBlades', status: null, color: 0x3fa83a, how: '칼날 같은 잎이 소용돌이치다 쏟아져 베어요' },
       { id: 'worldTree', name: '세계수 열매 폭탄', tier: 10, el: 'wood', dur: 1.0, mult: 30, targets: 99, shape: 'worldTree', status: null, color: 0x6fbf3a, how: '세계수가 솟아 금빛 열매를 떨어뜨려요' },
 

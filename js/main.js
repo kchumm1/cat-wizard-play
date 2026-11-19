@@ -792,7 +792,7 @@
       return G.goStage(i);
     },
     previewSkill: function (id) {
-      var sk = CW.skillById(id); if (!sk) return;
+      var sk = CW.skillById(id); if (!sk || (CW.FRIEND && sk.tier > CW.FRIEND_MAX_TIER)) return;
       preview = { skill: sk, t: 0 }; castT = Math.max(castT, 1.6);
       var tg = pickTargets(sk); if (!tg.length) { ui.toast('몬스터 등장 후 미리보기를 사용할 수 있어요.'); preview = null; return; }
       fx.cast(sk, Math.max(state.tier, sk.tier), tg, function (m, f, p) { if (m.alive) sc.hitMob(m, false, p || 1); }, 1);

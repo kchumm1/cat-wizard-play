@@ -24,13 +24,21 @@
     '  gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0); }'].join('\n');
   var BB_FS = [
     'uniform sampler2D map; uniform vec3 uTint; uniform float uFlash; uniform vec3 uFlashCol; uniform float uFreeze; uniform float uDissolve; uniform vec3 uEdge; uniform vec3 uLight; uniform float uOpacity;',
-    'varying vec2 vUv;',
+    'uniform float uArtRole,uDesert; varying vec2 vUv;',
     'float h(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }',
     'float vn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(h(i), h(i + vec2(1.0, 0.0)), f.x), mix(h(i + vec2(0.0, 1.0)), h(i + vec2(1.0, 1.0)), f.x), f.y); }',
     'void main() {',
     '  vec4 t = texture2D(map, vUv); if (t.a < 0.06) discard;',
     '  vec3 c = t.rgb * uTint; float lum = dot(c, vec3(0.3, 0.59, 0.11));',
     '  c = mix(c, vec3(lum * 0.55 + 0.25, lum * 0.8 + 0.38, lum * 0.6 + 0.62), uFreeze * 0.75);',
+    '  if(uDesert>.5 && uArtRole>.5){',
+    '    float up=texture2D(map,vUv+vec2(-.0035,.007)).a, down=texture2D(map,vUv+vec2(.004,-.005)).a;',
+    '    float ink=smoothstep(.10,.69,t.a-min(up,down)); c=mix(c,vec3(.17,.083,.14),ink*.56);',
+    '    c=mix(c,vec3(1.,.885,.66),smoothstep(.20,.78,t.a-up)*.66);',
+    '    if(uArtRole>1.5){vec2 p=vUv; float mask=max(max(1.-smoothstep(.06,.16,length(p-vec2(.24,.18))),1.-smoothstep(.06,.17,length(p-vec2(.67,.20)))),1.-smoothstep(.05,.14,length(p-vec2(.36,.79))));',
+    '      float ruby=mask*smoothstep(.08,.32,t.r-t.g)*smoothstep(.12,.45,t.b); c+=ruby*vec3(.12,.008,.036);',
+    '      c+=ruby*smoothstep(.43,.76,t.r)*smoothstep(.29,.61,t.b)*vec3(.18,.084,.095);}',
+    '  }',
     '  c += uLight * (0.25 + 0.75 * lum);',
     '  c = mix(c, uFlashCol, uFlash);',
     '  if (uDissolve > 0.0) { float v = vn(vUv * vec2(10.0, 16.0)) * 0.5 + vn(vUv * vec2(27.0, 31.0)) * 0.12 + vUv.y * 0.42;',
@@ -271,9 +279,14 @@
     // cut off, no empty band. Fetched when the region is reached; until then (or without one: 화산) the drawn ground shows.
     renderer.setClearColor(0x000000, 0);
     var bgEl = document.createElement('div'); bgEl.className = 'stagebg'; canvas.parentNode.insertBefore(bgEl, canvas);
-    var bgReady = {};
+    var bgReady = {}, desertLight = {value:0};
     function showBackdrop(id) {
       bgEl.style.backgroundImage = id ? 'url(' + (CW.ART_BASE || 'art/') + id + '.webp)' : '';
+      if (id === 'bg-desert') {
+        // Reduce saturation and value in the sand; the skyline retains the scene's sunlight.
+        bgEl.style.backgroundImage = 'linear-gradient(to bottom,transparent 12%,rgba(128,128,128,.12) 42%),linear-gradient(to bottom,transparent 12%,rgba(0,0,0,.11) 42%),' + bgEl.style.backgroundImage;
+        bgEl.style.backgroundBlendMode = 'saturation,multiply,normal';
+      } else bgEl.style.backgroundBlendMode = '';
       bgEl.style.display = id ? 'block' : 'none';
       document.documentElement.classList.toggle('picbg', !!id);
       if (window.CWDisplay && window.CWDisplay.showBackdrop) window.CWDisplay.showBackdrop(bgEl);
@@ -282,6 +295,9 @@
       if (r === region) return; region = r;
       if (!painted) painted = CW.createWorld(scene, { tilt: TILT, halfX: halfX, field: FIELD });
       var id = regionData.bg;
+      desertLight.value = id === 'bg-desert' ? 1 : 0;
+      if (hero) dressShadow(hero);
+      mobs.forEach(function(m){dressShadow(m.group);});
       if (id && bgReady[id]) { painted.build(r, regionData, quality, true); showBackdrop(id); return; }
       painted.build(r, regionData, quality, false); showBackdrop(null);
       if (!id) return;
@@ -313,15 +329,44 @@
     function bbMaterial(tex, tint) {
       var bp = [], bt = []; for (var i = 0; i < 8; i++) { bp.push(new T.Vector2()); bt.push(new T.Vector2()); }
       return new T.ShaderMaterial({
-        uniforms: { map: { value: tex }, uTint: { value: new T.Color(tint === undefined || tint === null ? 0xffffff : tint) }, uFlash: { value: 0 }, uFlashCol: { value: new T.Color(0xffffff) },
+        uniforms: { uDesert:desertLight, uArtRole:{value:0}, map: { value: tex }, uTint: { value: new T.Color(tint === undefined || tint === null ? 0xffffff : tint) }, uFlash: { value: 0 }, uFlashCol: { value: new T.Color(0xffffff) },
           uFreeze: { value: 0 }, uDissolve: { value: 0 }, uEdge: { value: new T.Color(0xffd84a) }, uLight: { value: new T.Color(0) }, uOpacity: { value: 1 },
           uBend: { value: 0 }, uScale: { value: new T.Vector2(1, 1) }, uH: { value: 1 }, uBP: { value: bp }, uBA: { value: new Float32Array(8) }, uBT: { value: bt } },
         vertexShader: BB_VS, fragmentShader: BB_FS, transparent: true, depthWrite: true, side: T.DoubleSide
       });
     }
     function newAnim(seed) { return { t: seed, ph: seed, walk: 0, aR: spring(150, 11), aL: spring(150, 11), hd: spring(120, 10), lastS: 1 }; }
-    function billboard(art, height, tint) {
+    // The existing shadow draw carries the soft cast shadow and the sharply grounded paw/claw marks.
+    var sandPrints = {};
+    function sandPrint(role) {
+      if (sandPrints[role]) return sandPrints[role];
+      var c=document.createElement('canvas'); c.width=c.height=128;
+      var g=c.getContext('2d');
+      function oval(x,y,w,h,center,edge,angle) {
+        g.save(); g.translate(x,y); g.rotate(angle || 0); g.scale(w,h);
+        var shade=g.createRadialGradient(0,0,0,0,0,1);shade.addColorStop(0,center);shade.addColorStop(.54,edge);shade.addColorStop(1,'rgba(76,43,49,0)');
+        g.fillStyle=shade;g.fillRect(-1,-1,2,2);g.restore();
+      }
+      oval(64,63,47,31,'rgba(79,43,48,.36)','rgba(89,52,52,.18)',-.13);
+      var feet=role===2?[[18,72,-.5],[28,56,-.65],[36,47,-.5],[109,72,.5],[101,56,.65],[93,47,.5],[39,83,-.35],[89,83,.35]]:[[48,74,-.15],[78,74,.15]];
+      feet.forEach(function(f){
+        oval(f[0]+1,f[1]+2,role===2?13:11,5,'rgba(255,213,149,.57)','rgba(193,128,78,.31)',f[2]);
+        oval(f[0],f[1],role===2?13:11,4,'rgba(52,28,45,.90)','rgba(80,43,49,.63)',f[2]);
+      });
+      var tex=new T.CanvasTexture(c); sandPrints[role]=tex;return tex;
+    }
+    function dressShadow(g) {
+      var d=g.userData, sh=d.shadow;
+      if(!d.printRole || !sh)return;
+      var desert=!!desertLight.value;
+      sh.geometry=desert?d.printPlane:d.shadowDisk;
+      sh.position.z=desert ? -d.w*.065 : 0; sh.material.map=desert?sandPrint(d.printRole):null;
+      sh.material.color.setHex(desert?0xffffff:0x000000);
+      sh.material.opacity=desert?.89:.22;sh.material.needsUpdate=true;
+    }
+    function billboard(art, height, tint, role) {
       var w = height * art.aspect, mat = bbMaterial(art.tex, tint);
+      mat.uniforms.uArtRole.value=role || 0;
       var m = new T.Mesh(rigGeometry(art), mat); m.scale.setScalar(height); m.renderOrder = 3; m.rotation.x = -TILT;
       var g = new T.Group(); g.add(m); g.rotation.order = 'YXZ'; g.rotation.y = orb.yaw;
       var sh = new T.Mesh(new T.CircleGeometry(w * 0.32, 20), new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false }));
@@ -330,6 +375,10 @@
       var seed = Math.random() * 6;
       g.userData = { body: m, u: mat.uniforms, shadow: sh, h: height, w: w, aspect: art.aspect, rig: art.rig, crop: art.crop, seed: seed, face: 1,
         bend: spring(170, 10), sq: spring(230, 13), lift: spring(95, 10), slide: spring(70, 11), light: new T.Color(0), anim: newAnim(seed) };
+      if(role){
+        g.userData.printRole=role;g.userData.shadowDisk=sh.geometry;
+        g.userData.printPlane=new T.PlaneGeometry(w*1.12,w*.80);dressShadow(g);
+      }
       return g;
     }
     // where a point of the picture is right now (bones, bend, squash and facing applied), in the group's own space
@@ -375,7 +424,7 @@
     function setHero(art) {
       if (views) setHeroViews(null);
       if (hero) heroGroup.remove(hero);
-      hero = billboard(art, HERO_H); hero.userData.seed = 0.5; hero.userData.art = art; heroGroup.add(hero); cos.aura = null; if (cos.fx) attachAura();
+      hero = billboard(art, HERO_H, undefined, 1); hero.userData.seed = 0.5; hero.userData.art = art; heroGroup.add(hero); cos.aura = null; if (cos.fx) attachAura();
       ghosts.forEach(function (gh) { heroGroup.remove(gh.mesh); }); ghosts.length = 0;
       for (var i = 0; i < 3; i++) {
         var gm = new T.Mesh(hero.userData.body.geometry, bbMaterial(art.tex)); gm.renderOrder = 2; gm.visible = false; gm.scale.setScalar(HERO_H); gm.rotation.order = 'YXZ'; gm.rotation.x = -TILT;
@@ -427,7 +476,7 @@
       if (hero) hero.userData.body.visible = true;
       if (!arts || !hero) return;
       var list = arts.map(function (a, i) {
-        var g = billboard(a, HERO_H); g.userData.art = a; g.userData.u.map.value = texs[i]; g.userData.shadow.visible = false; g.visible = false;
+        var g = billboard(a, HERO_H); g.userData.u.uArtRole.value=1; g.userData.art = a; g.userData.u.map.value = texs[i]; g.userData.shadow.visible = false; g.visible = false;
         // a costume's views have the staff drawn in (it bends with the arm bone, rig armL.cap); the plain wizard's get the
         // staff cut out of its picture, in front of the body (behind it in the back view)
         if (staff) {
@@ -654,7 +703,7 @@
     }
     // def.entry: 'run' (rush in from the right), 'leap' (jump in), 'drop' (fall from the sky)
     function spawnMob(def) {
-      var g = billboard(def.art, def.height || 1.25, def.tint), boss = !!def.boss, spot = freeSpot(boss);
+      var g = billboard(def.art, def.height || 1.25, def.tint, def.art.id === 'b49' ? 2 : 0), boss = !!def.boss, spot = freeSpot(boss);
       var entry = boss ? 'run' : def.entry || 'run';
       var mob = { group: g, hp: def.hp, maxHp: def.hp, boss: boss, regionBoss: !!def.regionBoss, alive: true, name: def.name, id: def.id,
         x: 0, z: 0, y: 0, vy: 0, tx: spot.x, tz: spot.z,
@@ -723,7 +772,7 @@
     // the little ones milling round the fight (js/minions.js): cheap stiff pictures that burst in crowds where spells land
     var minions = CW.createMinions ? CW.createMinions({ T: T, group: mobGroup, tilt: TILT, yaw: function () { return orb.yaw; }, scrX: scrX, clampField: function (p) { return clampField(p, 'free'); }, halfX: halfX, field: FIELD,
       hero: function () { return HB; }, mobs: function () { return mobs; } }) : null;
-    function disposeGroup(g) { g.traverse(function (x) { if (x.geometry && !x.geometry.userData.cached) x.geometry.dispose(); if (x.material && x.material.dispose) x.material.dispose(); }); }
+    function disposeGroup(g) { var d=g.userData; if(d.printPlane){var spare=d.shadow.geometry===d.printPlane?d.shadowDisk:d.printPlane;spare.dispose();} g.traverse(function (x) { if (x.geometry && !x.geometry.userData.cached) x.geometry.dispose(); if (x.material && x.material.dispose) x.material.dispose(); }); }
     function clearMobs() { if (minions) minions.clear(); HB.focus = null; mobs.slice().forEach(function (m) { m.alive = false; mobGroup.remove(m.group); disposeGroup(m.group); }); mobs.length = 0; dying.forEach(function (m) { mobGroup.remove(m.group); disposeGroup(m.group); }); dying.length = 0; }
     function mobPos(mob) { var g = mob.group, o = bbPt(0, g.userData.h * 0.5, 0.15); return new T.Vector3(g.position.x + o.x, o.y + g.position.y, g.position.z + o.z); }
     function mobTop(mob) { var g = mob.group, o = bbPt(0, g.userData.h * 0.92, 0.15); return new T.Vector3(g.position.x + o.x, o.y + g.position.y, g.position.z + o.z); }
@@ -1356,7 +1405,7 @@
     function setQuality(q) { quality = q; size(); }
     size();
     return {
-      THREE: T, scene: scene, camera: camera, renderer: renderer, fxGroup: fxGroup, glow: GLOW, hooks: hooks,
+      THREE: T, scene: scene, camera: camera, renderer: renderer, fxGroup: fxGroup, desertLight: desertLight, glow: GLOW, hooks: hooks,
       size: size, setRegion: setRegion, setHero: setHero, setHeroTexture: setHeroTexture, setHeroViews: setHeroViews, setCostumeFx: setCostumeFx, heroTip: heroTip, heroPaw: heroPaw, heroCenter: heroCenter, heroPose: heroPose, heroBeatAt: function () { return beatT; }, heroGlow: heroGlowPulse, ghost: ghost,
       castPulse: function () { heroGlow = 1; }, heroState: function () { return HB; }, heroFaceTo: heroFaceTo, heroCheer: heroCheer, setViewShift: setViewShift, setLandView: setLandView, landView: function () { return landView; },
       minions: minions, spawnMob: spawnMob, hitMob: hitMob, killMob: killMob, dismissMob: dismissMob, clearMobs: clearMobs, mobs: function () { return mobs; }, mobPos: mobPos, mobTop: mobTop,

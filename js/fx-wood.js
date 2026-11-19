@@ -209,235 +209,579 @@
       });
     }
 
-    // ---- 식인 꽃 (2026-11-16, in place of 덩굴 조이기, which the user turned down twice: "no impact") ----
-    // The ground under the monster heaves and darkens; a giant flytrap bursts up behind it, jaws gaping over it, rears
-    // back — and snaps shut on it (the bite: 40% of the damage, a jolt); it chews twice, shaking its head (15% each);
-    // then it flings its jaws open and spits the monster out flying (the last 30%; the monsters next to it are caught
-    // too), its petals and torn leaves bursting off; then it wilts and sinks back into the ground. A one-monster skill:
-    // each copy has its own flower.
-    // Shapes (js/mesh-wood.js): trapStem (grows along +y, its top bending to +z), trapJaw (hinged along x, reaching +z,
-    // its inside +y; the upper jaw is it turned half round z), trapPetal (+y, face +z).
-    var TRAP = { stem: 0x5f9632, jaw: 0xd8283a, petal: 0xff6f96, petal2: 0xd0286a }, RX = new T.Vector3(1, 0, 0), RZ = new T.Vector3(0, 0, 1), ROT_Z = new T.Quaternion().setFromAxisAngle(RZ, Math.PI);
-    // where drool hangs from the upper jaw (its own frame: along its rim, near the teeth)
-    var DROOL = [V(-0.42, 0.02, 0.5), V(0.42, 0.02, 0.5), V(-0.3, 0.02, 0.78), V(0.3, 0.02, 0.78), V(0, 0.02, 0.95)];
-    function flytrap(c, mob) {
-      var g = gp(mob), hgt = (mob.group && mob.group.userData.h) || (mob.boss ? 1.6 : 0.92), s = hgt * 1.9;
-      // (2026-11-17, the user's new icon: "더 고쳐") side-on, the way the icon shows it: the head stands beside the
-      // monster, its mouth toward it (toward the edge it is nearer, so the plant itself stands toward the middle), the
-      // hinge axis toward the camera so the jaws open and snap in the screen's plane; the neck rises from behind the
-      // head and curls into the back of it. fwd: the way the mouth faces (a little up)
-      var C = sc.mobPos(mob), fwd = V(C.x < 0 ? -1 : 1, 0.2, 0.65).normalize(), hinge = C.clone().addScaledVector(fwd, -0.6 * 0.95 * s);
-      var toCam = V(0, 0.6, 1).normalize(), across = toCam.clone().addScaledVector(fwd, -toCam.dot(fwd)).normalize(), upw = new T.Vector3().crossVectors(fwd, across).normalize();
-      if (upw.y < 0) { across.negate(); upw.negate(); }
-      var qHead = new T.Quaternion().setFromRotationMatrix(new T.Matrix4().makeBasis(across, upw, fwd));
-      // the neck: out of the ground behind the head and arching forward into the back of it (the stem shape ends at
-      // (0, 0.5, 0.9), turned to reach the hinge from its foot)
-      var dirH = V(fwd.x, 0, fwd.z).normalize();
-      var Sy = (Math.max(0, hinge.y) + 0.8 * s) / 1.05, Sz = 0.85 * s, base = V(hinge.x - dirH.x * 0.9 * Sz, 0, hinge.z - dirH.z * 0.9 * Sz), qStem = yawQ(Math.atan2(dirH.x, dirH.z));
-      var stem = P3.bm('trapStem', { col: TRAP.stem }), lo = P3.bm('trapJaw', { col: TRAP.jaw }), hi = P3.bm('trapJaw', { col: TRAP.jaw }), tongue = P3.bm('trapTongue', { col: TRAP.jaw });
-      // (2026-11-17, the user's 3D 시안: the flower's petals are a lily round the stem's foot, part of trapStem — no ring
-      // round the head; the petals still burst off the head when it spits, as before)
-      var petals = [];
-      for (var j = 0; j < 10; j++) {
-        var inner = j >= 6, a = inner ? (j - 6) / 4 * 6.283 + 1.2 : j / 6 * 6.283 + 0.4;
-        var dir = fwd.clone().multiplyScalar(inner ? -0.25 : -0.55).addScaledVector(across, Math.cos(a) * 0.85).addScaledVector(upw, Math.sin(a) * 0.85);
-        petals.push({ h: { set: function () {}, kill: function () {} }, q: aim(new T.Quaternion(), dir, rr(-0.3, 0.3)), dir: dir, k: inner ? 0.3 : 0.46 });
+    // 수호목의 흰 울림. Keep the saved skill key and cast through the normal damage queue.
+    var RZ = V(0, 0, 1), guardianQuad, guardianTree, guardianArc, guardianContacts;
+    // The ground patch and the painting share one draw. Sole and root coordinates are in the
+    // original 384px pose tiles. The raised foreleg in the walking pose has no contact mark.
+    function guardianGroundMap() {
+      var canvas = document.createElement('canvas');
+      canvas.width = 512; canvas.height = 192;
+      var ctx = canvas.getContext('2d');
+      var soles = [
+        [[79,364,24],[136,357,17],[229,356,20],[194,372,27]],
+        [[59,372,26],[178,358,22]],
+        [[58,347,25],[131,331,20],[306,345,28],[173,372,31]],
+        [[48,349,27],[99,371,26],[155,358,22],[222,371,39],[264,356,28],[309,344,26]]
+      ];
+      // Bottom edge of the approved tree tile, sampled every four pixels. Also masks the buried tips.
+      var rootEdge=[0,0,0,0,0,0,0,344,344,343,343,349,349,349,349,350,350,348,342,342,367,367,367,367,368,369,369,368,366,362,358,356,354,354,354,354,355,355,355,355,356,356,349,347,347,370,370,369,369,368,367,366,366,367,369,370,372,372,371,371,370,356,356,356,356,356,356,357,358,358,342,342,343,345,346,347,347,347,346,344,343,342,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+      function pool(x,y,rx,ry,color) {
+        ctx.save(); ctx.translate(x,y); ctx.scale(rx,ry);
+        var g=ctx.createRadialGradient(0,0,.15,0,0,1);
+        g.addColorStop(0,color); g.addColorStop(.6,'rgba(63,43,41,.25)');
+        g.addColorStop(1,'rgba(50,32,37,0)'); ctx.fillStyle=g; ctx.fillRect(-1,-1,2,2); ctx.restore();
       }
-      var qU = new T.Quaternion(), dp = V();
-      // (2026-11-17, the user's new icon) a magenta flower crowning the head: six petals round a point on the back of the
-      // upper jaw (its own frame: the outside of its shell is -y, the hinge at z 0), riding with it as it snaps and chews
-      var crown = [0, 1, 2, 3, 4, 5].map(function (i) { var a = i / 6 * 6.283; return { h: P3.bm('trapPetal', { col: 0xff5aa8 }), d: V(Math.cos(a) * 0.75, -0.75, 0.2 + Math.sin(a) * 0.6).normalize(), q: new T.Quaternion() }; }), CPOS = V(0, -0.3, 0.22), cp = V(), cd = V(), CS = V();
-      var t = 0, at = V(), head = V(), qa = new T.Quaternion(), qj = new T.Quaternion(), JL = 0.95 * s, SS = V(), PS = V();
-      var D = function (x) { return c.D(x); }, ERUPT = D(0.16), UP_T = D(0.12), REAR = D(0.32), SNAP = D(0.42), BITE = D(0.46), SPIT = D(0.8), GONE = D(1.25);
-      var owed = 0, done = { erupt: false, bite: false, chew1: false, chew2: false, spit: false };
-      // the rumble: the ground under it heaves and darkens
-      E({ sys: 'gnorm', pos: V(g.x, 0.026, g.z), frame: 'smoke', color: 0x1a0e08, size: [0.4, 1.6 * s], ease: 1, life: 1.6, alpha: 0.5, fadeIn: 0.1, fadeOut: 0.5 });
-      for (var m = 0; m < 4; m++) { var b = m / 4 * 6.283 + rr(-0.3, 0.3); heave(V(g.x + Math.cos(b) * 0.4 * s, 0, g.z + Math.sin(b) * 0.3 * s), b, 0.28 * s, D(0.25), earthCol()); }
-      K.dust(g, N(3, c), 0.8); sc.shake(0.08);
-      tick(function (dt) {
-        t += dt;
-        if (!done.erupt && t >= ERUPT) {
-          done.erupt = true;
-          K.dust(base, N(7, c), 1.4); heave(base, 0, 0.6 * s, D(0.7), earthCol()); splinters(V(base.x, 0.2, base.z), N(4, c), 3); sc.shake(0.16);
-          if (mob.alive) { mob.pull = mob.x; mob.pullZ = mob.z; }
-        }
-        if (t < ERUPT) return false;
-        var u = t - ERUPT, rise = easeOut(u / UP_T), theta, lunge = 0, roll = 0, bob = 1, pitch = 0, sink = 0;
-        // how wide the jaws are: gaping as it rises, wider as it rears back, snapping shut, chewing, flung open, then hanging
-        if (t < REAR) theta = 1.25;
-        else if (t < SNAP) { theta = 1.25 + 0.25 * easeOut((t - REAR) / (SNAP - REAR)); lunge = -0.12 * easeOut((t - REAR) / (SNAP - REAR)); }
-        else if (t < BITE) { var x = (t - SNAP) / (BITE - SNAP); theta = 1.5 * (1 - x * x); lunge = -0.12 + 0.22 * x; }
-        else if (t < SPIT) { var w = (t - BITE) / (SPIT - BITE); theta = 0.16 * Math.max(0, Math.sin(w * Math.PI * 2 * 2)); lunge = 0.1 - 0.1 * w; roll = Math.sin(w * Math.PI * 4) * 0.22; bob = 1 + 0.06 * Math.max(0, Math.sin(w * Math.PI * 4)); }
-        else { var y = (t - SPIT) / (GONE - SPIT); theta = 1.6 * easeOut(y * 6) * (1 - 0.6 * Math.max(0, y - 0.3)); pitch = 0.7 * Math.max(0, y - 0.15); sink = Math.max(0, (y - 0.35) / 0.65); }
-        // the head: rising out of the ground to its place, lunging, nodding, wilting and sinking
-        head.lerpVectors(V(base.x, -0.2, base.z), hinge, rise).addScaledVector(fwd, lunge * s); head.y -= hinge.y * 1.1 * sink * sink;
-        var fade = Math.max(0, 1 - Math.max(0, sink - 0.75) / 0.25);
-        qa.setFromAxisAngle(fwd, roll); qa.multiply(qHead); if (pitch) qa.multiply(qj.setFromAxisAngle(RX, pitch));
-        var js = JL * (0.35 + 0.65 * rise) * bob;
-        lo.set(head, qj.copy(qa).multiply(new T.Quaternion().setFromAxisAngle(RX, theta)), js, fade, 2); tongue.set(head, qj, js, fade, 2);
-        qU.copy(qa).multiply(new T.Quaternion().setFromAxisAngle(RX, -theta)).multiply(ROT_Z);
-        hi.set(head, qU, js, fade, 2);
-        cp.copy(CPOS).applyQuaternion(qU).multiplyScalar(js).add(head);
-        crown.forEach(function (P) { cd.copy(P.d).applyQuaternion(qU); aim(P.q, cd, 0); CS.set(0.42, 0.34, 0.42).multiplyScalar(js); P.h.set(cp, P.q, CS, fade, 2); });
-        // drool dripping from the upper jaw's teeth while the mouth gapes
-        if (theta > 0.6 && fade > 0.5 && Math.random() < dt * 26 * c.n) {
-          dp.copy(K.pick(DROOL)).applyQuaternion(qU).multiplyScalar(js).add(head);
-          E({ pos: dp.clone(), vel: V(rr(-0.2, 0.2), -0.4, 0), frame: 'dot', color: [0xe8f590, 0xa8d040], size: [0.08, 0.04], stretch: 0.06, life: rr(0.35, 0.55), grav: 7, drag: 0.6, alpha: 0.9 });
-        }
-        // the stem grows out of the ground with it (and back into it as it wilts)
-        SS.set(s * 0.8, Sy * (0.3 + 0.7 * rise) * (1 - 0.6 * sink), Sz);
-        stem.set(at.set(base.x, 0, base.z), qStem, SS, fade, Math.max(0, rise * 2 - sink * 2));
-        if (!done.spit) petals.forEach(function (P) { PS.set(P.k * s * 1.6, P.k * s, P.k * s * 1.6).multiplyScalar(rise * bob); P.h.set(head, qj.copy(qa).multiply(P.q.clone().premultiply(qHead.clone().invert())), PS, fade, 2); });
-        // the bite: a puff of red mist, drool and juice spattering, a ring of shock over the ground
-        if (!done.bite && t >= BITE) {
-          done.bite = true; var q0 = sc.mobPos(mob);
-          K.sparks(q0, [0xff6070, 0x9fe05a, 0xffe0a0], N(10, c), 4.5, { size: 0.16, up: 1.2 }); K.flare(q0, 0xff8070, 0.5, 0.08);
-          K.smoke(q0, [0x9a1a2a, 0x5a0a14], N(3, c), { size: 0.7 * s, alpha: 0.38, rise: 0.4, life: 0.8 });
-          for (var sp = 0; sp < N(10, c); sp++) E({ pos: q0.clone().add(K.rdir(0.3)), vel: K.rdir(3).add(V(0, 2.5, 0)), frame: 'dot', color: K.pick([0xe8f590, 0xa8d040, 0xff5a6a]), size: [0.1, 0.03], life: rr(0.4, 0.7), grav: 7, drag: 0.8 });
-          E({ sys: 'gnorm', pos: V(g.x, 0.035, g.z), frame: 'shock', color: 0x3a0a10, size: [0.3, 2.6 * s], ease: 1, life: 0.38, fadeOut: 0.3, rot: 0, alpha: 0.7 });
-          sc.light(q0, 0xff5060, 1.3, 0.25); sc.shake(0.28); sc.hitStop(0.08);
-          c.hit(mob, 0.4, 0.3);
-        }
-        // the chewing
-        [['chew1', 0.28], ['chew2', 0.68]].forEach(function (ch) {
-          if (!done[ch[0]] && t >= BITE + (SPIT - BITE) * ch[1]) {
-            done[ch[0]] = true; var q1 = sc.mobPos(mob);
-            for (var d = 0; d < N(4, c); d++) E({ pos: q1.clone().add(K.rdir(0.25)), vel: K.rdir(2).add(V(0, 2, 0)), frame: 'dot', color: K.pick([0xff5a6a, 0x9fe05a]), size: [0.09, 0], life: rr(0.35, 0.55), grav: 6, drag: 1 });
-            sc.shake(0.12);
-            // a monster that fell to the bite is chewed no more: its share waits for the spit (landing then on the one
-            // nearest, as any shot whose monster has fallen does) instead of popping up on another monster mid-chew
-            if (mob.alive) c.hit(mob, 0.15, 0.2); else owed += 0.15;
+      soles.forEach(function (feet, pose) {
+        var tree = pose === 3;
+        ctx.save(); ctx.translate((pose%2)*256,Math.floor(pose/2)*96);
+        ctx.beginPath(); ctx.rect(0,0,256,96); ctx.clip();
+        // Local canvas covers atlas pixels (-32, 254) through (416, 411).
+        ctx.scale(256/448,96/157); ctx.translate(32,-254);
+        pool(tree?181:173,tree?345:339,tree?202:165,tree?40:36,'rgba(60,41,42,.50)');
+        if(!tree) feet.forEach(function (f,i) {
+          var x=f[0],y=f[1],r=f[2];
+          pool(x+3,y-1,r*1.55,tree?9:8,'rgba(54,35,38,.74)');
+          ctx.lineCap='round'; ctx.strokeStyle='rgba(229,194,143,.80)'; ctx.lineWidth=2.8;
+          ctx.beginPath(); ctx.moveTo(x-r*.86,y+2);
+          ctx.quadraticCurveTo(x-r*.12,y+9,x+r*.85,y+3); ctx.stroke();
+          pool(x,y-1,r*1.06,5.2,'rgba(48,31,33,.90)');
+          for (var j=0;j<4;j++) {
+            var dx=Math.sin((i+1)*17+j*11)*r*1.32;
+            ctx.fillStyle=j%2?'rgba(110,79,54,.64)':'rgba(235,206,156,.70)';
+            ctx.fillRect(x+dx,y+4+(j%3)*2,2+(i+j)%3,1.6);
           }
         });
-        // spat out: the jaws flung open, the petals and leaves bursting off
-        if (!done.spit && t >= SPIT) {
-          done.spit = true;
-          if (mob.pull !== undefined) { mob.pull = undefined; mob.pullZ = undefined; }
-          var q2 = sc.mobPos(mob);
-          petals.forEach(function (P) { P.h.kill(); toss('trapPetal', head.clone().addScaledVector(P.dir, 0.2 * s), P.dir.clone().multiplyScalar(rr(3, 4.5)).add(V(0, rr(1.5, 3), 0)), P.k * s, P.k < 0.4 ? TRAP.petal2 : TRAP.petal, true); });
-          for (var l = 0; l < N(6, c); l++) toss('leafBlade', q2, K.rdir(3).add(V(0, 2.5, 0)), rr(0.25, 0.35), K.pick(BLADE), true);
-          splinters(q2, N(5, c), 3.2);
-          E({ sys: 'gnorm', pos: V(g.x, 0.035, g.z), frame: 'shock', color: 0x2f7a26, size: [0.3, 3.2 * s], ease: 1, life: 0.4, fadeOut: 0.3, rot: 0, alpha: 0.8 }); K.gRing(g, 0xff6a80, 1.4 * s, 0.25);
-          sc.shake(0.3); sc.hitStop(0.07); sc.light(q2, 0xff6070, 1.4, 0.3);
-          c.hit(mob, 0.3 + owed, 2.4);   // spat out flying
-          c.splash(mob, 1.6, 0.9);
+        if(tree){
+          ctx.lineCap='round';
+          function rootSeam(offset,width,colour){
+            ctx.strokeStyle=colour;ctx.lineWidth=width;ctx.beginPath();
+            rootEdge.forEach(function(y,i){
+              if(!y)return;
+              var x=4*i+2;
+              if(!rootEdge[i-1]||Math.abs(y-rootEdge[i-1])>11)ctx.moveTo(x,y+offset);
+              else ctx.lineTo(x,y+offset);
+            });
+            ctx.stroke();
+          }
+          rootSeam(-6,10,'rgba(64,40,27,.78)');
+          rootSeam(-3,4,'rgba(171,126,73,.78)');
+          rootSeam(-1.5,1.7,'rgba(232,190,119,.72)');
+          rootEdge.forEach(function(row,i){
+            if(!row||i%3)return;
+            var x=4*i+2;
+            ctx.fillStyle=i%2?'rgba(215,171,105,.85)':'rgba(122,82,49,.59)';
+            ctx.fillRect(x,row-3+(i%5)*.5,1.8+i%4,1.6);
+          });
         }
-        if (t < GONE) return false;
-        lo.kill(); hi.kill(); tongue.kill(); stem.kill(); crown.forEach(function (P) { P.h.kill(); }); return true;
+        ctx.restore();
       });
+      // Two reserved rows store the grounding contour without a separate texture or draw call.
+      for(var x=0;x<256;x++){
+        var row=rootEdge[Math.floor(x*rootEdge.length/256)];
+        var value=row?Math.round(255*(384-row)/384):0;
+        ctx.fillStyle='rgb('+value+','+value+','+value+')';ctx.fillRect(256+x,96,1,2);
+      }
+      var map=new T.CanvasTexture(canvas);
+      map.generateMipmaps=false;map.minFilter=T.LinearFilter;
+      return map;
     }
-    // The jaw pictures' joints (art/wt-trap-upper|lower.webp, the GPT pictures): each picture's size and the centre of its
-    // round hinge knob as a fraction from its bottom left (2026-11-17, the user: the joint must stay matched open and shut)
-    var TP = { upper: { w: 976, h: 570, pin: [0.9467, 0.1035] }, lower: { w: 1017, h: 579, pin: [0.941, 0.7858] } };
-    // 식인 꽃 as a spell of light (2026-11-17, the user: "유성우·폭염탄처럼" — the plant itself standing there looked pasted on
-    // whatever was tried; the skills that look right are light and fire): giant jaws made of green light (the GPT jaw
-    // pictures as shapes of light, liveSheet spirit) loom open over the monster, snap shut on it in a white-green flash,
-    // chew twice (flashing), and burst open spitting it out in a blast of green and pink light, petals and leaves.
-    // Same beats, hits and effects as before.
-    function flytrapLight(c, mob) {
-      var g = gp(mob), hgt = (mob.group && mob.group.userData.h) || (mob.boss ? 1.6 : 0.92), s = hgt * 1.9;
-      var C = sc.mobPos(mob), dir = C.x < 0 ? -1 : 1, flip = dir > 0 ? -1 : 1;
-      var camR = V(1, 0, 0).applyQuaternion(sc.camera.quaternion), camU = V(0, 1, 0).applyQuaternion(sc.camera.quaternion);
-      var JW = 1.7 * s, px = JW / TP.upper.w;   // (bigger: one bite takes the monster whole)
-      var UW = JW, UH = TP.upper.h * px, LW = TP.lower.w * px, LH = TP.lower.h * px;
-      var lo = liveSheet('wt-trap-lower', TP.lower.pin[0], TP.lower.pin[1], 40, 0x7dff2a, 2, 0x8a0612), hi = liveSheet('wt-trap-upper', TP.upper.pin[0], TP.upper.pin[1], 40.1, 0x7dff2a, 2, 0x8a0612);
-      var jA = 0, jV = 0, sq = 0, sqV = 0, UJ = {}, hinge = V(), dp = V();
-      var D = function (x) { return c.D(x); }, ERUPT = D(0.16), REAR = D(0.32), SNAP = D(0.42), BITE = D(0.46), SPIT = D(0.8), GONE = D(1.0);
-      var owed = 0, done = { erupt: false, bite: false, chew1: false, chew2: false, spit: false }, t = 0;
-      // a ring of green light gathering under it first
-      E({ sys: 'gnorm', pos: V(g.x, 0.03, g.z), frame: 'smoke', color: 0x1a0306, size: [0.4, 2.2 * s], ease: 1, life: 0.8, alpha: 0.6, fadeOut: 0.4 });
-      K.gRing(g, 0xc01020, 1.3 * s, 0.3);
-      tick(function (dt) {
-        t += dt;
-        if (!done.erupt && t >= ERUPT) {
-          done.erupt = true;
-          E({ pos: sc.mobPos(mob), frame: 'glow', color: 0xff2030, size: [0.5, 2.4 * s], life: 0.3, alpha: 0.5 });
-          sc.light(sc.mobPos(mob), 0xff2030, 1.4, 0.35); sc.shake(0.1);
-          if (mob.alive) { mob.pull = mob.x; mob.pullZ = mob.z; }
-        }
-        if (t < ERUPT) return false;
-        // (2026-11-17, the user: 쫘악 벌어졌다가 한 번에 쾅, 관절이 어긋나지 않게, 한입에 먹어 버리게, 입 둘레에서 독이 흘러내리게)
-        // The jaws' angles, measured on the pictures (tools: rotating them about the shared hinge): 0 = as painted, +16°
-        // each = the lips meet and the teeth mesh (shut), −26° each = gaping wide. They open wide slowly, tremble wide open,
-        // slam shut in one blow (a little bounce, never past shut), stay shut gulping, and fade away shut.
-        var SHUT = 0.279, WIDE = -0.59;   // (gaping wider: 34° each)
-        var u = t - ERUPT, app = easeOut(u / D(0.1)), ang, tremble = 0, out = 0, lean = 0;
-        if (t < REAR) ang = SHUT + (WIDE - SHUT) * easeOut(u / (REAR - ERUPT));                        // 쫘악
-        else if (t < SNAP) { ang = WIDE - 0.04 * easeOut((t - REAR) / (SNAP - REAR)); tremble = 0.012; lean = -0.06; } // wide, quivering, rearing back
-        else if (t < BITE) { var x = (t - SNAP) / (BITE - SNAP); ang = WIDE - 0.04 + (SHUT - WIDE + 0.04) * x * x * x; lean = -0.06 + 0.12 * x; } // 쾅
-        else if (t < SPIT) { var w = t - BITE; ang = SHUT - 0.035 * Math.exp(-w * 18) * Math.abs(Math.sin(w * 40)); lean = 0.06 * Math.exp(-w * 8); } // shut: a little bounce
-        else { out = (t - SPIT) / (GONE - SPIT); ang = SHUT; }
-        sqV += (-sq * 320 - sqV * 10) * dt; sq += sqV * dt;
-        var shake = tremble ? Math.sin(t * 90) * tremble : 0;
-        // the mouth's middle over the monster (the hinge to the side of it), one piece: both jaws on the same hinge, the
-        // same size and the same squash, no bending of the pictures
-        var M = sc.mobPos(mob), sz = (0.55 + 0.45 * app) * (1 + 0.15 * out);
-        var push = t < REAR ? 0 : t < SNAP ? -0.05 * easeOut((t - REAR) / (SNAP - REAR)) : t < BITE ? -0.05 + 0.2 * Math.pow((t - SNAP) / (BITE - SNAP), 2) : 0.15 * Math.exp(-(t - BITE) * 6);   // rears back, then lunges in as it bites
-        hinge.copy(M).addScaledVector(camR, -dir * (0.45 - push) * UW * sz).addScaledVector(camU, 0.05 * hgt);
-        var fl = (t >= BITE && t < BITE + 0.1) ? 1 : 0;
-        UJ.flow = 0.9; UJ.edge = 1.0 + 0.8 * fl; UJ.flash = 0.5 * fl; UJ.alpha = Math.min(1, u / D(0.05)) * (1 - out * out);
-        UJ.bend = 0; UJ.wig = 0; UJ.flut = 0;
-        var head = (lean + shake) * flip;
-        hi.set(hinge, UW * sz * flip * (1 + sq), UH * sz * (1 - sq), flip * ang + head, UJ, dt);
-        lo.set(hinge, LW * sz * flip * (1 + sq), LH * sz * (1 - sq), -flip * ang + head, UJ, dt);
-        // poison running down off the lips: streams dripping from points along both jaws' edges (turned with them), more
-        // when it gapes; it lands as a spreading toxic pool under the monster
-        var drip = (t < BITE ? 90 : 45) * c.n * (1 - out);
-        if (Math.random() < dt * drip) {
-          var up = Math.random() < 0.6, fr = rr(0.25, 0.92), jr = up ? flip * ang + head : -flip * ang + head;
-          var lx = -flip * fr * (up ? UW : LW) * sz, ly = (up ? -0.12 * UH : 0.1 * LH) * sz;
-          var cs = Math.cos(jr), sn = Math.sin(jr);
-          dp.copy(hinge).addScaledVector(camR, lx * cs - ly * sn).addScaledVector(camU, lx * sn + ly * cs);
-          E({ pos: dp.clone(), vel: V(rr(-0.15, 0.15), rr(-0.3, -0.05), 0), frame: 'dot', color: K.pick([0x7dff2a, 0x9dff3a, 0x4ad010]), size: [rr(0.2, 0.32), 0.09], stretch: 0.42, life: rr(0.55, 0.9), grav: 5, drag: 0.5, alpha: 1 });
-          E({ pos: dp.clone(), vel: V(0, -0.3, 0), frame: 'glow', color: 0x7dff2a, size: [0.55, 0.15], life: 0.55, grav: 2.5, alpha: 0.75 });
-          if (Math.random() < 0.25) K.smoke(dp, [0x3a8a10, 0x1f5a08], 1, { size: 0.5 * s, alpha: 0.32, rise: 0.25, life: 0.9 });
-        }
-        var q0, q1, q2;
-        if (!done.bite && t >= BITE) {
-          done.bite = true; q0 = sc.mobPos(mob); sqV += 6;
-          K.flare(q0, 0xff3040, 2.0, 0.12); K.gRing(g, 0xff2030, 2.2 * s, 0.22);
-          K.sparks(q0, [0xff4050, 0x9dff3a, 0x700010], N(14, c), 6, { size: 0.16, stretch: 0.12, life: 0.35 });
-          for (var sp = 0; sp < N(12, c); sp++) E({ pos: q0.clone().add(K.rdir(0.3)), vel: K.rdir(3.5).add(V(0, 2.5, 0)), frame: 'glow', color: K.pick([0xff2030, 0x9dff3a, 0x900818]), size: [0.2, 0.04], life: rr(0.4, 0.7), grav: 5, drag: 0.8, alpha: 0.9 });
-          E({ sys: 'gnorm', pos: V(g.x, 0.035, g.z), frame: 'shock', color: 0x5a0008, size: [0.3, 2.6 * s], ease: 1, life: 0.38, fadeOut: 0.3, rot: 0, alpha: 0.6 });
-          sc.light(q0, 0xff2030, 1.8, 0.3); sc.shake(0.4); sc.hitStop(0.14);
-          E({ sys: 'gnorm', pos: V(g.x, 0.03, g.z), frame: 'glow', color: 0x6aff20, size: [0.8, 2.4 * s], ease: 1, life: 1.6, alpha: 0.75, fadeOut: 0.6 });
-          for (var bb = 0; bb < N(10, c); bb++) after(c.D(rr(0, 0.6)), function () { E({ pos: V(g.x + rr(-0.6, 0.6) * s, 0.05, g.z + rr(-0.3, 0.3) * s), vel: V(0, rr(0.5, 1.1), 0), frame: 'glow', color: [0x9dff3a, 0x6aff20], size: [0.22, 0.3], life: rr(0.35, 0.6), alpha: 0.85 }); });
-          K.smoke(q0, [0x2a0408, 0x120206], N(3, c), { size: 0.8 * s, alpha: 0.45, rise: 0.4, life: 0.8 });
-          c.hit(mob, 0.4, 0.3);
-        }
-        [['chew1', 0.28], ['chew2', 0.68]].forEach(function (ch) {
-          if (!done[ch[0]] && t >= BITE + (SPIT - BITE) * ch[1]) {
-            done[ch[0]] = true; q1 = sc.mobPos(mob); sqV += 4;
-            K.flare(q1, 0xff3040, 0.9, 0.08);
-            for (var d = 0; d < N(6, c); d++) E({ pos: q1.clone().add(K.rdir(0.25)), vel: K.rdir(2.5).add(V(0, 2, 0)), frame: 'glow', color: K.pick([0xff2030, 0x9dff3a]), size: [0.14, 0.03], life: rr(0.35, 0.55), grav: 4, drag: 1, alpha: 0.9 });
-            sc.shake(0.12);
-            if (mob.alive) c.hit(mob, 0.15, 0.2); else owed += 0.15;
-          }
-        });
-        if (!done.spit && t >= SPIT) {
-          done.spit = true;
-          if (mob.pull !== undefined) { mob.pull = undefined; mob.pullZ = undefined; }
-          q2 = sc.mobPos(mob);
-          K.flare(q2, 0xff4050, 2.4, 0.14); K.gRing(g, 0xff2030, 2.6 * s, 0.28); K.gRing(g, 0x7dff2a, 1.6 * s, 0.35);
-          K.sparks(q2, [0xff4050, 0x9dff3a, 0x700010], N(18, c), 8, { size: 0.15, stretch: 0.14, life: 0.4 });
-          for (var l = 0; l < N(22, c); l++) E({ pos: q2.clone().add(K.rdir(0.3)), vel: K.rdir(4).add(V(0, 2.4, 0)), frame: 'glow', color: K.pick([0xff2030, 0xb00818, 0x9dff3a, 0x5adf10]), size: [rr(0.18, 0.3), 0.04], life: rr(0.45, 0.8), grav: 3, drag: 1.1, alpha: 0.9 });
-          for (var lb = 0; lb < N(5, c); lb++) toss('woodLeaf', q2, K.rdir(3).add(V(0, 2.5, 0)), rr(0.14, 0.2), 0xffffff, true);
-          E({ sys: 'gnorm', pos: V(g.x, 0.035, g.z), frame: 'shock', color: 0x5a0008, size: [0.3, 3.4 * s], ease: 1, life: 0.42, fadeOut: 0.3, rot: 0, alpha: 0.7 });
-          sc.shake(0.3); sc.hitStop(0.07); sc.light(q2, 0xff2030, 1.8, 0.3);
-          c.hit(mob, 0.3 + owed, 0.6);
-          c.splash(mob, 1.6, 0.9);
-        }
-        if (t < GONE) return false;
-        lo.kill(); hi.kill(); return true;
+    function guardianPaintingGeometry(tree) {
+      // Corresponding pixel landmarks in the calm, stepping and braced paintings. The same
+      // triangles follow the muzzle, antler tips, shoulders and individual hooves between poses.
+      var landmarks = [
+        [0,0,0,0,0,0],
+        [384,0,384,0,384,0],
+        [0,384,0,384,0,384],
+        [384,384,384,384,384,384],
+        [80,80,88,91,90,117],
+        [168,18,171,24,197,51],
+        [279,46,293,57,305,85],
+        [333,93,349,103,350,130],
+        [222,104,237,110,262,161],
+        [172,134,185,149,206,202],
+        [210,152,241,169,242,238],
+        [254,151,276,195,271,260],
+        [130,189,137,188,155,217],
+        [220,233,231,246,239,282],
+        [60,178,70,178,76,179],
+        [76,274,80,282,69,274],
+        [137,279,146,286,128,279],
+        [187,281,187,279,180,287],
+        [228,281,249,267,273,286],
+        [76,363,59,371,57,347],
+        [137,357,178,358,128,331],
+        [193,372,239,342,174,371],
+        [235,355,259,316,306,344],
+        [0,165,0,165,0,165],
+        [384,188,384,188,384,188],
+        [75,384,65,384,60,384],
+        [195,384,215,384,180,384],
+        [290,384,295,384,301,384]
+      ];
+      var faces = [
+        1,5,0,4,5,9,4,23,0,5,4,0,6,5,1,27,26,21,
+        19,25,2,26,20,21,25,20,26,20,25,19,18,11,24,22,27,21,
+        18,22,21,27,22,3,22,24,3,22,18,24,17,18,21,20,17,21,
+        11,7,24,24,7,1,7,6,1,4,14,23,15,20,19,14,15,23,
+        23,15,2,15,19,2,17,13,18,13,11,18,13,10,11,7,8,6,
+        8,7,11,10,8,11,8,10,9,5,8,9,6,8,5,16,17,20,
+        15,16,20,12,15,14,12,16,15,12,4,9,12,14,4,16,12,17,
+        12,13,17,10,12,9,13,12,10
+      ];
+      var pos=[], still=[], step=[], brace=[], floor=[];
+      var indices=[0,1,2,0,2,3];
+      [[-32,411,0,0],[416,411,1,0],[416,254,1,1],[-32,254,0,1]].forEach(function (p) {
+        pos.push(p[0]/384-.5,(373-p[1])/384,0);
+        [still,step,brace].forEach(function (uv) { uv.push(p[2],p[3]); }); floor.push(1);
       });
+      // Subdivide matching landmarks to let the neck, ribs and branches turn independently.
+      var subdivisions=tree?3:2;
+      for(var f=0;f<faces.length;f+=3){
+        var a=landmarks[faces[f]],b=landmarks[faces[f+1]],c=landmarks[faces[f+2]],rows=[];
+        for(var row=0;row<=subdivisions;row++){
+          var strip=[];rows.push(strip);
+          for(var col=0;col<=subdivisions-row;col++){
+            var u=row/subdivisions,v=col/subdivisions;
+            strip.push(pos.length/3);
+            [still,step,brace].forEach(function(coords,i){
+              var x=a[i*2]*(1-u-v)+b[i*2]*u+c[i*2]*v;
+              var y=a[i*2+1]*(1-u-v)+b[i*2+1]*u+c[i*2+1]*v;
+              coords.push(x/384,1-y/384);
+              if(!i)pos.push(x/384-.5,(373-y)/384,0);
+            });
+            floor.push(0);
+            if(row && col){
+              indices.push(rows[row-1][col-1],strip[col-1],rows[row-1][col]);
+              indices.push(strip[col-1],strip[col],rows[row-1][col]);
+            }
+          }
+          if(row)indices.push(rows[row-1][strip.length-1],strip[strip.length-1],rows[row-1][strip.length]);
+        }
+      }
+      // Rounded buttress roots lie on the arena plane. Their tips stay buried in sand.
+      if(tree){
+        var artEnd=indices.length;
+        function woodyRoot(baseX,baseZ,angle,length,radius,phase){
+          var first=pos.length/3,sections=8,sides=4;
+          var dx=Math.cos(angle),dz=Math.sin(angle);
+          for(var j=0;j<=sections;j++){
+            var t=j/sections,curve=.043*Math.sin(t*4+phase)*t;
+            var x=baseX+length*t*dx-curve*dz,z=baseZ+length*t*dz+curve*dx;
+            var r=radius*Math.pow(1-t,.76);
+            for(var k=0;k<=sides;k++){
+              var q=k*Math.PI/sides;
+              pos.push(x-r*dz*Math.cos(q),r*(.23+.86*Math.sin(q))-.012*t,z+r*dx*Math.cos(q));
+              still.push(t,k/sides);step.push(.035+.30*t+.022*phase,.60+.26*Math.sin(q)-.12*Math.cos(q));
+              brace.push(0,0);floor.push(2);
+              if(k && j){var h=first+j*(sides+1)+k;indices.push(h-sides-2,h-1,h,h-sides-2,h,h-sides-1);}
+            }
+          }
+        }
+        [[.06,.43,.06],[.72,.43,.066],[1.48,.30,.052],[2.42,.44,.065],[3.04,.41,.046],[4.05,.30,.053],[5.49,.33,.041]].forEach(function(spec,i){
+          var angle=spec[0],length=spec[1];
+          woodyRoot(0,0,angle,length,spec[2],i*.32);
+          if(i%2===1)woodyRoot(Math.cos(angle)*length*.52,Math.sin(angle)*length*.52,angle+.52,length*.49,spec[2]*.4,i*.32);
+        });
+        indices=indices.slice(0,6).concat(indices.slice(artEnd),indices.slice(6,artEnd));
+      }
+      var geo=new T.BufferGeometry();
+      geo.setAttribute('position',new T.Float32BufferAttribute(pos,3));
+      geo.setAttribute('uv',new T.Float32BufferAttribute(still,2));
+      geo.setAttribute('stepUV',new T.Float32BufferAttribute(step,2));
+      geo.setAttribute('braceUV',new T.Float32BufferAttribute(brace,2));
+      geo.setAttribute('isGround',new T.Float32BufferAttribute(floor,1)); geo.setIndex(indices);
+      return geo;
+    }
+    function makeGuardianArc() {
+      // One open half-ring. A low inner wake climbs into the wind wall, then curls back into wisps.
+      var pos=[],uv=[],indices=[],segments=60;
+      var profile=[[.58,.01],[.75,.07],[.91,.14],[1,.025],[.99,.26],[.94,.49],[.86,.65]];
+      for (var i=0;i<=segments;i++) {
+        var u=i/segments,a=(u-.5)*Math.PI, taper=Math.sin(Math.PI*u);
+        for(var row=0;row<profile.length;row++){
+          var r=1-(1-profile[row][0])*(.16+.84*taper);
+          pos.push(Math.cos(a)*r,profile[row][1]*(.08+.92*taper),Math.sin(a)*r);
+          uv.push(u,row/(profile.length-1));
+          if(i && row){var j=i*profile.length+row;indices.push(j-8,j-1,j,j-8,j,j-7);}
+        }
+      }
+      // Seven narrow curls of light rise off the same leading edge as the solar ring's prominences.
+      // Pack them in the wave mesh. Their extra UV range selects the bright filament in the shader.
+      for (var l=0;l<7;l++) {
+        var first=pos.length/3, centre=(l+.55)/7.15, span=.048+.011*(l%3);
+        for (var j=0;j<=10;j++) {
+          var t=j/10, arc=Math.sin(t*Math.PI), u=centre+(t-.5)*span*2;
+          var a=(u-.5)*Math.PI, height=(.22+.12*(l%3))*(.45+.55*Math.sin(centre*Math.PI));
+          for(var edge=0;edge<2;edge++){
+            var r=.983-.17*arc*(1.-t) + .04*edge*arc;
+            pos.push(Math.cos(a)*r,.04+height*arc+.037*edge*arc,Math.sin(a)*r);
+            uv.push(u,2+t);
+          }
+          if(j){var k=first+j*2;indices.push(k-2,k,k+1,k-2,k+1,k-1);}
+        }
+      }
+      var geo = new T.BufferGeometry();
+      geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3));
+      geo.setAttribute('uv', new T.Float32BufferAttribute(uv, 2));
+      geo.setIndex(indices);
+      return geo;
     }
     S.flytrap = function (c) {
-      var first = c.pool()[0]; if (!first) return;
+      var aimed = c.pool().slice();
+      if (!aimed.length || CW.FRIEND) return;
       c.plain = true;
-      sc.heroPose('slam', c.D(0.12), c.col);
-      // with no one left it still opens where its monster fell: the bite goes on to the next one to come (fx.js c.hit)
-      // (2026-11-17, user: '스킬이 씹혀' — it used to give up there and the whole cast was lost)
-      after(c.D(0.12), function () { var mob = first.alive ? first : c.pool()[0] || first; if (wpLoad('wt-trap-upper') && wpLoad('wt-trap-lower')) flytrapLight(c, mob); else flytrap(c, mob); });   // (the painted one once its pictures have loaded)
+      sc.heroPose('raise', c.D(.18), c.col);
+      if (!guardianQuad) {
+        guardianQuad = guardianPaintingGeometry(false);
+        guardianTree = guardianPaintingGeometry(true);
+        guardianContacts = guardianGroundMap();
+        guardianArc = makeGuardianArc();
+      }
+      var layer = sc.fxGroup || sc.scene;
+      function painting(name, tileX, tileY) {
+        var material = new T.ShaderMaterial({
+          uniforms: { atlas: { value: wpLoad('fx-guardian-surface') }, form: { value: wpLoad('fx-guardian-form') }, growth: { value: 1 }, contacts: { value: guardianContacts }, desert: sc.desertLight, pose: { value: 0 }, motion: { value: new T.Vector4() }, isTree: { value: name === 'guardian tree' ? 1 : 0 }, tile: { value: new T.Vector2(tileX,tileY) }, fade: { value: 0 } },
+          side: T.DoubleSide, transparent: true, depthWrite: false,
+          vertexShader: [
+            'attribute float isGround;attribute vec2 stepUV,braceUV;',
+            'uniform float pose,isTree,growth;uniform sampler2D form;uniform vec4 motion;',
+            'varying vec2 vA,vB;varying float ground;varying float buried;',
+            'void main(){',
+            '  buried=0.;ground=isGround; vA=pose<1.?uv:stepUV; vB=pose<1.?stepUV:braceUV;',
+            '  vec3 local=position; float blend=pose<1.?pose:pose-1.;',
+            '  if(isTree>.5){vA=uv;vB=uv;}',
+            '  if(isGround>1.5){',
+            '    vec3 axis=normalize(vec3(modelMatrix[0].x,0.,modelMatrix[0].z));vec3 front=vec3(-axis.z,0.,axis.x);',
+            '    float size=length(modelMatrix[0].xyz);float reach=smoothstep(stepUV.x-.14,stepUV.x+.03,growth);',
+            '    vec3 root=modelMatrix[3].xyz+size*(axis*local.x*.86+front*(local.z*.44-.073))*mix(.42,1.,reach);',
+            '    float settle=smoothstep(.30,.72,growth)*.035;buried=local.y*reach-.054*(1.-reach)-settle;root.y+=size*buried;',
+            '    gl_Position=projectionMatrix*viewMatrix*vec4(root,1.);vA=uv;vB=stepUV;return;',
+            '  }',
+            '  if(isGround<.5){',
+            '    vec2 shape=mix(vA,vB,blend);local.xy=shape-vec2(.5,11./384.);',
+            '    vec2 ta=pose<1.?vec2(0,1):vec2(1,1),tb=pose<1.?vec2(1,1):vec2(0,0);',
+            '    if(isTree>.5){ta=vec2(1,0);tb=ta;}',
+            '    vec3 formA=texture2D(form,(ta+clamp(vA,.004,.996))*.5).rgb;',
+            '    vec3 formB=texture2D(form,(tb+clamp(vB,.004,.996))*.5).rgb;',
+            '    vec3 relief=mix(formA,formB,blend);float upper=smoothstep(.16,.74,shape.y);',
+            '    local.z+=relief.b*(isTree>.5?.18:.24)*length(modelMatrix[0].xyz);',
+            '    if(isTree>.5){float leaf=smoothstep(.31,.75,shape.y);',
+            '      float open=smoothstep(relief.r-.17,relief.r+.12,growth);',
+            '      local.x*=mix(.72,1.,open);local.y*=mix(.63,1.,open);',
+            '      local.x+=leaf*(.008*sin(motion.x*5.+shape.x*4.)+motion.w*(.05+.018*sin(shape.x*11.)));',
+            '      local.y+=leaf*.022*motion.w*sin(shape.x*7.);',
+            '      float trunk=exp(-19.*(shape.x-.50)*(shape.x-.50));',
+            '      float crown=leaf*(.58+.42*sin(shape.x*12.+shape.y*4.));',
+            '      local.z+=.12*trunk+.095*crown;',
+            '      local.x+=crown*.026*sin(motion.x*3.6+shape.x*6.);',
+            '    }else{float head=smoothstep(.22,.70,shape.x);',
+            '      local.x+=upper*(.025*motion.y-.045*motion.z)*(.4+.6*head);',
+            '      local.y+=upper*(.029*motion.y-.044*motion.z)*head;',
+            '      float skull=upper*head;float shoulder=upper*exp(-12.*(shape.x-.53)*(shape.x-.53));',
+            '      local.z+=.155*shoulder+.17*skull;',
+            '      float turn=(-.115*motion.y+.17*motion.z)*skull;',
+            '      vec2 pivot=vec2(.04,.38);vec2 v=local.xy-pivot;',
+            '      local.xy=pivot+vec2(v.x*cos(turn)-v.y*sin(turn),v.x*sin(turn)+v.y*cos(turn));',
+            '      float yaw=skull*(.12*motion.y-.15*motion.z);',
+            '      vec2 offset=local.xz-vec2(.05,.07);',
+            '      local.xz=vec2(.05,.07)+vec2(cos(yaw)*offset.x+sin(yaw)*offset.y,-sin(yaw)*offset.x+cos(yaw)*offset.y);',
+            '      local.z+=.065*skull*motion.z;',
+            '      float load=motion.w;float torso=smoothstep(.06,.34,shape.y)*(1.-smoothstep(.67,.87,shape.y));',
+            '      local.y-=load*.055*torso;local.x+=load*.027*torso;',
+            '      local.x+=relief.b*(.040*sin(motion.x*5.)*upper+.062*motion.z);',
+            '      local.y+=.016*upper*head*sin(motion.x*11.-3.*shape.y)*(.3+abs(load));',
+
+
+            '    }',
+            '  }',
+            '  vec4 p=modelMatrix*vec4(local,1.);',
+            '  if(isTree>.5){',
+            // The shadow, root bank and trunk share a plane fixed in world space. Relief begins above this bank.
+            '    vec3 side=normalize(vec3(modelMatrix[0].x,0.,modelMatrix[0].z));vec3 front=vec3(-side.z,0.,side.x);',
+            '    float size=length(modelMatrix[0].xyz);vec3 pivot=modelMatrix[3].xyz;',
+            '    float expand=.72+.28*smoothstep(.02,.30,growth);',
+            '    vec3 bed=pivot+size*expand*(side*position.x-front*(position.y-.018)*1.50);',
+            '    bed.y=pivot.y+.012;',
+            '    if(isGround>.5)p.xyz=bed;',
+            '    else p.xyz=mix(bed,p.xyz,smoothstep(.085,.29,vA.y));',
+            '  }else if(isGround>.5){vec3 ray=p.xyz-cameraPosition;p.xyz=cameraPosition+ray*((.014-cameraPosition.y)/min(-.001,ray.y));}',
+            '  gl_Position=projectionMatrix*viewMatrix*p;',
+            '}'
+          ].join('\n'),
+          fragmentShader: [
+            'uniform sampler2D atlas,contacts,form; uniform vec2 tile;uniform float fade,desert,pose,isTree,growth;uniform vec4 motion;',
+            'varying vec2 vA,vB;varying float ground;varying float buried;',
+            'vec4 samplePose(vec2 tileID,vec2 v){vec2 uv=(tileID+clamp(v,.002,.998))*.5;',
+            '  if(ground>.5){if(isTree>.5 && v.y>.963)return vec4(0.);vec4 c=texture2D(contacts,uv);c.a*=1.-(1.-desert)*smoothstep(.53,.82,c.r);return c;}',
+            '  return texture2D(atlas,uv);}',
+            'void main(){',
+            '  if(ground>1.5){float tip=smoothstep(vB.x-.1,vB.x+.04,growth);',
+            '    float ridge=.055*sin(vA.y*37.+3.*sin(vA.x*11.));',
+            '    vec3 bark=texture2D(atlas,(vec2(1,0)+vec2(.46+.15*vA.x,.22+.040*vA.y+.025*sin(4.*vA.x)))*.5).rgb*(.78+.30*vB.y+ridge);',
+            '    float grain=dot(bark,vec3(.35,.48,.17));bark=mix(vec3(.30,.185,.13),vec3(.66,.44,.29),clamp(grain*.86+.25*vB.y,0.,1.));float covered=smoothstep(.65,.98,vA.x);bark=mix(bark,vec3(.64,.47,.29),covered*.65*desert);',
+            '    float exposed=smoothstep(-.004,.020,buried);if(exposed<.03)discard;gl_FragColor=vec4(bark,(1.-covered)*tip*exposed*fade);return;}',
+            '  float f=pose<1.?pose:pose-1.;vec2 nextTile=pose<1.?vec2(1,1):vec2(0,0);vec4 p;',
+            '  if(isTree>.5)p=samplePose(tile,vA);else if(f>.999)p=samplePose(nextTile,vB);else{',
+            'p=samplePose(pose<1.?vec2(0,1):vec2(1,1),vA);if(f>.001){vec4 q=samplePose(nextTile,vB);',
+            // Move the whole pose continuously, but hand the paint across in a narrow band.
+            // Long antlers otherwise show both sets of tips during a translucent crossfade.
+            '    float sweep=f+(vA.y-.5)*.59+(vA.x-.5)*.13;',
+            '    float mixPaint=ground>.5?f:smoothstep(.43,.57,sweep);',
+            '    if(ground<.5 && abs(p.a-q.a)>.45)mixPaint=step(.50,sweep);',
+            '    float a=mix(p.a,q.a,mixPaint);p=vec4(mix(p.rgb*p.a,q.rgb*q.a,mixPaint)/max(.001,a),a);}}',
+            '  if(isTree>.5 && ground>.5){',
+            '    float x=clamp((448.*vA.x-32.)/384.,.003,.997);',
+            '    float line=texture2D(contacts,vec2(.5+.5*x,1.-97./192.)).r;',
+            '    float arrival=texture2D(form,(vec2(1,0)+vec2(x,max(.065,line+.013)))*.5).r;',
+            '    p.a*=smoothstep(arrival-.018,arrival+.085,growth);}',
+            '  if(p.a<.018)discard;',
+            '  vec2 surface=mix(vA,vB,f);',
+            '  if(ground<.5){vec2 first=pose<1.?vec2(0,1):vec2(1,1);',
+            '    vec3 a=texture2D(form,((isTree>.5?tile:first)+clamp(vA,.004,.996))*.5).rgb;',
+            '    vec3 b=texture2D(form,((isTree>.5?tile:nextTile)+clamp(vB,.004,.996))*.5).rgb;',
+            '    vec3 relief=mix(a,b,f);if(isTree>.5){',
+            '      p.a*=smoothstep(relief.r-.048,relief.r+.036,growth);',
+            '      if(surface.y<.22){float seam=texture2D(contacts,vec2(.5+.5*surface.x,1.-97./192.)).r;',
+            '        float soil=surface.y-seam-.011-.003*sin(surface.x*183.);',
+            '        if(seam>.001){p.a*=smoothstep(0.,.008,soil);',
+            '          p.rgb=mix(p.rgb*vec3(.65,.59,.51),p.rgb,smoothstep(.003,.035,soil));}}',
+            '      if(p.a<.018)discard;}',
+            '    float key=relief.g-.5;float groundBounce=(1.-surface.y)*desert;',
+            '    p.rgb*=vec3(1.+.46*key+.06*groundBounce,1.+.40*key+.021*groundBounce,1.+.33*key-.044*groundBounce);',
+            '    p.rgb+=vec3(.085,.069,.046)*max(0.,key)*abs(motion.z+motion.w);}',
+            '  if(isTree>.5 && ground<.5){float canopy=smoothstep(.33,.72,surface.y);',
+            '    float shade=sin(surface.x*11.+surface.y*7.+motion.w*1.7);',
+            '    p.rgb*=1.+canopy*.048*shade+.075*abs(motion.w)*surface.x;}',
+            '  if(isTree<.5 && ground<.5){float horns=smoothstep(.64,.86,surface.y);',
+            '    float chest=smoothstep(.12,.43,surface.y)*(1.-smoothstep(.49,.74,surface.y));',
+            '    p.rgb*=1.+.07*chest*motion.z*(surface.x-.35);',
+            '    p.rgb=mix(p.rgb,vec3(1.,.98,.81),motion.y*horns*.36*smoothstep(.20,.7,p.r));}',
+
+            '  gl_FragColor=vec4(p.rgb,p.a*fade);',
+            '}'
+          ].join('\n')
+        });
+        var mesh = new T.Mesh(name==='guardian tree'?guardianTree:guardianQuad, material);
+        mesh.name = name; mesh.visible = false; layer.add(mesh);
+        return mesh;
+      }
+      var tree = painting('guardian tree',1,0), deer = painting('guardian reindeer',0,1);
+      var wave = new T.Mesh(guardianArc, new T.ShaderMaterial({
+        uniforms: { fade:{value:0}, age:{value:0} }, transparent:true, depthWrite:false, side:T.DoubleSide,
+        vertexShader: [
+          'uniform float age;varying vec2 v;void main(){v=uv;vec3 p=position;',
+          'float crest=smoothstep(.50,1.,uv.y);',
+          'float gust=.74+.26*sin(39.*uv.x-14.*age)+.14*sin(81.*uv.x+9.*age);',
+          'p.y*=mix(1.,gust,uv.y>1.5?.32:crest);gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);}'
+        ].join('\n'),
+        fragmentShader: [
+          'uniform float age,fade;varying vec2 v;void main(){',
+          'if(v.y>1.5){float glow=sin((v.y-2.)*3.14159);gl_FragColor=vec4(1.,.99,.89,fade*.94*glow);return;}',
+          'float ends=smoothstep(0.,.07,min(v.x,1.-v.x));',
+          'float band=exp(-8.*abs(v.y-.48));float foot=exp(-13.*abs(v.y-.21));',
+          'float strands=.5+.5*sin(v.x*84.-v.y*19.-age*12.+1.5*sin(v.x*24.));',
+          'float lace=smoothstep(.18,.86,strands)*smoothstep(.53,.83,v.y);',
+          'float outer=1.-smoothstep(.79,1.,v.y);',
+          'float a=ends*fade*(smoothstep(.01,.32,v.y)*outer*(.43+.95*band)+foot*.44+lace*(1.-smoothstep(.88,1.,v.y))*.80);',
+          'vec3 col=mix(vec3(.36,.44,.35),vec3(1.,.99,.91),smoothstep(.05,.47,v.y));',
+          'col=mix(col,vec3(1.,1.,.98),clamp(band+lace+foot*.7,0.,1.));gl_FragColor=vec4(col,min(1.,a));}'
+        ].join('\n')
+      }));
+      wave.name = 'guardian shockwave'; wave.renderOrder = 4; wave.visible = false; layer.add(wave);
+      var live = track({ kill: function () {
+        layer.remove(tree,deer,wave); tree.material.dispose(); deer.material.dispose(); wave.material.dispose();
+      } });
+      var right = V(1,0,0).applyQuaternion(sc.camera.quaternion); right.y = 0; right.normalize();
+      var back = V(0,0,-1).applyQuaternion(sc.camera.quaternion); back.y = 0; back.normalize();
+      var size = 1.85; // Fixed cast size, including against bosses.
+      var target = c.center.clone(), guard = V(), base = V(), hero = sc.heroCenter();
+      var sign = 1, best = -Infinity;
+      var heroUV = hero.clone().project(sc.camera);
+      var rootObstacles=K.liveMobs().map(function(m){return sc.mobPos(m).project(sc.camera);});
+      // Pick a clear strip on the actual projected battlefield, including the hero's hat and the HUD.
+      var layouts=[];
+      [1.12,.76,1.58,2.04].forEach(function(gap){
+        [.22,-.46,.86,-1.10,1.60,-1.84].forEach(function(depth){layouts.push([gap,depth]);});
+      });
+      [-1,1].forEach(function (s) {
+        layouts.forEach(function (layout) {
+          var gap=layout[0],depth=layout[1];
+          var p = target.clone().addScaledVector(right,-s*size*gap).addScaledVector(back,depth*size);
+          var treePos = p.clone().addScaledVector(right,-s*size*.37).addScaledVector(back,.31*size);
+          var faceUV = p.clone().addScaledVector(UP,.52*size).project(sc.camera);
+          var entryUV = treePos.clone().lerp(p,.40).addScaledVector(UP,.54*size).project(sc.camera);
+          var treeUV = treePos.clone().addScaledVector(UP,.61*size).project(sc.camera);
+          var deltaX = Math.abs(faceUV.x-heroUV.x), deltaY = Math.abs(faceUV.y-heroUV.y);
+          var clearance = Math.min(Math.max(deltaX/.41,deltaY/.25),
+            Math.max(Math.abs(entryUV.x-heroUV.x)/.35,Math.abs(entryUV.y-heroUV.y)/.22));
+          var edge = Math.max(0,-.72-treeUV.x,treeUV.x-.54,-.72-faceUV.x,faceUV.x-.54,Math.abs(treeUV.y)-.72);
+          var score = -7*edge - 5*Math.max(0,1.22-clearance) - .35*Math.abs(treeUV.x) - .32*Math.abs(depth-.22);
+          var rootUV=treePos.clone().project(sc.camera);
+          var rootLeft=treePos.clone().addScaledVector(right,-.53*size).project(sc.camera);
+          var halfWidth=Math.abs(rootLeft.x-rootUV.x);
+          // Keep the actual base on open sand, clear of rocky margins, menu and overlapping mobs.
+          score-=24*Math.max(0,-.85-rootUV.x+halfWidth,rootUV.x+halfWidth-.70);
+          score-=8*Math.max(0,Math.abs(rootUV.y)-.61);
+          score-=.9*Math.abs(gap-1.12);
+          var headUV=p.clone().addScaledVector(UP,.65*size).project(sc.camera);
+          rootObstacles.forEach(function(v){
+            var dx=Math.abs(v.x-rootUV.x)/(halfWidth+.09),dy=Math.abs(v.y-rootUV.y)/.14;
+            score-=4.1*Math.max(0,1-Math.max(dx,dy));
+            score-=1.6*Math.max(0,1-Math.max(Math.abs(v.x-headUV.x)/(halfWidth+.08),Math.abs(v.y-headUV.y)/.16));
+          });
+          if (score > best) { best=score; sign=s; guard.copy(p); base.copy(treePos); }
+        });
+      });
+      var origin = guard.clone().addScaledVector(right,sign*size*.21);
+      var start = base.clone().addScaledVector(right,sign*size*.28).addScaledVector(back,size*.12);
+      var dir = V(), foot = V(), contact = V();
+      var raisedSand=false;
+      var elapsed=0, gathered=false, released=false, landed=false, struck=false, radius=0;
+      function ramp(a,b) {
+        var v = Math.max(0, Math.min(1, (elapsed-a)/(b-a)));
+        return v*v*(3-2*v);
+      }
+      function show(mesh, pos, w, h, fade) {
+        var u = mesh.material.uniforms;
+        if (!u.atlas.value) u.atlas.value = wpLoad('fx-guardian-surface');
+        if (!u.form.value) u.form.value = wpLoad('fx-guardian-form');
+        mesh.visible = !!u.atlas.value && !!u.form.value && fade > .01;
+        mesh.position.copy(pos); mesh.scale.set(w,h,1);
+        mesh.quaternion.copy(sc.camera.quaternion); u.fade.value = fade;
+      }
+      tick(function (dt) {
+        elapsed += dt / c.D(1);
+        var advance=ramp(.23,.62),retreat=ramp(1.12,1.53);
+        var emerge=advance*(1-retreat),lift=Math.sin(Math.PI*emerge);
+        // Recede into the same collar after the guardian has stepped back into cover.
+        var growth=ramp(0,.66)*(1-ramp(1.48,2.07));
+        tree.renderOrder=2.7;
+        tree.material.uniforms.growth.value=growth;
+        show(tree,base,size*1.24,size*1.24,ramp(0,.09)*(1-ramp(2.01,2.12)));
+        var breath=ramp(.25,.55)*(1-ramp(.72,.82));
+        var kick=ramp(.72,.79)*(1-ramp(.84,1.04));
+        var wind=ramp(.70,.89)*(1-ramp(1.02,1.43))*Math.sin((elapsed-.70)*14);
+        var pose=(ramp(.24,.43)+ramp(.45,.62))*(1-retreat);
+        deer.material.uniforms.pose.value=pose;
+        deer.material.uniforms.motion.value.set(elapsed,breath,kick,Math.sin(2*Math.PI*advance)*.72+kick*.72-Math.sin(Math.PI*retreat)*.42);
+        tree.material.uniforms.motion.value.set(elapsed,0,0,sign*wind);
+        foot.copy(start).lerp(guard,emerge);
+        foot.addScaledVector(back,-size*.10*lift);
+        if(elapsed-dt/c.D(1)<.10 && elapsed>=.10)K.dust(base,N(2,c),.43);
+        deer.renderOrder = emerge < .48 ? 2.6 : 2.8;
+        show(deer,foot,sign*size,size,ramp(.21,.38)*(1-ramp(1.37,1.52)));
+        if (!gathered && elapsed >= .37) {
+          gathered=true; if(!c.copy && !(CW.fxOff && CW.fxOff.dim))sc.dim(.30,c.D(.51));
+          var antlers=foot.clone().addScaledVector(right,sign*size*.13).addScaledVector(V(0,1,0).applyQuaternion(sc.camera.quaternion),size*.70);
+          K.converge(antlers,[0xfffee0,0xd9e5a3],N(5,c),.43*size,c.D(.25));
+        }
+        if (!landed && elapsed >= .60) {
+          landed = true; K.dust(origin,N(2,c),.58);
+          K.flare(V(origin.x,.11,origin.z),0xffffe8,.43,.12);
+        }
+        if (!released && elapsed >= .74) {
+          released=true;
+          var hoof=origin.clone();hoof.y=.11;
+          K.flare(hoof,0xffffee,.94*size,.15,{white:true});sc.light(hoof,0xfff3c9,1.55,.22);
+          if(!c.copy){sc.shake(.12);sc.punch(.035);}
+        }
+        if (elapsed >= .74) {
+          if (!struck) {
+            // Keep living reservations. Replace fallen targets only with unclaimed enemies.
+            target.set(0,0,0);
+            var count=0, edgeInset=0;
+            aimed.forEach(function (m,i) {
+              if (!m.alive) {
+                var free=K.liveMobs().filter(function (other) { return aimed.indexOf(other)<0; });
+                var arrived=free.filter(function (other) { return other.arrived; });
+                m=K.near(arrived.length?arrived:free,m.x,m.z);
+                if (!m) return;
+                aimed[i]=m;
+              }
+              target.x+=m.x; target.z+=m.z; count++;
+              edgeInset+=m.group.userData.h*(m.boss ? .30 : .17);
+            });
+            if (count) target.multiplyScalar(1/count);
+            else target.copy(gp(aimed[0]));
+            dir.subVectors(target,origin);
+            var distance = dir.length(); if (distance > .001) dir.multiplyScalar(1/distance); else dir.copy(right).multiplyScalar(sign);
+            // First contact is the near edge of the target's feet, not its centre.
+            radius = Math.max(.12,distance - edgeInset/Math.max(1,count));
+            contact.copy(origin).addScaledVector(dir,radius);
+          }
+          var flight=Math.min(1,Math.max(0,(elapsed-.74)/.21));
+          var travel=elapsed<.95 ? .12+.88*(1-Math.pow(1-flight,1.45)) : 1+.57*ramp(.95,1.19);
+          var breakOver=ramp(.91,.995)*(1-ramp(1.01,1.23));
+          var waveFade=(1-ramp(1.015,1.28))*ramp(.73,.76);
+          wave.visible = waveFade > .01;
+          wave.position.copy(origin); wave.position.y=.047;
+          wave.rotation.y=-Math.atan2(dir.z,dir.x);
+          wave.scale.set(radius*travel,size*(.49+.63*travel+.42*breakOver),size*.8*travel*(1+.29*breakOver));
+          wave.material.uniforms.fade.value=waveFade; wave.material.uniforms.age.value=elapsed-.74;
+          if (!raisedSand && flight>=.56) {
+            raisedSand=true;
+            [-.94,-.28,.51,.99].forEach(function (angle,i) {
+              var outward=dir.clone().applyAxisAngle(UP,angle), at=V(Math.cos(angle)*wave.scale.x,0,-Math.sin(angle)*wave.scale.z).applyQuaternion(wave.quaternion).add(origin);
+              at.y=.055;
+              E({sys:'norm',frame:'smoke',pos:at,vel:outward.multiplyScalar(1.4+.25*i).addScaledVector(UP,.7),
+                color:K.dustCol(),size:[.095*size,.31*size],alpha:.54,life:.28+.02*i,fadeOut:.75,drag:2});
+            });
+          }
+          if (!struck && elapsed >= .95) {
+            struck = true;
+            var impact=V(contact.x,.26,contact.z);
+            // The pressure front tears a short fan of sand and pebbles outwards on contact.
+            for(var h=0;h<7;h++){
+              var bearing=(h-3)*.29,side=dir.clone().applyAxisAngle(UP,bearing);
+              var groundHit=impact.clone().addScaledVector(side,.13*size);groundHit.y=.055;
+              E({sys:'col',frame:'smoke',pos:groundHit,vel:side.clone().multiplyScalar(2.0+.5*(h%3)).addScaledVector(UP,1.2+.4*(h%2)),
+                color:[K.dustCol(),0xa98968],size:[.12*size,.45*size],life:.27+.035*(h%3),alpha:.53,drag:2.8,fadeOut:.72});
+              E({sys:'col',frame:'shard',pos:groundHit.clone(),vel:side.multiplyScalar(3.6+.3*(h%3)).addScaledVector(UP,3+.6*(h%2)),
+                color:[0x775e49,0xac9174],size:[.16*size,.05],ar:.74,grav:16,spin:h-3,life:.43,fadeOut:.40});
+            }
+            K.flare(impact,0xffffef,1.24*size,.19,{white:true});
+            sc.light(impact,0xfff6d4,2.0,.23);
+            // The same front breaks around the target. Two short pressure trails mark its outward path.
+            var across=V(-dir.z,0,dir.x);
+            [-1,1].forEach(function (side) {
+              var points=[];
+              for(var j=0;j<7;j++){
+                var u=j/6, p=impact.clone().addScaledVector(dir,size*(1.30*u-.12))
+                  .addScaledVector(across,side*size*(.09+.54*Math.sin(u*1.30)));
+                p.y+=size*(.13+.29*Math.sin(u*Math.PI)-.13*u);points.push(p);
+              }
+              K.vx.ribbon({mode:'static',sweep:true,pts:points,w:size*.15,color:0xf4edc6,core:.95,alpha:.89,life:.22});
+            });
+            E({pos:impact.clone(),frame:'star',color:[0xffffff,0xe7edc7],size:[.36*size,1.20*size],life:.15,fadeOut:.62});
+            K.sparks(impact,[0xfffffa,0xecf0c5,0xbccc87],N(6,c),4.2,{size:.13,stretch:.26});
+            K.dust(contact,N(4,c),1.15);
+            for(var j=0;j<5;j++){
+              var a=(j-2)*.43, along=dir.clone().applyAxisAngle(UP,a);
+              E({sys:'col',pos:impact.clone().addScaledVector(along,.13),frame:'streak',
+                vel:along.multiplyScalar(2.6+.25*j).addScaledVector(UP,.7+.2*(j%2)),color:[0xffffed,0xcad6a2],
+                size:[.75*size,.08],ar:.10,stretch:.27,life:.22+.02*j,fadeOut:.65});
+            }
+            if(!c.copy){sc.shake(.29);sc.punch(.065);sc.hitStop(.085);}
+
+            // One front covers this cast. A neighbour within reach of two targets takes one splash.
+            var direct=aimed.filter(function (m) { return m.alive; });
+            if (!direct.length) c.hit(aimed[0],1,1.25); // Use the shared empty-field carry queue.
+            var splash=K.liveMobs().filter(function (m) {
+              return direct.indexOf(m)<0 && direct.some(function (main) {
+                var dx=m.x-main.x,dz=m.z-main.z;
+                return dx*dx+dz*dz<1.6*1.6;
+              });
+            });
+            direct.forEach(function (m) {
+              if (direct.length>1) K.flare(V(m.x,.26,m.z),0xffffef,.44*size,.13);
+              c.hit(m,1,1.25);
+            });
+            splash.forEach(function (m) { if(m.alive) c.hit(m,c.sk.splash,.9); });
+          }
+        }
+        if (elapsed < 2.12) return false;
+        live.kill(); return true;
+      });
     };
 
     // ---- 나뭇잎 칼날 폭풍 (scene 3; the standard from the user: impact first — a big release, shake, a jolt at the
@@ -630,10 +974,10 @@
     function wpLoad(name) {
       if (wpTex[name] !== undefined) return wpTex[name];
       wpTex[name] = null;
-      new T.TextureLoader().load((CW.ART_BASE || 'art/') + name + '.webp', function (t) { if (T.sRGBEncoding) t.encoding = T.sRGBEncoding; wpTex[name] = t; }, undefined, function () { });
+      new T.TextureLoader().load((CW.ART_BASE || 'art/') + name + '.webp', function (t) { if (name !== 'fx-guardian-form' && T.sRGBEncoding) t.encoding = T.sRGBEncoding; wpTex[name] = t; }, undefined, function () { });
       return null;
     }
-    ['wt-tree', 'wt-fruit-red', 'wt-trap-upper', 'wt-trap-lower', 'wt-root', 'wt-spikes'].forEach(function (n) { if (!CW.FRIEND) wpLoad(n); });
+    ['wt-tree', 'wt-fruit-red', 'wt-root', 'wt-spikes', 'fx-guardian-surface', 'fx-guardian-form'].forEach(function (n) { if (!CW.FRIEND) wpLoad(n); });
     // every painted piece on the field (woodPic, liveSheet) until it is killed: fx.clear() (a boss, a dungeon, the app
     // put away…) stops the ticks that would kill them, so they are taken off here — before 2026-11-18 they stayed on the
     // field frozen and were drawn for good (one 뿌리 가시 left ~220 draw calls and 26만 triangles behind: 발열)

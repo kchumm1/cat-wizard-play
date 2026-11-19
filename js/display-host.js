@@ -19,6 +19,7 @@
     // the document's scroll extent and can make mobile viewport metrics oscillate.
     var canvas = document.documentElement.style;
     canvas.backgroundImage = extend ? backdropElement.style.backgroundImage : '';
+    canvas.backgroundBlendMode = extend ? backdropElement.style.backgroundBlendMode : '';
     canvas.backgroundSize = extend ? '100% ' + screen.height + 'px' : '';
     canvas.backgroundPosition = 'center top';
     canvas.backgroundRepeat = 'no-repeat';
