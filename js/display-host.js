@@ -15,11 +15,16 @@
     var left = safe.paddingLeft, right = safe.paddingRight;
     var top = safe.height, bottom = safe.paddingBottom;
     var values = rotated ? [top, bottom, right, left] : [left, right, top, bottom];
-    // Landscape Safari may report the same physical inset on both sides.
-    // Keep both measurements: discarding one can put a control under the camera.
-    var angle = typeof window.orientation === 'number' ? window.orientation : screen.orientation && screen.orientation.angle;
-    var cameraOnLeft = !rotated && left === right && angle === 90;
-    gameRoot.classList.toggle('right-cutout', !cameraOnLeft && parseFloat(values[1]) > 24);
+    // A CSS quarter-turn puts the portrait top (camera) on the game's left.
+    // In native landscape both insets may include the rounded corners.
+    var orientation = screen.orientation;
+    var angle = orientation && orientation.angle;
+    if (angle !== 90 && angle !== 270 && angle !== -90) angle = window.orientation;
+    var rightInset = parseFloat(right), leftInset = parseFloat(left);
+    var cameraOnRight = !rotated && rightInset > 24 &&
+      (leftInset <= 24 || angle === 270 || angle === -90 ||
+       (angle !== 90 && orientation && orientation.type === 'landscape-secondary'));
+    gameRoot.classList.toggle('right-cutout', !!cameraOnRight);
     ['left', 'right', 'top', 'bottom'].forEach(function (side, i) {
       gameRoot.style.setProperty('--play-safe-' + side, values[i]);
     });
@@ -114,6 +119,12 @@
     var url = new URL(location.href); url.searchParams.set('cwViewport', '1'); frame.src = url.href;
     document.body.appendChild(mount); layout(); mount.appendChild(frame);
     new ResizeObserver(layout).observe(mount);
+    function orientationChanged() {
+      layout();
+      requestAnimationFrame(layout);
+    }
+    window.addEventListener('orientationchange', orientationChanged);
+    if (screen.orientation && screen.orientation.addEventListener) screen.orientation.addEventListener('change', orientationChanged);
     window.addEventListener('resize', layout);
     window.addEventListener('pageshow', layout);
   });

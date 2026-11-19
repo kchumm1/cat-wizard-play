@@ -2916,7 +2916,7 @@ html.fullh #chestfx{position:absolute;bottom:auto;height:var(--apph)}
   .stagebg{background-size:cover!important;background-position:50% 55%!important}
   /* left column: 지도 · 룬 · 신성력 · 도감 · 우편함 · 공지 · 방치, all seven always in reach */
   #quick{left:calc(var(--el) + 4px)!important;right:auto!important;top:calc(var(--st) + 6px)!important;bottom:calc(var(--sb) + 6px);width:48px;display:flex;flex-direction:column;justify-content:space-between;align-items:center;gap:0!important}
-  html.iphone #quick{left:max(6px,var(--sl))!important}
+  html.iphone #quick{left:calc(max(6px,var(--sl)) + 2px)!important}
   #quick button{width:48px!important;padding:3px 0 2px!important;border-radius:13px!important}
   /* (형 2026-11-18, 갤럭시 가로: 주소창이 보이면 높이가 300쯤 → 여덟 칸이 넘쳐 방치가 잘림) the pictures and names follow the
      screen's height: 22px / 10px from 360 up, down to 15px / 8.5px, so all eight stay in the column */
@@ -2955,10 +2955,11 @@ html.fullh #chestfx{position:absolute;bottom:auto;height:var(--apph)}
   #tabs button span{font-size:clamp(8.5px,2.8vh,10px)!important;line-height:1.15!important;margin-top:1px}
   /* Keep the coloured rail one column wide. The scene fills the glass around it. */
   html.iphone{--er:0px}
-  html.iphone #tabs{right:0;width:var(--tw);padding-right:0!important}
+  html.iphone #tabs{right:0;width:var(--tw);padding:max(26px,var(--st),var(--sb)) 0!important}
+  html.iphone #tabs button{align-items:center;justify-content:center}
   /* Keep all seven equal rows together when the camera occupies the right edge. */
   html.iphone.right-cutout{--er:var(--sr)}
-  html.iphone.right-cutout #tabs{right:var(--er);border-radius:12px!important}
+  html.iphone.right-cutout #tabs{right:0;width:calc(var(--tw) + var(--er));box-sizing:border-box;border-right:var(--er) solid #1b2b39;border-radius:0!important}
   #tabs button[aria-selected=true]::before{width:36px!important;height:36px!important;margin-left:-18px!important}
   /* menu heads made thin (형: 머리 부분이 커서 훈련 목록이 2~3줄만): the title line, the ×1/×10/×100 row and the sub-tabs
      at the bottom; the 길게 누르면 연속 강화 hint goes (it is in 성장 가이드 too) */
