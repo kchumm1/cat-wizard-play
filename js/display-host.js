@@ -8,7 +8,7 @@
 
   var mode = 'portrait';
   try { if (localStorage.getItem('cw-display-mode') === 'landscape') mode = 'landscape'; } catch (e) {}
-  var frame, mount, backdropElement, lastLayout;
+  var frame, mount, topInset, backdropElement, lastLayout;
   function fitBackdrop(portrait) {
     if (!mount) return;
     var edge = mount.getBoundingClientRect().bottom;
@@ -31,6 +31,16 @@
     var portrait = mode === 'portrait' && innerWidth <= innerHeight;
     // In upright play the inner game already positions the HUD and home bar.
     // Reserve cutouts in the host only for the other (possibly rotated) layouts.
+    // Old iPhone home-screen apps can paint normal-flow content below their
+    // fixed viewport. Size the document and game together, not just the artwork.
+    var height = screen.height;
+    var fullPage = portrait && navigator.standalone && topInset.offsetHeight > 0 &&
+      height >= innerHeight && height - innerHeight <= 120;
+    var pageHeight = fullPage ? height + 'px' : '';
+    document.documentElement.style.height = document.body.style.height = pageHeight;
+    mount.style.position = fullPage ? 'relative' : 'fixed';
+    mount.style.height = fullPage ? '100%' : '';
+    frame.style.position = fullPage ? 'relative' : 'absolute';
     mount.style.inset = portrait ? '0' : 'env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)';
   }
   function layout() {
@@ -75,6 +85,10 @@
   document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('cw-game-source').remove();
     document.documentElement.style.cssText += ';margin:0;background:#0f1019;overflow:hidden';
+    document.body.style.margin = '0';
+    topInset = document.createElement('i');
+    topInset.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;height:env(safe-area-inset-top,0px)';
+    document.body.appendChild(topInset);
     mount = document.createElement('main');
     mount.style.cssText = 'position:fixed;inset:0;overflow:hidden';
     frame = document.createElement('iframe'); frame.id = 'cw-play-viewport'; frame.title = '냥법사 게임';

@@ -31,6 +31,7 @@ if ('serviceWorker' in navigator) (function () {
 </script>
 </head>
 <body>
+<meta charset="utf-8">
 <script src="js/display-host.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Jua&family=Noto+Sans+KR:wght@400;500;700;800;900&family=Noto+Serif+KR:wght@500;700&family=Gowun+Batang:wght@400;700&display=swap">
@@ -1465,6 +1466,23 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
 #tabs button::after{content:'';position:absolute;left:50%;bottom:1px;width:30px;height:3px;margin-left:-15px;border-radius:3px;background:transparent}
 #tabs button[aria-selected=true]::after{left:50%;right:auto;background:#E3B24E}
 #tabs button span{display:block;padding-bottom:7px}
+@media (orientation:portrait){
+  #app{
+    --tab-side:max(4px,env(safe-area-inset-left,0px),env(safe-area-inset-right,0px));
+    --tab-foot:max(4px,calc(env(safe-area-inset-bottom,0px) - 14px));
+  }
+  html.shortv #app{--tab-foot:4px}
+  #app #tabs{
+    grid-template-columns:repeat(7,minmax(0,1fr));column-gap:2px;
+    height:calc(var(--tabh) + var(--tab-foot));padding:6px var(--tab-side) var(--tab-foot);
+  }
+  #tabs>button[data-tab]{
+    min-width:0;min-height:0;padding:0;gap:2px;
+    align-items:center;justify-content:center;text-align:center;
+  }
+  #tabs>button[data-tab]>span{margin:0;padding:0;white-space:nowrap}
+  #app #skillbar,#app #sheet{bottom:calc(var(--tabh) + var(--tab-foot))}
+}
 /* 7-day daily gems popup (2026-11-15, the picture the user sent; pieces from tools/cut-daily.py, placed by js/ui.js showDaily) */
 #dailyFx{position:fixed;inset:0;z-index:27;background:rgba(20,8,30,.62);display:flex;align-items:center;justify-content:center;padding:calc(10px + env(safe-area-inset-top,0px)) 10px calc(10px + env(safe-area-inset-bottom,0px))}
 #dailyFx[hidden]{display:none}
