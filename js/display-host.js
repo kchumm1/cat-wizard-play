@@ -17,7 +17,9 @@
     var values = rotated ? [top, bottom, right, left] : [left, right, top, bottom];
     // Landscape Safari may report the same physical inset on both sides.
     // Keep both measurements: discarding one can put a control under the camera.
-    gameRoot.classList.toggle('right-cutout', parseFloat(values[1]) > 24);
+    var angle = typeof window.orientation === 'number' ? window.orientation : screen.orientation && screen.orientation.angle;
+    var cameraOnLeft = !rotated && left === right && angle === 90;
+    gameRoot.classList.toggle('right-cutout', !cameraOnLeft && parseFloat(values[1]) > 24);
     ['left', 'right', 'top', 'bottom'].forEach(function (side, i) {
       gameRoot.style.setProperty('--play-safe-' + side, values[i]);
     });
