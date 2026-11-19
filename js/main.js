@@ -120,7 +120,11 @@
   }
   function hexCss(h) { return '#' + ('000000' + h.toString(16)).slice(-6); }
   function isBright(R) { var c = new T.Color(R.sky); return c.r * 0.3 + c.g * 0.59 + c.b * 0.11 > 0.55; }
-  function save() { return !libraryStale() && CW.save(state, storage); }
+  function save() {
+    if (libraryStale()) return false;
+    CW.restoreFieldItems(state);
+    return CW.save(state, storage);
+  }
 
   // ---------- stage & region ----------
   function syncRegion() {
@@ -300,6 +304,16 @@
     // a field kill brings the two dusts (2026-11-17: no diamonds in the field, they come from bosses)
     var r0 = Math.floor(state.runeDust || 0), s0 = Math.floor(state.sigilDust || 0), dz = CW.addKillDust(state); if (CW.idleNote) CW.idleNote(dz);
     gained.runeDust = (gained.runeDust || 0) + Math.floor(state.runeDust) - r0; gained.sigilDust = (gained.sigilDust || 0) + Math.floor(state.sigilDust) - s0;
+    var reward = CW.fieldDrop(state);
+    if (reward) {
+      var idle = CW.idleActive();
+      if (idle) {
+        if (!state.fieldIdleReport) state.fieldIdleReport = { rune: 0, sigil: 0 };
+        CW.countFieldItem(state.fieldIdleReport, reward);
+      }
+      save();
+      if (!idle) ui.fieldPickup(reward);
+    }
     var r = CW.onKill(state);
     if (r) onStageMoved(r);
   }
@@ -642,7 +656,15 @@
     return Math.max(0, Math.min(0.35, (W / 2 - mid) / W * 0.8));
   }
   if (CW.onLand) CW.onLand(function () { sc.size(); G.setSheet(sheetOpen); });
+  function showFieldIdleReport() {
+    var report = state.fieldIdleReport;
+    if (!report || !report.best || CW.idleActive()) return;
+    ui.fieldSummary(report);
+    delete state.fieldIdleReport;
+    save();
+  }
   var G = {
+    showFieldIdleReport: showFieldIdleReport,
     get state() { return state; },
     boss: function () { return boss; },
     castingSlot: function () { return preview ? -1 : nowSlot; },
@@ -1008,7 +1030,7 @@
       try {
         updateCoins(rdt);
         lookT -= rdt; if (lookT <= 0) { lookT = 0.25; applyLook(); }
-        gained.t += rdt; if (gained.t >= 1) { ui.gainLog(gained); gained.gold = gained.xp = gained.gems = gained.dmg = gained.runeDust = gained.sigilDust = gained.runeStone = gained.sigilStone = 0; gained.t = 0; gained.more.length = 0; }
+        gained.t += rdt; if (gained.t >= 1) { if (state.fieldIdleReport && !document.hidden) showFieldIdleReport(); ui.gainLog(gained); gained.gold = gained.xp = gained.gems = gained.dmg = gained.runeDust = gained.sigilDust = gained.runeStone = gained.sigilStone = 0; gained.t = 0; gained.more.length = 0; }
         uiT += rdt; panelT += rdt; saveT += rdt;
         if (uiT > 0.1) { uiT = 0; CW.setGoldScale(CW.capGold(state)); ui.hud(); if (nowSlot !== lastSlot) { lastSlot = nowSlot; ui.slots(); } }
         if (panelT > 0.3) { panelT = 0; ui.renderPanel(); }

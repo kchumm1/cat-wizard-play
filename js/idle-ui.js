@@ -96,7 +96,7 @@
     box.addEventListener('pointermove', function (e) { if (y0 === null || e.pointerId !== pid) return; dy = Math.min(0, e.clientY - y0); box.style.transform = 'translateY(' + dy + 'px)'; });
     function up(e) {
       if (y0 === null || (e && e.pointerId !== pid)) return; y0 = null; box.classList.remove('drag');
-      if (CW.idleSwipeDone(dy, Date.now() - t0)) { box.style.transform = ''; idleOff(true); if (G() && G().sound) G().sound('click'); return; }
+      if (CW.idleSwipeDone(dy, Date.now() - t0)) { box.style.transform = ''; idleOff(true); if (G() && G().G) G().G.showFieldIdleReport(); if (G() && G().sound) G().sound('click'); return; }
       box.style.transform = '';
       if (dy > -10) { var h = box.querySelector('.idhint'); h.classList.add('lit'); clearTimeout(h._t); h._t = setTimeout(function () { h.classList.remove('lit'); }, 1500); }
     }

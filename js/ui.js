@@ -654,6 +654,35 @@
     // 짧은 이름 (「테라 크리티컬 확률」 → 「테라 확률」): 목록 칸·버튼이 한 줄에 들도록. 상세 칸은 긴 이름 그대로
     function rsShort(stat) { var n = STAT_KO[stat] || stat; return /^\S+ 크리티컬 /.test(n) ? n.replace(' 크리티컬 ', ' ') : n; }
     function rsName(kind, it) { return kind === 'rn' ? CW.runeById(it.kind).name : rsShort(it.stat); }
+    var fieldCardTimer = 0;
+    function fieldName(type, it) {
+      if (type === 'rune') return (CW.runeById(it.kind) || { name: '룬' }).name;
+      return rsShort(CW.sigilStatDef(it.stat).stat) + ' 신성력';
+    }
+    function fieldPicture(type, it) {
+      return type === 'rune' ? runeArt(it.kind, 'field-art') : sigilArt(it.stat, it.grade, 'field-art');
+    }
+    function fieldPickup(reward) {
+      var g = reward.item.grade, name = hn(g) + ' ' + fieldName(reward.type, reward.item);
+      if (reward.flash) {
+        var flash = $('fieldGoldFlash');
+        flash.classList.remove('lit'); void flash.offsetWidth; flash.classList.add('lit');
+      }
+      var bag = reward.type === 'rune' ? G.state.runeBag : G.state.sigil;
+      toast(name + ' 획득' + (bag && bag.fieldReserve && bag.fieldReserve.length ? ' · 빈칸이 생기면 보관함으로 이동해요' : ''));
+    }
+    function fieldSummary(report) {
+      var best = report.best, item = best.item, card = $('fieldSummary');
+      var rows = ['rune', 'sigil'].filter(function (type) { return report[type] > 0; }).map(function (type) {
+        return '<span>' + fieldPicture(type, report[type + 'Sample']) + (type === 'rune' ? '룬' : '신성력') + ' <b>' + Number(report[type]) + '개</b></span>';
+      });
+      card.innerHTML = '<div class="field-head"><b>☾ 방치 중 획득</b><strong>총 ' + (report.rune + report.sigil) + '개</strong></div>' +
+        '<div class="field-best">' + fieldPicture(best.type, item) + '<div><small>최고 보상 <b style="color:' + hc(item.grade) + '">' + hn(item.grade) + '</b></small><strong>' +
+        esc(fieldName(best.type, item)) + '</strong></div></div><div class="field-counts">' + rows.join('') + '</div>';
+      card.hidden = false;
+      clearTimeout(fieldCardTimer);
+      fieldCardTimer = setTimeout(function () { card.hidden = true; }, 6000);
+    }
     function rsIcon(kind, it, cls) { return kind === 'rn' ? '<i class="' + cls + ' rn"><i class="rw-dome"></i>' + runeArt(it.kind, 'rw-art') + '</i>' : '<i class="' + cls + ' sg">' + sigilArt(it.stat, it.grade, 'rw-art') + '</i>'; }
     // 착용 중 카드: 무대 바로 아래, 기본 4개 2열, 「착용 N개 전체 보기」로 일반·각성을 나눠 펼침. 줄을 누르면 그것이 골라짐
     function wornCard(kind, s, curId) {
@@ -767,7 +796,7 @@
       var have = {}; bag.items.forEach(function (x) { have[x.kind] = 1; });
       var filt = '<div class="kindtabs">' + ['all'].concat(DATA.runes.filter(function (x) { return have[x.id] || rnFilter === x.id; }).map(function (x) { return x.id; })).map(function (kid) { var kk = CW.runeById(kid); return '<button role="tab" aria-selected="' + (rnFilter === kid) + '" data-rkf="' + kid + '">' + (kk ? '<em class="kdot" style="--kc:' + kk.color + '"></em>' : '') + (kk ? kk.name.replace(' 룬', '').replace('의', '') : '전체') + '</button>'; }).join('') + '</div>';
       var inv = bag.items.filter(function (x) { return rnFilter === 'all' || x.kind === rnFilter; }).sort(function (a, c) { return CW.runePower(c) - CW.runePower(a); }).map(function (x) { return runeCell(s, x); }).join('');
-      return '<div class="rsbh"><button class="rsback" data-act="rbagx" aria-label="룬 화면으로">‹ 룬</button><b>룬 보관함</b><span><b>' + bag.items.length + '</b> / ' + RC.cap + '</span></div>' +
+      return '<div class="rsbh"><button class="rsback" data-act="rbagx" aria-label="룬 화면으로">‹ 룬</button><b>룬 보관함</b><span><b>' + bag.items.length + '</b> / ' + RC.cap + (bag.fieldReserve && bag.fieldReserve.length ? ' · 대기 ' + bag.fieldReserve.length : '') + '</span></div>' +
         '<div class="rsacts"><button class="btn" data-act="rbest">추천 장착</button><button class="btn" data-act="rdisall">일괄 분해<small>잠금·장착 제외</small></button></div>' +
         filt + '<div class="rsgrid inv">' + (inv || '<p class="note">아직 보유한 룬이 없어요.<br>보스 처치나 소환으로 획득할 수 있어요.</p>') + '</div>';
     }
@@ -871,7 +900,7 @@
         (slots < C.slotsMax ? '<p><i class="rsp"></i><span>장착 칸 ' + slots + ' / ' + C.slotsMax + '</span><b class="stn">Lv.' + C.slotsPer + '마다 1칸</b></p>' : '');
       var filt = '<div class="kindtabs">' + [-1].concat(DATA.hiGrades.map(function (x, i) { return i; })).map(function (g) { return '<button role="tab" aria-selected="' + (sgFilter === g) + '" data-sgf="' + g + '">' + (g >= 0 ? '<em class="kdot" style="--kc:' + hc(g) + '"></em>' + hn(g) : '전체') + '</button>'; }).join('') + '</div>';
       var inv = b.items.filter(function (x) { return sgFilter < 0 || x.grade === sgFilter; }).sort(function (a, c) { return CW.sigilPower(c) - CW.sigilPower(a); }).map(function (x) { return sgCell(x, CW.isEquipped(s, x.id)); }).join('');
-      return '<div class="rsbh"><button class="rsback" data-act="sgbagx" aria-label="신성력 화면으로">‹ 신성력</button><b>신성력 보관함</b><span><b>' + b.items.length + '</b> / ' + C.cap + '</span></div>' +
+      return '<div class="rsbh"><button class="rsback" data-act="sgbagx" aria-label="신성력 화면으로">‹ 신성력</button><b>신성력 보관함</b><span><b>' + b.items.length + '</b> / ' + C.cap + (b.fieldReserve && b.fieldReserve.length ? ' · 대기 ' + b.fieldReserve.length : '') + '</span></div>' +
         '<div class="rseff">' + lvInfo + '</div><div class="rseff"><small>장착 효과</small>' + effs + '</div>' +
         '<div class="rsacts"><button class="btn" data-act="sgbest">추천 장착</button><button class="btn" data-act="sgdisall">일괄 분해<small>잠금·장착 제외</small></button></div>' +
         filt + '<div class="rsgrid inv">' + (inv || '<p class="note">아직 보유한 신성력이 없어요.<br>보스 처치나 소환으로 획득할 수 있어요.</p>') + '</div>';
@@ -2874,7 +2903,7 @@
       profTheme(getComputedStyle(document.documentElement).getPropertyValue('--capc').trim());
     }
     document.querySelector('#hud .nh-prof').addEventListener('click', function () { G.sound('click'); openStats(); });
-    return { surgeGauge: surgeGauge, dunHud: dunHud, gainLog: gainLog, openTab: openTab, hud: hud, slots: slots, renderPanel: renderPanel, toast: toast, banner: banner, showOffline: showOffline, showDaily: showDaily, showTierUp: showTierUp, showGacha: showGacha, modal: modal, libraryCards: libraryCards, currentTab: function () { return tab; } };
+    return { surgeGauge: surgeGauge, dunHud: dunHud, gainLog: gainLog, fieldPickup: fieldPickup, fieldSummary: fieldSummary, openTab: openTab, hud: hud, slots: slots, renderPanel: renderPanel, toast: toast, banner: banner, showOffline: showOffline, showDaily: showDaily, showTierUp: showTierUp, showGacha: showGacha, modal: modal, libraryCards: libraryCards, currentTab: function () { return tab; } };
   }
   CW.createUI = createUI;
 })(this);

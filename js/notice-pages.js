@@ -139,6 +139,7 @@
       { ch: '1장', t: '전투는 자동이에요', art: med(ico('tab', 'battle'), '#ff9aa8'), body:
         '<p>냥법사는 <b>혼자서 알아서 싸워요</b>. 화면을 켜 두기만 해도 몬스터를 잡고 골드와 경험치를 모아요.</p>' +
         '<div class="gbsteps"><span>몬스터 ' + D0.balance.killsPerStage + '마리</span><i></i><span>보스 도전</span><i></i><span>다음 스테이지</span></div>' +
+        '<p>일반 사냥 처치 진척마다 3~4차는 룬 0.05%, 5차부터 룬·신성력 각 0.05%로 완제품 하나를 얻어요. 3~4차 등급은 희귀 50%·영웅 40%·전설 10%, 5차부터는 희귀 38%·영웅 35%·전설 20%·신화 4%·고대 3%예요.</p>' +
         '<p>보스에게 지면 앞 스테이지로 돌아가 <b>사냥하며 성장</b>해요. 강해지면 다시 도전!</p>' +
         '<p class="gbtip">지역은 ' + regions.length + '곳이에요.<br><small>' + regions.join(' → ') + '</small></p>' },
       { ch: '2장', t: '훈련으로 강해지기', art: med(ico('tab', 'up'), '#8fe0a0'), body:

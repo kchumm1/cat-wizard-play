@@ -43,13 +43,15 @@
   function capOf(d) { return DATA.critConf.caps.sigil[d.kind]; }
   // the options that can roll: open tiers only; awaken = the awakened family, else the usual one
   function pool(state, awaken) { return DATA.sigilStats.filter(function (d) { return !!d.awaken === !!awaken && statOpen(state, d); }); }
-  function addSigil(state, grade, rng, awaken) {
+  function addSigil(state, grade, rng, awaken, reserve) {
     rng = rng || Math.random;
-    var b = box(state); if (b.items.length >= C.cap) return null;
+    var b = box(state); if (b.items.length >= C.cap && !reserve) return null;
     var p = pool(state, awaken); if (!p.length) return null;
     var stat = p[Math.min(p.length - 1, Math.floor(rng() * p.length))].stat;
     var it = { id: 's' + (++b.seq), grade: Math.max(0, Math.min(C.gradeMul.length - 1, grade)), q: Math.max(0, Math.min(1, rng())), stat: stat, lock: false };
-    b.items.push(it); return it;
+    if (b.items.length < C.cap) b.items.push(it);
+    else (b.fieldReserve || (b.fieldReserve = [])).push(it);
+    return it;
   }
   function sigilSlots(state) { return Math.min(C.slotsMax, C.slotsBase + Math.floor(box(state).lv / C.slotsPer)); }
   // 한 종류에 하나 (2026-11-18, 형: 같은 종류를 끼고 있으면 등급·품질이 달라도 같은 종류는 아예 못 끼게): a list (the worn

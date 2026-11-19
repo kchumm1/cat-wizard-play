@@ -40,10 +40,12 @@
   function runeValue(it) { var k = runeById(it.kind); return k ? it.lv * k.per * (1 + it.grade * C.gradeStep) : 0; }
   // strength in 'effective levels' (the effect divided by the kind's per-level value), comparable across kinds; grade breaks ties
   function runePower(it) { return it.lv * (1 + it.grade * C.gradeStep) + it.grade * 1e-3; }
-  function runeAdd(state, kind, grade) {
-    var b = runeBag(state); if (b.items.length >= C.cap || !runeById(kind)) return null;
+  function runeAdd(state, kind, grade, reserve) {
+    var b = runeBag(state); if ((!reserve && b.items.length >= C.cap) || !runeById(kind)) return null;
     var it = { id: 'u' + (++b.seq), kind: kind, grade: Math.max(0, Math.min(TOP, grade || 0)), lv: 0, lock: false };
-    b.items.push(it); return it;
+    if (b.items.length < C.cap) b.items.push(it);
+    else (b.fieldReserve || (b.fieldReserve = [])).push(it);
+    return it;
   }
   // 한 종류에 하나 (2026-11-18, 형: 같은 종류 룬을 끼고 있으면 등급·레벨이 달라도 같은 종류는 아예 못 끼게): the rune of that
   // kind already worn in the list (7 slots, or the awakening slots), apart from exceptId (the one being swapped out)

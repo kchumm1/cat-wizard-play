@@ -3393,6 +3393,23 @@ html.cw-calm #tabs>.tabneb,html.cw-calm #tabs::before,html.cw-calm #tabs::after,
   .stagebg.center-hunt.desert::before{background:linear-gradient(to bottom,transparent 12%,rgba(0,0,0,.11) 42%);mix-blend-mode:multiply}
   .stagebg.center-hunt.desert::after{background:linear-gradient(to bottom,transparent 12%,rgba(128,128,128,.12) 42%);mix-blend-mode:saturation}
 }
+#fieldGoldFlash{position:fixed;inset:0;pointer-events:none;z-index:29;opacity:0;background:radial-gradient(ellipse at center,#ffec9c85,#ffd04c)}
+#fieldGoldFlash.lit{animation:field-gold .65s ease-out}
+@keyframes field-gold{0%{opacity:0}14%{opacity:.78}100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){#fieldGoldFlash.lit{animation:none}}
+#fieldSummary{position:fixed;z-index:42;pointer-events:none;left:max(12px,env(safe-area-inset-left));top:calc(env(safe-area-inset-top) + 17%);width:min(312px,calc(100% - 24px));border:1.5px solid #eed499;border-radius:19px;overflow:hidden;background:linear-gradient(125deg,#352847ed,#242044ef),url('art/mn-neb-fill.webp') center/cover;color:#fff;font-family:var(--display);box-shadow:0 4px 16px #1d102a88}
+#fieldSummary[hidden],.idling #fieldSummary{display:none}
+.field-head,.field-counts,.field-counts span{display:flex;align-items:center}
+.field-head{justify-content:space-between;padding:8px 15px;border-bottom:1px solid #e2c79e55;background:#7761ac38;font-size:16px}
+.field-head strong,.field-best small{color:#ffe3a7}
+#fieldSummary b,#fieldSummary strong{font-weight:400}
+.field-best{display:grid;grid-template-columns:65px minmax(0,1fr);column-gap:14px;align-items:center;padding:10px 16px 8px;text-align:left}
+.field-best>.field-art{width:52px;height:52px;justify-self:center}
+.field-art{object-fit:contain;display:inline-block}.field-art svg,.field-art .ico{width:100%;height:100%}
+.field-best small,.field-best strong{display:block;line-height:1.25}.field-best small{font-size:13px;margin-bottom:4px}.field-best small b{margin-left:5px}.field-best strong{font-size:20px;word-break:keep-all}
+.field-counts{margin:0 15px;border-top:1px solid #dbc7e945;justify-content:center;gap:20px;padding:7px 0 9px;font-size:14px}
+.field-counts span{gap:5px}.field-counts .field-art{width:23px;height:23px}.field-counts b{color:#fff3cf}
+@media(orientation:landscape){#fieldSummary{top:max(8px,env(safe-area-inset-top));left:50%;transform:translateX(-50%)}}
 </style>
 
 <!-- 업데이트 화면 (2026-11-15, the user's design art-src/update-20261115; js/update-screen.js): shown first, "모험 시작" goes into the game -->
@@ -3504,6 +3521,8 @@ html.cw-calm #tabs>.tabneb,html.cw-calm #tabs::before,html.cw-calm #tabs::after,
 <div class="modal" id="modal" hidden><div class="card" id="modalCard"></div></div>
 <div id="gachaFx" hidden></div>
 <div class="flashbg" id="flashbg"></div>
+<div id="fieldGoldFlash" aria-hidden="true"></div>
+<div id="fieldSummary" role="status" aria-live="polite" hidden></div>
 <div id="toast"></div>
 
 <style>/* app only: clear the iPhone notch, no long-press menus */
@@ -3601,6 +3620,7 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script src="js/notice.js"></script>
 <script src="js/notice-pages.js"></script>
 <script src="js/notice-ui.js"></script>
+<script src="js/field-loot.js"></script>
 <script src="js/idle.js"></script>
 <script src="js/idle-ui.js"></script>
 <script src="js/grow-text.js"></script>
