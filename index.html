@@ -3386,6 +3386,13 @@ html.cw-calm #tabs>.tabneb,html.cw-calm #tabs::before,html.cw-calm #tabs::after,
 #modal #modalCard.coupon-card h2,#modal #modalCard.coupon-card .guide-lead{color:#faf7ff!important}
 #modal #modalCard.coupon-card .cpin,#modal #modalCard.coupon-card .btns .btn{background:rgba(16,13,42,.32)!important;color:#fff!important;border:1px solid rgba(218,212,255,.48)!important;box-shadow:none!important}
 #modal #modalCard.coupon-card .cpin::placeholder{color:#d0cae3}
+@media (orientation:landscape) and (min-aspect-ratio:6/5){
+  /* Fit the whole region painting. The horizon and foreground corners keep their detail; the open ground fills the middle. */
+  .stagebg.center-hunt{background-size:0 0!important;isolation:isolate;border:0 solid transparent;border-image-source:var(--field-art);border-image-width:37vh min(26vw,48vh) 24vh;border-image-slice:19% 19% 14% 18% fill;border-image-repeat:stretch}
+  .stagebg.center-hunt.desert::before,.stagebg.center-hunt.desert::after{content:"";position:absolute;inset:0}
+  .stagebg.center-hunt.desert::before{background:linear-gradient(to bottom,transparent 12%,rgba(0,0,0,.11) 42%);mix-blend-mode:multiply}
+  .stagebg.center-hunt.desert::after{background:linear-gradient(to bottom,transparent 12%,rgba(128,128,128,.12) 42%);mix-blend-mode:saturation}
+}
 </style>
 
 <!-- 업데이트 화면 (2026-11-15, the user's design art-src/update-20261115; js/update-screen.js): shown first, "모험 시작" goes into the game -->
@@ -3572,11 +3579,11 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script src="js/mesh-wood.js"></script>
 <script src="js/mesh-water.js"></script>
 <script src="js/mesh-water-design.js"></script>
-<script src="js/owner/fx3d.js"></script>
-<script src="js/owner/fx.js"></script>
+<script src="js/fx3d.js"></script>
+<script src="js/fx.js"></script>
 <script src="js/fx-more.js"></script>
 <script src="js/fx-wood.js"></script>
-<script src="js/owner/fx-water.js"></script>
+<script src="js/fx-water.js"></script>
 <script src="js/fx-tier1.js"></script>
 <script src="js/sfx-map.js"></script>
 <script src="js/sound.js"></script>

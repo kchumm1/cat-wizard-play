@@ -544,6 +544,107 @@
   // k (vX.y): how far it has grown — the part past it (uv.y > k) is not there yet; a lip of foam rides its front edge.
   var WOBBLE = 'vec3 wq=position+normal*(0.016*sin(position.y*9.0+position.x*6.1-uTime*5.3+iX.z)+0.011*sin(position.z*11.7+position.x*3.3+uTime*7.9+iX.z*1.7)+0.008*sin(position.y*23.0-uTime*11.0+iX.z*2.3)+0.014*sin(uv.y*21.0-uTime*9.0+position.x*4.3));vec4 lp=vec4(wq,1.0);';
   var VS_BMW = VS_BMT.replace('vec4 lp=vec4(position,1.0);', WOBBLE);
+  // Each cast carries its first contact across the width of the existing water mesh.
+  // uv.y follows the thick back up and over to the free edge (1).
+  var VS_BREAKER = VS_BM.replace('void main(){', 'attribute vec3 iBreak; varying float vFold; void main(){')
+    .replace('vec4 lp=vec4(position,1.0);', [
+      'float tip=smoothstep(0.48,1.0,uv.y);',
+      'float distanceAlong=position.x-iBreak.x;',
+      'float travel=abs(distanceAlong)*(distanceAlong<0.0?1.10:0.76);',
+      'float fold=smoothstep(0.0,0.80,iBreak.y-travel);',
+      'float wash=smoothstep(0.80,1.35,iBreak.y-travel);',
+      'vec3 p=position;',
+      'float edge=smoothstep(0.70,1.0,uv.y);',
+      'p.y+=0.14*tip*(1.0-fold);',
+      'p.z=mix(p.z,-iBreak.z+0.07*sin(position.x*17.0),edge*fold);',
+      'p.y=mix(p.y,0.045+0.06*(1.0-edge),tip*fold);',
+      'p.z-=0.39*edge*wash;',
+      'p.y+=0.020*sin(position.x*24.0+uv.y*7.0-uTime*4.0)*tip;',
+      'vFold=fold;vec4 lp=vec4(p,1.0);'
+    ].join('\n'));
+  // A single UV follows the Blender sheet from its source down to the landing.
+  // Tags distinguish that sheet, the rock faces, the jet and the opening crown.
+  var VS_DESIGN_WATER = VS_BMT.replace('vec4 lp=vec4(position,1.0);', [
+    'vec3 pos=position;',
+    'float burst=clamp(iX.y-1.0,0.0,1.0);',
+    'if(uv.x<0.5){pos.z+=0.021*sin(uvT.x*11.0+uvT.y*5.0-uTime*5.0)*smoothstep(0.1,0.55,uvT.y);}',
+    'if(uv.x>1.5&&uv.x<2.5){pos.y*=1.0-0.24*burst;}',
+    'if(uv.x>2.5){pos.xz*=mix(0.58,1.0,burst);pos.y=mix(0.80,pos.y,burst);}',
+    'vec4 lp=vec4(pos,1.0);'
+  ].join('\n'));
+  // Hold the inlet in the sky. The lower curtain stays in world space over the targets.
+  var VS_SKY_FALL = VS_DESIGN_WATER.replace('gl_Position=projectionMatrix*mv;', [
+    'gl_Position=projectionMatrix*mv;',
+    'float aspect=projectionMatrix[1][1]/projectionMatrix[0][0];',
+    'float width=min(0.65,0.65/aspect);',
+    'vec4 ground=projectionMatrix*modelViewMatrix*instanceMatrix*vec4(0.0,0.0,0.0,1.0);',
+    'vec2 hit=ground.xy/ground.w;',
+    'float cloudY=clamp(hit.y+0.48,0.31,0.54)+0.086;',
+    'float centre=clamp(hit.x,-0.90,0.90);',
+    'vec2 cloudOrigin=vec2(centre,cloudY);',
+    'vec2 offset=vec2(pos.x+0.46,(pos.y-1.062)*aspect*1.65);',
+    // Only the thin trailing wisps flex; the storm centre and water outlet stay anchored.
+    'float tip=smoothstep(0.55,1.0,uvT.x);',
+    'offset.y+=aspect*tip*0.012*sin(uvT.x*6.0+uvT.y*2.1-uTime*0.87);',
+    'gl_Position.xy=(cloudOrigin+width*offset)*gl_Position.w;',
+  ].join('\n'));
+  // Colours of the bubble prison, shared with the geyser and its painted splash.
+  var BUBBLE_COLORS = 'const vec3 bubbleLight=vec3(0.8,0.96,1.0), bubbleBlue=vec3(0.34,0.7,0.98), bubbleEdge=vec3(0.17,0.48,0.88);';
+  FS_BM.designWater = [
+    BUBBLE_COLORS,
+    'varying vec4 vX; varying vec2 vT; uniform sampler2D uMap; uniform float uPaint;',
+    'void main(){',
+    'float tag=vUv.x, progress=vX.y, opacity=vX.x;',
+    'vec3 normal=normalize(vWN);float sun=abs(dot(normal,normalize(vec3(-0.45,0.82,0.35))));',
+    'if(tag>0.5&&tag<1.5){',
+    // Keep the outer wisps attached to the moving folds and light the painted lightning veins.
+    'float phase=5.2*vT.x-1.8*vT.y-0.92*uTime;',
+    'float tail=smoothstep(0.42,0.98,vT.x);',
+    // Rotate local folds around two billow centres; depth changes where the folds overlap.
+    'vec2 crown=vT-vec2(0.34,0.63),belly=vT-vec2(0.57,0.38);',
+    'float crownWeight=1.0-smoothstep(0.06,0.47,length(crown));',
+    'float bellyWeight=1.0-smoothstep(0.04,0.37,length(belly));',
+    'vec2 roll=vec2(-crown.y,crown.x)*crownWeight*(0.23*sin(phase));',
+    'roll+=vec2(belly.y,-belly.x)*bellyWeight*(0.29*sin(1.36*uTime-3.2*vT.x+1.4));',
+    'vec2 gustUV=clamp(vT+roll,0.0,1.0);',
+    'vec2 atlasUV=vec2(0.002+0.496*gustUV.x,0.004+0.992*gustUV.y);',
+    'float forming=1.0-smoothstep(0.03,0.23,progress);',
+    'float receding=smoothstep(0.02,0.80,1.0-opacity);',
+    'float softness=0.20+0.16*max(forming,receding);',
+    'vec4 vapor=texture2D(uMap,atlasUV,3.5*softness);',
+    // An offset bank appears behind the near folds and remains as diffuse mist on release.
+    'vec2 rearDrift=vec2(0.011*sin(0.67*uTime-3.5*vT.x),0.008*cos(0.49*uTime+2.2*vT.y));',
+    'vec2 backUV=clamp(vec2(0.002,0.004)+vec2(0.496,0.992)*(vT+rearDrift-vec2(0.0,0.018)),vec2(0.002,0.004),vec2(0.498,0.996));',
+    'vec4 haze=texture2D(uMap,backUV,1.2+1.2*softness);',
+    'float nearLayer=smoothstep(0.025,0.21,progress)*(1.0-receding);',
+    'vapor.rgb=mix(haze.rgb*vec3(0.70,0.80,0.96)+vec3(0.055)*receding,vapor.rgb,(0.52+0.20*sin(gustUV.y*3.14159))*nearLayer);',
+    'float light=0.5+0.5*cos(phase+2.0*sin(vT.y*8.0-uTime));',
+    'float strike=1.0-smoothstep(0.04,0.19,abs(progress-0.25-0.17*gustUV.x));',
+    'float veins=smoothstep(0.12,0.43,vapor.b-min(vapor.r,vapor.g));',
+    'float luminance=dot(vapor.rgb,vec3(0.21,0.72,0.07));',
+    'vapor.rgb=mix(vec3(luminance),vapor.rgb,0.76)*(0.80+0.16*light);',
+    'vapor.rgb=mix(vapor.rgb,vec3(0.15,0.17,0.25),0.33*veins*(1.0-strike));',
+    'vapor.rgb+=vec3(0.36,0.29,0.55)*veins*strike+vec3(0.052,0.038,0.026)*light*gustUV.y;',
+    'vapor.a=mix(haze.a*0.78,vapor.a,nearLayer)*(0.96-0.17*tail);',
+    'vapor.a*=0.78*smoothstep(0.0,0.15,progress);',
+    'if(vapor.a<0.015)discard;gl_FragColor=vec4(vapor.rgb,vapor.a*opacity);return;}',
+    'float along=vT.y, across=vT.x;',
+    'float front=progress-(1.0-smoothstep(0.68,1.0,progress))*(0.38*pow(abs(across*2.0-1.0),1.5)+0.035*sin(across*29.0));if(tag<0.5){opacity*=smoothstep(-0.015,0.045,front-along);',
+    'opacity*=smoothstep(0.0,0.065,min(across,1.0-across));}',
+    'if(tag>2.5)opacity*=smoothstep(1.0,1.23,progress);',
+    'if(opacity<0.012)discard;',
+    'float travel=along*7.0-uTime*(tag<0.5?8.7:7.2);',
+    'float lane=across*6.283185*(tag<0.5?1.0:2.0);',
+    'float ripples=fb(vec3(across*14.0,along*4.0-uTime*2.0,vX.z));float bend=sin(travel+2.0*sin(lane))+2.4*(ripples-0.5);',
+    'float current=0.5+0.5*sin(lane*3.0+0.58*bend+along*1.7);',
+    'float fresnel=pow(1.0-abs(dot(normalize(vN),normalize(vV))),2.0);',
+    'bool geyser=tag>1.5;vec3 color=mix(geyser?bubbleEdge:vec3(0.045,0.32,0.41),geyser?bubbleBlue:vec3(0.19,0.69,0.73),clamp(0.15+0.34*current+0.18*sun+0.48*ripples,0.0,1.0));',
+    'float filament=0.5+0.5*sin(lane*8.0+1.6*bend+along*4.4);',
+    'float foam=smoothstep(0.78,0.97,filament)*smoothstep(-0.35,0.8,sin(travel+lane*1.8));',
+    'color=mix(color,geyser?bubbleLight:vec3(0.84,0.96,0.92),clamp(0.40*fresnel+0.53*foam+0.39*smoothstep(0.54,0.78,ripples)+(tag>2.5?0.17:0.0),0.0,0.9));',
+    'float density=0.49+0.27*current+0.19*fresnel;',
+    'gl_FragColor=vec4(color,opacity*density);}'
+  ].join('\n');
   var VS_BMLW = VS_BML.replace('vec4 lp=vec4(position,1.0);', WOBBLE);
   var WATER_CUT = 'float k=vX.y,y=vUv.y,kind=vUv.x;if(y>k)discard;';
   // (3rd, 2026-11-17: drawn after the user's ChatGPT design sheet, art-src/ai-review/2026-11-17-water/design) Flat
@@ -551,7 +652,7 @@
   // runs (uv.y; across it vT/uv x), long white streaks of light in the lighter bands, and cream foam in curly patches
   // with their own thin navy edge — thickest toward a crest (uv.x 1) and on the whirls (uv.x 4, the bands turned into a
   // spiral). The navy outline round the whole shape is the outline layer (waterLine).
-  FS_BM.water = 'varying vec4 vX;varying vec2 vT;void main(){' + WATER_CUT + F +
+  FS_BM.water = BUBBLE_COLORS + 'varying vec4 vX;varying vec2 vT;uniform float uFallsRing;void main(){' + WATER_CUT + F +
     'vec3 N=normalize(vWN);float lam=max(dot(N,normalize(vec3(0.45,0.85,0.3))),0.0),sh=lam>0.25?1.0:0.0,a=vX.x;' +
         // (5th, 2026-11-17, the user: 물 색이 물 같지 않다 → 얼음 스킬 색으로, 얼음 동굴처럼 묻히는 곳에서만 또렷하게) the 4th-tier
     // ice's clear blues and white — (8th, the user: 얼음 지역도 통일, 사막에서 뿌옇다) one colour in every region, a little
@@ -567,7 +668,7 @@
     // through it, a big soft window of light high on the left, a little one beside it, and the light bounced up at the
     // bottom right — no dark rim (it read as a dark ball)
     'else if(kind>1.5&&kind<2.5){float rm=pow(1.0-f,1.6);a*=0.14+0.72*smoothstep(0.08,0.85,rm);' +
-    'c=mix(vec3(0.8,0.96,1.0),vec3(0.34,0.7,0.98),smoothstep(0.1,0.75,rm));c=mix(c,vec3(0.17,0.48,0.88),smoothstep(0.84,0.97,rm));' +
+    'c=mix(bubbleLight,bubbleBlue,smoothstep(0.1,0.75,rm));c=mix(c,bubbleEdge,smoothstep(0.84,0.97,rm));' +
     'float cs=fb(vec3(vP.x*2.6+uTime*0.5,vP.y*2.6-uTime*0.8,vP.z*2.6+sd));c+=vec3(0.9,1.0,1.0)*smoothstep(0.62,0.78,cs)*0.22;a=max(a,smoothstep(0.62,0.78,cs)*0.3*vX.x);' +
     'float arc=dot(N,normalize(vec3(-0.5,0.62,0.6))),arc2=dot(N,normalize(vec3(-0.15,0.35,0.92))),bo=dot(N,normalize(vec3(0.55,-0.55,0.6)));' +
     'float hl=smoothstep(0.88,0.93,arc)+smoothstep(0.985,0.993,arc2)*0.9,bl=smoothstep(0.62,0.92,rm)*smoothstep(0.45,0.85,bo)*0.45;' +
@@ -579,6 +680,7 @@
     'vec2 q=sw>0.5?vec2(lu*5.0+tv*2.2,tv*1.3-uTime*0.7):vec2(lu*5.0,tv*0.75-uTime*1.7);' +
     'float bnd=fb(vec3(q,sd))+0.22*(fy-0.5);' +
     'vec3 mid=vec3(0.34,0.68,0.96),lite=vec3(0.74,0.92,1.0);' +
+    'if(sw>0.5){navy=vec3(0.055,0.48,0.62);mid=vec3(0.14,0.77,0.88);lite=vec3(0.68,0.95,0.98);}' +
     'c=mix(navy,mid,smoothstep(0.28,0.5,bnd));c=mix(c,lite,smoothstep(0.52,0.74,bnd));' +
     // looking straight into it you see through the most water: deeper
     'c=mix(c,navy*0.8,smoothstep(0.55,1.0,f)*0.4);' +
@@ -594,10 +696,31 @@
     'float nf=1.0-max(isF,crest);c=mix(c,vec3(0.9,0.97,1.0),smoothstep(0.2,0.95,R.y*0.5+0.5)*0.22*nf);c+=vec3(1.0)*sp*1.2*nf;' +
     'c=mix(c,vec3(0.93,0.98,1.0),pow(1.0-f,3.0)*0.45*nf);' +
     'a*=clamp(max(max(op,max(isF,max(crest,lipF))),smoothstep(0.3,0.75,pow(1.0-f,1.4))),0.0,1.0);' +
+    'if(uFallsRing>0.5)a*=max(0.57+0.20*(1.0-smoothstep(0.35,0.8,bnd)),max(crest,isF));' +
     // (9th, the user: 모든 게 좀 자연스럽게) no hard borders: the flood fades out at all its edges, a whirl at its rim
     'if(kind>4.5){float ed=min(min(lu,1.0-lu),min(tv/1.5,1.0-tv/1.5));a*=smoothstep(0.0,0.18,ed+0.03*sin(lu*23.0+tv*9.0+uTime*2.0));}' +
     'if(sw>0.5)a*=1.0-smoothstep(0.8,1.0,y+0.04*sin(lu*40.0+uTime*3.0));}' +
     'gl_FragColor=vec4(c,a);}';
+  // A dark trough under the lip makes the pale, falling rim readable on both sand and ice.
+  FS_BM.breaker = [
+    'varying vec4 vX; varying float vFold; void main(){',
+    'float y=vUv.y, across=vP.x;',
+    'float weave=sin(across*39.0+y*11.0-uTime*4.0)+0.45*sin(across*67.0-y*17.0+uTime*3.0);',
+    'float grain=fb2(vec3(across*13.0+y*1.6,y*5.7-uTime*1.2,0.75));',
+    'float rib=0.5+0.5*cos(across*54.0+3.7*y+0.9*weave+5.0*grain);',
+    'float underside=smoothstep(0.32,0.67,y)*(1.0-smoothstep(0.70,0.94,y));',
+    'vec3 water=mix(vec3(0.055,0.56,0.68),vec3(0.02,0.26,0.42),underside);',
+    'water=mix(water,vec3(0.21,0.73,0.80),smoothstep(0.38,0.78,grain)*0.52);',
+    'water+=vec3(0.12,0.28,0.27)*smoothstep(0.64,0.98,rib)*(0.42+0.58*y);',
+    'float foam=smoothstep(0.81,0.985,y+0.040*weave+0.065*vFold+0.14*(grain-0.5));',
+    'float lace=smoothstep(0.77,0.97,rib)*smoothstep(0.60,0.90,y)*0.55;',
+    'float pockets=smoothstep(0.30,0.72,grain+0.19*rib);',
+    'foam*=0.44+0.56*pockets;',
+    'float fringe=smoothstep(0.78,0.91,rib)*smoothstep(0.56,0.84,y)*pockets;',
+    'vec3 color=mix(water,vec3(0.87,0.99,1.0),max(foam,max(lace,fringe*0.66)));',
+    'float alpha=mix(0.48+0.24*underside,0.94,max(foam,lace));',
+    'gl_FragColor=vec4(color,vX.x*alpha);}'
+  ].join('\n');
   FS_BM.waterLine = 'varying vec4 vX;uniform vec3 uLine;void main(){' + WATER_CUT + 'gl_FragColor=vec4(uLine,vX.x);}';
 
   // smooth value noise for shaping rocks once, on the CPU
@@ -1789,16 +1912,16 @@
       woodLeaf: { fs: 'wood', lineFs: 'woodLine', cap: 320, line: 0x10240a, lineW: 0.006, order: 6.6 },
       leafBlade: { fs: 'wood', lineFs: 'woodLine', cap: 700, line: 0x0c2208, lineW: 0.005, order: 6.62 },
       // the 11th-tier water (js/mesh-water.js): drawn by FS_BM.water (no picture), swaying (VS_BMW), grown by k
-      waveSheet: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 6, line: 0x245f9e, lineW: 0.015, order: 6.6 },
-      waterRing: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 12, line: 0x245f9e, lineW: 0.015, order: 6.6 },
+      waveSheet: { fs: 'breaker', highTier: true, cap: 6, line: null, order: 6.6 },
+      waterRing: { fs: 'water', vs: 'water', cap: 12, line: null, order: 6.6, side: T.DoubleSide },
       // (no outline shell: through the clear bubble its back would show as a dark ball — the shader darkens its rim instead)
       waterBubble: { fs: 'water', vs: 'water', line: null, cap: 12, order: 6.66 },
       // (9th, 2026-11-17: 물방울 감옥 bursts, 물폭발 a jet that shoots up and blows apart at the top)
-      waterGeyser: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 40, line: 0x245f9e, lineW: 0.012, order: 6.6 },
+      waterGeyser: { fs: 'designWater', vs: 'designWater', mesh: 'geyserDesign', highTier: true, cap: 40, line: null, order: 6.6, side: T.DoubleSide },
       waterRays: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 12, line: 0x245f9e, lineW: 0.008, order: 6.63 },
       waterFountain: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 40, line: 0x245f9e, lineW: 0.008, order: 6.63 },
       waterMound: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 40, line: 0x245f9e, lineW: 0.012, order: 6.58 },
-      fallStream: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 4, line: 0x245f9e, lineW: 0.0175, order: 6.6 },
+      fallStream: { fs: 'designWater', vs: 'designWater', map: 'fx-storm-atlas', mesh: 'skySpillDesign', highTier: true, cap: 4, line: null, order: 6.74, side: T.DoubleSide },
       waterBlob: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 360, line: 0x245f9e, lineW: 0.007, order: 6.64 },
       foamPuff: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 360, line: 0x245f9e, lineW: 0.006, order: 6.65 },
       waterTongue: { fs: 'water', vs: 'water', lineFs: 'waterLine', cap: 240, line: 0x245f9e, lineW: 0.005, order: 6.62 },
@@ -1809,7 +1932,33 @@
     };
     var bmLayers = {}, BMV = new T.Vector3(), BMS = new T.Vector3(), BMM = new T.Matrix4(), BMQ = new T.Quaternion();
     function b64(s, Type) { var bin = atob(s), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new Type(u.buffer); }
+    // A low, expanding rim for the water spreading from the waterfall.
+    function fallsRingGeo() {
+      var width = 32, length = 7, verts = [], tex = [], flow = [], faces = [];
+      for (var row = 0; row <= length; row++) {
+        var v = row / length;
+        for (var col = 0; col <= width; col++) {
+          var u = col / width, angle = u * Math.PI * 2;
+          var radius = 0.73 + 0.36 * v + 0.048 * Math.sin(angle * 7);
+          var y = 0.27 * Math.pow(Math.sin(Math.PI * v * 0.87), 1.25) * (0.83 + 0.15 * Math.sin(angle * 5 + v));
+          verts.push(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
+          tex.push(1, v);
+          flow.push(0.01 + u * 0.98, v);
+          if (row === length || col === width) continue;
+          var i = row * (width + 1) + col, below = i + width + 1;
+          faces.push(i, below, i + 1, i + 1, below, below + 1);
+        }
+      }
+      var geo = new T.BufferGeometry();
+      geo.setAttribute('position', new T.Float32BufferAttribute(verts, 3));
+      geo.setAttribute('uv', new T.Float32BufferAttribute(tex, 2));
+      geo.setAttribute('uvT', new T.Float32BufferAttribute(flow, 2));
+      geo.setIndex(faces);
+      geo.computeVertexNormals();
+      return geo;
+    }
     function bmGeo(kind) {
+      if (kind === 'waterRing') return fallsRingGeo();
       var mk = (BM_KIND[kind] && BM_KIND[kind].mesh) || kind, d = (CW.MESH6 && CW.MESH6[mk]) || (CW.MESHICE && CW.MESHICE[mk]) || (CW.MESHWOOD && CW.MESHWOOD[mk]) || (CW.MESHWATER && CW.MESHWATER[mk]); if (!d) return null;
       var g = new T.BufferGeometry(), n8 = b64(d.n, Int8Array), n = new Float32Array(n8.length);
       for (var i = 0; i < n8.length; i++) n[i] = n8[i] / 127;
@@ -1818,6 +1967,11 @@
       g.setAttribute('uv', new T.BufferAttribute(b64(d.u, Float32Array), 2));
       g.setIndex(new T.BufferAttribute(b64(d.i, Uint16Array), 1));
       if (d.t) g.setAttribute('uvT', new T.BufferAttribute(b64(d.t, Float32Array), 2));   // a painted skin's picture coordinates
+      if (kind === 'fallStream') {
+        var tags = g.getAttribute('uv');
+        g.setIndex(Array.from(g.index.array).filter(function (vertex) { return tags.getX(vertex) > 0.5; }));
+      }
+
       return g;
     }
 
@@ -1932,23 +2086,24 @@
       'fx-impact': { anchor: [0, -0.46], order: 6.45, loop: 1, blend: 1, wob: 1.2, glow: 0.6, live: 1 },
       // 11차 물: the splash (art/fx-watersplash.webp, tools/comfyui/water-prep.py; 1-3 gathering, 4-8 a crown thrown up,
       // 9-16 falling away; its foot a little above the bottom of each scene)
-      'fx-watersplash': { anchor: [0, -0.36], order: 6.5 }
+      'fx-watersplash': { anchor: [0, -0.36], order: 6.5 },
+      'fx-wood-water-impact': { anchor: [0, -0.40], order: 6.72, grid: 2, wob: 0.38, highTier: true, foreground: true }
     }, sheetL = {};
     // (2026-11-18, the user: "too much like a picture") so it reads as live fire, not a sticker: one scene melts into the
     // next (no hard flip; after scene 12 comes 5 again, the loop), the picture shimmers in its own heat (more toward the
     // top), its flames flicker, and a soft glow of its own colours spills round it (uGrow > 1: the glow layer, drawn
     // added, a blurred copy a little bigger than the picture)
     var VS_SHEET = [
-      'attribute vec3 iF; uniform vec2 uAnchor; uniform float uGrow, uLoop, uBlend; varying vec4 vCell; varying vec2 vLoc; varying float vA, vK, vSeed;',
+      'attribute vec3 iF; uniform vec2 uAnchor; uniform float uGrow, uLoop, uBlend, uGrid; varying vec4 vCell; varying vec2 vLoc; varying float vA, vK, vSeed;',
       'void main(){',
       '  vec4 mv = modelViewMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0); float s = length(instanceMatrix[0].xyz);',
       '  vec2 q = position.xy * uGrow - uAnchor;',
       '  float c = cos(iF.z), n = sin(iF.z); mv.xy += vec2(q.x * c - q.y * n, q.x * n + q.y * c) * s;',
-      '  gl_Position = projectionMatrix * mv; vA = iF.y; float f0 = floor(iF.x + 0.001), f1 = uLoop > 0.5 && f0 > 10.5 && f0 < 11.5 ? 4.0 : min(15.0, f0 + 1.0);',
+      '  gl_Position = projectionMatrix * mv; vA = iF.y; float f0 = floor(iF.x + 0.001), f1 = uLoop > 0.5 && f0 > 10.5 && f0 < 11.5 ? 4.0 : (uGrid < 3.0 ? f0 : min(15.0, f0 + 1.0));',
       '  vK = (iF.x - f0) * uBlend; vSeed = instanceMatrix[3].x * 1.7 + instanceMatrix[3].z;',
-      '  vCell = vec4(mod(f0, 4.0), 3.0 - floor(f0 / 4.0), mod(f1, 4.0), 3.0 - floor(f1 / 4.0)); vLoc = position.xy * uGrow + 0.5; }'].join('\n');
-    var SHEET_HEAD = 'uniform sampler2D uMap; uniform float uTime, uWob; varying vec4 vCell; varying vec2 vLoc; varying float vA, vK, vSeed;\n' +
-      'vec4 cellAt(vec2 l){ l = clamp(l, 0.004, 0.996); vec4 a = texture2D(uMap, (vCell.xy + l) / 4.0), b = texture2D(uMap, (vCell.zw + l) / 4.0);' +
+      '  vCell = vec4(mod(f0, uGrid), uGrid - 1.0 - floor(f0 / uGrid), mod(f1, uGrid), uGrid - 1.0 - floor(f1 / uGrid)); vLoc = position.xy * uGrow + 0.5; }'].join('\n');
+    var SHEET_HEAD = 'uniform sampler2D uMap; uniform float uTime, uWob, uGrid; varying vec4 vCell; varying vec2 vLoc; varying float vA, vK, vSeed;\n' +
+      'vec4 cellAt(vec2 l){ l = clamp(l, 0.004, 0.996); vec4 a = texture2D(uMap, (vCell.xy + l) / uGrid), b = texture2D(uMap, (vCell.zw + l) / uGrid);' +
       ' float al = max(a.a, b.a); return vec4((a.rgb * a.a * (1.0 - vK) + b.rgb * b.a * vK) / max(al, 0.001), al); }\n' +
       'vec2 heat(){ float y = clamp(vLoc.y, 0.0, 1.0); return vLoc + uWob * y * vec2(0.007 * sin(vLoc.y * 31.0 - uTime * 12.0 + vSeed) + 0.004 * sin(vLoc.y * 13.0 + uTime * 7.0), 0.004 * sin(vLoc.x * 27.0 + uTime * 9.0 + vSeed)); }\n';
     // (2026-11-18, the user: "living fire, take the painted look away") uLive 1: the picture only gives the fire its
@@ -1961,7 +2116,12 @@
       'float shF(vec2 p){ return shN(p) * 0.55 + shN(p * 2.07 + 3.1) * 0.3 + shN(p * 4.3 + 7.7) * 0.15; }\n';
     var FS_SHEET = SHEET_HEAD + SHEET_NOISE + 'uniform float uLive, uSwirl; uniform vec2 uFlow;\n' +
       'void main(){ if (vLoc.x < 0.0 || vLoc.x > 1.0 || vLoc.y < 0.0 || vLoc.y > 1.0) discard; vec2 l = heat();\n' +
-      ' if (uLive < 0.5) { vec4 c0 = cellAt(l); c0.a *= vA; if (c0.a < 0.01) discard; c0.rgb *= 1.0 + 0.1 * sin(uTime * 23.0 + vLoc.y * 7.0 + vSeed) * (0.4 + smoothstep(0.55, 1.0, c0.g)); gl_FragColor = c0; return; }\n' +
+      ' if (uLive < 0.5) { vec4 c0 = cellAt(l); c0.a *= vA; if (c0.a < 0.01) discard;\n' +
+      '#ifdef WATER_IMPACT_ATLAS\n' +
+      // Only frame 2 (bottom left) belongs to the geyser. Preserve the painted foam and alpha.
+      ' if (vCell.x < 0.5 && vCell.y < 0.5) { float light=dot(c0.rgb,vec3(0.21,0.72,0.07)); vec3 water=mix(bubbleEdge,bubbleBlue,smoothstep(0.1,0.58,light)); water=mix(water,bubbleLight,smoothstep(0.58,0.90,light)); c0.rgb=mix(water,vec3(1.0),smoothstep(0.85,1.0,light)); }\n' +
+      '#endif\n' +
+      ' c0.rgb *= 1.0 + 0.1 * sin(uTime * 23.0 + vLoc.y * 7.0 + vSeed) * (0.4 + smoothstep(0.55, 1.0, c0.g)); gl_FragColor = c0; return; }\n' +
       ' vec2 fw = uFlow, sd = vec2(-fw.y, fw.x); float along = dot(vLoc - 0.5, fw) + 0.5, across = dot(vLoc - 0.5, sd);\n' +
       // (3rd pass, the user: "it is mushy, not blazing") the pattern is stretched long along the flow and races up fast,
       // so it reads as tongues of flame shooting up rather than a slow wobble
@@ -2011,21 +2171,21 @@
       var S = SHEETS[name], cap = 32, ph = new T.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1); ph.needsUpdate = true;
       var g = new T.InstancedBufferGeometry().copy(new T.PlaneGeometry(1, 1)), fa = new Float32Array(cap * 3);
       g.setAttribute('iF', new T.InstancedBufferAttribute(fa, 3).setUsage(T.DynamicDrawUsage));
-      var anc = new T.Vector2(S.anchor[0], S.anchor[1]), uT = { value: 0 };
-      var m = new T.ShaderMaterial({ uniforms: { uMap: { value: ph }, uAnchor: { value: anc }, uGrow: { value: 1 }, uLoop: { value: S.loop ? 1 : 0 }, uBlend: { value: S.blend ? 1 : 0 }, uTime: uT, uWob: { value: S.wob || 0 }, uLive: { value: S.live ? 1 : 0 }, uSwirl: { value: S.swirl || 0 }, uFlow: { value: new T.Vector2(S.flow ? S.flow[0] : 0, S.flow ? S.flow[1] : 1) } }, vertexShader: VS_SHEET, fragmentShader: FS_SHEET, transparent: true, depthWrite: false, depthTest: true });
+      var anc = new T.Vector2(S.anchor[0], S.anchor[1]), uT = { value: 0 }, grid = S.grid || 4;
+      var m = new T.ShaderMaterial({ uniforms: { uMap: { value: ph }, uAnchor: { value: anc }, uGrid: { value: grid }, uGrow: { value: 1 }, uLoop: { value: S.loop ? 1 : 0 }, uBlend: { value: S.blend ? 1 : 0 }, uTime: uT, uWob: { value: S.wob || 0 }, uLive: { value: S.live ? 1 : 0 }, uSwirl: { value: S.swirl || 0 }, uFlow: { value: new T.Vector2(S.flow ? S.flow[0] : 0, S.flow ? S.flow[1] : 1) } }, vertexShader: VS_SHEET, fragmentShader: name === 'fx-wood-water-impact' ? '#define WATER_IMPACT_ATLAS\n' + BUBBLE_COLORS + '\n' + FS_SHEET : FS_SHEET, transparent: true, depthWrite: false, depthTest: !S.foreground });
       var mesh = new T.InstancedMesh(g, m, cap); mesh.instanceMatrix.setUsage(T.DynamicDrawUsage); mesh.frustumCulled = false; mesh.count = 0; mesh.visible = false; mesh.renderOrder = S.order; mesh.name = 'core3d sheet ' + name;
       group.add(mesh);
       // the glow of it: the same pictures (same places, same scenes) blurred and added under it
       var gm = null;
       if (S.glow) {
-        var gmat = new T.ShaderMaterial({ uniforms: { uMap: m.uniforms.uMap, uAnchor: { value: anc }, uGrow: { value: 1 }, uLoop: m.uniforms.uLoop, uBlend: m.uniforms.uBlend, uTime: uT, uWob: { value: 0 }, uGlow: { value: S.glow } }, vertexShader: VS_SHEET, fragmentShader: FS_SHEET_GLOW, transparent: true, depthWrite: false, depthTest: true,
+        var gmat = new T.ShaderMaterial({ uniforms: { uMap: m.uniforms.uMap, uAnchor: { value: anc }, uGrid: m.uniforms.uGrid, uGrow: { value: 1 }, uLoop: m.uniforms.uLoop, uBlend: m.uniforms.uBlend, uTime: uT, uWob: { value: 0 }, uGlow: { value: S.glow } }, vertexShader: VS_SHEET, fragmentShader: FS_SHEET_GLOW, transparent: true, depthWrite: false, depthTest: true,
           // light only: the canvas is see-through over the region's picture, so its alpha is left alone (alpha written here
           // showed as a black halo on bright regions)
           blending: T.CustomBlending, blendEquation: T.AddEquation, blendSrc: T.OneFactor, blendDst: T.OneFactor, blendSrcAlpha: T.ZeroFactor, blendDstAlpha: T.OneFactor });
         gm = new T.InstancedMesh(g, gmat, cap); gm.instanceMatrix = mesh.instanceMatrix; gm.frustumCulled = false; gm.count = 0; gm.visible = false; gm.renderOrder = S.order - 0.01; gm.name = 'core3d sheet glow ' + name;
         group.add(gm);
       }
-      L = sheetL[name] = { mesh: mesh, glow: gm, mat: m, uT: uT, fa: fa, g: g, cap: cap, list: [], ready: false };
+      L = sheetL[name] = { mesh: mesh, glow: gm, mat: m, uT: uT, fa: fa, g: g, cap: cap, list: [], ready: false, frames: grid * grid };
       if (T.TextureLoader) new T.TextureLoader().load((root.CW && root.CW.ART_BASE || 'art/') + name + '.webp', function (t) {
         t.generateMipmaps = false; t.minFilter = T.LinearFilter; m.uniforms.uMap.value = t; L.ready = true;
         try { if (sc.renderer && sc.renderer.initTexture) sc.renderer.initTexture(t); } catch (e) { }
@@ -2084,7 +2244,9 @@
       S = skins[name] = { tex: new T.DataTexture(new Uint8Array([128, 128, 128, 255]), 1, 1), ready: false, users: [] };
       S.tex.needsUpdate = true;
       if (T.TextureLoader) new T.TextureLoader().load((root.CW && root.CW.ART_BASE || 'art/') + name + '.webp', function (t) {
-        t.anisotropy = 4; t.generateMipmaps = false; t.minFilter = T.LinearFilter; S.tex = t; S.ready = true;
+        t.anisotropy = 4;
+        t.generateMipmaps = name === 'fx-storm-atlas'; t.minFilter = t.generateMipmaps ? T.LinearMipmapLinearFilter : T.LinearFilter;
+        S.tex = t; S.ready = true;
         // sent to the graphics card now, while it arrives (warm() asks for every skin), not on the first frame that draws
         // it: a 1536×1024 sheet uploading mid-fight was the stall on the flytrap's and the world tree's first cast
         // (about 150 ms on a 4×-slowed phone emulation, 2026-11-16)
@@ -2100,13 +2262,20 @@
       var cap = K.cap, ix = new T.InstancedBufferAttribute(new Float32Array(cap * 4), 4); ix.setUsage(T.DynamicDrawUsage); g.setAttribute('iX', ix);
       var uni = { uCol: { value: C(0xffffff) }, uDeep: { value: C(0x2a6cff) } }, SK = K.map ? skin(K.map) : null;
       if (SK) { uni.uMap = { value: SK.tex }; uni.uPaint = { value: SK.ready ? 1 : 0 }; uni.uAnim = { value: K.map === 'tree-skin' ? 1 : K.map === 'trap-skin' ? 2 : 0 }; }
-      var vsB = K.vs === 'water' ? VS_BMW : SK ? VS_BMT : VS_BM, vsL = K.vs === 'water' ? VS_BMLW : VS_BML;
-      var body = new T.InstancedMesh(g, mat(FS_BM[K.fs], uni, { normal: true, depthWrite: kind !== 'rift' && kind !== 'gravRing' && kind !== 'crater', depthTest: kind !== 'crater', side: K.side }, vsB), cap);
+      var breaker = null;
+      if (kind === 'waveSheet') {
+        breaker = new T.InstancedBufferAttribute(new Float32Array(cap * 3), 3);
+        breaker.setUsage(T.DynamicDrawUsage); g.setAttribute('iBreak', breaker);
+      }
+      if (K.fs === 'water') uni.uFallsRing = { value: kind === 'waterRing' ? 1 : 0 };
+      if (K.fs === 'designWater' && !SK) { uni.uMap = { value: null }; uni.uPaint = { value: 0 }; }
+      var vsB = breaker ? VS_BREAKER : kind === 'fallStream' ? VS_SKY_FALL : K.vs === 'designWater' ? VS_DESIGN_WATER : K.vs === 'water' ? VS_BMW : SK ? VS_BMT : VS_BM, vsL = K.vs === 'water' ? VS_BMLW : VS_BML;
+      var body = new T.InstancedMesh(g, mat(FS_BM[K.fs], uni, { normal: true, depthWrite: kind !== 'rift' && kind !== 'gravRing' && kind !== 'crater' && K.vs !== 'designWater', depthTest: kind !== 'crater' && kind !== 'fallStream', side: K.side }, vsB), cap);
       if (SK) SK.users.push(body.material.uniforms);
       body.instanceColor = new T.InstancedBufferAttribute(new Float32Array(cap * 3), 3);
       var line = K.line === null ? null : new T.InstancedMesh(g, mat(FS_BM[K.lineFs || 'line'], { uLine: { value: C(K.line) } }, { normal: true, side: T.BackSide }, vsL), cap);
       [body, line].forEach(function (m, i) { if (!m) return; m.renderOrder = K.order + (i ? (K.vs === 'water' ? 0.02 : -0.02) : 0); m.frustumCulled = false; m.count = 0; m.visible = false; m.name = 'bm3d ' + kind; group.add(m); });
-      L = bmLayers[kind] = { kind: kind, body: body, line: line, ix: ix, list: [], cap: cap, K: K };
+      L = bmLayers[kind] = { kind: kind, body: body, line: line, ix: ix, breaker: breaker, list: [], cap: cap, K: K };
       return L;
     }
     function bm(kind, o) {
@@ -2116,7 +2285,8 @@
       var h = { p: new T.Vector3(0, -40, 0), q: new T.Quaternion(), s: new T.Vector3(1, 1, 1), c: C(o.col === undefined ? 0xffffff : o.col), a: 1, k: 0, seed: Math.random() * 9, w: o.line === false ? 0 : (o.lineW === undefined ? L.K.lineW || 0 : o.lineW), dead: false };
       L.list.push(h);
       return {
-        set: function (pos, q, s, a, k) {
+        set: function (pos, q, s, a, k, breaker) {
+          if (breaker) h.breaker = breaker;
           if (pos) h.p.copy(pos); if (q) h.q.copy(q);
           if (s !== undefined && s !== null) { if (typeof s === 'number') h.s.setScalar(Math.max(1e-4, s)); else h.s.copy(s); }
           if (a !== undefined) h.a = a; if (k !== undefined) h.k = k;
@@ -2135,8 +2305,13 @@
           var h = list[j]; if (h.a <= 0.002) continue;
           BMS.copy(h.s); BMM.compose(h.p, h.q, BMS);
           L.body.setMatrixAt(n, BMM); L.body.setColorAt(n, h.c); if (L.line) L.line.setMatrixAt(n, BMM);
+          if (L.breaker) {
+            var b = h.breaker;
+            L.breaker.setXYZ(n, b ? b.x : 0, b ? b.y : 0, b ? b.z : 0);
+          }
           L.ix.setXYZW(n, h.a, h.k, h.seed, h.w); n++;
         }
+        if (L.breaker) L.breaker.needsUpdate = true;
         L.body.count = n; L.body.visible = n > 0; L.body.instanceMatrix.needsUpdate = true; L.body.instanceColor.needsUpdate = true; L.ix.needsUpdate = true;
         L.body.material.uniforms.uTime.value = time; L.body.material.uniforms.uBright.value = bright ? 1 : 0;
         if (L.line && L.line.material.uniforms.uTime) L.line.material.uniforms.uTime.value = time;   // (the water's outline sways with it, VS_BMLW)
@@ -2173,11 +2348,11 @@
       rock({ size: 0.3 }).set(far, vel, 0.05); fireball({ size: 0.3 }).set(far, vel, 0.05); column({}).set(far, 1, 1, 0); twister({}).set(far, 2, 0.3, 1, 0.3, 0, 0.5, 0); ringWall({}).set(far, 1, 1, 0); fireWave({}).set(far.x, far.z, 1, 1, 0, 1, 2, 0); picWave({}).set(far, 1, 0, 1, 0, 1); var ws = waveShards({}); ws.put(0, far, 0, 0, 1, 1, 1, 0); ws.commit(); var sq = seqWave(); sq.put(0, 0, 0, far, 0, 0, 1, 1, 1, 0); sq.commit(); iceSpear({ size: 1 }).set(far, vel, 0.05); iceSpikes(far, { n: 2 }); mark({}).set(far, 0.5, 1); impact(far, { size: 1, chips: 3 }); blast(far, { size: 1, flash: true });
       var h = hole({ pos: far }); h.set(1, 1, 0); h.lens.dead = true; puff(far, {}); chip(far, 1, 0xff7a1a, false);
       fluffBall({}).set(far, 0.5); yarnBall({}).set(far, 0.5);
-      var bmWarm = Object.keys(BM_KIND).map(function (k) { var h = bm(k, {}); h.set(far, null, 0.5, 1, 0.5); return h; }); drawBM();
+      var bmWarm = Object.keys(BM_KIND).filter(function (k) { return !CW.FRIEND || !BM_KIND[k].highTier; }).map(function (k) { var h = bm(k, {}); h.set(far, null, 0.5, 1, 0.5); return h; }); drawBM();
       if (!CW.FRIEND) { boomLayer().list.push({ x: 0, z: -40, t: 0, s: 1 }); drawBoom(0); }   // (the world tree's fruit bombs: 형꺼 only, the trial has no tier 10)
       fbLayer().list.push({ x: 0, z: -40, t: 0, s: 1, span: 1 }); drawFireBoom(0);
       ['fx-firetile', 'fx-firecore', 'fx-smoketile', 'fx-fireedge', 'fx-fireswirl'].forEach(toonPaint);
-      var shWarm = Object.keys(SHEETS).map(function (k) { var h = sheetFx(k); h.set(far, 1, 0, 0, 1); return h; }); drawSheets();
+      var shWarm = Object.keys(SHEETS).filter(function (k) { return !CW.FRIEND || !SHEETS[k].highTier; }).map(function (k) { var h = sheetFx(k); h.set(far, 1, 0, 0, 1); return h; }); drawSheets();
       lavaMark(far, 1, 1); if (!CW.FRIEND) lavaMark(far, 1, 1, 'fx-watermark');
       for (var ek = 0; ek < 7; ek++) emblem(ek, { col: 0xff8a3a, deep: 0x8a2a10 }).set(far, 0.5, 0); glassOrb({ kind: 0, col: 0xff8a3a, deep: 0x8a2a10 }).set(far, 0.5, 0, 1); elemRing({ cols: [0xff0000, 0xffff00, 0xff00ff, 0x00ffff, 0x00ff00] }).set(far, 1, 0, 0, 1); var xst = xs.length; crystal({ pos: far });
       drawSpikes(0); layoutSmoke(sc.camera, true); drawChips(0); drawCrystals(0);   // the layers must be drawing copies when compiled, so their (instanced) programs are built too
@@ -2187,7 +2362,7 @@
       bmWarm.forEach(function (h) { h.kill(); }); drawBM(); if (boomL) { boomL.list.length = 0; drawBoom(0); } fbL.list.length = 0; drawFireBoom(0); shWarm.forEach(function (h) { h.kill(); }); drawSheets();
       if (sc.warmLens) sc.warmLens();
     }
-    return { boom: boom, fireBoom: fireBoom, sheetFx: sheetFx, screenAngle: screenAngle, lavaMark: lavaMark, beam: beam, orb: orb, moon: moon, rock: rock, fireball: fireball, column: column, twister: twister, toonFire: toonFire, ringWall: ringWall, fireWave: fireWave, picWave: picWave, waveShards: waveShards, seqWave: seqWave, iceSpear: iceSpear, iceSpikes: iceSpikes, iceSpike: iceSpike, mark: mark, impact: impactP, puff: puff, blast: blast, chip: chip, hole: hole, emblem: emblem, glassOrb: glassOrb, elemRing: elemRing, crystal: crystal, fluffBall: fluffBall, yarnBall: yarnBall, bm: bm, update: update,
+    return { boom: boom, fireBoom: fireBoom, sheetFx: sheetFx, stormPaint: function () { return skin('fx-storm-atlas').tex; }, screenAngle: screenAngle, lavaMark: lavaMark, beam: beam, orb: orb, moon: moon, rock: rock, fireball: fireball, column: column, twister: twister, toonFire: toonFire, ringWall: ringWall, fireWave: fireWave, picWave: picWave, waveShards: waveShards, seqWave: seqWave, iceSpear: iceSpear, iceSpikes: iceSpikes, iceSpike: iceSpike, mark: mark, impact: impactP, puff: puff, blast: blast, chip: chip, hole: hole, emblem: emblem, glassOrb: glassOrb, elemRing: elemRing, crystal: crystal, fluffBall: fluffBall, yarnBall: yarnBall, bm: bm, update: update,
       // for checks: the live copies of a Blender mesh kind ({ p, q, s, a })
       bmList: function (kind) { var L = bmLayers[kind]; return L ? L.list.filter(function (h) { return !h.dead && h.a > 0.002; }) : []; }, clear: clear, warm: warm, setBright: function (v) { bright = !!v; }, setBatchSmoke: function (v) { batchSmoke = !!v; }, setBatchChips: function (v) { batchChips = !!v; },
       count: function () { return bmCount() + parts.length + xs.length + spikes.length + chips[0].length + chips[1].length + chips[2].length; }, spikeTops: spikeTops,

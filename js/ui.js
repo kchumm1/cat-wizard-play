@@ -1558,8 +1558,8 @@
         (!CW.FRIEND && root.__cwFit && document.documentElement.classList.contains('under') ? '<div class="row"><div class="info"><div class="name">하단 메뉴 위치</div><div class="desc">메뉴가 잘리면 ‘안쪽’을 선택해 주세요.</div></div><button class="btn" data-set="bottomFit">' + (bottomInside() ? '안쪽' : '맨 아래') + '</button></div>' : '') +
         '<div class="row"><div class="info"><div class="name">화면 표현</div><div class="desc">기본 3D 또는 픽셀 스타일</div></div><button class="btn" data-set="pixel">' + (st.pixel ? '픽셀 스타일' : '기본 3D') + '</button></div>' +
         // 가로 시점 (2026-11-17): only while the phone is sideways (upright the screen is as it was)
-        (CW.isLand && CW.isLand() ? '<div class="row"><div class="info"><div class="name">가로 화면 시점</div><div class="desc">옆에서: 냥법사 왼쪽, 몬스터 오른쪽으로 길게<br>멀리서: 앞에서 넓게 내려다봐요</div></div>' +
-          '<div class="sbtns"><button class="btn' + (st.landView === 'far' ? '' : ' on') + '" data-set="landSide">옆에서</button><button class="btn' + (st.landView === 'far' ? ' on' : '') + '" data-set="landFar">멀리서</button></div></div>' : '') +
+        (CW.isLand && CW.isLand() ? '<div class="row"><div class="info"><div class="name">가로 화면 시점</div><div class="desc">세로처럼 보면 냥법사 주변에서 몬스터가 사방으로 움직여요.</div></div>' +
+          '<div class="sbtns"><button class="btn' + (st.landView === 'side' || st.landView === 'far' ? '' : ' on') + '" data-set="landCenter">세로처럼</button><button class="btn' + (st.landView === 'side' ? ' on' : '') + '" data-set="landSide">옆에서</button><button class="btn' + (st.landView === 'far' ? ' on' : '') + '" data-set="landFar">멀리서</button></div></div>' : '') +
         '<div class="row"><div class="info"><div class="name">화질</div><div class="desc">화면이 끊기면 화질을 낮춰 보세요.</div></div><button class="btn" data-set="quality">' + ({ auto: '자동', high: '높음', mid: '보통', low: '낮음' })[st.quality] + '</button></div>' +
         // 60 is held to 60 even on a 120 Hz phone; 120 draws every refresh of a fast screen (warmer)
         '<div class="row"><div class="info"><div class="name">화면 빈도</div><div class="desc">120은 더 부드럽지만 폰이 더 뜨거워져요.' + (G.screenHz && G.screenHz() ? '<br>지금 화면 ' + G.screenHz() + 'Hz' : '') + '</div></div>' +
@@ -2382,6 +2382,7 @@
           if (root.__cwFit) root.__cwFit(); root.dispatchEvent(new Event('resize'));
         }
         if (d.set === 'fpsCap') G.setSetting('fpsCap', { 50: 40, 40: 30, 30: 60 }[st.fpsCap || 60] || 50);
+        if (d.set === 'landCenter') G.setSetting('landView', 'center');
         if (d.set === 'landSide') G.setSetting('landView', 'side');
         if ((d.set === 'portrait' || d.set === 'landscape') && root.CWDisplay) root.CWDisplay.set(d.set);
         if (d.set === 'landFar') G.setSetting('landView', 'far');

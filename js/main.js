@@ -807,7 +807,7 @@
   function applySettings() {
     var s = state.settings;
     snd.setEnabled(s.sound); sc.setPixel(s.pixel);
-    if (sc.setLandView) sc.setLandView(s.landView === 'far' ? 'far' : 'side');   // 가로 시점 (sideways only; upright unchanged)
+    if (sc.setLandView) sc.setLandView(s.landView);   // 가로 시점 (sideways only; upright unchanged)
     sc.setDamageStyle((s.dmgSize === undefined ? 60 : s.dmgSize) / 100, (s.dmgAlpha === undefined ? 85 : s.dmgAlpha) / 100);
     var q = s.quality === 'auto' ? autoQ : s.quality; sc.setQuality(q); fx.setQuality(q);
     pace.setCap(s.fpsCap || 60);

@@ -1303,14 +1303,30 @@
     }
     function picClear() { pics.forEach(picDrop); pics.length = 0; picHeads.forEach(picDrop); picHeads.length = 0; }
     // the rest of the skills live in js/fx-more.js and are built from the same parts
+    // Frames 0–3 are separate painted accents from the approved wood/water concept.
+    function paintImpact(pos, frame, size, life, angle, lift) {
+      var layer = P3.sheetFx('fx-wood-water-impact'), p = pos.clone(), t = 0, y = pos.y;
+      layer.set(p, size * 0.58, frame, angle, 0.86);
+      tick(function (dt) {
+        t += dt;
+        var u = Math.min(1, t / life);
+        if (u >= 1) { layer.kill(); return true; }
+        p.y = y + lift * u * (1 - 0.55 * u);
+        var early = 1 - Math.pow(1 - u, 3);
+        var fade = Math.pow(Math.max(0, 1 - Math.max(0, (u - 0.18) / 0.82)), 1.33);
+        layer.set(p, size * (0.58 + 0.49 * early), frame, angle * (0.5 + 0.5 * u), fade);
+        return false;
+      });
+    }
     var KIT = { T: T, sc: sc, vx: vx, V: V, rr: rr, rdir: rdir, pick: pick, STAY: STAY, sway: sway, deep: deep, E: E, N: N, after: after, tick: tick, FC: FC, UPC: UPC, above: above,
       fieldPt: fieldPt, fieldPops: fieldPops, fieldWave: fieldWave, fieldRain: fieldRain, flare: flare, glow: glow, load: function () { return vx.load(); }, sparks: sparks, embers: embers, smoke: smoke, fire: fire, trailFire: trailFire, shock: shock, ring: ring, gRing: gRing, gGlow: gGlow,
       scorch: scorch, dust: dust, circle: circle, seal: seal, converge: converge, impact: impact, muzzle: muzzle, heavy: heavy, homing: homing, explosion: explosion, toonBall: toonBall, toonBoom: toonBoom, STARC: STARC, starHeads: starHeads, starAt: starAt, starBurst: starBurst, iceRise: iceRise, iceChips: iceChips, iceHitFx: iceHitFx, sharpSpike: sharpSpike, iceCrown: iceCrown, spiralTo: spiralTo, spiralIn: spiralIn,
+      paintImpact: paintImpact,
       P3: P3, liveMobs: liveMobs, gp: gp, near: near, share: share, volley: volley, ringHits: ringHits, passHits: passHits, skyBolt: skyBolt, zapHit: zapHit, beamOf: beamOf, picHead: picHead, picAt: picAt, picFall: picFall,
       dustCol: function () { return dustCol; } };
     if (CW.fxMore) CW.fxMore(KIT, S);
     var WOOD = CW.fxWood ? CW.fxWood(KIT, S) : null;   // 10차 나무 (js/fx-wood.js); its painted pieces are cleared with the rest
-    if (CW.fxWater) CW.fxWater(KIT, S);   // 11차 물 (js/fx-water.js)
+    var WATER = CW.fxWater ? CW.fxWater(KIT, S) : null;   // 11차 물 (js/fx-water.js)
     // 1차 스킬 7개는 3D 몸으로 (js/fx-tier1.js)
     if (CW.fxTier1) CW.fxTier1(KIT, S);
     // the legendary beasts (js/fx-beasts.js): their own flights, updated and cleared with the rest
@@ -1327,10 +1343,12 @@
       var surgeBoost = surge ? 30 : 0, effectLevel = (lv || 0) + surgeBoost;
       var baseScale = 1.12 * (1 + 0.08 * (tier - 1));
       // no magic circles under any skill (2026-11-16, the user: '마법진은 빼자'; NO_CIRCLE was the list of skills without one)
-      var c = { sk: skill, noCircle: true, tier: tier, surgeBoost: surgeBoost, col: tint(skill.color, tier),
+      var palette = skill.id === 'waterBurst' ? CW.skillById('bubblePrison') : skill;
+      var castColor = tint(palette.color, tier);
+      var c = { sk: skill, noCircle: true, tier: tier, surgeBoost: surgeBoost, col: castColor,
         s: baseScale * (1 + 0.018 * surgeBoost), hitScale: baseScale * (1 + 0.018 * effectLevel),
         n: Math.min(2.4, 1 + 0.1 * (tier - 1) + 0.025 * effectLevel), sp: sp,
-        D: function (t) { return t / sp; }, deep: deep(tint(skill.color, tier)), from: sc.heroPaw(), targets: targets.slice(), hit: hit || function () { } };
+        D: function (t) { return t / sp; }, deep: deep(castColor), from: sc.heroPaw(), targets: targets.slice(), hit: hit || function () { } };
       c.center = crowdCenter(c.targets);
       c.epoch = epoch;
       // how many this cast may hit: the caller already chose (more on the field, the old count in dungeons — CW.targetCount)
@@ -1387,7 +1405,7 @@
       var shape = S[skill.shape] || S.bolt3;
       // monsters are split finer than the skill data (CW.hitCount): a one-monster spell strikes each of its targets in turn,
       // the same picture 0.09 s apart; a target that fell in the meantime gives way to one still standing that no copy aims at
-      if (skill.targets === 1 && c.targets.length > 1) {
+      if (skill.targets === 1 && c.targets.length > 1 && skill.shape !== 'flytrap') {
         var aimed = c.targets.slice(), splashed = [];   // splashed: [monster, share taken] across the copies
         aimed.forEach(function (m0, i) {
           var go = function () {
@@ -1601,7 +1619,7 @@
     function setLoad(k) { vx.setLoad(k); }
     function setBright(v) { vx.setBright(v); P3.setBright(v); }
     function setRegion(regionData) { dustCol = new T.Color(regionData.ground).lerp(new T.Color(0xffffff), 0.45).getHex(); P3.warm(); warmPics(); }
-    function clear() { epoch++; carry = []; timers.length = 0; ticks.length = 0; meteorLive = 0; scorchAt.length = 0; vx.clear(); P3.clear(); picClear(); if (WOOD && WOOD.clear) WOOD.clear(); if (BEASTS) BEASTS.clear(); sc.mobs().forEach(function (m) { m.pull = undefined; m.pullZ = undefined; m.lift = undefined; }); }
+    function clear() { epoch++; carry = []; timers.length = 0; ticks.length = 0; meteorLive = 0; scorchAt.length = 0; vx.clear(); P3.clear(); picClear(); if (WOOD && WOOD.clear) WOOD.clear(); if (WATER) WATER.clear(); if (BEASTS) BEASTS.clear(); sc.mobs().forEach(function (m) { m.pull = undefined; m.pullZ = undefined; m.lift = undefined; }); }
     return { setStaffColor: function (c) { staffCol = c; }, setCostume: function (f) { cosFx = f; cosAcc = 0; }, cast: cast, update: update, setQuality: setQuality, setLoad: setLoad, load: function () { return vx.load(); }, setBright: setBright, setRegion: setRegion, clear: clear, count: vx.count, minionBurst: minionBurst,
       impact: impact, levelUp: levelUp, bossEnter: bossEnter, coinPop: coinPop, burst: function (pos, col) { impact(pos, col, 0.8); }, vfx: vx,
       // for checks: 3D parts alive, and painted heads alive (only those of the given pictures when names are given)
