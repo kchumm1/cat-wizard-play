@@ -601,7 +601,7 @@
       // the blast takes the monster it landed on and the targets standing close; if any target is left farther away, the
       // bomb bounces on to the nearest of them and goes off again (a smaller blast)
       function land2(p, mob, big) {
-        var R = 1.7 * c.s, hitNow = left.filter(function (m) { return m === mob || ((m.x - p.x) * (m.x - p.x) + (m.z - p.z) * (m.z - p.z) < R * R); });
+        var R = 1.7 * c.hitScale, hitNow = left.filter(function (m) { return m === mob || ((m.x - p.x) * (m.x - p.x) + (m.z - p.z) * (m.z - p.z) < R * R); });
         left = left.filter(function (m) { return hitNow.indexOf(m) < 0; });
         boom(p, big, hitNow);
         var rest = left.filter(function (m) { return m.alive; });
@@ -728,11 +728,8 @@
       // Every bolt is a real hit. The chain jumps through the monsters once; then bolts keep dropping out of the sky on
       // those same monsters until each has taken the skill's whole damage (a lone boss takes all six).
       var M = list.length, k = Math.max(2, Math.ceil(6 / M)), frac = 1 / k, cnt = list.map(function () { return 0; });
-      // a little smaller, mostly at high upgrade (2026-11-17 user: '연쇄번개 크기 사알짝만 줄이자' → '레벨 50기준이야'):
-      // x0.95 at +0, x0.82 at +50 (the bolts grow with the upgrade through c.s; the picture is already capped)
-      // capped like the 3D skills (2026-11-17, user's phone at tier 9+ +50: '많이 큰데' — c.s reached 3.5, 4.5 in a surge;
-      // tried 1.5 / 2.0 / 2.2 / 2.5 at tier 11 +50, the user chose 2.5, then 2.0 on the phone); c.s itself is lowered so the hit flash, ring and picture shrink too
-      var cs = Math.min(2.0, c.s * (0.95 - 0.0026 * Math.min(50, c.lv))); c.s = cs;
+      // Keep the +0 thickness curve and the existing cap, including during a surge.
+      var cs = Math.min(2.0, c.s * (0.95 - 0.0026 * c.surgeBoost)); c.s = cs;
       var prev = function () { return sc.heroPaw(); };
       list.forEach(function (mob, i) {
         var from = prev, to = function () { return sc.mobPos(mob); };
@@ -1321,14 +1318,18 @@
     if (BEASTS) for (var bk in BEASTS.shapes) S[bk] = BEASTS.shapes[bk];
     var epoch = 0, carry = [], CARRY_T = 2;
     function tint(base, tier) { var col = new T.Color(base); if (tier >= 5) col.lerp(new T.Color(0xffffff), 0.12); return col.getHex(); }
-    function cast(skill, tier, targets, hit, speedMul, lv) {
+    function cast(skill, tier, targets, hit, speedMul, lv, surge) {
       // Every skill plays at its own length whatever the attack speed (2026-11-16, user: "every skill must show properly
       // every time"). Attack speed only shortens the gap before the next cast (main.js castTime), so at speed x2 two or
       // three skills overlap instead of each one rushing by in half the time. CW.fxSpeedVisual = true brings back the
       // old rushed timing (for comparing). speedMul stays in the signature for the callers.
-      var sp = CW.fxSpeedVisual ? (speedMul || 1) : 1; lv = lv || 0;
+      var sp = CW.fxSpeedVisual ? (speedMul || 1) : 1;
+      var surgeBoost = surge ? 30 : 0, effectLevel = (lv || 0) + surgeBoost;
+      var baseScale = 1.12 * (1 + 0.08 * (tier - 1));
       // no magic circles under any skill (2026-11-16, the user: '마법진은 빼자'; NO_CIRCLE was the list of skills without one)
-      var c = { sk: skill, noCircle: true, tier: tier, lv: lv, col: tint(skill.color, tier), s: 1.12 * (1 + 0.08 * (tier - 1)) * (1 + 0.018 * lv), n: Math.min(2.4, 1 + 0.1 * (tier - 1) + 0.025 * lv), sp: sp,
+      var c = { sk: skill, noCircle: true, tier: tier, surgeBoost: surgeBoost, col: tint(skill.color, tier),
+        s: baseScale * (1 + 0.018 * surgeBoost), hitScale: baseScale * (1 + 0.018 * effectLevel),
+        n: Math.min(2.4, 1 + 0.1 * (tier - 1) + 0.025 * effectLevel), sp: sp,
         D: function (t) { return t / sp; }, deep: deep(tint(skill.color, tier)), from: sc.heroPaw(), targets: targets.slice(), hit: hit || function () { } };
       c.center = crowdCenter(c.targets);
       c.epoch = epoch;
@@ -1377,11 +1378,11 @@
       if (CW.sound && CW.sound.skillCast) CW.sound.skillCast(skill.id);   // the skill's own sound (js/sfx-map.js)
       var H = sc.heroCenter();
       // casting circle: two rune rings under the feet, sparks rising, a coloured seal at the paw
-      if (!c.noCircle) E({ sys: 'gadd', pos: V(H.x, 0.045, H.z), frame: 'circle', color: c.col, size: [0.3, 1.2 + 0.03 * lv], ease: 2, life: c.D(0.55), spin: 3, fadeIn: 0.1, fadeOut: 0.5, alpha: 0.95 });
+      if (!c.noCircle) E({ sys: 'gadd', pos: V(H.x, 0.045, H.z), frame: 'circle', color: c.col, size: [0.3, 1.2 + 0.03 * surgeBoost], ease: 2, life: c.D(0.55), spin: 3, fadeIn: 0.1, fadeOut: 0.5, alpha: 0.95 });
       E({ sys: 'gadd', pos: V(H.x, 0.05, H.z), frame: 'ring', color: 0xffffff, size: [0.3, 1.1], ease: 1, life: c.D(0.35), alpha: 0.6 });
       for (var q = 0; q < N(8, c); q++) { var qa = rr(0, 6.28); E({ pos: V(H.x + Math.cos(qa) * 0.6, 0.1, H.z + Math.sin(qa) * 0.45), vel: V(0, rr(1.6, 2.8), 0), frame: pick(['star', 'dot']), color: [0xffffff, c.col], size: [0.1, 0], life: rr(0.35, 0.6), drag: 0.6, spin: 6 }); }
       if (!c.noCircle) seal(c.from.clone().add(V(0, 0, 0.1)), c.col, 0.55 * c.s, c.D(0.3));
-      if (lv >= 10) E({ pos: H.clone().add(V(0, 0.2, 0.05)), frame: 'glow', color: c.col, size: [1.6, 0.4], life: c.D(0.4), alpha: 0.35 });
+      if (effectLevel >= 10) E({ pos: H.clone().add(V(0, 0.2, 0.05)), frame: 'glow', color: c.col, size: [1.6, 0.4], life: c.D(0.4), alpha: 0.35 });
       if (tier >= 4) after(c.D(0.12), function () { sc.ghost(c.col); });
       var shape = S[skill.shape] || S.bolt3;
       // monsters are split finer than the skill data (CW.hitCount): a one-monster spell strikes each of its targets in turn,

@@ -152,7 +152,7 @@
         });
       }
       function land2(p, mob, big) {
-        var R = 1.7 * c.s, hitNow = left.filter(function (m) { return m === mob || ((m.x - p.x) * (m.x - p.x) + (m.z - p.z) * (m.z - p.z) < R * R); });
+        var R = 1.7 * c.hitScale, hitNow = left.filter(function (m) { return m === mob || ((m.x - p.x) * (m.x - p.x) + (m.z - p.z) * (m.z - p.z) < R * R); });
         left = left.filter(function (m) { return hitNow.indexOf(m) < 0; });
         boom(p, big, hitNow);
         var rest = left.filter(function (m) { return m.alive; });

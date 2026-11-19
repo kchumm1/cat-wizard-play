@@ -375,7 +375,7 @@
     var surge = CW.surgeTick(state, st), weak = CW.isWeak(s, CW.regionOf(state), state.diff);
     if (surge) { sc.shake(0.3); sc.flash('rgba(190,140,255,0.32)', 0.22); }
     var mul = (surge ? st.surgeMul : 1) * (weak ? st.weakMul : 1), bk = bookCast(s, mul, tg);
-    fx.cast(s, state.tier, tg, onHit(s, mul, bk), st.speedMul, CW.skillLevel(state, s.id) + (surge ? 30 : 0));
+    fx.cast(s, state.tier, tg, onHit(s, mul, bk), st.speedMul, CW.skillLevel(state, s.id), surge);
     ui.surgeGauge(state.surge || 0, DATA.surgeConf.charge);
     snd.play('cast');
     castT = CW.castTime(s, st.speedMul);
