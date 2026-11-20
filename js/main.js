@@ -638,9 +638,10 @@
   function coinShown(c, on) { if (c.on !== on) { c.on = on; c.el.style.display = on ? '' : 'none'; } }
   // where the stage and the gold counter are: read at most once a frame, at the first kill (reading it at every kill,
   // after damage numbers were added, made the browser lay the page out again for each monster a spell killed at once)
-  var coinBox = null;
+  var coinBox = null, battleCovered = false;
   function readCoinBox() { coinBox = { stage: $('stage').getBoundingClientRect(), dst: $('goldTxt').getBoundingClientRect() }; }
   function flyCoins(pos, n) {
+    if (battleCovered) return;
     if (!coinBox) readCoinBox();
     var sp = sc.screenPos(pos), stage = coinBox.stage, dst = coinBox.dst;
     for (var k = 0; k < n; k++) {
@@ -867,12 +868,15 @@
   CW.dexState = function () { return state; };
   if (CW.dexDot) CW.dexDot(CW.dexHasNew(state));
 
+  var drawing;
   function applySettings() {
     var s = state.settings;
     snd.setEnabled(s.sound); sc.setPixel(s.pixel);
     if (sc.setLandView) sc.setLandView(s.landView);   // 가로 시점 (sideways only; upright unchanged)
     sc.setDamageStyle((s.dmgSize === undefined ? 60 : s.dmgSize) / 100, (s.dmgAlpha === undefined ? 85 : s.dmgAlpha) / 100);
-    var q = s.quality === 'auto' ? autoQ : s.quality; sc.setQuality(q); fx.setQuality(q);
+    drawing = CW.drawPlan(s.quality, CW.PHONE, autoQ);
+    sc.setQuality(drawing.quality, drawing.phoneLite);
+    fx.setQuality(drawing.fxKey);
     pace.setCap(s.fpsCap || 60);
   }
 
@@ -894,7 +898,7 @@
   function perfProbe() {
     var r = sc.renderer, inf = r && r.info, pm = root.performance && performance.memory;
     return {
-      q: sc.getQuality(), pr: r ? r.getPixelRatio() : undefined, k: fx.load(),
+      q: drawing && drawing.phoneLite ? '자동·가벼움' : sc.getQuality(), pr: r ? r.getPixelRatio() : undefined, k: fx.load(),
       dc: inf ? inf.render.calls : undefined, tri: inf ? inf.render.triangles : undefined,
       tex: inf ? inf.memory.textures : undefined, geo: inf ? inf.memory.geometries : undefined,
       b: battery ? Math.round(battery.level * 100) : undefined, ch: battery ? (battery.charging ? 1 : 0) : undefined,   // Galaxy Chrome only
@@ -948,13 +952,8 @@
   }
   try { if (perf && storage && storage.getItem('cw-perf') === '1') perfSwitch(true, false); } catch (e) { noteError(e); }
   var autoQ = 'high', fpsAcc = 0, fpsN = 0, fpsT = 0, stalls = 0, fpsAim = 60;
-  // 발열 (2026-11-17): a phone that keeps up 60 a second never had its quality lowered, and got hot over a long run.
-  // After HOT_AFTER seconds of the fight on screen, a phone at 'high' steps down to 'mid' once (fewer pixels, effects and
-  // little ones) until the game is opened again.
-  var HOT_AFTER = 600, hotT = 0;
   function watchFps(rdt, aim) {
     if (state.settings.quality !== 'auto') return;
-    if (CW.PHONE && autoQ === 'high') { hotT += rdt; if (hotT >= HOT_AFTER) { autoQ = 'mid'; applySettings(); return; } }
     aim = aim || 60;
     if (aim !== fpsAim) { fpsAim = aim; fpsAcc = 0; fpsN = 0; fpsT = 0; stalls = 0; return; }
     fpsAcc += rdt; fpsN++; fpsT += rdt; if (rdt > Math.max(0.045, 1.4 / aim)) stalls++;
@@ -976,7 +975,7 @@
     if (begun && calm && state.tierShow && !pendingTier.length) pendingTier.push({ tier: state.tierShow, at: 1.0 });
     for (var i = pendingTier.length - 1; i >= 0; i--) { if (!calm) break; pendingTier[i].at -= dt; if (pendingTier[i].at <= 0) { doTierUp(pendingTier[i].tier); pendingTier.splice(i, 1); } }
     // how many little ones: only in a plain stage fight (not a boss, not a dungeon), fewer on a phone and at lower quality
-    if (mins) mins.setWant(dun || boss || state.bossTry ? 0 : CW.minionCap(sc.getQuality(), CW.PHONE), minionPick);
+    if (mins) mins.setWant(dun || boss || state.bossTry ? 0 : CW.minionCap(drawing.minionQuality, CW.PHONE), minionPick);
     if (dun) { dunTick(dt); if (dun && dun.library && dun.library.cards) return; }
     else if (restT > 0) { restT -= dt; if (restT <= 0) syncRegion(); }
     else if (boss) {
@@ -1052,6 +1051,11 @@
       var calmNow = pace.calm(now); if (calmNow !== calmOn) { calmOn = calmNow; document.documentElement.classList.toggle('cw-calm', calmOn); }
     }
     if (!pace.shouldDraw(now)) return;
+    var covered = !!(CW.idleCovered && CW.idleCovered());
+    if (covered !== battleCovered) {
+      battleCovered = covered; sc.setDamageHidden(covered);
+      if (covered) coins.forEach(function (c) { c.t = 1; coinShown(c, false); });
+    }
     var t0 = ready && perf && perf.on() ? performance.now() : 0;   // 성능 표시: the time this frame's own code takes
     var aim = pace.target(now);
     if (aim > 60) aim = Math.max(60, Math.min(aim, pace.hz() || 60));   // 120 chosen on a 60 Hz screen is 60 a second
@@ -1066,10 +1070,10 @@
         var gdt = sc.scaleDt(steps[si]) * FAST;
         try { tick(gdt); } catch (e) { noteError(e); }
         try { fx.update(gdt); } catch (e) { noteError(e); }
-        try { sc.update(gdt, steps[si]); } catch (e) { noteError(e); }
+        try { sc.update(gdt, steps[si], si === steps.length - 1); } catch (e) { noteError(e); }
       }
       try {
-        updateCoins(rdt);
+        if (!battleCovered) updateCoins(rdt);
         lookT -= rdt; if (lookT <= 0) { lookT = 0.25; applyLook(); }
         gained.t += rdt; if (gained.t >= 1) { if (state.fieldIdleReport && !document.hidden) showFieldIdleReport(); ui.gainLog(gained); gained.gold = gained.xp = gained.gems = gained.dmg = gained.runeDust = gained.sigilDust = gained.runeStone = gained.sigilStone = 0; gained.t = 0; gained.more.length = 0; }
         uiT += rdt; panelT += rdt; saveT += rdt;
@@ -1081,7 +1085,7 @@
       } catch (e) { noteError(e); }
     }
     if (t0 && sc.renderer) sc.renderer.info.reset();
-    try { sc.render(); } catch (e) { noteError(e); }
+    try { if (!battleCovered) sc.render(); } catch (e) { noteError(e); }
     if (t0) {
       try {
         var t1 = performance.now(); perf.frame(gap, t1 - t0, aim);

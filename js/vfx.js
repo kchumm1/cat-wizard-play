@@ -175,7 +175,7 @@
       addB: new Layer(scene, atlas, 700, { add: false, order: 10 }),
       add: new Layer(scene, atlas, 1500, { add: true, order: 11 })
     };
-    var CAP = { high: [1, 1500, 500, 700], mid: [0.6, 850, 300, 420], low: [0.35, 460, 170, 240] };
+    var CAP = { high: [1, 1500, 500, 700], lite: [0.75, 1000, 340, 480], mid: [0.6, 850, 300, 420], low: [0.35, 460, 170, 240] };
     var qf = 1, load = 1, bright = false, pool = [], camPos = new T.Vector3(), camDir = new T.Vector3();
 
     function emit(o) {

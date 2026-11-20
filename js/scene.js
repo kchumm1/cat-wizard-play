@@ -223,14 +223,14 @@
     var mobGroup = new T.Group(); scene.add(mobGroup);
     var fxGroup = new T.Group(); scene.add(fxGroup);
 
-    var quality = 'high', pixel = false, time = 0, region = -1;
+    var quality = 'high', phoneLite = false, pixel = false, time = 0, region = -1;
     var hero = null, mobs = [], dying = [], ambient = null, ambientVel = null;
     var hooks = { land: null, die: null };
 
     function size() {
       var w = canvas.clientWidth || 360, h = canvas.clientHeight || 420;
       var dpr = window.devicePixelRatio || 1;
-      var pr = PHONE ? (quality === 'high' ? Math.min(dpr, 1.5) : quality === 'mid' ? Math.min(dpr, 1.25) : 1)
+      var pr = PHONE ? (quality === 'high' ? Math.min(dpr, phoneLite ? 1.25 : 1.5) : quality === 'mid' ? Math.min(dpr, 1.25) : 1)
         : quality === 'high' ? Math.min(dpr, 2) : quality === 'mid' ? Math.min(dpr, 1.5) : 1;
       if (pixel) { renderer.setPixelRatio(1); renderer.setSize(Math.max(1, Math.round(w / 3)), Math.max(1, Math.round(h / 3)), false); canvas.style.imageRendering = 'pixelated'; }
       else { renderer.setPixelRatio(pr); renderer.setSize(w, h, false); canvas.style.imageRendering = 'auto'; }
@@ -891,15 +891,25 @@
       tmpV.copy(pos).project(camera);
       return { x: (tmpV.x * 0.5 + 0.5) * cssW, y: (-tmpV.y * 0.5 + 0.5) * cssH };
     }
+    var damageHidden = false;
+    function setDamageHidden(hidden) {
+      damageHidden = hidden;
+      if (hidden) pool.forEach(function (slot) {
+        if (slot.live) { slot.live = false; slot.el.style.display = 'none'; }
+      });
+    }
     function damageText(pos, text, crit, color) {
+      if (damageHidden) return;
       var slot = null; for (var i = 0; i < pool.length; i++) if (!pool[i].live) { slot = pool[i]; break; }
       if (!slot) { slot = pool[0]; for (var j = 1; j < pool.length; j++) if (pool[j].t > slot.t) slot = pool[j]; }
       var sp = screenPos(pos);
       slot.x = sp.x + (Math.random() - 0.5) * 34; slot.y = sp.y - 14 - Math.random() * 12;
       var tier = crit === true ? 1 : (+crit || 0), TT = CW.DATA && CW.DATA.critTiers;
       slot.t = 0; slot.live = true; slot.crit = tier > 0; slot.tier = tier; slot.dir = Math.random() < 0.5 ? -1 : 1;
-      slot.el.innerHTML = (tier >= 2 && TT ? '<small>' + TT[tier - 1].name + '</small>' : '') + text;
-      slot.el.className = 'dmg' + (tier ? ' crit c' + tier : '');
+      var html = (tier >= 2 && TT ? '<small>' + TT[tier - 1].name + '</small>' : '') + text;
+      if (slot.html !== html) { slot.html = html; slot.el.innerHTML = html; }
+      var cls = 'dmg' + (tier ? ' crit c' + tier : '');
+      if (slot.el.className !== cls) slot.el.className = cls;
       slot.el.style.color = tier ? '' : (color || '');
       slot.el.style.display = '';
     }
@@ -1234,7 +1244,7 @@
       }
     }
 
-    function update(dt, realDt) {
+    function update(dt, realDt, drawNumbers) {
       var rdt = realDt === undefined ? dt : realDt;
       time += dt; laneFrame++;
       orbTick(rdt);
@@ -1378,11 +1388,15 @@
       // numbers
       pool.forEach(function (s) {
         if (!s.live) return; s.t += rdt; var dur = s.crit ? 1.05 + 0.15 * (s.tier || 0) : 0.8, k = s.t / dur;
-        if (k >= 1) { s.live = false; s.el.style.opacity = 0; s.el.style.display = 'none'; return; }
+        if (k >= 1) { s.live = false; s.alpha = 0; s.el.style.opacity = 0; s.el.style.display = 'none'; return; }
+        // Intermediate simulation steps have no visible frame.
+        if (drawNumbers === false) return;
         var pop = s.crit ? (k < 0.12 ? 0.3 + k / 0.12 * 1.2 : k < 0.24 ? 1.5 - (k - 0.12) / 0.12 * 0.4 : 1.1) : (k < 0.1 ? 0.5 + k / 0.1 * 0.7 : 1.2 - Math.min(0.2, k - 0.1));
         var rise = s.crit ? k * 38 : (k * 52 - k * k * 10), side = s.crit ? Math.sin(k * 40) * 3 * (1 - k) : s.dir * k * 14;
-        s.el.style.opacity = (k > 0.72 ? (1 - k) / 0.28 : 1) * dmgAlpha;
-        s.el.style.transform = 'translate(' + (s.x + side * dmgSize) + 'px,' + (s.y - rise * dmgSize) + 'px) translate(-50%,-50%) scale(' + pop * dmgSize + ')';
+        var alpha = (k > 0.72 ? (1 - k) / 0.28 : 1) * dmgAlpha;
+        if (s.alpha !== alpha) { s.alpha = alpha; s.el.style.opacity = alpha; }
+        var transform = 'translate(' + (s.x + side * dmgSize) + 'px,' + (s.y - rise * dmgSize) + 'px) translate(-50%,-50%) scale(' + pop * dmgSize + ')';
+        if (s.transform !== transform) { s.transform = transform; s.el.style.transform = transform; }
       });
       // camera: smooth trauma shake, punch zoom, slow drift
       trauma = Math.max(0, trauma - rdt * 1.25);
@@ -1514,14 +1528,14 @@
       u.tDiffuse.value = lensRT.texture; renderer.render(lensScene, lensCam);
     }
     function setPixel(v) { pixel = !!v; size(); }
-    function setQuality(q) { quality = q; size(); }
+    function setQuality(q, lite) { quality = q; phoneLite = !!lite; size(); }
     size();
     return {
       THREE: T, scene: scene, camera: camera, renderer: renderer, fxGroup: fxGroup, desertLight: desertLight, glow: GLOW, hooks: hooks,
       size: size, setRegion: setRegion, setHero: setHero, setHeroTexture: setHeroTexture, setHeroViews: setHeroViews, setCostumeFx: setCostumeFx, heroTip: heroTip, heroPaw: heroPaw, heroCenter: heroCenter, heroPose: heroPose, heroBeatAt: function () { return beatT; }, heroGlow: heroGlowPulse, ghost: ghost,
       castPulse: function () { heroGlow = 1; }, heroState: function () { return HB; }, heroFaceTo: heroFaceTo, heroCheer: heroCheer, setViewShift: setViewShift, setLandView: setLandView, landView: function () { return landView; },
       minions: minions, spawnMob: spawnMob, hitMob: hitMob, killMob: killMob, dismissMob: dismissMob, clearMobs: clearMobs, mobs: function () { return mobs; }, mobPos: mobPos, mobTop: mobTop,
-      setTierAura: setTierAura, damageText: damageText, screenPos: screenPos, flash: flash, dim: dim, shake: shake, punch: camPunch, light: light,
+      setTierAura: setTierAura, setDamageHidden: setDamageHidden, damageText: damageText, screenPos: screenPos, flash: flash, dim: dim, shake: shake, punch: camPunch, light: light,
       hitStop: hitStop, slowmo: slowmo, climax: climax, scaleDt: scaleDt, update: update, render: render, lens: lens, warmLens: warmLens,
       scrX: function (dx, dz) { return scrX(dx, dz); },
       // a step u across the screen (+ right) and w toward the camera, as a step on the field

@@ -1245,8 +1245,12 @@
           if (tc && !document.documentElement.classList.contains('profon')) tc.setAttribute('content', capc);
         }
       }
-      var gTxt = gh(s.gold); if (gTxt !== lastGoldTxt) { lastGoldTxt = gTxt; $('goldTxt').innerHTML = gTxt; } $('gemTxt').textContent = fmt(s.gems);
-      $('lvTxt').textContent = 'Lv.' + s.level; $('xpBar').style.width = (s.level >= DATA.balance.levelMax ? 100 : Math.min(100, s.xp / CW.xpNeed(s.level) * 100)) + '%';
+      var gTxt = gh(s.gold); if (gTxt !== lastGoldTxt) { lastGoldTxt = gTxt; $('goldTxt').innerHTML = gTxt; }
+      var gems = fmt(s.gems), level = 'Lv.' + s.level;
+      if ($('gemTxt').textContent !== gems) $('gemTxt').textContent = gems;
+      if ($('lvTxt').textContent !== level) $('lvTxt').textContent = level;
+      var xpWidth = (s.level >= DATA.balance.levelMax ? 100 : Math.min(100, s.xp / CW.xpNeed(s.level) * 100)) + '%';
+      if (xpWidth !== lastXpWidth) { lastXpWidth = xpWidth; $('xpBar').style.width = xpWidth; }
       var boss = G.boss(), sub = '', kp;
       $('bossbox').classList.toggle('on', !!boss);
       $('nhProg').style.display = boss ? 'none' : '';
@@ -1288,9 +1292,20 @@
       if (nk.getBoundingClientRect().width > want + 0.5) nk.style.maxWidth = Math.floor(want) + 'px';
     }
     if (typeof root.addEventListener === 'function') root.addEventListener('resize', function () { clearTimeout(fitNick.t); fitNick.t = setTimeout(fitNick, 120); });
+    var lastXpWidth, lastSlotKey, lastPreset;
     function slots() {
       var s = G.state, now = G.castingSlot();
-      var pre = [0, 1, 2].map(function (i) { return '<button data-pre="' + i + '" aria-pressed="' + ((s.preset || 0) === i) + '" aria-label="스킬 프리셋 ' + (i + 1) + '">' + (i + 1) + '</button>'; }).join(''); if ($('pre').innerHTML !== pre) $('pre').innerHTML = pre;
+      if (lastPreset !== (s.preset || 0)) {
+        lastPreset = s.preset || 0;
+        var pre = [0, 1, 2].map(function (i) { return '<button data-pre="' + i + '" aria-pressed="' + ((s.preset || 0) === i) + '" aria-label="스킬 프리셋 ' + (i + 1) + '">' + (i + 1) + '</button>'; }).join('');
+        $('pre').innerHTML = pre;
+      }
+      var key = s.slots.map(function (id) { return id ? id + ':' + CW.skillLevel(s, id) : ''; }).join('|');
+      if (key === lastSlotKey) {
+        Array.prototype.forEach.call($('slots').children, function (el, i) { el.classList.toggle('now', i === now && !!s.slots[i]); });
+        return;
+      }
+      lastSlotKey = key;
       $('slots').innerHTML = s.slots.map(function (id, i) {
         var sk = id && CW.skillById(id);
         if (!sk) return '<button class="sk empty" data-bar="' + i + '" aria-label="' + (i + 1) + '번 칸 비어 있음"><b>' + (i + 1) + '</b></button>';
@@ -2125,10 +2140,18 @@
     // 배치를 한 번 더 계산했음(훈련 탭 열 때 81ms+, CPU 4배 느리게 실측) → 새 화면을 넣은 뒤에 맨 위로
     var topNext = false;
     function renderTop() { topNext = true; renderPanel(true); }
+    var panelInputs, nextPanelClock = 0;
     function renderPanel(force) {
       var top0 = topNext; topNext = false;
       if (tab === 'battle') return;
       if (!force && (panelTouch || performance.now() - panelScrollAt < 500)) return;
+      // Interaction handlers explicitly request an immediate refresh. For background updates,
+      // the draw screen depends only on pulls and pity. Other sheets can also show timed or external data.
+      var state = G.state, clock = performance.now();
+      var inputs = tab === 'gacha' ? [tab, state.pulls, state.pity].join('|') :
+        [tab, state.gold, state.gems, state.level, state.tier, state.stage, state.best, state.runeDust, state.sigilDust].join('|');
+      if (!force && inputs === panelInputs && (tab === 'gacha' || clock < nextPanelClock)) return;
+      panelInputs = inputs; nextPanelClock = clock + 1000;
       dockHtml = '';
       var html = PANELS[tab](), dh = dockHtml, key = html + '|dock|' + dh;
       if (!force && key === lastPanel) return;

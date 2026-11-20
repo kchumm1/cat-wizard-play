@@ -2,11 +2,11 @@
 // 시안 8번 「별자리 냥법사」 (art-src/ai-review/2026-11-16-idle-mode/index2.html). Tap 방치 under 공지: a night sky comes down
 // over the battle; while monsters keep falling a star lights every 1.5 s and the lines join into a cat; when all 18 are
 // lit a shooting star passes and it starts over. Below: time, kills, gold, rune stones and xp won since the sky came
-// down. A swipe up lifts it away; a tap only lights the "쓸어 올려서" hint. The battle keeps being drawn underneath (the
+// down. A swipe up lifts it away; a tap only lights the "쓸어 올려서" hint. The battle keeps running underneath (the
 // user chose that). The screen is asked to stay on while it is up; leaving the app turns it off (js/main.js).
 (function (root) {
   var CW = root.CW;
-  var box = null, tally = null, timer = 0, holdUntil = 0, lastNum = 0, lock = null, on = false;
+  var box = null, tally = null, timer = 0, holdUntil = 0, lastNum = 0, lock = null, on = false, coveredAfter = 0, dragging = false;
   var MOON = '<svg viewBox="2.3 -1.2 48 48" aria-hidden="true"><path d="M30 6a17 17 0 1 0 12 26A15 15 0 0 1 30 6z" fill="#ffe7a0" stroke="#5b4320" stroke-width="2.4" stroke-linejoin="round"/>' +
     '<circle cx="22" cy="21" r="2.4" fill="#e9c66a"/><circle cx="16" cy="31" r="1.7" fill="#e9c66a"/><path d="M37 13l1.2 2.6 2.8.4-2 2 .5 2.8-2.5-1.3-2.5 1.3.5-2.8-2-2 2.8-.4z" fill="#fff6cf"/></svg>';
   function G() { return root.GAME; }
@@ -68,7 +68,7 @@
   function idleOn() {
     if (on) return;
     if (!box) build();
-    on = true; tally = CW.idleTally(Date.now()); holdUntil = 0; lastNum = 0;
+    on = true; dragging = false; coveredAfter = performance.now() + 1100; tally = CW.idleTally(Date.now()); holdUntil = 0; lastNum = 0;
     draw(0); nums(Date.now());
     box.classList.remove('leave', 'drag'); box.style.transform = ''; box.style.display = 'block';
     void box.offsetWidth; box.classList.add('enter');
@@ -89,13 +89,13 @@
   function swipe() {
     var y0 = null, dy = 0, t0 = 0, pid = null;
     box.addEventListener('pointerdown', function (e) {
-      if (!on || y0 !== null) return; y0 = e.clientY; dy = 0; t0 = Date.now(); pid = e.pointerId;
+      if (!on || y0 !== null) return; y0 = e.clientY; dy = 0; t0 = Date.now(); pid = e.pointerId; dragging = true;
       try { box.setPointerCapture(pid); } catch (x) {}
       box.classList.remove('enter'); box.classList.add('drag');
     });
     box.addEventListener('pointermove', function (e) { if (y0 === null || e.pointerId !== pid) return; dy = Math.min(0, e.clientY - y0); box.style.transform = 'translateY(' + dy + 'px)'; });
     function up(e) {
-      if (y0 === null || (e && e.pointerId !== pid)) return; y0 = null; box.classList.remove('drag');
+      if (y0 === null || (e && e.pointerId !== pid)) return; y0 = null; dragging = false; box.classList.remove('drag');
       if (CW.idleSwipeDone(dy, Date.now() - t0)) { box.style.transform = ''; idleOff(true); if (G() && G().G) G().G.showFieldIdleReport(); if (G() && G().sound) G().sound('click'); return; }
       box.style.transform = '';
       if (dy > -10) { var h = box.querySelector('.idhint'); h.classList.add('lit'); clearTimeout(h._t); h._t = setTimeout(function () { h.classList.remove('lit'); }, 1500); }
@@ -105,6 +105,7 @@
   }
   function idleNote(r) { if (on && tally) CW.idleAdd(tally, r, Date.now()); }
   CW.idleOn = idleOn; CW.idleOff = idleOff; CW.idleNote = idleNote;
+  CW.idleCovered = function () { return on && !dragging && performance.now() >= coveredAfter; };
   CW.idleActive = function () { return on; };
   CW.idleMoon = function () { return MOON; };
 })(this);
