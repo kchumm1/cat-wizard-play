@@ -219,6 +219,10 @@
       RIGS[id + '-v' + i] = r;
     });
   });
+  // Hats and faces travel together. Each view supplies its own neck height.
+  Object.keys(RIGS).forEach(function (id) {
+    if (/^(hero(?:-|$)|cos(?:tume|[0-9]))/.test(id)) RIGS[id].rigidHead = true;
+  });
   var SIZE = 1254;
   function smooth(a, b, x) { var t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
   // A staff strip: [x1, y1, x2, y2, head radius, fade, shaft radius, head share of the length]: fully moved within the radius
@@ -243,6 +247,13 @@
       }
       var dx = (px - b.e[0]) / b.e[2], dy = (py - b.e[1]) / b.e[3], d = Math.sqrt(dx * dx + dy * dy);
       out[i] = 1 - smooth(0.55, 1.0, d); sum += out[i];
+    }
+    if (rig && rig.rigidHead && rig.head) {
+      var neck = rig.head.p[1], blend = rig.head.e[3] * 0.25;
+      var limbs = sum - out[0];
+      // Reserve the staff and paw weights where they cross the face.
+      out[0] = (1 - smooth(neck - blend, neck + blend, py)) * Math.max(0, 1 - limbs);
+      sum = limbs + out[0];
     }
     if (sum > 1) for (var j = 0; j < 8; j++) out[j] /= sum;
     return out;

@@ -87,7 +87,7 @@
       if (list.length >= MAX) return;
       var aspect = art.aspect || 1, F = ctx.field, z = rr(F.z0 + 1, F.z1 - 0.8), side = edge;
       var m = { mesh: meshFor(art), h: h, w: h * aspect, fly: !!fly, x: side * (ctx.halfX(z) + rr(0.9, 1.8)), z: z, y: 0, vy: 0, face: -side, faceHold: 0,
-        ph: rr(0, 6), sp: rr(2.6, 3.4), state: 'in', retarget: 0, tx: 0, tz: 0 };
+        ph: rr(0, 6), stride: 0, sp: rr(2.6, 3.4), state: 'in', retarget: 0, tx: 0, tz: 0 };
       spot(m);
       list.push(m);
     }
@@ -127,11 +127,14 @@
           var sdx = ctx.scrX ? ctx.scrX(dx, dz) : dx; if (Math.abs(sdx) > 0.05) { var f = sdx > 0 ? 1 : -1; m.faceHold -= dt; if (f !== m.face && m.faceHold <= 0) { m.face = f; m.faceHold = 0.3; } }
         } else if (m.state === 'in') m.state = 'mill';
         if (m.state === 'flee' && !moving) { free(m.mesh); list.splice(i, 1); continue; }
-        var hop = moving ? Math.abs(Math.sin(m.ph)) * 0.11 : 0, sq = moving ? Math.cos(m.ph * 2) * 0.06 : Math.sin(m.ph * 0.4 + m.retarget) * 0.03;
+        m.stride += ((moving ? 1 : 0) - m.stride) * Math.min(1, dt * 10);
+        var foot = Math.sin(m.ph), lift = foot * foot;
+        var hop = lift * 0.10 * m.stride;
+        var sq = (lift - 0.5) * 0.08 * m.stride + Math.sin(m.ph * 0.4) * 0.012;
         if (!moving) m.ph += dt * 2;
         // fliers float a little above the ground and bob softly; their shadow stays on the ground, a bit smaller
         if (m.fly) { hop = 0.32 + Math.sin(m.ph * 0.35) * 0.07; sq *= 0.5; m.y = hop; }
-        m.mesh.position.set(m.x, hop, m.z); m.mesh.rotation.y = yaw; m.mesh.rotation.z = moving ? Math.sin(m.ph) * 0.08 : 0;
+        m.mesh.position.set(m.x, hop, m.z); m.mesh.rotation.y = yaw; m.mesh.rotation.z = m.fly ? Math.sin(m.ph * 0.35 - 0.45) * 0.045 : foot * 0.055 * m.stride;
         m.mesh.scale.set(m.w * m.face * (1 - sq * 0.5), m.h * (1 + sq), 1);
         if (si < MAX) { var s = m.w * 0.6 * (1 - hop); if (yaw) { SM.makeRotationY(yaw); SM.scale((SV || (SV = new T.Vector3())).set(s, 1, s * 0.55)); } else SM.makeScale(s, 1, s * 0.55); SM.setPosition(m.x, 0.011, m.z); shadows.setMatrixAt(si++, SM); }
       }

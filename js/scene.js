@@ -351,7 +351,7 @@
         vertexShader: BB_VS, fragmentShader: BB_FS, transparent: true, depthWrite: true, side: T.DoubleSide
       });
     }
-    function newAnim(seed) { return { t: seed, ph: seed, walk: 0, aR: spring(150, 11), aL: spring(150, 11), hd: spring(120, 10), lastS: 1 }; }
+    function newAnim(seed) { return { t: seed, ph: seed, walk: 0, brace: 0, airborne: 0, armFollow: 0, aR: spring(150, 11), aL: spring(150, 11), hd: spring(120, 10), lastS: 1 }; }
     // The existing shadow draw carries the soft cast shadow and the sharply grounded paw/claw marks.
     var sandPrints = {};
     function sandPrint(role) {
@@ -392,7 +392,9 @@
       var seed = Math.random() * 6;
       g.userData = { body: m, u: mat.uniforms, shadow: sh, h: height, w: w, aspect: art.aspect, rig: art.rig, crop: art.crop, seed: seed, face: 1,
         bend: spring(170, 10), sq: spring(230, 13), lift: spring(95, 10), slide: spring(70, 11), light: new T.Color(0), anim: newAnim(seed) };
-      if (art.puppet) g.userData.puppet = art.puppet;
+      if (art.fieldMotion) g.userData.motion = art.fieldMotion;
+      else if (art.puppet) g.userData.puppet = art.puppet;
+      if (role === 1) g.userData.motion = 'wizard';
       if(role){
         g.userData.printRole=role;g.userData.shadowDisk=sh.geometry;
         g.userData.printPlane=new T.PlaneGeometry(w*1.12,w*.80);dressShadow(g);
@@ -414,15 +416,26 @@
       return new T.Vector3((x * sc.x + d.u.uBend.value * k * k) * d.h, y * sc.y * d.h, 0);
     }
     // Animates the bones: walk cycle, arm swing, breathing, tail wag, wing flaps. Returns true on a footstep.
-    function animRig(g, dt, P) {
+    function animRig(g, dt, P, sharedPose) {
       var d = g.userData, an = d.anim, A = d.u.uBA.value, TT = d.u.uBT.value;
-      an.t += dt; an.walk += ((P.walk || 0) - an.walk) * Math.min(1, dt * 10);
-      var wk = an.walk; if (wk > 0.02) an.ph += dt * (P.speed !== undefined ? Math.max(4, P.speed / (P.stride || 0.32) * Math.PI) : (5 + 9 * wk) * (P.stepRate || 1));
-      var s = Math.sin(an.ph), t = an.t, air = P.air ? 1 : 0, br = Math.sin(t * 2.3 + d.seed), ch = P.cheer || 0;
-      an.aR.target = (P.armR || 0) + ch * (0.35 + Math.sin(t * 15) * 0.4);
-      an.aL.target = (P.armL || 0) - ch * (0.35 + Math.sin(t * 15 + 1.6) * 0.4);
-      an.hd.target = (P.head || 0) - (P.hurt || 0) * 0.24 + ch * Math.sin(t * 7.5) * 0.1;
-      stepSpring(an.aR, dt); stepSpring(an.aL, dt); stepSpring(an.hd, dt);
+      // Directional wizard art uses the same stride and cast springs as its parent.
+      if (!sharedPose) {
+        an.t += dt; an.walk += ((P.walk || 0) - an.walk) * Math.min(1, dt * 10);
+        if (an.walk > 0.02) an.ph += dt * (P.speed !== undefined ? Math.max(4, P.speed / (P.stride || 0.32) * Math.PI) : (5 + 9 * an.walk) * (P.stepRate || 1));
+        var cheer = P.cheer || 0;
+        an.aR.target = (P.armR || 0) + cheer * (0.35 + Math.sin(an.t * 15) * 0.4);
+        an.aL.target = (P.armL || 0) - cheer * (0.35 + Math.sin(an.t * 15 + 1.6) * 0.4);
+        an.hd.target = (P.head || 0) - (P.hurt || 0) * 0.24 + cheer * Math.sin(an.t * 7.5) * 0.1;
+        stepSpring(an.aR, dt); stepSpring(an.aL, dt); stepSpring(an.hd, dt);
+        if (d.motion) {
+          var follow = 1 - Math.exp(-dt * 10);
+          an.brace += ((P.windup || 0) - an.brace) * follow;
+          an.airborne += ((P.air ? 1 : 0) - an.airborne) * follow;
+          an.armFollow += (an.aR.x - an.armFollow) * follow;
+        }
+      }
+      var wk = an.walk, s = Math.sin(an.ph), t = an.t, air = d.motion ? an.airborne : P.air ? 1 : 0;
+      var br = Math.sin(t * 2.3 + d.seed);
       A[0] = an.hd.x + Math.sin(t * 1.7 + d.seed) * 0.05 + wk * s * 0.07; TT[0].set(0, br * 0.012 - wk * Math.abs(s) * 0.012);
       // the staff arm: a long staff (most costumes) only tips a little toward the monsters, or it would cross the face (fwd),
       // and rises a little as it does (lift); backward it swings freely
@@ -436,8 +449,69 @@
       A[5] = Math.sin(t * (3.2 + wk * 6) + d.seed) * (0.2 + 0.14 * wk) + (P.wag || 0);
       var fl = Math.sin(t * (P.flapF || 6) + d.seed) * (P.flap === undefined ? 0.1 : P.flap) + (P.wingOpen || 0);
       A[6] = -(fl + 0.03); A[7] = fl + 0.03;
+      if (d.motion) poseFieldParts(d, P, wk, s, t, br);
       var sg = s >= 0 ? 1 : -1, step = wk > 0.35 && sg !== an.lastS; an.lastS = sg;
       return step;
+    }
+    // Keep the planted foot low; the other foot swings through before it takes weight.
+    function poseFieldParts(d, P, walk, stride, time, breath) {
+      var angles = d.u.uBA.value, shifts = d.u.uBT.value;
+      // Ease into and out of contact. At footfall the sole has zero vertical speed.
+      var positive = Math.max(0, stride), negative = Math.max(0, -stride);
+      var liftL = positive * positive * walk, liftR = negative * negative * walk;
+      var air = d.anim.airborne;
+      var lag = Math.sin(d.anim.ph - 0.55) * walk;
+      if (d.motion === 'b44') {
+        var phase = time * 12 + d.seed + 0.17 * breath;
+        var wing = Math.sin(phase + 0.18 * Math.sin(phase));
+        angles[6] = -0.15 - wing * 0.24;
+        angles[7] = 0.15 + Math.sin(phase - 0.07 + 0.18 * Math.sin(phase)) * 0.24;
+        angles[0] *= 0.65;
+        angles[1] = 0.075 * breath + 0.23 * d.anim.brace + 0.32 * d.anim.aL.x;
+        angles[2] *= 0.45;
+        shifts[0].set(0, breath * 0.004 - 0.002 * wing);
+        return;
+      }
+      var bear = d.motion === 'b41', cat = d.motion === 'c01';
+      var reach = cat ? 0.028 : bear ? 0.018 : 0.023;
+      var sweep = Math.cos(d.anim.ph) * walk;
+      shifts[3].set(reach * sweep, liftL * (cat ? 0.035 : 0.027));
+      shifts[4].set(-reach * sweep, liftR * (cat ? 0.035 : 0.027));
+      shifts[3].y += 0.023 * air; shifts[4].y += 0.018 * air;
+      angles[3] = 0.20 * liftL - 0.09 * liftR - 0.16 * air;
+      angles[4] = -0.20 * liftR + 0.09 * liftL + 0.13 * air;
+      if (cat) {
+        angles[0] = angles[0] * 0.65 + 0.035 * lag;
+        shifts[0].set(0.004 * lag, breath * 0.003);
+        angles[5] = Math.sin(time * 2.8 + d.seed - 0.6) * 0.15 + lag * 0.07;
+      } else if (bear) {
+        var brace = d.anim.brace;
+        angles[0] *= 0.45;
+        angles[1] = d.anim.aL.x * 0.33 + lag * 0.16 - 0.18 * brace;
+        angles[2] = d.anim.aR.x * 0.45 - lag * 0.16 + 0.18 * brace;
+        shifts[0].set(0, -stride * stride * walk * 0.006 - brace * 0.008);
+      } else if (d.motion !== 'wizard') {
+        var floating = d.motion === 'float', hopping = d.motion === 'hop';
+        var heavy = d.motion === 'stomp', shortStep = heavy || d.motion === 'skitter';
+        var stepSize = floating ? 0.12 : shortStep ? 0.55 : 0.8;
+        shifts[3].multiplyScalar(stepSize); shifts[4].multiplyScalar(stepSize);
+        angles[3] *= stepSize; angles[4] *= stepSize;
+        if (hopping) {
+          // Both feet tuck under the body together during a jump.
+          shifts[3].set(0, 0.026 * air); shifts[4].set(0, 0.026 * air);
+          angles[3] = -0.12 * air; angles[4] = 0.12 * air;
+        }
+        var sway = floating ? Math.sin(time * 2.2 + d.seed) : lag;
+        angles[0] = angles[0] * 0.42 + sway * 0.025;
+        shifts[0].set(0, 0.003 * breath - 0.005 * d.anim.brace);
+        angles[1] = angles[1] * 0.68 - 0.075 * sway - 0.09 * d.anim.brace;
+        angles[2] = angles[2] * 0.68 + 0.075 * sway + 0.09 * d.anim.brace;
+        angles[5] = angles[5] * 0.7 + sway * 0.06;
+      } else {
+        angles[0] += lag * 0.06 - 0.07 * d.anim.armFollow;
+        angles[2] -= lag * 0.20;
+        if (d.split || d.staff) angles[1] += lag * 0.09;
+      }
     }
     function setHero(art) {
       if (views) setHeroViews(null);
@@ -494,7 +568,7 @@
       if (hero) hero.userData.body.visible = true;
       if (!arts || !hero) return;
       var list = arts.map(function (a, i) {
-        var g = billboard(a, HERO_H); g.userData.u.uArtRole.value=1; g.userData.art = a; g.userData.u.map.value = texs[i]; g.userData.shadow.visible = false; g.visible = false;
+        var g = billboard(a, HERO_H); g.userData.motion = 'wizard'; g.userData.anim = hero.userData.anim; g.userData.seed = hero.userData.seed; g.userData.u.uArtRole.value=1; g.userData.art = a; g.userData.u.map.value = texs[i]; g.userData.shadow.visible = false; g.visible = false;
         // a costume's views have the staff drawn in (it bends with the arm bone, rig armL.cap); the plain wizard's get the
         // staff cut out of its picture, in front of the body (behind it in the back view)
         if (staff) {
@@ -529,7 +603,7 @@
       u.uBend.value = hu.uBend.value; u.uScale.value.set(Math.abs(hu.uScale.value.x) * V.face, hu.uScale.value.y);
       u.uLight.value.copy(hu.uLight.value); u.uFlash.value = hu.uFlash.value; u.uFlashCol.value.copy(hu.uFlashCol.value);
       u.uFreeze.value = hu.uFreeze.value; u.uOpacity.value = hu.uOpacity.value; u.uDissolve.value = hu.uDissolve.value; u.uTint.value.copy(hu.uTint.value);
-      animRig(g, dt, arms);
+      animRig(g, dt, arms, true);
       g.position.copy(hero.position);
       var st = d.staff; if (!st) return;
       var gr = d.rig.armL.grip, c = d.crop, p = pointOn(g, (gr[0] - c.x0) / c.cw, 1 - (gr[1] - c.y0) / c.ch);
@@ -729,6 +803,7 @@
         flash: 0, frozen: 0, shocked: 0, freezeV: 0, phase: g.userData.seed, kx: spring(80, 9), face: 1, walk: 0, hurt: 0,
         flyer: !!def.flyer || !!FLYERS[def.art.id], cheer: 0, vx: 0, vz: 0, sp: 0,
         gait: def.gait || GAITS[def.art.id] || 'walk', hopCd: 0, pvx: 0, pvz: 0, tilt: spring(120, 9), dartT: 0, dartOn: true, orbDir: 1, orbR: 2.4 };
+      if (!g.userData.motion && !g.userData.puppet) g.userData.motion = mob.flyer ? 'float' : mob.gait;
       // come in from the nearest screen edge: left, right, the far side or the near side
       var ang = Math.atan2((spot.z - HB.z) / 1.15, spot.x - HB.x), cx = Math.cos(ang), cz = Math.sin(ang);
       // sideways every one (the boss too) comes in from the right edge, at about the depth it is heading for
@@ -1322,11 +1397,16 @@
         }
         stepSpring(m.tilt, dt);
         if (m.pull !== undefined) { m.x += (m.pull - m.x) * Math.min(1, dt * 5); if (m.pullZ !== undefined) m.z += (m.pullZ - m.z) * Math.min(1, dt * 5); rest.bend = Math.sin(time * 18 + m.phase) * 0.18; rest.sq = -0.12; }
+        // Shells and slimes without joints settle as a whole after leaving the ground.
+        if (!d.rig && !d.puppet && !frozen) {
+          rest.sq += 0.045 * (Math.min(1, m.y * 4) - d.anim.airborne);
+          rest.bend += 0.014 * Math.sin(d.anim.ph - 0.55) * d.anim.walk;
+        }
         rest.bend += scrX(m.vx, m.vz) * 0.035 + Math.sin(d.anim.ph) * 0.04 * d.anim.walk;
         if (m.state === 'windup') { rest.sq = -0.17; rest.bend = (scrX(m.x - HB.x, m.z - HB.z) > 0 ? 1 : -1) * 0.14; }
         m.hurt = Math.max(0, m.hurt - dt * 3);
         var P = { walk: frozen ? 0 : m.walk, speed: m.sp, stride: m.boss ? 0.42 : 0.22, air: m.y > 0.12, armL: -m.atk * 1.15, armR: m.atk * 0.3, hurt: m.hurt, cheer: m.cheer, stepRate: m.boss ? 0.65 : 1,
-          flap: m.flyer ? 0.32 : m.boss ? 0.16 : 0.1, flapF: m.flyer ? 9 : 6, wingOpen: m.state === 'roar' ? 0.25 : 0 };
+          flap: m.flyer ? 0.32 : m.boss ? 0.16 : 0.1, flapF: m.flyer ? 9 : 6, wingOpen: m.state === 'roar' ? 0.25 : 0, windup: m.state === 'windup' ? 1 : 0 };
         if (m.pull !== undefined) { P.cheer = 1; P.hurt = 0.8; }
         var stepped = d.puppet ? CW.expeditionPuppet.pose(m, frozen ? 0 : dt) : !frozen && animRig(g, dt, P);
         if (stepped && m.boss && !m.flyer) { shake(0.05); if (hooks.step) hooks.step(new T.Vector3(m.x, 0.03, m.z), true); }
