@@ -3479,6 +3479,11 @@ html.cw-calm #killBar.loop + #killBarFx,html.cw-calm #surgeGauge.full i::after,h
 <script src="js/update-screen.js"></script>
 <div id="topcap" aria-hidden="true"></div>
 <style id="expedition-css">
+.stagebg.expedition-bg::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 72% 47% at 50% 53%,var(--arena-shade) 12%,transparent 100%);pointer-events:none}
+.stagebg[data-backdrop="expedition-gold"]{--arena-shade:rgba(57,32,27,.65)}
+.stagebg[data-backdrop="expedition-mana"]{--arena-shade:rgba(28,31,53,.62)}
+.stagebg[data-backdrop="expedition-gem"]{--arena-shade:rgba(21,44,53,.73)}
+.stagebg[data-backdrop="expedition-rune"]{--arena-shade:rgba(41,32,55,.69)}
 .stagebg.expedition-bg,.stagebg.center-hunt.expedition-bg{border:0!important;border-image:none!important;background-size:cover!important;background-position:50% 53%!important}
 #sheet.expedition-sheet #panel{display:block;overflow-y:auto;padding:6px max(12px,env(safe-area-inset-right)) 16px max(12px,env(safe-area-inset-left))}
 #sheet.expedition-sheet #panel>*{flex-shrink:0}
@@ -3606,8 +3611,8 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 </style>
 <script>(function(){var sa=navigator.standalone||(window.matchMedia&&(matchMedia("(display-mode: standalone)").matches||matchMedia("(display-mode: fullscreen)").matches));if(!sa)return;document.documentElement.classList.add("sa");var d=document.documentElement;function typing(){var a=document.activeElement;return a&&/^(INPUT|TEXTAREA)$/.test(a.tagName);}var pr=document.createElement("div");pr.style.cssText="position:fixed;left:0;top:0;width:0;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none";document.body.appendChild(pr);function fit(){var inside=false;try{inside=localStorage.getItem("cw-bottom")==="inside";}catch(e){}var under=pr.offsetHeight>0;d.classList.toggle("under",under);var land=window.innerWidth>window.innerHeight,h=land?Math.min(screen.width,screen.height):Math.max(screen.width,screen.height),gap=h-window.innerHeight;var stretch=!window.CWPlayViewport&&under&&!inside&&gap<=120;if(stretch){d.style.setProperty("--apph",h+"px");d.classList.add("fullh");}else d.classList.remove("fullh");d.classList.toggle("shortv",under&&!stretch&&gap>=30&&gap<=120);if(window.scrollY&&!typing())window.scrollTo(0,0);}window.__cwFit=fit;fit();addEventListener("resize",function(){setTimeout(fit,60);});addEventListener("orientationchange",function(){setTimeout(fit,250);});addEventListener("pageshow",function(){setTimeout(fit,60);});document.addEventListener("visibilitychange",function(){if(!document.hidden)setTimeout(fit,120);});[300,1000,2500].forEach(function(t){setTimeout(fit,t);});setInterval(fit,4000);addEventListener("scroll",function(){if(window.scrollY&&!typing())window.scrollTo(0,0);},{passive:true});addEventListener("focusout",function(){setTimeout(function(){if(!typing())window.scrollTo(0,0);},200);});})();</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" integrity="sha512-dLxUelApnYxpLt6K2iomGngnHO83iUvZytA3YjDUCjT0HDOHKXnVYdf3hU4JjM8uEhxf9nD1/ey98U3t2vZ0qQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="js/friend/friend.js"></script>
-<script src="js/friend/land.js"></script>
+<script src="js/friend.js"></script>
+<script src="js/land.js"></script>
 <script src="js/num.js"></script>
 <script src="js/data.js"></script>
 <script src="js/economy.js"></script>
@@ -3689,12 +3694,12 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script src="js/opal-rune-sigil.js"></script>
 <script src="js/opal-divine.js"></script>
 <script src="js/dungeon-book.js"></script>
-<script src="js/friend/ui.js"></script>
+<script src="js/ui.js"></script>
 <script src="js/wallet-fields.js"></script>
 <script src="js/wallet-actions.js"></script>
 <script src="js/wallet-rules.js"></script>
-<script src="js/friend/wallet.js"></script>
-<script src="js/friend/main.js"></script>
+<script src="js/wallet.js"></script>
+<script src="js/main.js"></script>
 
 </template>
 <script>

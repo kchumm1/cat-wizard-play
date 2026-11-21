@@ -1472,6 +1472,7 @@ img.ico.pic{object-fit:contain;-webkit-user-drag:none;user-select:none}
     --tab-foot:max(4px,calc(env(safe-area-inset-bottom,0px) - 14px));
   }
   html.shortv #app{--tab-foot:4px}
+  html.friend-bottom-inside #app{--tab-foot:max(24px,env(safe-area-inset-bottom,0px))}
   #app #tabs{
     grid-template-columns:repeat(7,minmax(0,1fr));column-gap:2px;
     height:calc(var(--tabh) + var(--tab-foot));padding:6px var(--tab-side) var(--tab-foot);
@@ -3477,6 +3478,11 @@ html.cw-calm #killBar.loop + #killBarFx,html.cw-calm #surgeGauge.full i::after,h
 <script src="js/update-screen.js"></script>
 <div id="topcap" aria-hidden="true"></div>
 <style id="expedition-css">
+.stagebg.expedition-bg::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 72% 47% at 50% 53%,var(--arena-shade) 12%,transparent 100%);pointer-events:none}
+.stagebg[data-backdrop="expedition-gold"]{--arena-shade:rgba(57,32,27,.65)}
+.stagebg[data-backdrop="expedition-mana"]{--arena-shade:rgba(28,31,53,.62)}
+.stagebg[data-backdrop="expedition-gem"]{--arena-shade:rgba(21,44,53,.73)}
+.stagebg[data-backdrop="expedition-rune"]{--arena-shade:rgba(41,32,55,.69)}
 .stagebg.expedition-bg,.stagebg.center-hunt.expedition-bg{border:0!important;border-image:none!important;background-size:cover!important;background-position:50% 53%!important}
 #sheet.expedition-sheet #panel{display:block;overflow-y:auto;padding:6px max(12px,env(safe-area-inset-right)) 16px max(12px,env(safe-area-inset-left))}
 #sheet.expedition-sheet #panel>*{flex-shrink:0}

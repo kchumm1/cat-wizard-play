@@ -77,27 +77,63 @@
     TT[tip].set(dx*c-dy*s-dx, dx*s+dy*c-dy);
   }
 
-  function pose(m, dt) {
+  function pose(m, dt, cameraCos, cameraSin, tiltSin) {
     const d = m.group.userData, an = d.anim, u = d.u, A = u.uBA.value, T = u.uBT.value;
     const dx = m.x - (an.lastX ?? m.x), dz = m.z - (an.lastZ ?? m.z);
     an.lastX = m.x; an.lastZ = m.z;
     if (!dt) return false;
     const travel = Math.hypot(dx,dz);
-    const walking = m.walk > 0.02 && !m.stun && m.pull === undefined;
-    const stepLength = d.h * (m.id === 'exmob-gecko' ? 1.02 : m.id === 'exmob-fox' ? 1.38 : 0.93);
-    an.ph += walking ? Math.min(travel / stepLength * TAU, dt*19) : 0;
+    const grounded = m.y < 0.025 && !m.stun && m.pull === undefined && Math.hypot(m.pvx || 0, m.pvz || 0) < 0.25;
+    const walking = grounded && m.walk > 0.02 && !m.stun && m.pull === undefined;
+    const stepLength = d.h * (m.id === 'exmob-gecko' ? 0.39 : m.id === 'exmob-fox' ? 0.66 : 0.43);
+    an.ph += walking ? travel / stepLength * TAU : 0;
     an.walk += ((walking ? clamp(travel/(dt*1.05),0,1) : 0)-an.walk) * Math.min(1,dt*10);
     an.t += dt;
     const phase = an.ph, s = Math.sin(phase), w = an.walk, time = an.t;
     const breath = Math.sin(time*2.4), hurt = m.hurt || 0;
     for (let i = 0; i < 8; i++) { A[i]=0; T[i].set(0,0); }
     function limb(i, offset, swing, reach, lift) {
-      const p = phase + offset;
-      A[i] = Math.sin(p) * swing * w;
-      T[i].set(-Math.sin(p)*reach*w, Math.max(0, Math.cos(p))*lift*w);
+      const p = ((phase + offset) % TAU) / TAU;
+      const feet = an.feet || (an.feet = []);
+      const foot = feet[i] || (feet[i] = { planted: false, x: m.x, z: m.z });
+      const face = d.face || 1;
+      const stance = walking && p < 0.58;
+      const stride = Math.sin(Math.PI * clamp((p - 0.58) / 0.42, 0, 1));
+      const angle = -stride * swing * w;
+      A[i] = angle;
+      if (stance && (!foot.planted || foot.face !== face)) {
+        const lead = travel > 0 ? reach * d.h / travel : 0;
+        foot.x = m.x + dx * lead; foot.z = m.z + dz * lead;
+      }
+      if (stance) {
+        const x = foot.x - m.x, z = foot.z - m.z;
+        T[i].set(clamp((x*cameraCos-z*cameraSin)*face/d.h,-reach*1.7,reach*1.7),
+          clamp(-(x*cameraSin+z*cameraCos)*tiltSin/d.h,-lift,lift));
+      } else {
+        if(foot.planted) { foot.releaseX = foot.drawX; foot.releaseY = foot.drawY; }
+        const swingPhase = clamp((p - .58) / .42, 0, 1);
+        const blend = swingPhase * swingPhase * (3 - 2 * swingPhase);
+        const forward = travel > 0 ? reach / travel : 0;
+        const nextX = (dx*cameraCos-dz*cameraSin)*face*forward;
+        const nextY = -(dx*cameraSin+dz*cameraCos)*tiltSin*forward;
+        T[i].set(((foot.releaseX || 0)*(1-blend)+nextX*blend)*w,
+          ((foot.releaseY || 0)*(1-blend)+nextY*blend+stride*lift)*w);
+      }
+      foot.drawX = T[i].x; foot.drawY = T[i].y;
+      foot.planted = stance; foot.face = face;
     }
     A[0] = 0.035*breath - hurt*0.12;
     switch (m.id) {
+      case 'exmob-mouse':
+        limb(3,0,.34,.07,.065); limb(4,Math.PI,.34,.07,.065);
+        A[1]=.09*s*w; A[2]=-.08*s*w;
+        A[5]=Math.sin(phase-.65)*.19*w+.035*breath;
+        break;
+      case 'exmob-mole':
+        limb(3,0,.2,.053,.045); limb(4,Math.PI,.2,.053,.045);
+        A[1]=.19*s*w; A[2]=-.19*s*w;
+        if(m.state==='surface'){A[1]-=.3;A[2]+=.3;}
+        break;
       case 'exmob-golem':
         limb(3,0,0.22,0.055,0.095); limb(4,Math.PI,0.22,0.055,0.095);
         A[1] = -0.29*s*w - 0.38*m.atk + breath*0.045;
@@ -106,6 +142,7 @@
         break;
       case 'exmob-core': {
         const wave = Math.sin(time*2.8);
+        T[0].x = -clamp(m.vx || 0,-2,2)*.017;
         A[0] += 0.1*Math.sin(time*1.9); T[0].y = 0.026*wave;
         A[1] = -0.15 + 0.19*wave - 0.25*m.atk;
         A[2] = 0.15 - 0.19*Math.sin(time*2.8-0.45) + 0.25*m.atk;
@@ -121,10 +158,11 @@
         A[5] = Math.sin(phase-0.85)*w*0.15 + breath*0.045;
         break;
       case 'exmob-bat': {
-        const glide = (1 + Math.sin(time*1.8)) / 2;
-        const beat = Math.sin(time*9.5), power = 0.14+0.86*glide;
+        const glide = clamp((1 + Math.sin(time*1.8)) * .7 - .22, 0, 1);
+        const wingPhase = time*9.5 + .31*Math.sin(time*9.5);
+        const beat = Math.sin(wingPhase), power = 0.14+0.86*glide;
         A[1] = -0.07 - beat*0.43*power; A[2] = -A[1];
-        const flex = Math.sin(time*9.5-0.84)*0.33*power;
+        const flex = Math.sin(wingPhase-0.84)*0.33*power;
         wingTip(u,6,1,-flex); wingTip(u,7,2,flex);
         A[3]=0.19*Math.sin(time*4.1); A[4]=-A[3]*0.6;
         T[0].y=-beat*power*0.028; A[0]+=0.045*Math.sin(time*3.2);
@@ -141,11 +179,16 @@
         A[0]+=0.13*push; break;
       }
       case 'exmob-fox':
-        limb(1,0,0.5,0.083,0.095); limb(2,0.8,0.43,0.073,0.084);
-        limb(3,Math.PI,0.54,0.092,0.102); limb(4,Math.PI+0.72,0.45,0.077,0.083);
+        limb(1,0,0.5,0.083,0.095); limb(2,m.sp>2.3 ? 0.8 : Math.PI,0.43,0.073,0.084);
+        limb(3,Math.PI,0.54,0.092,0.102); limb(4,m.sp>2.3 ? Math.PI+0.72 : 0,0.45,0.077,0.083);
         A[0] += Math.sin(phase-0.3)*w*0.095; T[0].y = -0.023*Math.cos(phase)*w;
         A[5] = Math.sin(phase-0.85)*w*0.17 + Math.sin(time*2.1)*0.07;
         break;
+    }
+    // Let the gaze settle while shoulders and tail finish their stride.
+    if (grounded && !m.flyer) {
+      A[0] -= Math.sin(phase-.35)*w*.033;
+      T[0].y -= w*(1-Math.cos(phase*2))*.005;
     }
     const sign = s>=0 ? 1 : -1, footstep = w>0.32 && an.lastS!==sign;
     an.lastS=sign;

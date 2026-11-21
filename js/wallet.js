@@ -90,6 +90,45 @@
     return { act: act, resume: resume, queueDungeon: queueDungeon, flushDungeon: flushDungeon, pending: function () { return get(PENDING); } };
   }
 
+  function createFriendCoupon(o) {
+    if (!o.store || !o.fetch) return null;
+    var prefix = 'cw-friend-coupon-';
+    var auth = root.CW.createPlayerSync({
+      enabled: true, fetch: o.fetch, locks: root.navigator.locks,
+      store: {
+        getItem: function (k) { return o.store.getItem(prefix + k); },
+        setItem: function (k, v) { o.store.setItem(prefix + k, v); },
+        removeItem: function (k) { o.store.removeItem(prefix + k); }
+      }
+    });
+    var busy = false;
+    return async function (code) {
+      if (busy) return { code: 'wait' };
+      busy = true;
+      try {
+        if (o.state.coupons && o.state.coupons[code]) return { code: 'used' };
+        if (root.CW.chestFull(o.state)) return { code: 'bag' };
+        var user = await auth.authed();
+        if (!user) return { code: 'net' };
+        var key = prefix + user.uid + '-' + code;
+        var req = o.store.getItem(key) || newReq();
+        o.store.setItem(key, req);
+        var res = await o.fetch(URL.replace(/act$/, 'friend-coupon'), {
+          method: 'POST', headers: { apikey: ANON, Authorization: 'Bearer ' + user.access, 'content-type': 'application/json' },
+          body: JSON.stringify({ code: code, req: req }), signal: AbortSignal.timeout(12000)
+        });
+        var gift = await res.json();
+        if (!res.ok || gift.code !== 'ok') return { code: gift.code || 'net' };
+        if (gift.coupon !== code || !gift.reward) return { code: 'net' };
+        var applied = root.CW.performAction(o.state, 'coupon', {}, { coupon: { code: code, title: gift.title, reward: gift.reward }, now: Date.now() });
+        if (!applied.ok) return { code: 'bag' };
+        if (o.save()) o.store.removeItem(key);
+        return applied.result;
+      } catch (e) { return { code: 'net' }; }
+      finally { busy = false; }
+    };
+  }
+
   function applyReply(state, reply, run) {
     if (!reply) return null;
     if (!reply.ok) { if (reply.server) F.applyServer(state, reply.server); return null; }
@@ -102,5 +141,5 @@
   // 쿠폰 (2026-11-18): what a player typed → the code the server knows (A-Z 0-9, 6~16), or '' when it cannot be one
   function couponCode(text) { var c = String(text || '').replace(/[\s-]+/g, '').toUpperCase(); return /^[A-Z0-9]{6,16}$/.test(c) ? c : ''; }
 
-  return { couponCode: couponCode, createWallet: createWallet, applyReply: applyReply, WALLET_URL: URL, WALLET_PENDING: PENDING, WALLET_DUNGEON: DUNGEON };
+  return { createFriendCoupon: createFriendCoupon, couponCode: couponCode, createWallet: createWallet, applyReply: applyReply, WALLET_URL: URL, WALLET_PENDING: PENDING, WALLET_DUNGEON: DUNGEON };
 });

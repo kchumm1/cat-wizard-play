@@ -50,6 +50,19 @@
     var FS = 'uniform sampler2D map; uniform vec3 uTint; varying vec2 vUv;' +
       'void main() { vec4 t = texture2D(map, vUv); if (t.a < 0.06) discard; gl_FragColor = vec4(t.rgb * uTint, t.a); }';
     var GEO = new T.PlaneGeometry(1, 1); GEO.translate(0, 0.5, 0);
+    var wingGeometry = new T.PlaneGeometry(1,1,10,6);
+    wingGeometry.translate(0,.5,0);
+    var wingClock = {value:0};
+    var wingVS = [
+      'uniform float clock; varying vec2 vUv;',
+      'void main(){ vUv=uv; vec3 p=position;',
+      'float tip=smoothstep(.20,.49,abs(p.x));',
+      'float beat=clock*10. + modelMatrix[3].x*.21;',
+      'p.y+=tip*.10*sin(beat-tip*.65);',
+      'p.x*=1.-tip*.07*(1.+cos(beat));',
+      'gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);}'
+    ].join('\n');
+    function feathered(id) { return id==='mn04'||id==='ms02'||id==='ms05'; }
     // all the shadows in one draw
     var sGeo = new T.CircleGeometry(0.5, 14); sGeo.rotateX(-Math.PI / 2);
     var shadows = new T.InstancedMesh(sGeo, new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.2, depthWrite: false }), MAX);
@@ -58,11 +71,12 @@
     function rr(a, b) { return a + Math.random() * (b - a); }
     function matFor(art) {
       var k = art.id || art.tex.uuid;
-      return mats[k] || (mats[k] = new T.ShaderMaterial({ uniforms: { map: { value: art.tex }, uTint: { value: new T.Color(0xffffff) } },
-        vertexShader: VS, fragmentShader: FS, transparent: true, depthWrite: true, side: T.DoubleSide }));
+      return mats[k] || (mats[k] = new T.ShaderMaterial({ uniforms: { clock: wingClock, map: { value: art.tex }, uTint: { value: new T.Color(0xffffff) } },
+        vertexShader: feathered(k) ? wingVS : VS, fragmentShader: FS, transparent: true, depthWrite: true, side: T.DoubleSide }));
     }
     function meshFor(art) {
       var m = pool.pop() || new T.Mesh(GEO);
+      m.geometry = feathered(art.id) ? wingGeometry : GEO;
       m.material = matFor(art); m.rotation.order = 'YXZ'; m.rotation.set(-ctx.tilt, 0, 0); m.renderOrder = 3; m.visible = true;
       if (!m.parent) ctx.group.add(m);
       return m;
@@ -110,6 +124,7 @@
     function scatter() { list.forEach(flee); queue = 0; }
     function clear() { list.concat(dying).forEach(function (m) { free(m.mesh); }); list.length = 0; dying.length = 0; queue = 0; shadows.count = 0; }
     function update(dt) {
+      wingClock.value += dt;
       // fill up in small packs, each from one side, when the field has thinned out
       packT -= dt;
       var staying = 0; list.forEach(function (x) { if (x.state !== 'flee') staying++; });
@@ -123,13 +138,13 @@
         m.retarget -= dt; if (m.state === 'mill' && m.retarget <= 0) spot(m);
         var dx = m.tx - m.x, dz = m.tz - m.z, d = Math.sqrt(dx * dx + dz * dz), moving = d > 0.06;
         if (moving) {
-          var step = Math.min(d, m.sp * (m.state === 'mill' ? 0.55 : 1) * dt); m.x += dx / d * step; m.z += dz / d * step; m.ph += dt * 13;
+          var step = Math.min(d, m.sp * (m.state === 'mill' ? 0.55 : 1) * dt); m.x += dx / d * step; m.z += dz / d * step; m.ph += step / Math.max(.16, m.h * .47) * Math.PI;
           var sdx = ctx.scrX ? ctx.scrX(dx, dz) : dx; if (Math.abs(sdx) > 0.05) { var f = sdx > 0 ? 1 : -1; m.faceHold -= dt; if (f !== m.face && m.faceHold <= 0) { m.face = f; m.faceHold = 0.3; } }
         } else if (m.state === 'in') m.state = 'mill';
         if (m.state === 'flee' && !moving) { free(m.mesh); list.splice(i, 1); continue; }
         m.stride += ((moving ? 1 : 0) - m.stride) * Math.min(1, dt * 10);
         var foot = Math.sin(m.ph), lift = foot * foot;
-        var hop = lift * 0.10 * m.stride;
+        var hop = lift * .037 * m.h * m.stride;
         var sq = (lift - 0.5) * 0.08 * m.stride + Math.sin(m.ph * 0.4) * 0.012;
         if (!moving) m.ph += dt * 2;
         // fliers float a little above the ground and bob softly; their shadow stays on the ground, a bit smaller

@@ -1279,7 +1279,8 @@
   // the screens: run fn with the answer once it is there (a wallet answer comes later; the old way answers at once)
   G.later = function (r, fn) { return Promise.resolve(r).then(function (x) { if (x && x.walletFail) return; fn(x); }); };
   // 쿠폰 (2026-11-18): only with the wallet
-  G.coupon = function (code) { return wallet ? walletDo('coupon', { code: code }, function () { snd.play('win'); }) : Promise.resolve(WFAIL); };
+  var friendCoupon = CW.FRIEND && CW.createFriendCoupon({ state: state, save: save, store: storage, fetch: root.fetch && root.fetch.bind(root) });
+  G.coupon = friendCoupon || function (code) { return wallet ? walletDo('coupon', { code: code }, function () { snd.play('win'); }) : Promise.resolve(WFAIL); };
   if (wallet) { var wStart = setInterval(function () { if (ready) { clearInterval(wStart); setTimeout(function () { walletResume().then(walletFlush); }, 6000); } }, 1000); }
   // 저장 되돌리기 (설정 › 문제 확인용, 형꺼 only): the save kept on the server takes this phone's place
   G.restoreSave = function (obj) {

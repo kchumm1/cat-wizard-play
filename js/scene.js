@@ -15,10 +15,17 @@
     'uniform float uBend; uniform vec2 uScale; uniform float uH;',
     'uniform vec2 uBP[8]; uniform float uBA[8]; uniform vec2 uBT[8];',
     'attribute vec4 aW0; attribute vec4 aW1; varying vec2 vUv;',
+    '#ifdef MONSTER_WING_FLEX',
+    'uniform float uWingFlex;',
+    '#endif',
     'vec2 rot2(vec2 r, float a) { float c = cos(a), s = sin(a); return vec2(r.x * c - r.y * s, r.x * s + r.y * c); }',
     'void main() { vUv = uv; vec3 p = position; vec2 q = p.xy, d = vec2(0.0); float w[8];',
     '  w[0] = aW0.x; w[1] = aW0.y; w[2] = aW0.z; w[3] = aW0.w; w[4] = aW1.x; w[5] = aW1.y; w[6] = aW1.z; w[7] = aW1.w;',
     '  for (int i = 0; i < 8; i++) { if (w[i] > 0.001) { vec2 r = q - uBP[i]; d += w[i] * (rot2(r, uBA[i]) - r + uBT[i]); } }',
+    '#ifdef MONSTER_WING_FLEX',
+    '  float leftReach = length(q - uBP[6]), rightReach = length(q - uBP[7]);',
+    '  d.y += uWingFlex * (w[6]*leftReach*leftReach + w[7]*rightReach*rightReach);',
+    '#endif',
     '  p.xy = q + d; float k = clamp(p.y / uH, 0.0, 1.0);',
     '  p.x = p.x * uScale.x + uBend * k * k * uH; p.y *= uScale.y;',
     '  gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0); }'].join('\n');
@@ -41,6 +48,14 @@
     '  }',
     '  c += uLight * (0.25 + 0.75 * lum);',
     '  c = mix(c, uFlashCol, uFlash);',
+    '#ifdef EXPEDITION_MOB',
+    '  if (uFlash > .02) {',
+    '    vec2 offset = vec2(.004, .004);',
+    '    float rim = min(min(texture2D(map, vUv + vec2(offset.x,0.)).a, texture2D(map, vUv - vec2(offset.x,0.)).a),',
+    '                    min(texture2D(map, vUv + vec2(0.,offset.y)).a, texture2D(map, vUv - vec2(0.,offset.y)).a));',
+    '    c = mix(c, vec3(1.,.96,.79), (1. - rim) * min(1., uFlash * 3.));',
+    '  }',
+    '#endif',
     '  if (uDissolve > 0.0) { float v = vn(vUv * vec2(10.0, 16.0)) * 0.5 + vn(vUv * vec2(27.0, 31.0)) * 0.12 + vUv.y * 0.42;',
     '    if (v < uDissolve) discard; float e = 1.0 - smoothstep(uDissolve, uDissolve + 0.07, v); c = mix(c, uEdge * 1.6 + vec3(0.25), e); }',
     '  gl_FragColor = vec4(min(c, vec3(1.0)), t.a * uOpacity); }'].join('\n');
@@ -294,6 +309,7 @@
     var bgReady = {}, desertLight = {value:0};
     function showBackdrop(id) {
       bgEl.classList.toggle('expedition-bg',!!id && id.indexOf('expedition-')===0);
+      bgEl.dataset.backdrop = id || '';
       bgEl.style.backgroundImage = id ? 'url(' + (CW.ART_BASE || 'art/') + id + '.webp)' : '';
       bgEl.style.setProperty('--field-art', bgEl.style.backgroundImage);
       bgEl.classList.toggle('desert', id === 'bg-desert');
@@ -383,14 +399,17 @@
     function billboard(art, height, tint, role) {
       var w = height * art.aspect, mat = bbMaterial(art.tex, tint);
       mat.uniforms.uArtRole.value=role || 0;
+      var expeditionMob = /^exmob-/.test(art.id);
+      if (expeditionMob) mat.defines = Object.assign({}, mat.defines, { EXPEDITION_MOB: 1 });
       if (art.puppet) CW.expeditionPuppet.prepare(art, mat);
       var m = new T.Mesh(rigGeometry(art), mat); m.scale.setScalar(height); m.renderOrder = 3; m.rotation.x = -TILT;
       var g = new T.Group(); g.add(m); g.rotation.order = 'YXZ'; g.rotation.y = orb.yaw;
       var sh = new T.Mesh(new T.CircleGeometry(w * 0.32, 20), new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false }));
+      if (expeditionMob) { sh.material.map = GLOW; sh.material.opacity = 0.76; }
       sh.rotation.x = -Math.PI / 2; sh.position.y = 0.012; sh.renderOrder = 1; g.add(sh);
       for (var i = 0; i < 8; i++) { var pv = art.rig && CW.rigPivotOf(art.rig, art.crop, CW.RIG_BONES[i], art.aspect, 1); if (pv) mat.uniforms.uBP.value[i].set(pv[0], pv[1]); }
       var seed = Math.random() * 6;
-      g.userData = { body: m, u: mat.uniforms, shadow: sh, h: height, w: w, aspect: art.aspect, rig: art.rig, crop: art.crop, seed: seed, face: 1,
+      g.userData = { body: m, u: mat.uniforms, shadow: sh, h: height, w: w, aspect: art.aspect, rig: art.rig, crop: art.crop, seed: seed, face: 1, expeditionMob: expeditionMob,
         bend: spring(170, 10), sq: spring(230, 13), lift: spring(95, 10), slide: spring(70, 11), light: new T.Color(0), anim: newAnim(seed) };
       if (art.fieldMotion) g.userData.motion = art.fieldMotion;
       else if (art.puppet) g.userData.puppet = art.puppet;
@@ -421,7 +440,9 @@
       // Directional wizard art uses the same stride and cast springs as its parent.
       if (!sharedPose) {
         an.t += dt; an.walk += ((P.walk || 0) - an.walk) * Math.min(1, dt * 10);
-        if (an.walk > 0.02) an.ph += dt * (P.speed !== undefined ? Math.max(4, P.speed / (P.stride || 0.32) * Math.PI) : (5 + 9 * an.walk) * (P.stepRate || 1));
+        if (P.distance !== undefined) {
+          if (an.walk > .02 && !P.air) an.ph += P.distance * Math.PI * 2 / Math.max(.22, d.h * (P.heavy ? .60 : .48));
+        } else if (an.walk > 0.02) an.ph += dt * (P.speed !== undefined ? Math.max(4, P.speed / (P.stride || 0.32) * Math.PI) : (5 + 9 * an.walk) * (P.stepRate || 1));
         var cheer = P.cheer || 0;
         an.aR.target = (P.armR || 0) + cheer * (0.35 + Math.sin(an.t * 15) * 0.4);
         an.aL.target = (P.armL || 0) - cheer * (0.35 + Math.sin(an.t * 15 + 1.6) * 0.4);
@@ -450,8 +471,53 @@
       var fl = Math.sin(t * (P.flapF || 6) + d.seed) * (P.flap === undefined ? 0.1 : P.flap) + (P.wingOpen || 0);
       A[6] = -(fl + 0.03); A[7] = fl + 0.03;
       if (d.motion) poseFieldParts(d, P, wk, s, t, br);
+      if (d.monsterArt) poseMonster(d, P, wk, t);
       var sg = s >= 0 ? 1 : -1, step = wk > 0.35 && sg !== an.lastS; an.lastS = sg;
       return step;
+    }
+    function poseMonster(d, pose, walk, time) {
+      var u = d.u, angles = u.uBA.value, shifts = u.uBT.value, phase = d.anim.ph;
+      var body = d.bodyType, brace = d.anim.brace, follow = d.anim.armFollow;
+      var stride = Math.sin(phase), shoulder = Math.sin(phase - .36);
+      angles[0] += .065 * brace - .045 * follow;
+      if (d.winged || d.feathered) {
+        var beat = time * (pose.heavy ? 5.6 : 9.4) + d.seed;
+        var sweep = beat + .32 * Math.sin(beat);
+        var effort = .24 + .76 * (.5 + .5 * Math.cos(time * 1.65 + d.seed));
+        var amplitude = d.winged ? (.28 + .10 * walk) * effort : .04 + .06 * walk + .12 * brace;
+        u.uWingFlex.value = Math.cos(sweep - .45) * amplitude * .72;
+        angles[6] = -.10 - Math.sin(sweep) * amplitude;
+        angles[7] = .10 + Math.sin(sweep - .045) * amplitude;
+        if ((d.monsterArt === 'b139' || d.monsterArt === 'h94')) {
+          angles[1] = -.04 - Math.sin(sweep - .30) * amplitude * .79;
+          angles[2] = -angles[1];
+          angles[3] = -.025 - Math.sin(sweep - .52) * amplitude * .60;
+          angles[4] = -angles[3];
+          for (var i=1;i<=4;i++) shifts[i].set(0,0);
+        }
+        angles[0] *= .55;
+        d.anim.flightLift = Math.cos(sweep - .45) * effort * .075;
+      }
+      if (d.winged) return;
+      if (body === 'snake' || body === 'cobra' || body === 'fish' || body === 'seahorse') {
+        var wave = time * 2.4 + phase * .35 + d.seed;
+        angles[0] += Math.sin(wave)*.06;
+        angles[5] += Math.sin(wave - .95)*(.09 + walk*.12);
+      } else if (d.motion === 'float') {
+        angles[0] *= .65;
+        angles[1] += .055*Math.sin(time*2.2+d.seed-.55);
+        angles[2] -= .055*Math.sin(time*2.2+d.seed-.75);
+      } else {
+        angles[0] -= .045*shoulder*walk + .06*brace;
+        angles[1] -= shoulder*walk*.13;
+        angles[2] += shoulder*walk*.13 + follow*.08;
+        shifts[0].x += .009*stride*walk;
+        if (d.rig && d.rig.legL && d.rig.legR && d.motion !== 'hop') {
+          var step = .06 * walk * (pose.heavy ? .75 : 1);
+          shifts[3].x += Math.cos(phase)*step;
+          shifts[4].x -= Math.cos(phase)*step;
+        }
+      }
     }
     // Keep the planted foot low; the other foot swings through before it takes weight.
     function poseFieldParts(d, P, walk, stride, time, breath) {
@@ -803,6 +869,18 @@
         flash: 0, frozen: 0, shocked: 0, freezeV: 0, phase: g.userData.seed, kx: spring(80, 9), face: 1, walk: 0, hurt: 0,
         flyer: !!def.flyer || !!FLYERS[def.art.id], cheer: 0, vx: 0, vz: 0, sp: 0,
         gait: def.gait || GAITS[def.art.id] || 'walk', hopCd: 0, pvx: 0, pvz: 0, tilt: spring(120, 9), dartT: 0, dartOn: true, orbDir: 1, orbR: 2.4 };
+      var species = (CW.BESTIARY || {})[def.art.id];
+      g.userData.bodyType = species && species.body;
+      g.userData.monsterArt = def.art.id;
+      g.userData.feathered = !!(g.userData.rig && (g.userData.rig.wingL || g.userData.rig.wingR)) &&
+        g.userData.bodyType !== 'fish' && g.userData.bodyType !== 'seahorse';
+      g.userData.winged = g.userData.feathered && (mob.flyer || mob.gait === 'float');
+      if (g.userData.motion === 'b44') g.userData.winged = true;
+      if (g.userData.winged || g.userData.feathered) {
+        var wingMaterial = g.userData.body.material;
+        wingMaterial.defines = Object.assign({},wingMaterial.defines,{MONSTER_WING_FLEX:1});
+        wingMaterial.uniforms.uWingFlex = { value:0 };
+      }
       if (!g.userData.motion && !g.userData.puppet) g.userData.motion = mob.flyer ? 'float' : mob.gait;
       // come in from the nearest screen edge: left, right, the far side or the near side
       var ang = Math.atan2((spot.z - HB.z) / 1.15, spot.x - HB.x), cx = Math.cos(ang), cz = Math.sin(ang);
@@ -1402,13 +1480,26 @@
           rest.sq += 0.045 * (Math.min(1, m.y * 4) - d.anim.airborne);
           rest.bend += 0.014 * Math.sin(d.anim.ph - 0.55) * d.anim.walk;
         }
+        if (!d.rig && !d.puppet && !frozen) {
+          // Raw art with no articulated parts: compress about the contact point
+          // during landing, stretch only while rising; keep rigid objects stiff.
+          var rigid = ['b11','b28','b46','k03','l08','h17','s10','h79'].includes(m.id);
+          if (rigid) {
+            rest.sq *= .22;
+            rest.bend += .025 * Math.sin(d.anim.ph) * d.anim.walk;
+          } else if (m.gait === 'hop') {
+            rest.sq += Math.max(-.10, Math.min(.085, m.vy * .018));
+          }
+        }
         rest.bend += scrX(m.vx, m.vz) * 0.035 + Math.sin(d.anim.ph) * 0.04 * d.anim.walk;
         if (m.state === 'windup') { rest.sq = -0.17; rest.bend = (scrX(m.x - HB.x, m.z - HB.z) > 0 ? 1 : -1) * 0.14; }
         m.hurt = Math.max(0, m.hurt - dt * 3);
-        var P = { walk: frozen ? 0 : m.walk, speed: m.sp, stride: m.boss ? 0.42 : 0.22, air: m.y > 0.12, armL: -m.atk * 1.15, armR: m.atk * 0.3, hurt: m.hurt, cheer: m.cheer, stepRate: m.boss ? 0.65 : 1,
+        var travel = Math.hypot(m.x - (d.lastStrideX ?? m.x), m.z - (d.lastStrideZ ?? m.z));
+        d.lastStrideX = m.x; d.lastStrideZ = m.z;
+        var P = { distance: m.stun || m.pull !== undefined ? 0 : travel, heavy: m.boss, walk: frozen ? 0 : m.walk, speed: m.sp, stride: m.boss ? 0.42 : 0.22, air: m.y > 0.12, armL: -m.atk * 1.15, armR: m.atk * 0.3, hurt: m.hurt, cheer: m.cheer, stepRate: m.boss ? 0.65 : 1,
           flap: m.flyer ? 0.32 : m.boss ? 0.16 : 0.1, flapF: m.flyer ? 9 : 6, wingOpen: m.state === 'roar' ? 0.25 : 0, windup: m.state === 'windup' ? 1 : 0 };
         if (m.pull !== undefined) { P.cheer = 1; P.hurt = 0.8; }
-        var stepped = d.puppet ? CW.expeditionPuppet.pose(m, frozen ? 0 : dt) : !frozen && animRig(g, dt, P);
+        var stepped = d.puppet ? CW.expeditionPuppet.pose(m, frozen ? 0 : dt, cY, sY, SIN_T) : !frozen && animRig(g, dt, P);
         if (stepped && m.boss && !m.flyer) { shake(0.05); if (hooks.step) hooks.step(new T.Vector3(m.x, 0.03, m.z), true); }
         else if (stepped && m.gait === 'stomp') { d.sq.v -= 1.5; if (hooks.step) hooks.step(new T.Vector3(m.x, 0.03, m.z), false); }
         if (frozen) { d.bend.v *= 0.5; d.sq.v *= 0.5; }
@@ -1420,10 +1511,11 @@
         stepSpring(m.kx, dt);
         var hover = m.flyer ? 0.4 + Math.sin(time * 2.4 + m.phase) * 0.12 : m.gait === 'float' ? 0.2 + Math.sin(time * 2.2 + m.phase) * 0.08 : 0;
         var bounce = m.y <= 0.01 ? Math.abs(Math.sin(d.anim.ph)) * (m.boss ? 0.035 : 0.035 + 0.06 * Math.min(1, m.sp / 3)) * d.anim.walk : 0;
+        if (d.winged) hover += d.anim.flightLift || 0;
         if (d.puppet) {
           if (m.id === 'exmob-bat') hover += Math.cos(d.anim.t * 9.5) * 0.075;
-          if (m.id === 'exmob-fox') bounce = m.y <= 0.01 ? Math.max(0, Math.cos(d.anim.ph)) * 0.12 * d.anim.walk : 0;
-          if (m.id === 'exmob-gecko') bounce *= 0.25;
+          bounce = 0;  // The planted limb holds the floor; shift the torso above it.
+          if (m.id === 'exmob-core') hover += Math.sin(d.anim.t * 2.8) * .07;
         }
         g.position.set(m.x + m.kx.x * 0.12 * cY, m.y + hover + bounce, m.z - m.kx.x * 0.12 * sY);
         // the body rocks with the way it moves: waddlers sway from foot to foot, heavy ones lurch, gliders bank into their turns
@@ -1439,12 +1531,24 @@
         }
         if (m.id === 'exmob-fox') gz += Math.sin(d.anim.ph) * d.anim.walk * 0.075;
         if (m.id === 'exmob-bat') gz += Math.sin(d.anim.t*2.3) * 0.11;
-        g.rotation.z = gz;
+        if (!frozen && !d.expeditionMob) {
+          var lean = m.flyer ? -.035 * scrX(m.vx,m.vz) : .038 * Math.sin(d.anim.ph-.32)*d.anim.walk;
+          gz += lean + d.anim.brace * .045 * d.face;
+          if (!m.flyer && m.gait !== 'hop') bounce *= .38;
+          g.position.y = m.y + hover + bounce;
+        }
+        g.rotation.z = d.expeditionMob && !m.flyer ? gz * .35 : gz;
         d.shadow.position.y = 0.012 - g.position.y;
         d.shadow.scale.setScalar(Math.max(0.35, 1 - g.position.y * 0.35));
+        if (d.expeditionMob) {
+          const height = Math.max(0, g.position.y);
+          const spread = 1.24 + Math.min(.24, height * .2);
+          d.shadow.scale.set(spread, spread * .68, 1);
+          d.shadow.material.opacity = .76 / (1 + height * 1.8);
+        }
         m.freezeV += ((frozen ? 1 : 0) - m.freezeV) * Math.min(1, dt * 10);
         u.uFreeze.value = m.freezeV;
-        u.uFlash.value = m.flash; m.flash = Math.max(0, m.flash - dt * 14);
+        u.uFlash.value = m.flash; m.flash = Math.max(0, m.flash - dt * (d.expeditionMob ? 3.2 : 14));
         u.uFlashCol.value.setHex(m.shocked > 0 && Math.random() < 0.3 ? 0xbfe6ff : 0xffffff);
         if (m.shocked > 0 && Math.random() < dt * 6) u.uFlash.value = Math.max(u.uFlash.value, 0.5);
         u.uLight.value.copy(lightAt(mobPos(m), tmpC));

@@ -11,6 +11,9 @@
   } catch (e) {}
   root.CW = root.CW || {};
   root.CW.FRIEND = f;
+  if (f && root.document) {
+    try { root.document.documentElement.classList.toggle('friend-bottom-inside', localStorage.getItem('cw-friend-bottom') === 'inside'); } catch (e) {}
+  }
   root.CW.FRIEND_MAX_TIER = 9;
   // the name at the top is the owner's own; 체험판 shows a plain one instead (this file loads after the page markup)
   if (f) { try { var nk = root.document && root.document.getElementById('nick'); if (nk) nk.textContent = '냥법사'; } catch (e) {} }

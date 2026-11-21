@@ -1635,7 +1635,7 @@
             var selected = (root.CWDisplay ? root.CWDisplay.get() : 'portrait') === mode;
             return '<button class="btn' + (selected ? ' on' : '') + '" aria-pressed="' + selected + '" data-set="' + mode + '">' + (mode === 'portrait' ? '세로모드' : '가로모드') + '</button>';
           }).join('') + '</div></div>' +
-        (!CW.FRIEND && root.__cwFit && document.documentElement.classList.contains('under') ? '<div class="row"><div class="info"><div class="name">하단 메뉴 위치</div><div class="desc">메뉴가 잘리면 ‘안쪽’을 선택해 주세요.</div></div><button class="btn" data-set="bottomFit">' + (bottomInside() ? '안쪽' : '맨 아래') + '</button></div>' : '') +
+        (CW.FRIEND || (root.__cwFit && document.documentElement.classList.contains('under')) ? '<div class="row"><div class="info"><div class="name">하단 메뉴 위치</div><div class="desc">메뉴가 잘리면 ‘안쪽’을 선택해 주세요.</div></div><button class="btn" data-set="bottomFit">' + (bottomInside() ? '안쪽' : '맨 아래') + '</button></div>' : '') +
         '<div class="row"><div class="info"><div class="name">화면 표현</div><div class="desc">기본 3D 또는 픽셀 스타일</div></div><button class="btn" data-set="pixel">' + (st.pixel ? '픽셀 스타일' : '기본 3D') + '</button></div>' +
         // 가로 시점 (2026-11-17): only while the phone is sideways (upright the screen is as it was)
         (CW.isLand && CW.isLand() ? '<div class="row"><div class="info"><div class="name">가로 화면 시점</div><div class="desc">세로처럼 보면 냥법사 주변에서 몬스터가 사방으로 움직여요.</div></div>' +
@@ -1674,7 +1674,8 @@
       chestBadge(); renderPanel(true); hud();
       });
     }
-    function bottomInside() { try { return localStorage.getItem('cw-bottom') === 'inside'; } catch (e) { return false; } }
+    function bottomKey() { return CW.FRIEND ? 'cw-friend-bottom' : 'cw-bottom'; }
+    function bottomInside() { try { return localStorage.getItem(bottomKey()) === 'inside'; } catch (e) { return false; } }
     // 문제 확인용 stays open while the page is made again (2026-11-17): its lines change on their own (화면 지연, 성능 기록
     // every 10 s), and each time the panel was rebuilt it folded shut under the finger
     var foldOpen = false;
@@ -1726,9 +1727,7 @@
         (has ? '<div class="row"><div class="info"><div class="name">저장 되돌리기</div><div class="desc">앱을 지웠다가 다시 깔았을 때 눌러요. 서버에 남은 가장 많이 진행한 저장을 불러와요.</div></div>' +
           '<div class="sbtns"><button class="btn" data-act="ownget">되돌리기</button></div></div>' : '');
     }
-    // 쿠폰 (2026-11-18): only while the server wallet is on (형꺼 for now); the server checks the code (js/main.js G.coupon)
     function couponRow() {
-      if (CW.FRIEND) return '';
       return '<div class="row"><div class="info"><div class="name">쿠폰 입력</div><div class="desc">이벤트 쿠폰 번호를 넣으면 선물 상자가 가방에 들어와요.</div></div><button class="btn" data-act="coupon">입력</button></div>';
     }
     // 모든 플레이어 저장 (2026-11-18, js/player-sync.js, main.js G.playerSync): only a status line, 형꺼 only
@@ -2403,14 +2402,18 @@
         toast('서버 저장을 불러오고 있어요…');
         G.ownerSync.fetchSave('top').then(function (r) { if (r && r.ok) ownRestore(r); else toast('불러오지 못했어요' + (r && r.msg ? ': ' + r.msg : '.')); });
       }
-      else if (d.act === 'coupon' && !CW.FRIEND) {
+      else if (d.act === 'coupon') {
         modal('<h2>쿠폰 입력</h2><p class="guide-lead">받은 쿠폰 번호를 넣어 주세요.</p><input class="nickin cpin" type="text" inputmode="latin" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" placeholder="쿠폰 번호">',
           [{ label: '취소' }, { label: '받기', pri: true, fn: function () {
             var code = CW.couponCode($('modalCard').querySelector('.cpin').value);
             if (!code) { toast('쿠폰 번호를 다시 확인해 주세요. (영어·숫자 6~16자)'); return; }
-            if (!G.wallet) { toast('쿠폰을 받으려면 서버 지갑 연결이 필요해요.'); return; }
+            if (!CW.FRIEND && !G.wallet) { toast('쿠폰을 받으려면 서버 지갑 연결이 필요해요.'); return; }
             G.later(G.coupon(code), function (r) {
               if (r && r.box) { toast('쿠폰 선물이 가방에 들어왔어요 · 가방에서 열어 받아요'); if (CW.chestBadge) CW.chestBadge(); hud(); renderPanel(true); return; }
+              if (r && r.code) {
+                var reason = { bag: '가방에 빈칸을 만들어 주세요.', wait: '쿠폰을 확인하고 있어요.', net: '연결을 확인하고 같은 쿠폰을 다시 입력해 주세요.', busy: '잠시 후 같은 쿠폰을 다시 입력해 주세요.', slow: '잠시 후 다시 시도해 주세요.', suspended: '이용이 제한된 계정이에요.' };
+                if (reason[r.code]) { toast(reason[r.code]); return; }
+              }
               toast('쿠폰을 쓸 수 없어요. 번호·기간을 확인하거나, 이미 쓴 쿠폰인지 확인해 주세요.');
             });
           } }], { variant: 'coupon' });
@@ -2474,7 +2477,8 @@
         if (d.set === 'pixel') G.setSetting('pixel', !st.pixel);
         if (d.set === 'autoBoss') G.setSetting('autoBoss', st.autoBoss === false);
         if (d.set === 'bottomFit') {
-          try { if (bottomInside()) localStorage.removeItem('cw-bottom'); else localStorage.setItem('cw-bottom', 'inside'); } catch (e) {}
+          try { if (bottomInside()) localStorage.removeItem(bottomKey()); else localStorage.setItem(bottomKey(), 'inside'); } catch (e) {}
+          if (CW.FRIEND) document.documentElement.classList.toggle('friend-bottom-inside', bottomInside());
           if (root.CWDisplay) root.CWDisplay.refresh();
           if (root.__cwFit) root.__cwFit(); root.dispatchEvent(new Event('resize'));
         }

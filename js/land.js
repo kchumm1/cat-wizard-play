@@ -64,5 +64,41 @@
     new MutationObserver(soon).observe(c, { childList: true });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch); else watch();
+  // A CSS-rotated game frame may send a visual vertical drag to the browser's
+  // horizontal pan axis. Touch coordinates inside this document are game-local.
+  if (CW.FRIEND) {
+    var drag;
+    document.addEventListener('touchstart', function (event) {
+      drag = null;
+      if (!CW.isLand() || event.touches.length !== 1 || event.target.closest('input,textarea,select,[contenteditable=true]')) return;
+      var scrollers = [];
+      for (var el = event.target; el && el !== document.body; el = el.parentElement) {
+        if (el.scrollHeight > el.clientHeight + 1 && /^(auto|scroll)$/.test(getComputedStyle(el).overflowY)) scrollers.push(el);
+      }
+      var t = event.touches[0];
+      if (scrollers.length) drag = { x: t.clientX, y: t.clientY, last: t.clientY, elements: scrollers, moving: false };
+    }, { passive: true, capture: true });
+    document.addEventListener('touchmove', function (event) {
+      if (!drag || event.touches.length !== 1 || !event.cancelable) { drag = null; return; }
+      var t = event.touches[0], dy = t.clientY - drag.y;
+      if (!drag.moving) {
+        if (Math.max(Math.abs(dy), Math.abs(t.clientX - drag.x)) < 6) return;
+        if (Math.abs(dy) < Math.abs(t.clientX - drag.x)) { drag = null; return; }
+        drag.moving = true;
+      }
+      event.preventDefault();
+      var remaining = drag.last - t.clientY;
+      drag.last = t.clientY;
+      for (var i = 0; i < drag.elements.length && Math.abs(remaining) >= 1; i++) {
+        var box = drag.elements[i], before = box.scrollTop;
+        box.scrollTop += remaining;
+        remaining -= box.scrollTop - before;
+      }
+    }, { passive: false, capture: true });
+    function endDrag() { drag = null; }
+    document.addEventListener('touchend', endDrag, true);
+    document.addEventListener('touchcancel', endDrag, true);
+  }
+
   CW.fitModal = fit;
 })(window);

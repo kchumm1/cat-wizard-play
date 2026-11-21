@@ -269,6 +269,25 @@
       disposeAll(); built = r;
       var spec = REGIONS[(regionData.look !== undefined ? regionData.look : r) % REGIONS.length], P = spec.P, R = rng(97 + r * 131), low = quality === 'low';
       var sky = new T.Color(regionData.sky), fogCol = new T.Color(P.g0).lerp(sky, 0.35);
+      if (backdrop) {
+        const floors = {'expedition-gold':'sand','expedition-gem':'stone','expedition-mana':'stone','expedition-rune':'moss'};
+        const tone = floors[regionData.bg];
+        if (tone) {
+          const canvas = cvs(TS, TS), ctx = canvas.getContext('2d');
+          ctx.fillStyle = css(P.g0); ctx.fillRect(0,0,TS,TS);
+          blotches(ctx,R,34,[P.g1,P.g2],16,65,.4);
+          if (tone === 'sand') ripples(ctx,R,35,P.g1,P.g2);
+          else cobbles(ctx,R,P.g1,shade(P.g0,-.24),72);
+          ctx.globalCompositeOperation = 'destination-in';
+          const fade = ctx.createRadialGradient(TS/2,TS/2,TS*.12,TS/2,TS/2,TS*.5);
+          fade.addColorStop(0,'#fff'); fade.addColorStop(1,'transparent');
+          ctx.fillStyle = fade; ctx.fillRect(0,0,TS,TS);
+          const floor = new T.Mesh(new T.PlaneGeometry(halfX(field.z1)*3.5,(field.z1-field.z0)*1.85),
+            new T.MeshBasicMaterial({map:texOf(canvas),transparent:true,opacity:.47,depthWrite:false}));
+          floor.rotation.x = -Math.PI/2; floor.position.set(0,-.012,(field.z0+field.z1)/2);
+          group.add(floor);
+        }
+      }
       if (backdrop) { scene.background = null; scene.fog = null; }
       else {
       scene.background = fogCol.clone().lerp(new T.Color(0x000000), 0.15); scene.fog = new T.Fog(fogCol, 30, 62);

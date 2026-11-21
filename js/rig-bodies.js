@@ -81,10 +81,63 @@
   // 2026-11-15 pack: drop the bones that landed on something that is not a limb (seen on tools/rig-sheet.py):
   // a teapot's spout and handle, a watering can's spout, a sponge's sides, a whale's belly, tails drawn on the wrong side.
   var FIT = {
+    // The angel has three feather fans on each side. The middle and lower pairs
+    // use the spare arm and leg channels of the eight-channel picture shader.
+    b139: {
+      head: {e:[.50,.28,.17,.13],p:[.5,.42]},
+      wingL: {e:[.21,.24,.18,.17],p:[.37,.40]}, wingR:{e:[.79,.24,.18,.17],p:[.63,.40]},
+      armL: {e:[.17,.48,.17,.10],p:[.36,.49]}, armR:{e:[.83,.48,.17,.10],p:[.64,.49]},
+      legL: {e:[.23,.68,.16,.10],p:[.39,.57]}, legR:{e:[.77,.68,.16,.10],p:[.61,.57]}
+    },
     m102: { tail: null }, m108: { armL: null, armR: null }, m109: { tail: null }, m113: { tail: null }, m115: { armL: null, armR: null },
     m116: { armL: null, armR: null }, m120: { tail: null }, m127: { tail: null }, m128: { tail: null }, m132: { tail: null },
     b53: { tail: null }, b64: { tail: null }, b74: { tail: null }
   };
+  // Silhouette-specific feather panels in cropped image coordinates. Shield and
+  // sword sides have independent masks so moving feathers do not lift equipment.
+  function feathers(id, left, right) {
+    var fit = FIT[id] || (FIT[id] = {});
+    function panel(v) { return {e:v.slice(0,4),p:v.slice(4)}; }
+    if (left) fit.wingL = panel(left);
+    if (right) fit.wingR = panel(right);
+  }
+  feathers('h03',[.15,0.5,.14,.21,.33,.49],[.85,0.5,.14,.21,.67,.49]);
+  feathers('h06',[.15,0.36,.14,.21,.33,.49],[.85,0.36,.14,.21,.67,.49]);
+  feathers('h08',[.15,0.5,.14,.21,.33,.49],[.85,0.5,.14,.21,.67,.49]);
+  feathers('h24',[.15,0.36,.14,.21,.33,.49],[.85,0.36,.14,.21,.67,.49]);
+  feathers('h27',[.15,0.5,.14,.21,.33,.49],[.85,0.5,.14,.21,.67,.49]);
+  feathers('h35',[.15,0.36,.14,.21,.33,.49],[.85,0.36,.14,.21,.67,.49]);
+  feathers('h45',[.15,0.5,.14,.21,.33,.49],[.85,0.5,.14,.21,.67,.49]);
+  feathers('h54',[.15,0.5,.14,.21,.33,.49],[.85,0.5,.14,.21,.67,.49]);
+  feathers('h57',[.15,0.5,.14,.21,.33,.49],[.85,0.5,.14,.21,.67,.49]);
+  feathers('h80',[.15,0.5,.14,.21,.33,.49],[.85,0.5,.14,.21,.67,.49]);
+  feathers('h89',[.15,0.5,.14,.21,.33,.49],[.85,0.5,.14,.21,.67,.49]);
+  feathers('h99',[.15,0.5,.14,.21,.33,.49],[.85,0.5,.14,.21,.67,.49]);
+  feathers('c19',[.15,0.5,.14,.21,.33,.49],[.85,0.5,.14,.21,.67,.49]);
+  feathers('m133',[.15,0.5,.14,.21,.33,.49],[.85,0.5,.14,.21,.67,.49]);
+  feathers('b20',[.15,0.5,.14,.21,.33,.49],[.85,0.5,.14,.21,.67,.49]);
+  feathers('b31',[.15,0.5,.14,.21,.33,.49],[.85,0.5,.14,.21,.67,.49]);
+  feathers('b50',[.15,0.5,.14,.21,.33,.49],[.85,0.5,.14,.21,.67,.49]);
+  feathers('b54',[.15,0.5,.14,.21,.33,.49],[.85,0.5,.14,.21,.67,.49]);
+  feathers('b57',[.15,0.5,.14,.21,.33,.49],[.85,0.5,.14,.21,.67,.49]);
+  feathers('b67',[.15,0.5,.14,.21,.33,.49],[.85,0.5,.14,.21,.67,.49]);
+  feathers('b70',[.15,0.5,.14,.21,.33,.49],[.85,0.5,.14,.21,.67,.49]);
+  feathers('b77',[.15,0.5,.14,.21,.33,.49],[.85,0.5,.14,.21,.67,.49]);
+  feathers('b82',[.15,0.36,.14,.21,.33,.49],[.85,0.36,.14,.21,.67,.49]);
+  feathers('b88',[.15,0.36,.14,.21,.33,.49],[.85,0.36,.14,.21,.67,.49]);
+  feathers('b93',[.15,0.36,.14,.21,.33,.49],[.85,0.36,.14,.21,.67,.49]);
+  feathers('b94',[.15,0.5,.14,.21,.33,.49],[.85,0.5,.14,.21,.67,.49]);
+  feathers('b114',[.15,0.5,.14,.21,.33,.49],[.85,0.5,.14,.21,.67,.49]);
+  feathers('b135',[.15,0.36,.14,.21,.33,.49],[.85,0.36,.14,.21,.67,.49]);
+  feathers('b140',[.15,0.36,.14,.21,.33,.49],[.85,0.36,.14,.21,.67,.49]);
+  feathers('h71',[.18,.55,.15,.16,.34,.51],null);
+  feathers('h74',[.18,.55,.15,.16,.34,.51],null);
+  feathers('b126',[.18,.55,.15,.16,.34,.51],null);
+  feathers('b129',[.18,.55,.15,.16,.34,.51],null);
+  feathers('h78',null,[.77,.41,.18,.25,.58,.52]);
+  feathers('b83',null,[.77,.41,.18,.25,.58,.52]);
+  feathers('b130',null,[.77,.41,.18,.25,.58,.52]);
+  FIT.h94 = FIT.b139;
   var RIGS = {};
   Object.keys(BEST).forEach(function (id) {
     var b = BEST[id].body; if (!b || !BODIES[b]) return;
