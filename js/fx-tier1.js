@@ -381,7 +381,7 @@
         return st >= dur + 0.15;
       });
       // the big stars, each on a monster
-      volley(c, { shots: 16, t0: 0.16, span: 0.48, fire: function (mob, frac, i) {
+      volley(c, { shots: 16, t0: 0.16, span: 0.48, recoverEmpty: true, fire: function (mob, frac, i) {
         if (!mob) return;
         var col = K.STARC[i % K.STARC.length], from = above(gp(mob), rr(4.4, 5.2)).add(V(rr(0.4, 1.0), 0, 0));
         homing({ from: from, to: function () { return mp(mob); }, time: c.D(0.17), fancy: false, ease: function (x) { return x * x * 0.7 + x * 0.3; },

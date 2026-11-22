@@ -3271,7 +3271,6 @@ html.cw-calm #killBar.loop + #killBarFx,html.cw-calm #surgeGauge.full i::after,h
    layout with them; the top padding (notch, home-screen app) stays on #hud itself, unscaled */
 #hud.nh>.nh-mid,#hud.nh>.nh-prog{zoom:.72}
 /* 보스 도전 kept near full size: it is the one button here you are meant to press (the user: 애가 조금 작지 않니) */
-#hud.nh>#retry{zoom:1;padding:11px 30px;font-size:17px;margin-top:6px}
 /* profile and gold/gems a touch bigger than the rest (2026-11-18, the user: 여기는 살짝씩 키우고) */
 #hud.nh>.nh-top{zoom:.8}
 #hud.nh>#bossbox{zoom:.86}
@@ -3285,7 +3284,6 @@ html.cw-calm #killBar.loop + #killBarFx,html.cw-calm #surgeGauge.full i::after,h
   #hud.nh>.nh-mid{grid-column:2;grid-row:1;justify-self:stretch;margin-top:0}
   #hud.nh>.nh-prog{grid-column:2;grid-row:2;justify-self:center;margin-top:-6px}
   #hud.nh>#bossbox{grid-column:2;grid-row:2;justify-self:center}
-  #hud.nh>#retry{grid-column:2;grid-row:3;justify-self:center;margin-top:2px}
   html.sheeton #hud.nh .nh-prof,html.sheeton #hud.nh>.nh-mid,html.sheeton #hud.nh>.nh-prog{visibility:hidden}
   html.sheeton #hud.nh .nh-wallet{grid-column:1;grid-row:1 / span 3}
 }
@@ -3420,6 +3418,51 @@ html.cw-calm #killBar.loop + #killBarFx,html.cw-calm #surgeGauge.full i::after,h
 .field-counts{margin:0 15px;border-top:1px solid #dbc7e945;justify-content:center;gap:20px;padding:7px 0 9px;font-size:14px}
 .field-counts span{gap:5px}.field-counts .field-art{width:23px;height:23px}.field-counts b{color:#fff3cf}
 @media(orientation:landscape){#fieldSummary{top:max(8px,env(safe-area-inset-top));left:50%;transform:translateX(-50%)}}
+/* Boss timeout result uses the approved navy glass, without a live blur. */
+#bossActions { display:flex; justify-content:center; align-items:center; gap:7px; align-self:center; }
+#bossActions[hidden],#lastBossResult[hidden],#bossResultReturn[hidden] { display:none!important; }
+#hud.nh>#bossActions #retry { zoom:1; padding:11px 30px; font-size:17px; margin-top:6px; }
+#hud.nh #lastBossResult,#bossResultReturn { color:#fffdf8; background:linear-gradient(180deg,#344f68,#20354c); border:1px solid #7895b6a3; border-radius:11px; font:400 15px/1.15 var(--display); min-height:44px; }
+#hud.nh #lastBossResult { pointer-events:auto; padding:5px 11px; margin-top:6px; white-space:nowrap; }
+#bossResultReturn { display:block; flex:none; padding:4px 12px; margin:3px 12px 5px; }
+#lastBossResult:focus-visible,#bossResultReturn:focus-visible,#modalCard.boss-result-card .btn:focus-visible { outline:2px solid #f8e8ba; outline-offset:-3px; }
+#modal.boss-result-modal { background:#10233165; overflow-y:auto; align-items:safe center; padding:calc(30px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(12px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px)); }
+#modalCard.boss-result-card { --br-metal:linear-gradient(135deg,#f8e8ba,#bc995a 28%,#85673f 48%,#e4c888 74%,#9f7e4b); position:relative; isolation:isolate; flex:none; width:min(100%,352px); max-height:none; margin:0; padding:23px 13px 3px; overflow:visible; border:1.5px solid #d9bd81; border-radius:23px; color:#fffdf8; font:400 16px/1.15 var(--display); background:radial-gradient(ellipse at 50% 0%,#7ba1d52c,transparent 57%),linear-gradient(148deg,#29425ce9,#17263eef 54%,#1c2f47f2); box-shadow:inset 0 0 0 1px #fff0bb33,inset 0 2px 13px #8299cb55,0 0 0 2px #111e3c9c,0 14px 34px #10132088; }
+#modalCard.boss-result-card .br-title { position:absolute; z-index:1; left:50%; top:-20px; height:40px; width:170px; transform:translateX(-50%); display:grid; place-items:center; margin:0; color:#fffaf2; font:400 21px/1 var(--display); text-shadow:0 1px 3px #150a3d; }
+.br-title::before,.br-title::after { position:absolute; content:""; inset:0; z-index:-2; background:var(--br-metal); clip-path:polygon(11% 0,89% 0,100% 50%,89% 100%,11% 100%,0 50%); }
+.br-title::after { z-index:-1; inset:1.5px 2px; background:linear-gradient(180deg,#335e8650,#182f62b7),url(art/mn-neb-fill.webp) 30% 72%/340px auto; }
+.br-hero { position:relative; isolation:isolate; min-height:116px; display:grid; place-items:center; overflow:hidden; border:1px solid #7897ad8f; border-radius:15px; background:linear-gradient(90deg,transparent 12%,#132b468f 53%,#10233aeb 87%),var(--br-field) center 44%/cover; }
+.br-hero img { position:absolute; left:6px; bottom:7px; width:126px; height:93px; object-fit:contain; filter:drop-shadow(0 3px 5px #0b0620); }
+.br-hero img[data-art="b02"] { clip-path:polygon(0 0,100% 0,100% 100%,8% 100%,8% 78%,0 78%); }
+.br-hero .br-copy { position:relative; min-width:0; max-width:100%; margin-left:104px; padding:8px 5px; overflow-wrap:anywhere; text-shadow:0 1px 2px #120a30,0 0 6px #120a30; }
+#modalCard .br-copy p { margin:0; color:#d3e5fb; font:400 14px/1.16 var(--display); }
+#modalCard .br-copy .br-context { margin-bottom:5px; color:#ffe4ad; font-size:13px; }
+.br-hero h3 { margin:0 0 5px; color:#fffdf8; font:400 27px/1.04 var(--display); }
+.br-status { margin-top:9px; padding:8px 10px 7px; border:1px solid #7895b671; border-radius:13px; background:#102035a8; }
+.br-hp { display:flex; justify-content:space-between; align-items:baseline; gap:7px; }
+.br-hp strong { color:#ffe4ad; font:400 28px/1.1 var(--display); font-variant-numeric:tabular-nums; }
+.br-track { position:relative; height:7px; margin-top:4px; border-radius:99px; background:#405878c4; }
+.br-track i { display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#bd88d5,#f4bede); box-shadow:0 0 6px #f8bedb73; }
+.br-track b { position:absolute; top:0; bottom:0; width:2px; border-radius:2px; background:#d3e5fb; opacity:.65; }
+#modalCard .br-previous { display:flex; justify-content:space-between; flex-wrap:wrap; gap:4px 8px; margin:5px 0 0; color:#d3e5fb; font:400 13px/1.15 var(--display); }
+.br-hint { margin:8px 0 0; padding:5px 8px; display:grid; grid-template-columns:37px minmax(0,1fr); gap:8px; align-items:center; text-align:left; border:1px solid #799ab478; border-radius:12px; background:linear-gradient(90deg,#49658b5c,#344e6e4f); }
+.br-hint img,.br-hint svg { width:35px; height:35px; object-fit:contain; }
+#modalCard .br-hint p { margin:0; color:#fffdf8; font:400 14px/1.18 var(--display); overflow-wrap:anywhere; }
+.br-hint small { display:block; margin-top:3px; color:#d3e5fb; font-size:12px; }
+#modalCard.boss-result-card .btns { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr); gap:5px 8px; margin:9px 0 0; }
+#modalCard.boss-result-card .btn { margin:0; min-height:44px; padding:5px 9px; border:1px solid #9fb9ebba; border-radius:11px; background:linear-gradient(180deg,#5275ae,#283966); color:#fffdf8; font:400 16px/1.15 var(--display); text-shadow:0 1px 2px #162842; box-shadow:none; }
+#modalCard.boss-result-card .btn:last-child { grid-column:1/-1; border:0; background:transparent; color:#d3e5fb; font-size:14px; }
+@media (max-width:339px) { #modalCard.boss-result-card { padding-inline:10px; } .br-hero img { left:4px; width:106px; height:87px; } .br-hero .br-copy { margin-left:93px; } .br-hero h3 { font-size:24px; } }
+@media (orientation:landscape) and (min-aspect-ratio:6/5) {
+  #hud.nh>#bossActions { grid-column:2; grid-row:3; justify-self:center; }
+  #hud.nh>#bossActions #retry,#hud.nh #lastBossResult { margin-top:2px; }
+  #modal.boss-result-modal { padding-right:max(62px,calc(58px + env(safe-area-inset-right,0px))); }
+  #modalCard.boss-result-card { width:min(100%,602px); display:grid; grid-template-columns:minmax(140px,38%) minmax(0,1fr); grid-template-rows:auto 1fr; gap:0 11px; padding:18px 11px 6px; }
+  .br-hero { grid-row:span 2; align-content:end; min-height:215px; background:linear-gradient(180deg,transparent,#132b468f 49%,#10233aeb 91%),var(--br-field) center 39%/cover; }
+  .br-hero img { width:144px; height:104px; left:50%; top:14px; bottom:auto; transform:translateX(-50%); }
+  .br-hero .br-copy { margin:0; padding:5px 5px 10px; }
+  #modalCard.boss-result-card .btns { align-self:start; }
+}
 </style>
 
 <!-- 업데이트 화면 (2026-11-15, the user's design art-src/update-20261115; js/update-screen.js): shown first, "모험 시작" goes into the game -->
@@ -3555,7 +3598,7 @@ html.cw-calm #killBar.loop + #killBarFx,html.cw-calm #surgeGauge.full i::after,h
         </div>
       </div>
       <div id="bossbox"><div class="boss-top"><span id="bossName">보스</span><span id="bossTime">30.0초</span></div><div class="bossrow"><div class="bar"><i id="bossHp"></i></div><b id="bossPct">100%</b></div></div>
-      <button id="retry">보스 도전</button>
+      <div id="bossActions" hidden><button id="retry">보스 도전</button><button id="lastBossResult" hidden>지난 결과</button></div>
     </div>
     <div id="quick" aria-label="바로가기"><button data-quick="rune"><i></i><span>룬</span></button><button data-quick="sigil"><i></i><span>신성력</span></button><button data-quick="dex"><i></i><span>도감</span></button><button data-quick="chest"><i></i><span>가방</span></button><button data-quick="mail"><i></i><span>우편함</span></button><button data-quick="notice"><i></i><span>공지</span></button><button data-quick="idle"><i></i><span>방치</span></button></div>
     <div id="banner"></div>
@@ -3567,7 +3610,7 @@ html.cw-calm #killBar.loop + #killBarFx,html.cw-calm #surgeGauge.full i::after,h
     <div id="qrow"><div id="quest"><b>목표</b><span id="questTxt"></span></div><div id="pre" role="group" aria-label="스킬 프리셋"></div></div>
     <div id="surgeGauge" aria-label="마력 폭주 게이지"><i id="surgeFill"></i><b>폭주</b></div><div class="slots" id="slots"></div>
   </div>
-  <section id="sheet" class="cream" aria-label="메뉴"><div class="sheet-head"><b id="sheetTitle">강화</b><button id="sheetClose">닫기</button></div><main id="panel" aria-live="polite"></main><div id="dock" hidden></div></section>
+  <section id="sheet" class="cream" aria-label="메뉴"><div class="sheet-head"><b id="sheetTitle">강화</b><button id="sheetClose">닫기</button></div><button id="bossResultReturn" hidden>결과로 돌아가기</button><main id="panel" aria-live="polite"></main><div id="dock" hidden></div></section>
   <nav id="tabs" role="tablist">
     <button role="tab" data-tab="battle" aria-selected="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 4.5 9 15"/><path d="M19.5 4.5h-4.2M19.5 4.5v4.2"/><path d="m6.2 12.6 5.2 5.2"/><path d="M8.6 15.4 4.5 19.5"/></svg><span>전투</span></button>
     <button role="tab" data-tab="up" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V6"/><path d="m6.5 11.5 5.5-5.5 5.5 5.5"/><path d="M5 21h14"/></svg><span>훈련</span></button>

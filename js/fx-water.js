@@ -359,7 +359,7 @@
       var first = c.pool()[0]; if (!first) return;
       c.plain = true;
       sc.heroPose('slam', c.D(0.12), c.col);
-      after(c.D(0.1), function () { var mob = first.alive ? first : c.pool()[0]; if (mob) prison(c, mob); });
+      after(c.D(0.1), function () { prison(c, first.alive ? first : c.pool()[0] || first); });
     };
 
     // ---- 3. 물폭발 (every monster) — (9th, 2026-11-17, the user: 화산 폭발같이 물기둥이 올라와서 펑 하고 터지는 느낌 —

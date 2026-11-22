@@ -1,5 +1,5 @@
 (function (root, f) { var m = f(root); if (typeof module !== 'undefined' && module.exports) module.exports = m; else { root.CW = root.CW || {}; Object.assign(root.CW, m); } })(this, function (root) {
-  // 아이디 로그인 (2026-11-18, 형: 앱게임처럼 아이디·비밀번호, 폰·태블릿에서 같은 캐릭터). 형꺼 only (체험판 never has it).
+  // 아이디 로그인 (2026-11-18, 형: 앱게임처럼 아이디·비밀번호, 폰·태블릿에서 같은 캐릭터).
   // The game opens on a login screen until this browser holds a login with an id (cw-player-auth has "lid"). From then on
   // it opens straight into the game, and 설정 › 로그아웃 comes back to this screen. The password is kept by Supabase Auth
   // (the id becomes the Auth email id@cw-login.invalid); the Edge Function account gives an id to the account this device
@@ -131,6 +131,7 @@
         if (!a) return { ok: false, msg: say(r.code, '') };
         return req(ACCOUNT, { act: 'enter', info: info() }, { Authorization: 'Bearer ' + a.access }).then(function (e) {
           if (!e.ok) return { ok: false, msg: e.code === 404 ? say(400, '') : say(e.code, e.j.msg) };
+          if (o.maxTier && e.j.data && e.j.data.tier > o.maxTier) return { ok: false, msg: '체험판에서는 9차까지의 캐릭터로 로그인할 수 있어요.' };
           var mine = get(SAVE), data = e.j.data && typeof e.j.data === 'object' ? JSON.stringify(e.j.data) : '';
           if (mine && mine !== data) put('cw-save-login-bak', mine);   // what this device had before: kept, in case it was something
           root.CW_NOSAVE = true;
@@ -339,11 +340,11 @@
     doc.body.appendChild(el);
   }
 
-  // main.js: nothing happens off the real site (localhost without ?psync=1), on 체험판, or once a login is kept here
+  // main.js: nothing happens off the real site (localhost without ?psync=1), or once a login is kept here
   function startGate(env) {
     env = env || {};
-    if (env.friend || !env.allowed) return null;
-    var g = createGate({ store: env.store, fetch: env.fetch, now: env.now, reload: env.reload, info: env.info,
+    if (!env.allowed) return null;
+    var g = createGate({ maxTier: env.maxTier, store: env.store, fetch: env.fetch, now: env.now, reload: env.reload, info: env.info,
       onSuspended: function () { if (env.doc !== false) kickedScreen({ doc: env.doc, reload: env.reload, suspended: true }); },
       onKicked: function () { if (env.doc !== false) kickedScreen({ doc: env.doc, reload: env.reload }); },
       onAdopt: function () { if (env.doc !== false) busyScreen('다른 기기에서 한 진행을 받아 오는 중이에요…', { doc: env.doc }); } });

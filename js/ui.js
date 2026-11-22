@@ -31,6 +31,7 @@
 
   function createUI(G) {
     var tab = 'battle', selSlot = -1, lastPanel = '', toastT = 0, lastBuffs = '', dockHtml = '';
+    var bossSkillReturn = null;
     var TITLES = { dungeon: '던전', up: '훈련', skill: '스킬', gear: '장비', gacha: '뽑기', more: '더보기', stage: '스테이지 선택' };
     var bagKind = 'staff', selKey = null, bagAll = true;   // 사용자 2026-11-16: 모든 등급을 늘 보여 줌 (「고른 등급만 보기」 버튼 뺌)   // bagAll: 장비 목록에 미보유 등급까지 (보기만)
     var KIND_SHORT = { hat: '모자', staff: '지팡이', robe: '로브', belt: '벨트', necklace: '목걸이', ear: '귀걸이', ring: '반지' };
@@ -1182,13 +1183,58 @@
     // close = 위 ×(순수 안내창만; 보상·콜백이 있는 창엔 붙이지 않는다). 예전 2인자 호출은 그대로.
     function modal(html, buttons, opts) {
       opts = opts || {};
-      var card = $('modalCard');
-      card.className = 'card' + (opts.variant === 'coupon' ? ' coupon-card' : opts.variant === 'guide' ? ' guide-card' : opts.variant === 'danger' ? ' guide-card danger' : opts.variant === 'library' ? ' library-card' : '');
+      var card = $('modalCard'), overlay = $('modal'), bossCard = opts.variant === 'boss-result';
+      card.className = 'card' + (opts.variant === 'coupon' ? ' coupon-card' : opts.variant === 'guide' ? ' guide-card' : opts.variant === 'danger' ? ' guide-card danger' : opts.variant === 'library' ? ' library-card' : bossCard ? ' boss-result-card' : '');
+      overlay.classList.toggle('boss-result-modal', bossCard);
+      if (bossCard) {
+        card.setAttribute('role', 'dialog');
+        card.setAttribute('aria-modal', 'true');
+        card.setAttribute('aria-labelledby', 'bossResultTitle');
+      } else if (card.getAttribute('aria-labelledby') === 'bossResultTitle') {
+        card.removeAttribute('role'); card.removeAttribute('aria-modal'); card.removeAttribute('aria-labelledby');
+      }
       card.innerHTML = (opts.close ? '<button class="guide-x" data-mx aria-label="닫기">×</button>' : '') + html + '<div class="btns">' + buttons.map(function (b, i) { return '<button class="btn ' + (b.pri ? 'pri' : '') + '" data-mb="' + i + '">' + b.label + '</button>'; }).join('') + '</div>';
       if (opts.close) card.dataset.closable = '1'; else delete card.dataset.closable;
       $('modal').hidden = false;
       card.querySelectorAll('[data-mb]').forEach(function (el) { el.onclick = function () { var b = buttons[+el.dataset.mb]; $('modal').hidden = true; if (b.fn) b.fn(); G.sound('click'); }; });
       var mx = card.querySelector('[data-mx]'); if (mx) mx.onclick = function () { $('modal').hidden = true; G.sound('click'); };
+    }
+    function showBossResult() {
+      var result = G.bossResult();
+      if (!result || tab !== 'battle' || !$('modal').hidden || document.hidden || CW.idleActive()) return false;
+      var def = CW.stageBoss(result.stage, result.diff), region = CW.regionAt(result.diff, CW.stageInfo(result.stage).region);
+      var hpText = function (value) { return value < 1 ? '1% 미만' : Math.floor(value) + '%'; };
+      var previous = Number.isFinite(result.previous) && result.previous > 0 && result.previous <= 100 ? result.previous : null;
+      var improved = previous !== null && result.pct < previous && hpText(result.pct) !== hpText(previous);
+      var base = CW.ART_BASE || 'art/';
+      var equipped = G.state.slots.map(CW.skillById).filter(Boolean);
+      var limit = CW.FRIEND ? Math.min(G.state.tier, CW.FRIEND_MAX_TIER) : G.state.tier;
+      var weak = region.weak || [];
+      var choices = CW.unlockedSkills(limit).filter(function (skill) {
+        return weak.indexOf(skill.el) >= 0 && !equipped.some(function (current) { return current.el === skill.el || current.el === 'all'; });
+      });
+      choices.sort(function (a, b) { return b.mult / CW.castTime(b, 1) - a.mult / CW.castTime(a, 1); });
+      var skill = choices[0];
+      var advice = skill ? '<div class="br-hint">' + CW.ICO.skill(skill.id) + '<p>약점 · ' +
+        esc(weak.map(function (el) { return DATA.elements[el].name; }).join(' / ')) +
+        '<small>다음 도전 추천 · ' + esc(skill.name) + '</small></p></div>' : '';
+      var html = '<h2 id="bossResultTitle" class="br-title" tabindex="-1">보스 도전 결과</h2>' +
+        '<header class="br-hero" style="--br-field:url(&quot;' + esc(base + region.bg + '.webp') + '&quot;)">' +
+        '<img src="' + esc(base + def.art + '.webp') + '" data-art="' + esc(def.art) + '" alt="">' +
+        '<div class="br-copy"><p class="br-context">' + esc(region.name + ' · ' + CW.stageLabel(result.stage)) + '</p>' +
+        '<h3>' + esc(def.name) + '</h3><p>도전 시간이 끝났어요</p></div></header>' +
+        '<div class="br-content"><div class="br-status"><div class="br-hp"><span>남은 체력</span><strong>' + hpText(result.pct) + '</strong></div>' +
+        '<div class="br-track" aria-hidden="true"><i style="width:' + result.pct + '%"></i>' +
+        (previous === null ? '' : '<b style="left:' + Math.min(99.3, previous) + '%"></b>') + '</div>' +
+        (previous === null ? '' : '<p class="br-previous"><span>지난 도전 ' + hpText(previous) + '</span>' +
+          (improved ? '<span>지난번보다 더 깎았어요</span>' : '') + '</p>') + '</div>' + advice + '</div>';
+      modal(html, [
+        { label: '스킬 배치', fn: function () { bossSkillReturn = result; openTab('skill'); $('bossResultReturn').focus(); } },
+        { label: '다시 도전', fn: function () { G.retryBoss(result); } },
+        { label: '사냥 계속', fn: function () { $('lastBossResult').focus(); } }
+      ], { variant: 'boss-result' });
+      $('bossResultTitle').focus({ preventScroll: true });
+      return true;
     }
     function confirmBox(title, text, yes, onYes, opts) { modal('<h2>' + title + '</h2><p>' + text + '</p>', [{ label: '취소' }, { label: yes, pri: true, fn: onYes }], opts || { variant: 'guide' }); }
     // Esc 키: × 가 있는 순수 안내창만 닫는다
@@ -1269,7 +1315,12 @@
         starPath(s.farming ? 100 : Math.min(100, kp.n / kp.max * 100), !!s.farming);
       }
       if (sub !== lastSub) { lastSub = sub; $('placeSub').innerHTML = sub; }
-      $('retry').classList.toggle('on', s.farming && !boss && G.canRetry() && !G.dunState());
+      var canRetry = s.farming && !boss && !s.bossTry && G.canRetry() && !G.dunState();
+      var pastResult = G.bossResult();
+      $('bossActions').hidden = !canRetry;
+      $('retry').classList.toggle('on', !!canRetry);
+      $('lastBossResult').hidden = !pastResult || tab !== 'battle';
+      if (bossSkillReturn && bossSkillReturn !== pastResult) { bossSkillReturn = null; $('bossResultReturn').hidden = true; }
       dunHud(G.dunState());
       var now = Date.now(), bt = DATA.potions.map(function (p) { var l = CW.buffLeft(s, p.id, now); return l ? '<span>' + mi('potion', p) + mmss(l) + '</span>' : ''; }).join('');
       if (bt !== lastBuffs) { lastBuffs = bt; $('buffs').innerHTML = bt; }
@@ -1540,7 +1591,7 @@
       var won = function (v) { return v.toLocaleString('ko-KR') + '원'; };
       var gems = '<div class="subh">다이아</div><div class="shop">' + DATA.shop.map(function (p, i) {
         var first = !s.firstBuy[i];
-        return '<div class="prod">' + (first ? '<span class="tag">첫 구매 2배</span>' : '') + '<div class="amt"><i class="gem"></i>' + fmt(p.gems * (first ? 2 : 1)) + '</div><div class="note">' + p.name + '</div>' + (CW.FRIEND ? '<button class="buy" disabled style="opacity:.5;filter:grayscale(1)">체험판</button>' : '<button class="buy gemb" data-shop="' + i + '">' + won(p.won) + '</button>') + '</div>';
+        return '<div class="prod">' + (first ? '<span class="tag">첫 구매 2배</span>' : '') + '<div class="amt"><i class="gem"></i>' + fmt(p.gems * (first ? 2 : 1)) + '</div><div class="note">' + p.name + '</div>' + (CW.FRIEND ? '<button class="buy" disabled style="opacity:.5;filter:grayscale(1)">구매 불가</button>' : '<button class="buy gemb" data-shop="' + i + '">' + won(p.won) + '</button>') + '</div>';
       }).join('') + '</div>';
       var packLines = function (g) {
         var lines = [];
@@ -1607,7 +1658,8 @@
       // 2026-11-17 (the user): 연습용 패키지 글 빼고, 다이아·매일 다이아·성장(골드 꾸러미·마력석 꾸러미)만 두고 룬·장비 뽑기는 빼 —
       // packages marked off stay in DATA for old saves; 겨울 신규 냥법사 comes first while its season lasts (packOpen 'over')
       var SECTIONS = [['winter', '❄️ 겨울 신규 냥법사 (한 번만)'], ['daily', '매일 다이아'], ['grow', '성장'], ['tier', '전직 축하 (한 번만)']];
-      var packs = '<h3>패키지</h3>' + gems + pkHint + SECTIONS.map(function (sec) {
+      var packs = (CW.FRIEND ? '' : '<h3>패키지</h3>') + gems;
+      if (!CW.FRIEND) packs += pkHint + SECTIONS.map(function (sec) {
         var list = DATA.packs.filter(function (p) { return p.cat === sec[0] && !p.off && CW.packOpen(s, p.id) !== 'over'; });
         if (!list.length) return '';
         if (sec[0] === 'winter') {   // a frosty showcase with falling snow (2026-11-17, the user: 애니메이션화해서 보기 좋게)
@@ -1659,7 +1711,7 @@
         '</div></details>');
       // each button shows only its own part (2026-11-15: they used to scroll down one long page of all three)
       // 체험판 (js/friend.js): no 패키지 part at all
-      var parts = [['전직', tiers], ['패키지', packs], ['설정', settings]].filter(function (p) { return !(CW.FRIEND && p[0] === '패키지'); });
+      var parts = [['전직', tiers], [CW.FRIEND ? '다이아' : '패키지', packs], ['설정', settings]];
       if (moreSub >= parts.length) moreSub = 0;
       var jump = '<div class="jump three" role="tablist">' + parts.map(function (p, i) { return '<button role="tab" aria-selected="' + (i === moreSub) + '" data-jump="' + i + '">' + p[0] + '</button>'; }).join('') + '</div>';
       return jump + parts[moreSub][1];
@@ -2639,6 +2691,8 @@
         warmImgs(['hat', 'robe', 'belt', 'necklace', 'ear', 'ring'].reduce(function (a, k) { return a.concat(gearKindPics(k)); }, []));      }, 1200);
     });
     function openTab(name) {
+      if (name !== 'skill') bossSkillReturn = null;
+      $('bossResultReturn').hidden = name !== 'skill' || !bossSkillReturn;
       if (name === 'gacha') ghdSeen = null;
       if (name === 'more' && tab !== 'more') tierAnim = true;   // 전직 cards slide in when 더보기 opens
       if(name!=='dungeon')G.cancelExpedition();
@@ -2659,6 +2713,12 @@
     $('sheetClose').addEventListener('click', function () { openTab('battle'); G.sound('click'); });
     $('slots').addEventListener('click', function (e) { var b = e.target.closest('[data-bar]'); if (!b) return; selSlot = +b.dataset.bar; openTab('skill'); G.sound('click'); });
     $('retry').addEventListener('click', function () { G.retryBoss(); });
+    $('lastBossResult').addEventListener('click', showBossResult);
+    $('bossResultReturn').addEventListener('click', function () {
+      if (!bossSkillReturn || bossSkillReturn !== G.bossResult()) return;
+      openTab('battle');
+      showBossResult();
+    });
     $('placeBtn').addEventListener('click', function () { selDiff = selRegion = -1; openTab(tab === 'stage' ? 'battle' : 'stage'); G.sound('click'); });
 
     // ---------- big moments ----------
@@ -2976,7 +3036,7 @@
       profTheme(getComputedStyle(document.documentElement).getPropertyValue('--capc').trim());
     }
     document.querySelector('#hud .nh-prof').addEventListener('click', function () { G.sound('click'); openStats(); });
-    return { surgeGauge: surgeGauge, dunHud: dunHud, gainLog: gainLog, fieldPickup: fieldPickup, fieldSummary: fieldSummary, openTab: openTab, hud: hud, slots: slots, renderPanel: renderPanel, toast: toast, banner: banner, showOffline: showOffline, showDaily: showDaily, showTierUp: showTierUp, showGacha: showGacha, modal: modal, libraryCards: libraryCards, currentTab: function () { return tab; } };
+    return { surgeGauge: surgeGauge, dunHud: dunHud, gainLog: gainLog, fieldPickup: fieldPickup, fieldSummary: fieldSummary, openTab: openTab, hud: hud, slots: slots, renderPanel: renderPanel, toast: toast, banner: banner, showOffline: showOffline, showDaily: showDaily, showTierUp: showTierUp, showGacha: showGacha, modal: modal, showBossResult: showBossResult, libraryCards: libraryCards, currentTab: function () { return tab; } };
   }
   CW.createUI = createUI;
 })(this);

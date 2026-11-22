@@ -6,6 +6,11 @@
   var storage = null;
   try { storage = root.localStorage; storage.setItem('cw-probe', '1'); storage.removeItem('cw-probe'); } catch (e) { storage = null; }
   var state = CW.migrateBag(CW.load(storage) || Object.assign(CW.newState(), { needsFirstNick: true }));
+  // A full-version account shares this browser's save. Never write its capped copy back.
+  if (CW.FRIEND && state.tier > CW.FRIEND_MAX_TIER && storage && storage.getItem('cw-player-auth')) {
+    document.body.textContent = '이 캐릭터는 체험판의 9차 제한을 넘었어요. 기존 게임 주소에서 이어가 주세요.';
+    return;
+  }
   initLibrarySave(state);
   // 한 종류에 하나 (2026-11-18, js/sigil.js · js/runes.js): a save that wore an option or a rune kind twice keeps the strongest
   function oneOfEach(s) { if (CW.sigilDedupe && s.sigil) CW.sigilDedupe(s); if (CW.runeDedupe && s.runeBag) CW.runeDedupe(s); return s; }
@@ -144,7 +149,7 @@
   function clearField(silent) {
     fx.clear();
     if (silent) sc.clearMobs(); else aliveMobs().forEach(function (m) { sc.killMob(m, 0xffffff, false); });
-    boss = null; wave.left = 0;
+    boss = null; pendingBossEntry = null; wave.left = 0;
   }
   // Normal monsters come in crowds: each one has a third of a stage monster's health and gold,
   // and every three of them count as one kill toward the stage.
@@ -184,16 +189,22 @@
     return a ? { art: a, height: fitHeight(a, 0.72 + Math.random() * 0.11), fly: !!k.fly } : null;
   }
   var mins = sc.minions;
-  function startBoss() {
-    var info = CW.stageInfo(state.stage), R = CW.regionAt(state.diff, info.region);
+  var pendingBossEntry = null;
+  function startBoss(manual) {
+    var stage = state.stage, diff = state.diff || 0;
+    if (manual === undefined) manual = !!(pendingBossEntry && pendingBossEntry.stage === stage && pendingBossEntry.diff === diff);
+    var info = CW.stageInfo(stage), R = CW.regionAt(diff, info.region);
     if (mins) mins.scatter();
     clearField(false);
-    var sb = CW.stageBoss(state.stage, state.diff || 0), a = mobArt(sb.art, R.boss.art) || mobArt(R.boss.art);
-    if (!a) { needArt(sb.art); restT = 0.3; state.bossTry = true; return; }
+    var sb = CW.stageBoss(stage, diff), a = mobArt(sb.art, R.boss.art) || mobArt(R.boss.art);
+    if (!a) {
+      pendingBossEntry = manual ? { stage: stage, diff: diff } : null;
+      needArt(sb.art); restT = 0.3; state.bossTry = true; return;
+    }
     var name = sb.name;
     // bosses are drawn clearly bigger than the crowd: a stage boss about twice a monster, the region boss more
     var mob = sc.spawnMob({ art: a, id: sb.art, height: fitHeight(a, info.isRegionBoss ? 2.45 : 2.0), hp: CW.stageBossHp(state), boss: true, regionBoss: info.isRegionBoss, name: name });
-    boss = { mob: mob, time: info.timeLimit, info: info, name: name };
+    boss = { mob: mob, time: info.timeLimit, info: info, name: name, stage: stage, diff: diff, manual: manual };
     fx.bossEnter(mob, info.isRegionBoss);
     snd.play('boss');
   }
@@ -201,7 +212,7 @@
     smallKills = 0;
     syncRegion();
     if (kind === 'hold') { ui.toast('도전 버튼을 눌러 보스전을 시작하세요.'); return; }
-    if (kind === 'boss') startBoss();
+    if (kind === 'boss') startBoss(false);
   }
 
   // ---------- combat ----------
@@ -332,6 +343,7 @@
     gained.gold += gold; gained.gems += gems; gained.xp += bx;
     if (CW.idleNote) CW.idleNote({ kill: 1, gold: gold, xp: bx, rune: rstone });
     onLevel(CW.gainXp(state, bx));
+    if (sameBossResult(state.bossResult, boss)) state.bossResult = null;
     var res = CW.onBossResult(state, true);
     boss = null;
     // no pop-up for a win: the wizard cheers, and what was won scrolls by quietly in the corner list
@@ -358,13 +370,38 @@
     ui.banner('Lv.' + state.level + '!');
     if (r.gems) ui.toast('Lv.' + state.level + ' 달성 · 다이아 +' + r.gems);
   }
+  function sameBossResult(result, fight) {
+    return result && result.stage === fight.stage && result.diff === fight.diff && result.art === fight.mob.id;
+  }
+  function validBossPct(value) { return Number.isFinite(value) && value > 0 && value <= 100; }
+  function retryBossStage() {
+    var target = Math.max(state.best + 1, state.stage + 1);
+    return target <= CW.LAST_STAGE && CW.stageInfo(target).isBoss ? target : -1;
+  }
+  function bossResult() {
+    var result = state.bossResult;
+    if (!result || boss || dun || state.bossTry || !state.farming || result.diff !== (state.diff || 0) ||
+        result.stage !== retryBossStage() || !validBossPct(result.pct)) return null;
+    var def = CW.stageBoss(result.stage, result.diff);
+    return def && def.art === result.art ? result : null;
+  }
   function bossFail() {
-    var mob = boss.mob; boss = null;
+    var fight = boss, mob = fight.mob, previous = state.bossResult;
+    var pct = Math.min(100, (mob.hp / mob.maxHp) * 100);
+    if (validBossPct(pct)) {
+      state.bossResult = {
+        stage: fight.stage, diff: fight.diff, art: mob.id, pct: pct,
+        previous: sameBossResult(previous, fight) && validBossPct(previous.pct) ? previous.pct : null
+      };
+    }
+    boss = null;
     CW.onBossResult(state, false);
+    // Drop pending impacts from the expired fight before the farming wave comes back.
+    fx.clear();
     sc.killMob(mob, 0x777788, false);
-    ui.banner('도전 시간이 끝났어요'); snd.play('lose');
-    ui.toast('성장을 강화한 뒤 ‘보스 다시 도전’을 눌러 보세요.');
+    snd.play('lose');
     restT = 0.8; save();
+    if (!(fight.manual && ui.showBossResult())) ui.banner('도전 시간이 끝났어요');
   }
   function doTierUp(t) {
     if (state.tierShow === t) delete state.tierShow;
@@ -706,7 +743,8 @@
     get state() { return state; },
     boss: function () { return boss; },
     castingSlot: function () { return preview ? -1 : nowSlot; },
-    canRetry: function () { var b = Math.max(state.best + 1, state.stage + 1); return b <= CW.LAST_STAGE && CW.stageInfo(b).isBoss; },
+    canRetry: function () { return retryBossStage() >= 0; },
+    bossResult: bossResult,
     upgradeN: function (k, n) { var c = CW.tryUpgradeN(state, k, n); if (c) { refreshStats(); snd.play('click'); save(); } return c; },
     upgrade: function (k) { var ok = CW.tryUpgrade(state, k); if (ok) { refreshStats(); snd.play('click'); } return ok; },
     equipSkill: function (slot, id) { var ok = CW.equipSkill(state, slot, id); save(); return ok; },
@@ -807,14 +845,17 @@
     goStage: function (i) {
       if (dun) return false;
       if (!CW.goStage(state, i)) return false;
-      clearField(true); syncRegion(); if (state.bossTry) startBoss(); save(); return true;
+      clearField(true); syncRegion(); if (state.bossTry) startBoss(true); save(); return true;
     },
     setDifficulty: function (d) {
       if (dun && dun.library) return false;
       if (!CW.setDifficulty(state, d)) return false;
       clearField(true); region = -1; syncRegion(); refreshStats(); smallKills = 0; save(); ui.banner(CW.diffOf(state).name); return true;
     },
-    retryBoss: function () { if (boss || dun) return; if (CW.retryBoss(state)) { syncRegion(); startBoss(); } },
+    retryBoss: function (result) {
+      if (boss || dun || state.bossTry || (result && result !== bossResult()) || !CW.retryBoss(state)) return false;
+      syncRegion(); startBoss(true); return true;
+    },
     // the player's own name (empty = the default: the owner's 귤귤귤귤귤, 체험판 냥법사)
     nickName: function () { return state.nick || (CW.FRIEND ? '냥법사' : '귤귤귤귤귤'); },
     setNick: function (v) { state.nick = v; save(); },
@@ -1195,18 +1236,18 @@
     document.addEventListener('visibilitychange', function () { if (ready && document.hidden) ownerSync.push('hide'); });
   }
   G.ownerSync = ownerSync;
-  // ---------- 서버 저장 (2026-11-18, js/player-sync.js): anonymous login; 형꺼 only for now (형: 우선 내꺼만 올려) ----------
+  // ---------- 서버 저장 (2026-11-18, js/player-sync.js): anonymous login ----------
   // a first send a few seconds after the game is ready (moves the save already on this phone to the server), then
   // every 10 minutes when it changed and when the app is put away; off on localhost unless ?psync=1.
-  // 체험판 gets it later by taking !CW.FRIEND away (the server already takes anyone's anonymous login).
+  // 친구도 가입한 아이디로 이 기기의 진행을 이어간다.
   // 아이디 로그인 (js/login-gate.js): the game opens on the login screen until this browser holds a login with an id
-  var loginGate = !CW.FRIEND && CW.startLoginGate ? CW.startLoginGate({
-    friend: CW.FRIEND, allowed: CW.playerSyncAllowed(location), store: storage, fetch: root.fetch ? root.fetch.bind(root) : null,
+  var loginGate = CW.startLoginGate ? CW.startLoginGate({
+    maxTier: CW.FRIEND ? CW.FRIEND_MAX_TIER : null, allowed: CW.playerSyncAllowed(location), store: storage, fetch: root.fetch ? root.fetch.bind(root) : null,
     reload: function () { location.reload(); }, info: function () { return (navigator.userAgent || '').slice(0, 160); }
   }) : null;
   G.loginGate = loginGate;
   var playerSync = CW.createPlayerSync ? CW.createPlayerSync({
-    enabled: !CW.FRIEND && CW.playerSyncAllowed(location), store: storage, fetch: root.fetch ? root.fetch.bind(root) : null,
+    enabled: CW.playerSyncAllowed(location), store: storage, fetch: root.fetch ? root.fetch.bind(root) : null,
     account: !!loginGate,
     blocked: function () { return !!(loginGate && loginGate.isKicked()); },
     onLost: function () { if (loginGate && CW.openLoginScreen) CW.openLoginScreen(loginGate, { reload: function () { location.reload(); } }); },

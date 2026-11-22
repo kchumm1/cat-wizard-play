@@ -289,7 +289,12 @@
         var j = seen.indexOf(best); if (j < 0) { seen.push(best); cnt.push(1); } else cnt[j]++;
         return best;
       }
-      for (var i = 0; i < n; i++) (function (i) { after(c.D(o.t0 + o.span * (n > 1 ? i / (n - 1) : 0)), function () { o.fire(next(), 1 / k, i, n); }); })(i);
+      for (var i = 0; i < n; i++) (function (i) {
+        after(c.D(o.t0 + o.span * (n > 1 ? i / (n - 1) : 0)), function () {
+          o.fire(next(), 1 / k, i, n);
+          if (o.recoverEmpty && i === n - 1 && !seen.length) c.recover();
+        });
+      })(i);
       return n;
     }
     // A blast front rolling out from a point: fn(mob) runs when it reaches each monster on the field, once each.
@@ -298,7 +303,7 @@
       tick(function (dt) {
         r += speed * c.sp * dt;
         c.pool().forEach(function (m) { if (hit.indexOf(m) < 0 && (m.x - center.x) * (m.x - center.x) + (m.z - center.z) * (m.z - center.z) <= r * r) { hit.push(m); fn(m, r); } });
-        if (r >= maxR) { if (done) done(); return true; }
+        if (r >= maxR) { if (!hit.length) c.recover(); if (done) done(); return true; }
       });
     }
     // For things that fly through a crowd: returns touch(pos), which hits every monster the thing is touching, once each.
@@ -830,8 +835,7 @@
           mob = m2; g = g2;
           gRing(g, c.col, 1.2 * c.s, 0.3); flare(g.clone().setY(0.15), 0xffffff, 0.6, 0.1, { white: true }); sparks(g.clone().setY(0.2), [0xffffff, c.col], N(4, c), 3.5, { size: 0.13, up: 1.8 }); sc.shake(0.03);
           bits(g.clone().setY(0.15), N(3, c), 2.2, 2.4);
-          if (!mob) return;
-          if (mob.alive && iced.indexOf(mob) < 0) { iced.push(mob); spikes(mob, iced.length - 1); }
+          if (mob && mob.alive && iced.indexOf(mob) < 0) { iced.push(mob); spikes(mob, iced.length - 1); }
           c.hit(mob, frac, 0.9);
         });
       } });
@@ -888,7 +892,7 @@
             sc.flash(big ? 'rgba(255,200,120,0.75)' : 'rgba(255,170,80,0.28)', big ? 0.6 : 0.1);
             if (big) { fieldWave(gp2, 0xffb040, 0.9, 0xff7a1a); fieldWave(gp2, 0xff6a1a, 1.1); sc.slowmo(0.45, 0.45, true); }
             sc.light(p, 0xffa040, big ? 3.2 : 2.4, 0.4); sc.shake(big ? 0.8 : 0.2); sc.punch(big ? 0.14 : 0.03);
-            if (mob) c.hit(mob, frac, 0.9);
+            c.hit(mob, frac, 0.9);
           } });
         });
       } });
@@ -997,6 +1001,7 @@
           prevA = ang;
           if (t < T_OUT + T_SW + T_END) return false;
           beam.kill(); tip.kill(); paw.kill(); moonOn = false;
+          if (!burned.length) c.recover();
           // the beam breaks up into moon dust along its last line
           for (var s = 0; s < N(30, c); s++) { var u3 = rr(0, 1); E({ pos: V(s0.x + dir.x * len * u3, s0.y - 0.25 * u3, s0.z + dir.z * len * u3), vel: rdir(0.9).add(V(0, 0.7, 0)), frame: pick(['flare', 'dot', 'star', 'crescent']), color: [0xffffff, c.col], size: [rr(0.1, 0.2), 0], life: rr(0.4, 0.9), white: true, spin: rr(-4, 4) }); }
           return true;
@@ -1167,6 +1172,7 @@
           sc.light(C, c.col, 2.8, 0.6);
           var all = liveMobs();
           held.concat(all).forEach(function (m) { m.pull = undefined; m.pullZ = undefined; });
+          if (!all.length) c.recover();
           all.forEach(function (m) {
             var dx = m.x - C.x, dz = m.z - C.z, dl = Math.sqrt(dx * dx + dz * dz) || 1, q = sc.mobPos(m);
             flare(q, 0xffffff, 1.2 * cs, 0.14, { white: true }); E({ sys: 'col', pos: q, frame: 'star', color: [c.col, 0x3a1470], size: [0.3, 1.6 * cs], ease: 1, life: 0.22, spin: 8 });
@@ -1366,7 +1372,13 @@
         var x = mob.x, z = mob.z;
         liveMobs().forEach(function (m) { if (m !== mob && (m.x - x) * (m.x - x) + (m.z - z) * (m.z - z) < radius * radius) c.hit(m, skill.splash * (part || 1), power || 0.8); });
       };
-      var hitFn = c.hit, decorated = [], released = false, carried = 0;
+      var hitFn = c.hit, decorated = [], released = false, carried = 0, delivered = false;
+      // Some shapes finish without calling hit when every original target has fallen.
+      // Reuse the existing one-blow carry only when this cast did not hit or queue damage.
+      c.recover = function () {
+        if (c.epoch !== epoch || delivered || carried || !c.targets.length || c.targets.some(function (m) { return m.alive; })) return;
+        c.hit(null, 1, 1);
+      };
       c.hit = function (mob, frac, power) {
         if (c.epoch !== epoch) return;   // the field was cleared in the meantime (a boss arrived, the stage changed)
         // a shot whose monster has already fallen lands on the nearest one still standing instead of being wasted;
@@ -1374,11 +1386,16 @@
         // with the field empty (a wide spell swept it just before a slow one came down) the blow waits for the next
         // monster to come (CARRY_T) — at most one whole blow per cast, so twelve meteors do not pile onto one newcomer
         if (!mob || !mob.alive) {
-          var f0 = mob ? (mob.fellAt || mob) : c.center;
+          var hadTarget = !!mob, f0 = mob ? (mob.fellAt || mob) : c.center;
           mob = (mob && standIn(mob)) || near(liveMobs(), f0.x, f0.z);
+          // Shots launched into an empty field share the same allowance even if a monster arrives mid-flight.
+          if (!hadTarget || !mob) {
+            frac = Math.min(frac === undefined ? 1 : frac, 1 - carried);
+            if (frac <= 1e-6) return;
+            carried += frac;
+          }
           if (!mob) {
-            var f = Math.min(frac === undefined ? 1 : frac, 1 - carried);
-            if (f > 1e-6) { carried += f; carry.push({ hit: c.hit, frac: f, power: power, at: f0 || V(0, 0, 0), until: time + CARRY_T }); }
+            carry.push({ hit: c.hit, frac: frac, power: power, at: f0, until: time + CARRY_T });
             return;
           }
         }
@@ -1389,6 +1406,7 @@
           spellContact(c, mob, power, !released); decorated.push(mob); released = true;
         }
         if (CW.sound && CW.sound.skillHit) CW.sound.skillHit(c.sk.id);   // the landing sound: meteors boom as each one hits
+        delivered = true;
         hitFn(mob, frac, power);
       };
       if (PIC_MOVE[skill.id]) picLoad(skill.id);   // only the skills that still lay a painted picture on the hit
@@ -1599,7 +1617,19 @@
       if (carry.length) {
         carry = carry.filter(function (k) { return k.until > time; });
         var cm = carry.length && liveMobs();
-        if (cm && cm.length) { var wait = carry; carry = []; wait.forEach(function (k) { var m = near(cm, k.at.x, k.at.z); if (m) k.hit(m, k.frac, k.power); }); }
+        if (cm && cm.length) {
+          var wait = carry;
+          carry = [];
+          wait.forEach(function (k) {
+            var m = near(cm, k.at.x, k.at.z);
+            if (!m) {
+              carry.push(k); // Keep the original expiry when an earlier blow killed the last arrival.
+              return;
+            }
+            k.hit(m, k.frac, k.power);
+            if (!m.alive) cm = cm.filter(function (candidate) { return candidate.alive; });
+          });
+        }
       }
       // One that throws is dropped and the rest go on; the first error is thrown again at the end so the game keeps it
       // (main.js noteError → 설정 "최근 오류"). A meteor rain whose monsters had all fallen left a part that threw every

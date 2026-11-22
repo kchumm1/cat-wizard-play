@@ -525,7 +525,7 @@
       sc.heroPose('raise', c.D(0.14), c.col); sc.dim(0.5, c.D(1.0));
       for (var i = 0; i < N(18, c); i++) { var g = fieldPt(0); g.z = rr(-3.5, 1.5); E({ sys: 'norm', pos: above(g, rr(4.3, 5.4)), vel: V(rr(0.3, 1.0), 0, 0), frame: 'smoke', color: [0x59607a, 0x2a2e40], size: [0.6, rr(1.5, 2.3)], ease: 1, life: c.D(0.95), delay: rr(0, c.D(0.15)), alpha: 0.75, fadeIn: 0.25, fadeOut: 0.7 }); }
       fieldRain(c, 46, c.D(0.7), { y: function () { return rr(2.5, 4.5); }, vel: function () { return V(-1.2, -11, 0.5); }, frames: ['streak'], cols: 0xbfd8ff, size: function () { return [rr(0.2, 0.3), 0.05]; }, life: 0.5, stretch: 0.1 });
-      volley(c, { shots: 10, t0: 0.18, span: 0.52, fire: function (mob, frac, i) {
+      volley(c, { shots: 10, t0: 0.18, span: 0.52, recoverEmpty: true, fire: function (mob, frac, i) {
         if (!mob) return;
         skyBolt(c, function () { return mp(mob); }, c.s, { thin: i % 2, br: 1 });
         zapHit(c, mob, false); sc.flash('rgba(200,230,255,0.25)', 0.1); sc.shake(0.05);
@@ -755,7 +755,10 @@
       })(i);
       volley(c, { shots: n, t0: T0, span: SPAN, fire: function (mob, frac, i) {
         var s = shown[i]; if (s) kill(s.e);
-        if (!mob) return;
+        if (!mob) {
+          after(c.D(0.26), function () { c.hit(null, frac, 0.5); });
+          return;
+        }
         var from = s ? s.p.clone() : sc.heroPaw(), col = s ? s.col : K.STARC[i % K.STARC.length];
         flare(from, col, 0.6, 0.08);
         homing({ from: from, to: function () { return mp(mob); }, time: c.D(0.26), arc: V(0, rr(0.2, 0.6), rr(-0.2, 0.2)), fancy: false, ease: function (x) { return x * (0.5 + 0.5 * x); },
@@ -789,7 +792,9 @@
       after(T_DROP, function () {
         marks.forEach(function (x) { kill(x.p); }); lines.forEach(function (r) { r.kill(); });
         sc.flash('rgba(210,190,255,0.45)', 0.25); sc.shake(0.3); sc.hitStop(0.05);
-        c.pool().forEach(function (m, i) {
+        var falling = c.pool();
+        if (!falling.length) c.recover();
+        falling.forEach(function (m, i) {
           var from = over(m), mk = marks.filter(function (x) { return x.m === m; })[0], col = mk ? mk.col : K.STARC[i % K.STARC.length];
           shaft(gp(m), 3.4, 0.12, [0xffffff, col], 0.22, { fadeOut: 0.4 });
           homing({ from: from, to: function () { return mp(m); }, time: c.D(0.1), fancy: false, trail: { w: 0.18 * c.s, col: col, core: 1.2, pts: 12, halo: false },
@@ -844,6 +849,7 @@
             if ((x + dir * SX * 0.2) * dir < 5.8) return false;
             // any monster it did not pass (one that came on at the far edge) is cut as it goes
             c.pool().forEach(function (m) { if (hit.indexOf(m) < 0) cut(m); });
+            if (b === 2 && !hit.length) c.recover();
             blade.kill(); ghost.forEach(function (h) { h.kill(); }); return true;
           });
         });
@@ -1048,7 +1054,7 @@
         if (Math.random() < dt * 30 * c.n) E({ pos: sun.clone().add(rdir(R * 1.1)), vel: rdir(1.5), frame: pick(['flare', 'dot']), color: [0xffffff, 0xffd84a], size: [rr(0.1, 0.2), 0.02], life: 0.35 });
         if (out < 1) return false; sunBall.kill(); return true;
       });
-      volley(c, { shots: 14, t0: 0.17, span: 0.5, fire: function (mob, frac) {
+      volley(c, { shots: 14, t0: 0.17, span: 0.5, recoverEmpty: true, fire: function (mob, frac) {
         if (!mob) return;
         var from = sun.clone().add(rdir(0.35)), L = 1.1 * Math.min(1.3, c.s), arrow = P3.bm('arrow', { col: 0xffd04a }), scl = V(L * 1.6, L, L * 1.6), D = V(0, -1, 0);
         flare(from, 0xffffff, 0.5, 0.08, { white: true });
@@ -1214,7 +1220,9 @@
           tumble('riftShard', pick([c.col, 0xff6ad8, 0xb07aff]), at(rr(0.05, 0.95)), up.clone().multiplyScalar(sgn * rr(3, 7)).addScaledVector(ax, rr(-2, 2)).add(V(0, rr(1, 3), rr(-1, 2))), rr(0.14, 0.3) * Math.min(1.4, c.s), rr(0.55, 0.85));
         }
         fieldWave(V(M.x, 0, M.z), c.col, 0.8, 0xff6ad8); gRing(V(M.x, 0, M.z), c.col, 11, 0.7);
-        c.pool().forEach(function (m) { var q = mp(m); impact(q, pick([c.col, 0xff6ad8]), 1.2 * c.s); gRing(gp(m), c.col, 2.0 * c.s, 0.4); c.hit(m, 0.5, 1.9); });
+        var closing = c.pool();
+        if (!closing.length) c.recover();
+        closing.forEach(function (m) { var q = mp(m); impact(q, pick([c.col, 0xff6ad8]), 1.2 * c.s); gRing(gp(m), c.col, 2.0 * c.s, 0.4); c.hit(m, 0.5, 1.9); });
         return true;
       });
     };
@@ -1265,7 +1273,9 @@
           cave(G, 1.3 * cs, 1.5, dirt);
           fieldWave(G, c.col, 0.8, 0xff6ad8); gRing(G, c.col, 11, 0.7); shock(V(G.x, 0.6, G.z), c.col, 8.5, 0.55);
           for (var b = 0; b < N(24, c); b++) { var p = fieldPt(0.1); E({ sys: 'norm', pos: p, vel: V(rr(-1.5, 1.5), rr(3, 7), rr(-1, 1)), frame: 'shard', color: K.dustCol(), size: rr(0.12, 0.24), life: rr(0.5, 0.9), grav: 13, spin: rr(-9, 9), white: true }); }
-          liveMobs().forEach(function (m) {
+          var slammed = liveMobs();
+          if (!slammed.length) c.recover();
+          slammed.forEach(function (m) {
             var g = gp(m), q = mp(m);
             cave(g, 0.45 * cs * (m.boss ? 1.6 : 1), 1.2, dirt); gRing(g, c.col, 2.6 * c.s * (m.boss ? 1.5 : 1), 0.45); dust(g, N(5, c), 1.3);
             flare(q, 0xffffff, 1.3 * c.s, 0.14, { white: true }); sparks(q, [0xffffff, c.col, 0xff6ad8], N(8, c), 7, { size: 0.2, up: 1.5 });
