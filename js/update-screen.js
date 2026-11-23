@@ -18,6 +18,13 @@
     list.forEach(function (fn) { try { fn(); } catch (e) { setTimeout(function () { throw e; }); } });
   }
   var skip = !el || (root !== root.top && !root.CWPlayViewport) || /[?&]noupdate\b/.test(location.search);
+  // 로그인 창 자리 (2026-11-24, 형: 업데이트 창 → 다 받으면 로그인 창 → 로그인하면 모험 시작 없이 바로 게임):
+  //   CW.updateHold(fn)  js/login-gate.js: once everything is in, fn (the login screen) comes instead of 「모험 시작」.
+  //                      false when there is no update screen (the caller then opens it at once)
+  //   cwAutoStart        set by the login just before its reload: the next opening goes in by itself once it is ready
+  var holds = [], held = false, isDone = false, autoStart = false;
+  try { autoStart = sessionStorage.getItem('cwAutoStart') === '1'; sessionStorage.removeItem('cwAutoStart'); } catch (e) {}
+  CW.updateHold = function (fn) { if (skip) return false; held = true; if (isDone) fn(); else holds.push(fn); return true; };
   if (skip) { if (el) el.parentNode.removeChild(el); start(); return; }
 
   var $ = function (id) { return document.getElementById(id); };
@@ -81,6 +88,17 @@
     $('message-label').textContent = '출발 준비 완료';
     $('quiet-note').textContent = '오늘은 어떤 모험이 기다릴까냥?';
     celebrate();
+    isDone = true;
+    // 로그인이 필요하면 「모험 시작」 대신 로그인 창, 막 로그인했으면 누르지 않아도 바로 게임으로
+    if (held) { $('game-action').hidden = true; var list = holds; holds = []; list.forEach(function (fn) { fn(); }); return; }
+    if (autoStart) { $('game-action').hidden = true; setTimeout(enter, 600); }
+  }
+  function enter() {
+    if (state !== 'complete' || !el.parentNode) return;
+    // into the game: the screen fades out, the main screen is already running under it
+    el.classList.add('leave');
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 450);
+    start();
   }
   function fail() {
     if (state !== 'updating') return;
@@ -94,11 +112,7 @@
   }
   $('game-action').addEventListener('click', function () {
     if (state === 'error') { location.reload(); return; }
-    if (state !== 'complete') return;
-    // into the game: the screen fades out, the main screen is already running under it
-    el.classList.add('leave');
-    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 450);
-    start();
+    enter();
   });
 
   // ---- 확인: is a new version on the way? ----

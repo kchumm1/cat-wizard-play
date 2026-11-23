@@ -273,7 +273,13 @@
       msg('');
     }
     function lock(b) { busy = b; q('go').disabled = b; q('alt').disabled = b; q('forgot').disabled = b; }
-    function enter() { msg('들어가요…', true); if (o.reload) o.reload(); else { lock(false); el.remove(); st.remove(); } }
+    // 로그인하면 바로 게임으로 (2026-11-24, 형): the page reloads with the new save, and the update screen goes straight in
+    // without 「모험 시작」 (js/update-screen.js cwAutoStart)
+    function enter() {
+      msg('들어가요…', true);
+      try { root.sessionStorage.setItem('cwAutoStart', '1'); } catch (e) { /* the update screen just waits for 모험 시작 */ }
+      if (o.reload) o.reload(); else { lock(false); el.remove(); st.remove(); }
+    }
     el.querySelector('form').addEventListener('submit', function (e) {
       e.preventDefault(); if (busy) return;
       var pw = pwI.value;
@@ -348,7 +354,17 @@
       onSuspended: function () { if (env.doc !== false) kickedScreen({ doc: env.doc, reload: env.reload, suspended: true }); },
       onKicked: function () { if (env.doc !== false) kickedScreen({ doc: env.doc, reload: env.reload }); },
       onAdopt: function () { if (env.doc !== false) busyScreen('다른 기기에서 한 진행을 받아 오는 중이에요…', { doc: env.doc }); } });
-    if (!g.loggedIn()) { if (env.doc !== false) openScreen(g, { doc: env.doc, reload: env.reload }); return g; }
+    // 업데이트 화면 먼저 (2026-11-24, 형: 업데이트 창 → 다 받으면 로그인 창 → 로그인하면 모험 시작 없이 바로 게임): the login
+    // screen takes the place of 「모험 시작」 once the update screen has everything (js/update-screen.js CW.updateHold); with no
+    // update screen (frames, ?noupdate) it opens at once as before
+    if (!g.loggedIn()) {
+      if (env.doc !== false) {
+        var show = function () { if (!g.loggedIn()) openScreen(g, { doc: env.doc, reload: env.reload }); };
+        var hold = env.updateHold || (root.CW && root.CW.updateHold);
+        if (!(hold && hold(show))) show();
+      }
+      return g;
+    }
     if (env.watch !== false) {
       g.open();
       var doc = env.doc || root.document;
