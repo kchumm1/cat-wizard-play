@@ -298,6 +298,11 @@
         t += dt;
         if (mob.alive) last = sc.mobPos(mob);
         var pc = last, C = V(pc.x, pc.y, pc.z);
+        // (2026-11-23, 형: 이상한 지점을 공격해) its prisoner fell (to the squeeze or to another spell): the ball bursts at
+        // once, there, splashing the ones beside it — its blow went to the nearest one standing anywhere, a number with no
+        // water on it (46 % of its blows); nothing landed at all (felled by another spell first): the blow waits for the
+        // next to come (c.recover)
+        if (!popped && !mob.alive) { streams.forEach(function (o) { o.h.kill(); }); streams.length = 0; burst(C); return true; }
         // the streams winding up round it, closing in on where the ball will be
         if (t < GATHER) {
           var up = t / GATHER;
@@ -340,9 +345,12 @@
           // halfway through the squeeze: a jolt (a small share of the damage), water squirting out of it
           if (!squeezed && sq > 0.45) { squeezed = true; sc.shake(0.14); c.hit(mob, 0.2, 0.05); spray(V(C.x, C.y + Rr * 0.5, C.z), N(4, c), 2.2, 1.0); whiteSpray(V(C.x, C.y + Rr * 0.6, C.z), N(6, c), 1.8); }
         }
-        if (!popped && t >= POP) {
+        if (!popped && t >= POP) { burst(C); return true; }
+        return false;
+      });
+      function burst(C) {
           popped = true; bub.kill();
-          var Rp = R * 0.87;
+          var Rp = R * 0.87, held = mob.alive;
           // the burst: held, shaken, a pale water-blue flash (the camera knocked by the first copy only)
           slam(0.46, 0.13); sc.climax(0.55, 0.2); boom(g, 1.2, c.copy > 0);
           sc.light(C, TEAL, 1.4, 0.3);
@@ -351,17 +359,16 @@
           // the water lands round where it stood a moment later
           after(c.D(0.12), function () { splash(V(gx, 0, gz), 2.2 * R, c.D(0.6), true); for (var fo = 0; fo < N(4, c); fo++) foam(V(gx + rr(-0.6, 0.6) * R, 0, gz + rr(-0.45, 0.45) * R), rr(0.8, 1.2), c.D(0.5)); });
           wet(g, 2 * R, c.D(1.6));
-          c.hit(mob, 0.8, 2.0); hitMark(mob, 1.3);
+          if (held) { c.hit(mob, 0.8, 2.0); hitMark(mob, 1.3); }
           // dropped out of the air (thrown a little up first)
           release(mob, 2.6);
-          // the ones beside it take their share, are marked as they are hit and thrown away from it
+          // the ones beside it take their share, are marked as they are hit and thrown away from it (round where the ball
+          // stood: a fallen prisoner has been knocked away)
           K.gRing(V(gx, 0.04, gz), 0xffffff, REACH * RING_K, 0.3);
           if (c.sk.splash) sc.mobs().forEach(function (o) { if (o.alive && o !== mob) { var dx = o.x - gx, dz = o.z - gz, dl = Math.sqrt(dx * dx + dz * dz); if (dl < REACH) { hitMark(o, 0.75); if (dl > 1e-3) knock(o, dx / dl * 3, dz / dl * 2.4, 4); } } });
-          c.splash(mob, REACH, 0.9);
-          return true;
-        }
-        return false;
-      });
+          c.splash(held ? mob : { x: gx, z: gz }, REACH, 0.9);
+          if (!held && !squeezed) c.recover();
+      }
     }
     S.bubblePrison = function (c) {
       var first = c.pool()[0]; if (!first) return;
@@ -386,10 +393,16 @@
       var kq = Math.min(1, Math.max(0.25, 5 / list.length)), n = function (k) { return Math.max(1, Math.round(N(k, c) * kq)); };
       // (2026-11-23, 형: 모든 스킬 타격 제대로) a monster that walks in before the first jets have burst gets its own (it was
       // left standing dry: 8 in a test). They come later than the rest, never as the first (i past the cast's monsters)
-      var late = list.length;
+      var late = list.length, active = 0, struck = false;
       K.lateComers(c, list.slice(), BURST, function (m) { burstOne(m, late++); });
       list.forEach(burstOne);
+      // (2026-11-23, 형: 이상한 지점을 공격해) a jet only hits the monster it stands under: one felled before its jet (by
+      // another spell) sinks back without a jet, and one felled by the jet's first jolt is not hit again — the blow was
+      // handed to the nearest one standing anywhere, a number with no water under it (25 % of its blows)
+      function hitIf(m, frac, power) { if (!m.alive) return false; struck = true; c.hit(m, frac, power); return true; }
+      function gone() { if (--active <= 0 && !struck) c.recover(); }
       function burstOne(m, i) {
+        active++;
         // (one size always — not thinner in a crowd: another size at every cast read as the skill changing)
         var g = gp(m), big = (m.boss ? 1.4 : 1) * s / 3 * 0.85, t = 0, lag = i ? rr(0, c.D(0.05)) : 0, q = yawQ(rr(0, 6.3));
         var X = (i && !m.boss ? 1.46 : 1.74) * big, H = (i && !m.boss ? 2.79 : 3.23) * big, MR = 0.62 * big, MH = 0.5 * big, mound = P3.bm('waterMound', {}), jet = null, shot = false, burst = false, bub = 0, spurt = 0, gx = g.x, gz = g.z;
@@ -399,6 +412,7 @@
           if (tt < 0) return false;
           // the swelling ground: a dome of water rising and trembling under it, boiling with foam, spurting more and more
           if (!shot) {
+            if (!m.alive) { mound.kill(); gone(); return true; }   // its monster fell before the jet: the dome sinks away
             var u = ease(tt / RUMBLE), Mr = MR * (0.35 + 0.65 * u), Mh = MH * (0.15 + 0.85 * u) * (1 + 0.12 * Math.sin(tt * 47)), jx = rr(-0.025, 0.025) * u, jz = rr(-0.02, 0.02) * u;
             mound.set(V(gx + jx, 0, gz + jz), q, V(2 * Mr, Mh, 2 * Mr * 0.9), 1, 1);
             hold(m, gx, gz, 0.26 * Mh * liftRatio + 0.03 * Math.sin(tt * 40) * u);
@@ -413,7 +427,7 @@
             whiteSpray(V(gx, 0.13, gz), n(7), 3.7, V(0, 0.8, 0));
             if (i < 5) foam(V(gx, 0.04, gz), 1.03 * big, c.D(0.32));
             if (i < 5 || m.boss) { ripple(g, 1.55 * big); mist(g, 1, 1.13 * big); }
-            c.hit(m, 0.3, 1.0);   // (marked once, as it bursts: two marks on every monster of a crowd walled the screen in rings)
+            hitIf(m, 0.3, 1.0);   // (marked once, as it bursts: two marks on every monster of a crowd walled the screen in rings)
           }
           var e = tt - RUMBLE;
           // the dome sinks into its foot
@@ -440,7 +454,7 @@
             spray(T0, n(7), 4.5, 0.75, V(0, 0.88, 0));
             whiteSpray(T0, n(13), 4.1, V(0, 0.85, 0));
             if (i < 3 || m.boss) blobs(T0, n(3), 3.6, 0.72, 0.7);
-            c.hit(m, 0.7, 1.8); hitMark(m, 0.88, true);
+            if (hitIf(m, 0.7, 1.8)) hitMark(m, 0.88, true);
             release(m, 6.5); if (m.alive && !m.boss) { var ka = rr(0, 6.283); knock(m, Math.cos(ka) * 1.2, Math.sin(ka) * 1.0, 0); }
           }
           // the jet loses its push: falling in on itself from the top, its foot spreading, raining back down
@@ -450,6 +464,7 @@
           if (fu > 0.5) contact(g, 1.1 * big, dt, 6 * kq);
           if (fu < 1) return false;
           jet.kill(); foam(g, 1.2 * big, c.D(0.5)); ripple(g, 1.4 * big);
+          gone();
           return true;
         });
       }

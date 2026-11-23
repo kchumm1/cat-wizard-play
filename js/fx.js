@@ -18,11 +18,16 @@
     // stand-in). With no one near, the picture finishes where the monster fell. (2026-11-16, user: "스킬이 너무 빨라서
     // 몬스터에게 안 맞는 건지 타격이 이상해" — the stars kept chasing the corpse as it was knocked flying, while the
     // damage jumped to whoever stood near the corpse's new spot, with nothing drawn on it.)
+    // (2026-11-23, 형: 몬스터를 보고 때려야 하는데 이상한 지점을 공격해 → 자동으로 추적해서 때리게) the stand-in is the
+    // nearest one standing anywhere, not only within 2.6: with no one that near the picture finished on the empty spot
+    // where its monster fell while c.hit sent the damage to the nearest one on the field (since 2026-11-17) — a burst on
+    // nothing and a number on a monster up to the whole screen away (물방울 감옥 46 %, 오색 광선 39 %, 물폭발 25 % of
+    // their blows). Now the picture turns after the same monster the damage goes to.
     var realSc = sc;
     function standIn(m) {
       if (!m || m.alive) return m;
       if (m.standIn && m.standIn.alive) return m.standIn;
-      var f = m.fellAt || m, s = near(liveMobs(), f.x, f.z, 2.6);
+      var f = m.fellAt || m, s = near(liveMobs(), f.x, f.z);
       if (s) m.standIn = s;
       return s;
     }
@@ -251,11 +256,16 @@
     // on the field right then — also the ones that walked in after the cast began.
     function halfX(z) { return 2.2 + (3.8 - z) * 0.16; }
     function onField(m) { return m.z > -4.9 && m.z < 4.1 && Math.abs(m.x) < halfX(m.z) + 0.3 && m.y < 1.6; }
-    function liveMobs() { return sc.mobs().filter(function (m) { return m.alive && (m.arrived || (m.entry !== 'burrow' && m.entry !== 'unseal' && onField(m))); }); }
-    // 바로 겨누기 (2026-11-23, 형: 보이면 바로 쏘기 → 다 넣어봐): a monster still walking in may be aimed at once it is on
-    // the field the spells can reach (the same edge liveMobs uses), instead of the wizard standing idle until it stops.
+    // (2026-11-23, 형: 이상한 지점을 공격해) one still walking in counts only once it shows on the screen: the field's edge
+    // (onField) runs past the sides of an upright phone, so spells went for monsters still off the screen or under the
+    // buttons down the right (a geyser at x 407–428 of a 393-wide screen) and held them there
+    // (worked out once a frame per monster: liveMobs is asked many times a frame)
+    function shown(m) { if (m.shownAt !== time) { m.shownAt = time; m.shownNow = onField(m) && (!realSc.inView || realSc.inView(m)); } return m.shownNow; }
+    function liveMobs() { return sc.mobs().filter(function (m) { return m.alive && (m.arrived || (m.entry !== 'burrow' && m.entry !== 'unseal' && shown(m))); }); }
+    // 바로 겨누기 (2026-11-23, 형: 보이면 바로 쏘기 → 다 넣어봐): a monster still walking in may be aimed at once it shows on
+    // the screen (the same edge liveMobs uses), instead of the wizard standing idle until it stops.
     // Bosses still have to arrive first (their timer starts on arrival), and nothing in the air or under the ground counts.
-    function canAim(m) { return !!m && m.alive && (m.arrived || (!m.boss && m.entry !== 'burrow' && m.entry !== 'unseal' && onField(m))); }
+    function canAim(m) { return !!m && m.alive && (m.arrived || (!m.boss && m.entry !== 'burrow' && m.entry !== 'unseal' && shown(m))); }
     function gp(m) { return V(m.x, 0, m.z); }
     function near(list, x, z, max) { var best = null, bd = max === undefined ? Infinity : max * max; list.forEach(function (m) { var d = (m.x - x) * (m.x - x) + (m.z - z) * (m.z - z); if (d < bd) { bd = d; best = m; } }); return best; }
     // straight up on the screen: the camera looks down at the field, so "up" leans away from it

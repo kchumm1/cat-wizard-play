@@ -857,14 +857,17 @@
     // than the picture, and the camera follows the wizard a little, so a monster (or a boss) could walk out past the edge,
     // or under the skill bar, and every spell aimed at it flew off the screen with it. The limits are for a monster's
     // middle (0.6 above the ground): left/right VIEW_X of the picture's half width, below the top bar, above the skills.
-    var VIEW_X = 0.8, VIEW_TOP = 0.62, VIEW_BOT = -0.42, MID_Y = 0.6, VM = new T.Matrix4();
+    // (2026-11-23, 형: 몬스터를 보고 때려야 하는데 이상한 지점을 공격해) upright, the right side stops short of the column of
+    // buttons down the right edge (펫·룬·…·방치, from about 0.73 of the half width): monsters stood under it and the spells
+    // burst behind the buttons
+    var VIEW_X = 0.8, VIEW_XR = 0.6, VIEW_TOP = 0.62, VIEW_BOT = -0.42, MID_Y = 0.6, VM = new T.Matrix4();
     function viewBox(z) {
       VM.multiplyMatrices(homeCam.projectionMatrix, homeInv); var e = VM.elements;
       // clip = VM * (x, MID_Y, z, 1); ndc.x = (e0 x + b) / (e3 x + d) solved for x at ±VIEW_X; ndc.y the same for z
       var b = e[4] * MID_Y + e[8] * z + e[12], d = e[7] * MID_Y + e[11] * z + e[15];
       var xAt = function (t) { return (t * d - b) / (e[0] - t * e[3]); };
       var zAt = function (t) { return (t * (e[7] * MID_Y + e[15]) - (e[5] * MID_Y + e[13])) / (e[9] - t * e[11]); };
-      return { x0: xAt(-VIEW_X), x1: xAt(VIEW_X), zFar: zAt(VIEW_TOP), zNear: zAt(VIEW_BOT) };
+      return { x0: xAt(-VIEW_X), x1: xAt(!laneActive && !centeredHunt ? VIEW_XR : VIEW_X), zFar: zAt(VIEW_TOP), zNear: zAt(VIEW_BOT) };
     }
     // ---- the sideways lane (가로 시점) ----
     // What the usual view shows of the ground (at a monster's middle, inside VIEW_X / VIEW_TOP / VIEW_BOT), in lane terms:
@@ -1805,7 +1808,7 @@
       THREE: T, scene: scene, camera: camera, renderer: renderer, fxGroup: fxGroup, desertLight: desertLight, glow: GLOW, hooks: hooks,
       size: size, setRegion: setRegion, setHero: setHero, setHeroTexture: setHeroTexture, setHeroViews: setHeroViews, setCostumeFx: setCostumeFx, heroTip: heroTip, heroActPic: heroActPic, heroPart: function (u, v, staff, toward) { return hero ? heroPart(u, v, staff, toward) : heroCenter(); }, heroFront: function (sec) { frontT = Math.max(0, sec || 0); if (hero) hero.userData.sq.v -= 0.5; }, heroShadow: function (on) { if (hero) hero.userData.shadow.visible = !!on; }, heroPaw: heroPaw, heroCenter: heroCenter, heroPose: heroPose, heroBeatAt: function () { return beatT; }, heroGlow: heroGlowPulse, ghost: ghost,
       castPulse: function () { heroGlow = 1; }, heroState: function () { return HB; }, heroFaceTo: heroFaceTo, heroCheer: heroCheer, setViewShift: setViewShift, setLandView: setLandView, landView: function () { return landView; },
-      minions: minions, spawnMob: spawnMob, hitMob: hitMob, killMob: killMob, dismissMob: dismissMob, clearMobs: clearMobs, mobs: function () { return mobs; }, mobPos: mobPos, mobTop: mobTop,
+      minions: minions, spawnMob: spawnMob, hitMob: hitMob, killMob: killMob, dismissMob: dismissMob, clearMobs: clearMobs, mobs: function () { return mobs; }, mobPos: mobPos, mobTop: mobTop, inView: inView,
       setTierAura: setTierAura, setDamageHidden: setDamageHidden, damageText: damageText, screenPos: screenPos, flash: flash, dim: dim, shake: shake, punch: camPunch, light: light,
       hitStop: hitStop, slowmo: slowmo, climax: climax, scaleDt: scaleDt, update: update, render: render, lens: lens, warmLens: warmLens,
       scrX: function (dx, dz) { return scrX(dx, dz); },
