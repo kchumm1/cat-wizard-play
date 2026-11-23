@@ -48,6 +48,8 @@
         '<div class="dxgrid">' + list.map(function (e) { return card(s, e); }).join('') + '</div></section>';
     }).join('');
     page.querySelector('.dxbody').innerHTML =
+      // 펫도감으로 (2026-11-23, 형: 펫·펫도감 보기 좋게): the pet codex opens over this page, its back button comes back here
+      (CW.petDexOpen ? '<div class="dxpetrow"><button class="dxpet" data-dxpet="1"><img src="' + A() + 'ic-petbook.webp" alt="" draggable="false">펫도감 보기</button></div>' : '') +
       '<div class="dxprog"><img src="' + A() + 'dex-progress.webp" alt="" draggable="false">' +
         '<b class="dxcount">발견 ' + have + ' / ' + order.length + '</b>' +
         '<i class="dxbar" style="width:' + (60.7 * have / order.length) + '%"></i><b class="dxpct">' + pct + '%</b></div>' +
@@ -118,6 +120,7 @@
     page.addEventListener('click', function (e) {
       var t = e.target;
       if (t.closest('.dxback')) { close(); return; }
+      if (t.closest('[data-dxpet]')) { if (CW.petDexOpen) CW.petDexOpen(); return; }
       if (t.closest('.dxx') || t === panel) { panel.classList.remove('on'); return; }
       if (t.closest('[data-dxall]')) { var st = CW.dexState(), y = page.querySelector('.dxbody').scrollTop; CW.dexSeenAll(st); dexDot(false); render(); page.querySelector('.dxbody').scrollTop = y; return; }
       var f = t.closest('[data-dxf]'); if (f) { filter = f.dataset.dxf; panel.classList.remove('on'); render(); page.querySelector('.dxbody').scrollTop = 0; return; }

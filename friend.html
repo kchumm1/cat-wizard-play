@@ -2312,6 +2312,169 @@ html.fullh #prof{position:absolute;bottom:auto;height:var(--apph)}
 #dex .dxnote{position:absolute;left:48%;right:4%;top:56%;font:500 2.6cqw/1.3 var(--body);color:#8a6a80}
 #dex .dxdesc{position:absolute;left:7%;right:7%;top:77.5%;height:10%;display:flex;align-items:center;justify-content:center;gap:2.5%;text-align:center;font:700 3.2cqw/1.15 var(--body)}
 #dex .dxdesc img{width:3.6%!important;flex:none}
+/* 펫도감 보기 (2026-11-23): a small pill at the top right of the monster codex, opens js/pet-dex-ui.js over it */
+#dex .dxpetrow{display:flex;justify-content:flex-end;margin:0 0 6px}
+#dex .dxpet{position:relative;display:flex;align-items:center;gap:5px;height:34px;padding:0 13px 0 8px;border-radius:17px;background:#eef3e4;border:1.5px solid #9fb685;font:800 13px/1 var(--body);color:#3e5a2c;box-shadow:0 2px 4px rgba(90,70,60,.12)}
+#dex .dxpet::after{content:"";position:absolute;inset:-5px -2px}
+#dex .dxpet img{width:26px!important;height:26px;object-fit:contain}
+/* 펫도감 (2026-11-23, js/pet-dex-ui.js): the user's GPT 시안 '라일락 정원' (786×1704 = 393×852 ×2, sizes below are its px ÷ 2).
+   Lilac over the galaxy picture (art/bg-galaxy.webp, the same picture the 시안 shows faded at the top) */
+#petdex{position:fixed;inset:0;z-index:20;display:none;background:#dccfe6;color:#21182c;font-family:var(--body)}
+#petdex.on{display:block}
+#petdex .pdcol{position:absolute;inset:0;max-width:520px;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;
+  background:linear-gradient(180deg,rgba(228,216,238,.58) 0,rgba(228,216,238,.7) 120px,rgba(222,210,233,.94) 250px,#dcd0e6 420px),url(art/bg-galaxy.webp) center top/100% auto no-repeat,#dccfe6;box-shadow:0 0 30px rgba(60,30,80,.25)}
+#petdex .pdhead{position:relative;flex:none;height:calc(108px + env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px)}
+#petdex .pdback{position:absolute;left:15px;top:calc(56px + env(safe-area-inset-top,0px));width:38px;height:38px;border-radius:12px;background:rgba(248,243,252,.55);border:1px solid #9d8db0;display:grid;place-items:center;padding:0}
+#petdex .pdback::after{content:"";position:absolute;inset:-4px}
+#petdex .pdback svg{width:20px;height:20px;fill:none;stroke:#2a2036;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+#petdex .pdhead h3{position:absolute;left:0;right:0;top:calc(55px + env(safe-area-inset-top,0px));display:flex;align-items:center;justify-content:center;gap:9px;margin:0;font:800 31px/38px var(--body);letter-spacing:0;color:#1d1528}
+#petdex .pdhead h3 img{width:46px;height:46px;margin:-4px 0 -4px;object-fit:contain}
+#petdex .pdbody{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:6px 12.5px calc(24px + env(safe-area-inset-bottom,0px))}
+#petdex .pdsum{position:relative;height:72px;border-radius:22px;background:rgba(243,237,248,.78);border:1px solid #a596b6;box-shadow:0 2px 8px rgba(90,60,120,.08)}
+#petdex .pdsum b{position:absolute;left:17px;top:17px;font:700 19.5px/24px var(--body);letter-spacing:.8px;color:#1d1528}
+#petdex .pdsum span{position:absolute;right:17px;top:21px;font:800 13px/17px var(--body);color:#1d1528}
+#petdex .pdsum i{position:absolute;left:16px;right:16px;top:50px;height:8px;border-radius:9px;background:#b9adc6;overflow:hidden}
+#petdex .pdsum em{display:block;height:100%;border-radius:9px;background:linear-gradient(90deg,#8fb99b,#b5d8b8)}
+#petdex .pdtabs{display:flex;margin:11px 0 16px;height:41px;padding:4px;border-radius:22px;background:rgba(243,237,248,.78);border:1px solid #a596b6}
+#petdex .pdtabs button{flex:1;border-radius:18px;font:700 14px/1 var(--body);letter-spacing:1.2px;color:#1d1528;background:none;border:0;padding:0}
+#petdex .pdtabs button.on{background:#8a5f9e;color:#fff;box-shadow:inset 0 -1px 0 rgba(0,0,0,.12)}
+#petdex .pdgrp{margin:0 0 14.5px;padding:15px 8px 16.5px;border-radius:22px;background:var(--tint);border:1px solid #a596b6;box-shadow:0 2px 8px rgba(90,60,120,.08)}
+#petdex .pdgh{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:0 4px 0 4.5px;margin-bottom:15px}
+#petdex .pdgh h4{margin:0;font:800 20px/26px var(--body);color:#1d1528;white-space:nowrap}
+#petdex .pdgh h4 small{font:800 13px/1 var(--body);margin-left:2px}
+#petdex .pdgh p{margin:4px 0 0;font:600 11.5px/15px var(--body);letter-spacing:.4px;color:#2a2036}
+#petdex .pdset{flex:none;min-height:30px;margin-top:6px;padding:0 9px;border-radius:12px;background:rgba(248,243,252,.55);border:1px solid #a596b6;font:600 11.5px/1 var(--body);letter-spacing:.6px;color:#3d3249;opacity:1}
+#petdex .pdset[aria-disabled]{opacity:.9}
+#petdex .pdset{position:relative}#petdex .pdset::after{content:"";position:absolute;inset:-7px -4px}
+#petdex .pdtabs button{position:relative}#petdex .pdtabs button::after{content:"";position:absolute;inset:-6px 0}
+#petdex .pdset.ready{opacity:1;background:#fff6d8;border-color:#d4a441;color:#6b4a10;box-shadow:0 0 0 2px rgba(255,214,110,.35);animation:pdReady 1.6s ease-in-out infinite}
+#petdex span.pdset.done{display:inline-flex;align-items:center;background:rgba(255,255,255,.4);color:#6b5a7a;opacity:1}
+@keyframes pdReady{50%{box-shadow:0 0 0 5px rgba(255,214,110,.22)}}
+#petdex .pdgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+#petdex .pdcard{position:relative;display:flex;flex-direction:column;align-items:center;height:153px;padding:13px 2px 0;border-radius:13px;background:linear-gradient(180deg,#faf6fc,#f1e9f5);border:1.5px solid #a8a3ac;color:#1d1528}
+#petdex .pdcard.g1{border-color:#6e9bc8}#petdex .pdcard.g2{border-color:#a98bc3}
+#petdex .pdcard.g3{border:1.5px solid #d7a65a;box-shadow:inset 0 0 0 3px #fbf5ea,inset 0 0 0 4.5px #e3b56b}
+#petdex .pdgrade{font:500 11px/1 var(--body);color:#2a2036}
+#petdex .pdpic{display:block;width:76px;height:76px;margin:7px 0 2px;background:center/contain no-repeat}
+#petdex .lock .pdpic{background:#c9b2ee;-webkit-mask:center/contain no-repeat;mask:center/contain no-repeat}
+#petdex .lock .pdpic[style*="mask-image"]{-webkit-mask-size:contain;mask-size:contain}
+#petdex .pdlock{position:absolute;left:50%;top:57px;width:17px;height:17px;margin-left:-8.5px}
+#petdex .pdname{max-width:100%;font:500 15px/18px var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#2a2036}
+#petdex .lock .pdname{font-weight:600}
+#petdex .pdstar{margin-top:6px;font:13px/1 var(--body);letter-spacing:1px;color:#6d5320}
+#petdex .pdstar.off{color:#6d5320;font-size:14px}
+#petdex .pdnew{position:absolute;right:4px;top:4px;padding:2px 4px;border-radius:6px;background:#ff5d7a;color:#fff;font:800 9px/1 var(--body)}
+#petdex .pdempty{margin:30px 0;text-align:center;font:700 14px var(--body);color:#6b5a7a}
+#petdex .pdallmsg{margin:2px 0 10px;text-align:center;font:700 12.5px/1.4 var(--body);color:#5b4a6c}
+#petdex .pdallmsg.done{color:#8a6416}
+#petdex .pdallbtn{display:block;margin:2px auto 12px;min-height:44px;padding:0 18px;border-radius:14px;background:#fff6d8;border:1.5px solid #d4a441;font:800 14px/1 var(--body);color:#6b4a10}
+#petdex .pdfoot{display:flex;align-items:center;justify-content:center;gap:12px;margin:22px 0 6px;color:#3a2f46}
+#petdex .pdfoot i{width:64px;height:1px;background:#8f80a0}
+#petdex .pdfoot span{font-size:15px}#petdex .pdfoot b{font:700 14px/1 var(--body)}
+@media (max-width:350px){#petdex .pdgrid{gap:4px}#petdex .pdcard{height:140px}#petdex .pdpic{width:64px;height:64px}#petdex .pdname{font-size:13px}#petdex .pdgh h4{font-size:18px}#petdex .pdset{padding:0 6px;font-size:10.5px}}
+/* 내 펫 (2026-11-23, js/pet-ui.js): the user's GPT 시안 내-펫.png (786×1704 → px ÷ 2). The galaxy picture under a dark violet veil,
+   dark glass boxes with a thin gold edge, cream buttons; the 펫도감 page (z 20) opens over it */
+#petpage{position:fixed;inset:0;z-index:19;display:none;color:#fff;font-family:var(--body)}
+#petpage.on{display:block}
+#petpage .ppcol{position:absolute;inset:0;max-width:520px;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;
+  background:linear-gradient(180deg,rgba(22,12,48,.18) 0,rgba(26,14,56,.42) 300px,rgba(26,14,56,.5) 100%),url(art/bg-galaxy.webp) center top/cover no-repeat,#2a1c58;box-shadow:0 0 30px rgba(10,5,30,.5)}
+#petpage .pphead{position:relative;flex:none;height:calc(91.5px + env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px)}
+#petpage .pphead h3{position:absolute;left:0;right:25px;top:calc(46px + env(safe-area-inset-top,0px));margin:0;text-align:center;font:800 26px/30px var(--body);color:#f4eeff;text-shadow:0 2px 6px rgba(20,8,50,.7)}
+#petpage .ppclose{position:absolute;right:13.5px;top:calc(36.5px + env(safe-area-inset-top,0px));width:77px;height:47px;border-radius:16px;background:#fdebc9;border:1.5px solid #c9a46c;font:800 24px/1 var(--body);color:#3a2a33;padding:0}
+#petpage .ppbody{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:0 13.5px 10px}
+#petpage .ppstage{position:relative;height:252.5px;border-radius:22px;background:rgba(40,24,80,.3);border:1.5px solid #c6a56e;text-align:center}
+#petpage .ppbig{position:absolute;left:50%;top:11px;width:160px;height:160px;margin-left:-80px;object-fit:contain;filter:drop-shadow(0 6px 10px rgba(10,4,30,.45))}
+#petpage .ppstage.g3 .ppbig{top:4px;width:178px;height:178px;margin-left:-89px;filter:drop-shadow(0 0 10px rgba(255,170,70,.55)) drop-shadow(0 6px 10px rgba(10,4,30,.5))}
+#petpage .ppstage.empty .ppbig{top:30px;width:110px;height:110px;margin-left:-55px}
+#petpage .ppnm{position:absolute;left:0;right:0;top:180px;display:flex;align-items:center;justify-content:center;gap:7px}
+#petpage .ppname{font:800 20px/25px var(--body);color:#fff;text-shadow:0 2px 4px rgba(10,4,30,.6)}
+#petpage .empty .ppname{position:absolute;left:0;right:0;top:160px;font-size:17px}
+#petpage .ppgr{display:inline-block;padding:3px 10px;border-radius:12px;font:800 13px/16px var(--body);color:#fff;background:rgba(150,120,185,.6)}
+#petpage .ppgr.g0{background:rgba(150,150,160,.6)}#petpage .ppgr.g1{background:rgba(80,140,220,.6)}#petpage .ppgr.g3{background:rgba(225,150,60,.75)}
+#petpage .ppstars{position:absolute;left:0;right:0;top:211px;font:17px/18px var(--body);letter-spacing:1px}
+#petpage .ppstars i{font-style:normal;color:#efe6fb}#petpage .ppstars i.on{color:#ffd25a;text-shadow:0 0 4px rgba(255,200,80,.5)}
+#petpage .pplv{position:absolute;left:0;right:0;top:231px;font:700 11.5px/14px var(--body);color:#fff}
+#petpage .empty .pplv{top:192px;padding:0 20px;font-weight:500;color:#e6dcf6}
+#petpage .ppeff{display:flex;gap:7px;margin-top:7.5px}
+#petpage .ppeff div,#petpage .ppskill,#petpage .ppegg{background:rgba(40,24,80,.42);border:1.5px solid #c6a56e}
+#petpage .ppeff div{flex:1;height:51px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+#petpage .ppeff b{font:800 14px/1.1 var(--body)}#petpage .ppeff span{font:700 11.5px/1.1 var(--body);color:#f3ecff}
+#petpage .ppskill{display:flex;align-items:center;gap:9px;height:40.5px;margin-top:8.5px;padding:0 14px;border-radius:14px}
+#petpage .ppskill i{font-style:normal;font-size:16px;color:#ffb35a}#petpage .ppskill b{font:800 15px/1 var(--body)}
+#petpage .ppskill span{margin-left:auto;font:600 11px/1.2 var(--body);color:#e6dcf6;text-align:right}
+#petpage .ppbtns{display:flex;align-items:center;gap:6.5px;margin-top:7.5px;height:60px}
+#petpage .ppbtn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:14px;background:#fdebc9;border:1.5px solid #c9a46c;color:#3a2a33;padding:0}
+#petpage .ppbtn.lvup{height:60px}#petpage .ppbtn.star{height:53px}#petpage .ppbtn.wear{height:44px}
+#petpage .ppbtn b{font:800 15px/1 var(--body)}#petpage .ppbtn span{display:flex;align-items:center;gap:4px;font:800 14px/1 var(--body)}
+#petpage .ppbtn.star span{font:700 11.5px/1 var(--body)}
+#petpage .ppbtn img{width:23px;height:23px;margin:-3px 0;object-fit:contain}
+#petpage [aria-disabled]{opacity:.55}#petpage .ppbtn[aria-disabled]{opacity:.82}
+#petpage .ppegg{display:flex;align-items:center;height:60px;margin-top:7.5px;padding:0 10px 0 15px;border-radius:18px}
+#petpage .ppegg img{width:38px;height:44px;margin:0 -6px;object-fit:contain}
+#petpage .ppegg>b{margin-left:20px;font:800 15px/1 var(--body);white-space:nowrap}
+#petpage .pppill{height:44px;margin-left:auto;padding:0 13px;border-radius:16px;background:#fdebc9;border:1.5px solid #c9a46c;font:800 15px/1 var(--body);color:#3a2a33}
+#petpage .pppill+.pppill{margin-left:8px}
+#petpage .pplink{height:44px;margin-left:10px;padding:0 2px;background:none;border:0;font:800 12px/1 var(--body);color:#fff;white-space:nowrap}
+#petpage .pplisth{display:flex;align-items:center;justify-content:space-between;margin:13px 0 8px}
+#petpage .pplisth h4{margin:0;font:800 17px/22px var(--body)}
+#petpage .pplisth span{display:flex;align-items:center;gap:4px;font:700 12px/1 var(--body);color:#ffe2a0}
+#petpage .pplisth img{width:18px;height:18px;object-fit:contain}
+#petpage .ppgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6.5px}
+#petpage .ppcard{position:relative;height:119px;display:flex;flex-direction:column;align-items:center;padding:9px 2px 0;border-radius:14px;background:rgba(70,50,125,.45);border:2px solid #a8a8a8;color:#fff}
+#petpage .ppcard.g1{border-color:#6aa6e6}#petpage .ppcard.g2{border-color:#b48be8}#petpage .ppcard.g3{border-color:#e2a34a}
+#petpage .ppcard.on{box-shadow:0 0 0 2px rgba(255,236,190,.9),0 0 12px rgba(255,214,120,.45)}
+#petpage .ppcard img{width:54px;height:54px;object-fit:contain}
+#petpage .ppcard b{margin-top:3px;max-width:100%;font:800 14px/17px var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#petpage .pplvs{font:800 12px/15px var(--body);color:#ffd77a}#petpage .ppst{font:11px/13px var(--body);color:#ffd25a}
+#petpage .pptag{position:absolute;left:3px;top:3px;padding:2px 5px;border-radius:8px;background:rgba(40,24,80,.75);font:700 10.5px/1 var(--body);font-style:normal}
+#petpage .ppnew{position:absolute;right:3px;top:3px;padding:2px 4px;border-radius:6px;background:#ff5d7a;font:800 9px/1 var(--body);font-style:normal}
+#petpage .ppnone{margin:18px 0;text-align:center;font:600 13px/1.5 var(--body);color:#e6dcf6}
+#petpage .pptabs{flex:none;display:flex;gap:7px;padding:8px 13.5px calc(env(safe-area-inset-bottom,0px) + 22px)}
+#petpage .pptabs button{flex:1;height:44px;border-radius:14px;font:800 15px/1 var(--body);background:#fdebc9;border:1.5px solid #c9a46c;color:#3a2a33}
+#petpage .pptabs button.on{background:#5b7a3d;border-color:#3f5a2a;color:#fff}
+/* hatching (B5 시안 not here yet): the egg shakes, the top flies off, the pet pops out in light; 전설 in gold */
+#petpage .pphatch{position:absolute;inset:0;z-index:5;display:none;place-items:center;padding:16px;background:rgba(10,6,26,.74)}
+#petpage .pphatch.on{display:grid}
+#petpage .phfx{position:absolute;left:50%;top:38%;width:150px;height:150px;margin:-75px 0 0 -75px}
+#petpage .phfx img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+#petpage .phtop,#petpage .phbot,#petpage .phglow{opacity:0}
+#petpage .phegg{animation:phShake .7s ease-in-out}
+@keyframes phShake{0%,100%{transform:rotate(0)}15%{transform:rotate(-9deg)}30%{transform:rotate(8deg)}45%{transform:rotate(-7deg)}60%{transform:rotate(6deg)}75%{transform:rotate(-3deg) scale(1.04)}}
+#petpage .crack .phegg{opacity:0}
+#petpage .crack .phbot{opacity:1;animation:phFade .5s .25s forwards}
+#petpage .crack .phtop{opacity:1;animation:phFly .55s ease-out forwards}
+@keyframes phFly{to{opacity:0;transform:translate(-30px,-90px) rotate(-35deg)}}
+@keyframes phFade{to{opacity:0;transform:translateY(16px)}}
+#petpage .phglow{position:absolute;inset:-60px;border-radius:50%;background:radial-gradient(circle,rgba(255,250,230,.95),rgba(220,190,255,.55) 35%,transparent 68%)}
+#petpage .crack .phglow{animation:phGlow .9s ease-out forwards}
+#petpage .g2 .phglow{background:radial-gradient(circle,rgba(255,245,255,.95),rgba(190,140,255,.7) 35%,transparent 68%)}
+#petpage .g3 .phglow{inset:-110px;background:radial-gradient(circle,rgba(255,250,220,1),rgba(255,190,80,.85) 30%,rgba(255,120,40,.35) 50%,transparent 70%)}
+@keyframes phGlow{0%{opacity:0;transform:scale(.3)}35%{opacity:1;transform:scale(1.1)}100%{opacity:.5;transform:scale(1)}}
+#petpage .show .phfx{opacity:.35}
+#petpage .phres{position:relative;width:min(100%,340px);max-height:88%;overflow:auto;padding:18px 16px 16px;border-radius:22px;background:rgba(40,24,80,.9);border:1.5px solid #c6a56e;text-align:center;animation:phIn .35s ease-out}
+@keyframes phIn{from{opacity:0;transform:translateY(14px) scale(.96)}}
+#petpage .phpet{width:150px;height:150px;object-fit:contain;animation:phPop .45s cubic-bezier(.3,1.6,.5,1)}
+#petpage .g3 .phpet{width:190px;height:190px;filter:drop-shadow(0 0 14px rgba(255,170,70,.7))}
+@keyframes phPop{from{transform:scale(.3);opacity:0}}
+#petpage .phres h3{margin:6px 0 8px;font:800 19px/1.3 var(--body)}
+#petpage .phnm{display:flex;align-items:center;justify-content:center;gap:7px;font:800 16px/1 var(--body)}
+#petpage .phnm em{padding:2px 6px;border-radius:7px;background:#ff5d7a;font:800 10px/1 var(--body);font-style:normal}
+#petpage .phres p{margin:9px 0 0;font:600 12.5px/1.4 var(--body);color:#e6dcf6}
+#petpage .phbtns{display:flex;gap:8px;justify-content:center;margin-top:14px}
+#petpage .phbtns button{min-width:100px;height:44px;padding:0 14px;border-radius:14px;background:rgba(255,255,255,.12);border:1.5px solid #c6a56e;font:800 15px/1 var(--body);color:#fff}
+#petpage .phbtns button.pri{background:#fdebc9;color:#3a2a33}
+#petpage .phgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:12px}
+#petpage .phgrid span{position:relative;aspect-ratio:1;border-radius:10px;border:2px solid #a8a8a8;background:rgba(70,50,125,.45)}
+#petpage .phgrid .g1{border-color:#6aa6e6}#petpage .phgrid .g2{border-color:#b48be8}#petpage .phgrid .g3{border-color:#e2a34a;box-shadow:0 0 8px rgba(255,170,70,.6)}
+#petpage .phgrid img{width:100%;height:100%;object-fit:contain}
+#petpage .phgrid em,#petpage .phgrid small{position:absolute;left:0;right:0;bottom:1px;font:800 8.5px/1 var(--body);font-style:normal;text-align:center}
+#petpage .phgrid em{color:#ff8fa3}#petpage .phgrid small{color:#e6dcf6}
+#petpage .oddsbox table{width:100%;margin-top:12px;border-collapse:collapse;text-align:left;font:600 12.5px/1.35 var(--body)}
+#petpage .oddsbox th{width:42px;padding:7px 4px;font-weight:800}#petpage .oddsbox td{padding:7px 4px;border-top:1px solid rgba(198,165,110,.35)}
+#petpage .oddsbox td:nth-child(2){width:52px;font-weight:800;color:#ffe2a0}
+#petpage .oddsbox small{display:block;color:#bfb2d6;font-size:11px}#petpage .oddsbox td{word-break:keep-all}
+#petpage .oddsbox .g1 th{color:#8fc3ff}#petpage .oddsbox .g2 th{color:#d1b0ff}#petpage .oddsbox .g3 th{color:#ffc46a}
+@media (max-width:350px){#petpage .ppegg>b{margin-left:10px;font-size:14px}#petpage .pppill{padding:0 9px;font-size:13.5px}#petpage .pplink{font-size:11px}#petpage .ppbtn b{font-size:13.5px}}
 .dexrow .ico{width:40px;height:40px;flex:none;object-fit:contain}
 /* stage list (2026-11-15): the monster's name beside its picture (the same names as the monster codex). Every row has the
    same columns: stage, picture and 이동 fixed, the rewards as wide as the widest in the list (ui.js fitStageRows sets
@@ -3290,6 +3453,8 @@ html.cw-calm #killBar.loop + #killBarFx,html.cw-calm #surgeGauge.full i::after,h
 }
 /* what sat under the old bar now starts under this one */
 #app #quick{top:calc(var(--hudH) + var(--cap,0px) + env(safe-area-inset-top,0px))}
+/* short phones (js/ui.js fitQuick sets max-height): tiles that do not fit start a second column on the left, the first stays at the edge */
+#app #quick{flex-wrap:wrap-reverse;align-content:flex-start;column-gap:6px}
 /* the top HUD plates in nebula (2026-11-18, the user: 크림색 … 아 아니다 성운색으로): the bottom tab bar's nebula picture
    (art/mn-neb-fill.webp) under a violet veil fills every plate, gold edge kept, white words. Shapes and sizes stay. */
 #hud.nh{--nv1:#3a2a86;--nv2:#1e1450;--crm:#fffaf2}
@@ -3310,6 +3475,25 @@ html.cw-calm #killBar.loop + #killBarFx,html.cw-calm #surgeGauge.full i::after,h
 #hud.nh .nh-nm,#hud.nh #nick,#hud.nh .nh-cur,#hud.nh .nh-head,#hud.nh .nh-map,#hud.nh #stageNo,#hud.nh #bossTime,#hud.nh #bossPct{text-shadow:0 0 2px #140838,0 0 2px #140838,0 1px 3px rgba(10,4,30,.9)}
 #hud.nh #bossName{filter:drop-shadow(0 0 1.5px #140838) drop-shadow(0 1px 2px rgba(10,4,30,.9))}
 #hud.nh #bossTime,#hud.nh #bossPct{color:#ffe9a8}
+/* 전투력 (2026-11-23, 형: 키운 게 보이게): a small nebula plate right under the profile, the same 전투력 as 냥법사 기록.
+   The button itself is a tall see-through touch area (44px with .nh-top's zoom .8 → 55px here); the plate is its ::before/::after.
+   +N ▲ / −N ▼ (#powerFx) floats up from its right end — outside the clipped plate, so it is not cut. */
+#hud.nh .nh-top{position:relative}
+#hud.nh .nh-power{position:absolute;left:4px;top:calc(100% - 1px);z-index:3;display:flex;align-items:center;gap:5px;height:55px;padding:0 16px 0 14px;isolation:isolate;pointer-events:auto;cursor:pointer;white-space:nowrap;font:700 15px/1 var(--serif);color:var(--crm)}
+#hud.nh .nh-power::before,#hud.nh .nh-power::after{content:"";position:absolute;left:0;right:0;top:calc(50% - 14px);height:28px;clip-path:var(--hex)}
+#hud.nh .nh-power::before{z-index:-2;background:linear-gradient(180deg,var(--gdl),var(--gd) 45%,var(--gd2))}
+#hud.nh .nh-power::after{z-index:-1;left:1.5px;right:1.5px;top:calc(50% - 12.5px);height:25px;background:radial-gradient(70% 110% at 12% 10%,rgba(255,140,215,.26),transparent 55%),radial-gradient(70% 120% at 92% 90%,rgba(150,110,255,.3),transparent 55%),linear-gradient(180deg,rgba(62,32,136,.6),rgba(28,14,72,.78)),url(art/mn-neb-fill.webp) 30% 72%/420px auto;background-color:#2a2160}
+#hud.nh .nh-power .ico{display:none;width:20px;height:20px;background:center/contain no-repeat}
+#hud.nh .nh-power .ico.on{display:block}
+#hud.nh .nh-power small{font:700 12px/1 var(--serif);color:#ffd978}
+#hud.nh .nh-power b{font:700 16px/1 var(--serif);color:var(--crm)}
+#hud.nh .nh-power small,#hud.nh .nh-power b{text-shadow:0 0 2px #140838,0 0 2px #140838,0 1px 3px rgba(10,4,30,.9)}
+#hud.nh #powerFx{position:absolute;left:12px;top:calc(50% + 15px);margin:0;pointer-events:none}
+#hud.nh #powerFx em{display:block;font:700 15px/18px var(--serif);font-style:normal;white-space:nowrap;text-shadow:0 0 2px #140838,0 0 2px #140838,0 1px 3px rgba(10,4,30,.9);animation:pwUp 1.4s ease-out forwards}
+#hud.nh #powerFx em.up{color:#7dff9a}#hud.nh #powerFx em.down{color:#ff6b6b}
+/* 320px-wide phones: the stage plate starts ~99px in, so the chip packs tighter (it touched the plate's left point) */
+@media (max-width:350px){#hud.nh .nh-power{left:0;gap:3px;padding:0 11px 0 9px}#hud.nh .nh-power small{font-size:10px}#hud.nh .nh-power b{font-size:14px}}
+@keyframes pwUp{0%{opacity:0;transform:translateY(10px) scale(.85)}15%{opacity:1;transform:translateY(2px) scale(1.08)}30%{transform:translateY(0) scale(1)}75%{opacity:1}100%{opacity:0;transform:translateY(-5px)}}
 #hud.nh #lvTxt{color:#ffd978}
 #hud.nh #stageNo{color:#fffaf2;text-shadow:0 0 10px rgba(255,190,240,.45),0 2px 0 rgba(20,10,60,.6)}
 #hud.nh .nh-pl,#hud.nh .nh-map{filter:drop-shadow(0 3px 4px rgba(20,10,60,.45))}
@@ -3338,6 +3522,7 @@ html.cw-calm #killBar.loop + #killBarFx,html.cw-calm #surgeGauge.full i::after,h
 #app #quick button{border:1.5px solid transparent;background:radial-gradient(ellipse at 32% 8%,rgba(255,243,214,.26),transparent 55%) padding-box,linear-gradient(155deg,#7657a0df,#493171e3 55%,#312044ea) padding-box,linear-gradient(145deg,#fff1cb 2%,#cf9b59 24%,#775033 47%,#f5d49b 72%,#886144 96%) border-box;box-shadow:inset 0 1px 1px #fff6de45,inset 0 -2px 2px #24132d75,0 2px 3px #29183366}
 #app #quick button:active{filter:brightness(1.2)}
 #app #quick i,#app #quick i .ico,#app #quick i img{width:24px;height:24px}
+#app #quick [data-quick="pet"] i{width:30px;height:30px;margin:1px 0 -2px}#app #quick [data-quick="pet"] i img{width:30px;height:30px;margin:0;object-fit:contain;filter:drop-shadow(0 1px 1px rgba(10,4,30,.6))}
 #app #quick span{font-size:10.5px;line-height:1.15;color:#fffaf2;text-shadow:0 0 2px #140838,0 1px 2px rgba(10,4,30,.8)}
 #app #quick i .ico{filter:drop-shadow(0 1px 2px rgba(10,4,30,.6))}
 /* short phones (iPhone SE 667, Galaxy 740 tall): seven bigger boxes ran into the preset row, so they shrink back a little there */
@@ -3423,6 +3608,11 @@ html.cw-calm #killBar.loop + #killBarFx,html.cw-calm #surgeGauge.full i::after,h
 #bossActions { display:flex; justify-content:center; align-items:center; gap:7px; align-self:center; }
 #bossActions[hidden],#lastBossResult[hidden],#bossResultReturn[hidden] { display:none!important; }
 #hud.nh>#bossActions #retry { zoom:1; padding:11px 30px; font-size:17px; margin-top:6px; }
+/* 보스 앞 판단 (2026-11-23, js/power.js bossOutlook): one line above 보스 도전 — green / yellow / red */
+#bossActions { flex-wrap:wrap; }
+#bossHint { flex-basis:100%; order:-1; text-align:center; margin:4px 0 -2px; font:700 14px/1.2 var(--serif,'Noto Serif KR',serif); text-shadow:0 0 2px #140838,0 0 2px #140838,0 1px 3px rgba(10,4,30,.9); }
+#bossHint[hidden] { display:none!important; }
+#bossHint.win { color:#7dff9a; } #bossHint.close { color:#ffd84a; } #bossHint.far { color:#ff8a8a; }
 #hud.nh #lastBossResult,#bossResultReturn { color:#fffdf8; background:linear-gradient(180deg,#344f68,#20354c); border:1px solid #7895b6a3; border-radius:11px; font:400 15px/1.15 var(--display); min-height:44px; }
 #hud.nh #lastBossResult { pointer-events:auto; padding:5px 11px; margin-top:6px; white-space:nowrap; }
 #bossResultReturn { display:block; flex:none; padding:4px 12px; margin:3px 12px 5px; }
@@ -3463,6 +3653,11 @@ html.cw-calm #killBar.loop + #killBarFx,html.cw-calm #surgeGauge.full i::after,h
   .br-hero img { width:144px; height:104px; left:50%; top:14px; bottom:auto; transform:translateX(-50%); }
   .br-hero .br-copy { margin:0; padding:5px 5px 10px; }
   #modalCard.boss-result-card .btns { align-self:start; }
+}
+/* 전투력 칸 가로 (2026-11-23): .nh-top is display:contents here, so the chip takes the profile's grid column and sits right
+   under the profile (it fell to the bottom of the HUD, next to 도감) */
+@media (orientation:landscape) and (min-aspect-ratio:6/5) {
+  #hud.nh .nh-power { grid-column:1; grid-row:1 / span 3; left:0; top:56px; }  html.sheeton #hud.nh .nh-power { visibility:hidden; }
 }
 </style>
 
@@ -3574,6 +3769,7 @@ html.cw-calm #killBar.loop + #killBarFx,html.cw-calm #surgeGauge.full i::after,h
           <span class="nh-pl"><span class="nh-nm"><b id="lvTxt">Lv.1</b><span id="nick">귤귤귤귤귤</span></span><span class="nh-xp"><i id="xpBar"></i></span></span>
         </button>
         <div class="nh-wallet"><div class="nh-cur"><i class="coin"></i><span id="goldTxt">0</span></div><div class="nh-cur"><i class="gem"></i><span id="gemTxt">0</span></div></div>
+        <button class="nh-power" id="powerChip" aria-label="전투력 · 내 정보 열기"><i class="ico" aria-hidden="true"></i><small>전투력</small><b id="powerTxt">0</b><span id="powerFx" aria-hidden="true"></span></button>
       </div>
       <div class="nh-mid">
         <div class="nh-stage">
@@ -3599,9 +3795,9 @@ html.cw-calm #killBar.loop + #killBarFx,html.cw-calm #surgeGauge.full i::after,h
         </div>
       </div>
       <div id="bossbox"><div class="boss-top"><span id="bossName">보스</span><span id="bossTime">30.0초</span></div><div class="bossrow"><div class="bar"><i id="bossHp"></i></div><b id="bossPct">100%</b></div></div>
-      <div id="bossActions" hidden><button id="retry">보스 도전</button><button id="lastBossResult" hidden>지난 결과</button></div>
+      <div id="bossActions" hidden><small id="bossHint" hidden></small><button id="retry">보스 도전</button><button id="lastBossResult" hidden>지난 결과</button></div>
     </div>
-    <div id="quick" aria-label="바로가기"><button data-quick="rune"><i></i><span>룬</span></button><button data-quick="sigil"><i></i><span>신성력</span></button><button data-quick="dex"><i></i><span>도감</span></button><button data-quick="chest"><i></i><span>가방</span></button><button data-quick="mail"><i></i><span>우편함</span></button><button data-quick="notice"><i></i><span>공지</span></button><button data-quick="idle"><i></i><span>방치</span></button></div>
+    <div id="quick" aria-label="바로가기"><button data-quick="pet"><i></i><span>펫</span></button><button data-quick="rune"><i></i><span>룬</span></button><button data-quick="sigil"><i></i><span>신성력</span></button><button data-quick="dex"><i></i><span>도감</span></button><button data-quick="chest"><i></i><span>가방</span></button><button data-quick="mail"><i></i><span>우편함</span></button><button data-quick="notice"><i></i><span>공지</span></button><button data-quick="idle"><i></i><span>방치</span></button></div>
     <div id="banner"></div>
     <div id="dunHud"></div>
     <div id="gainlog" aria-live="off"></div>
@@ -3662,6 +3858,7 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script src="js/level.js"></script>
 <script src="js/look.js"></script>
 <script src="js/progress.js"></script>
+<script src="js/power.js"></script>
 <script src="js/stage-rewards.js"></script>
 <script src="js/skills.js"></script>
 <script src="js/gear.js"></script>
@@ -3676,6 +3873,7 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script src="js/runes.js"></script>
 <script src="js/titles.js"></script>
 <script src="js/dex.js"></script>
+<script src="js/pets.js"></script>
 <script src="js/dex-text.js"></script>
 <script src="js/sigil.js"></script>
 <script src="js/alchemy.js"></script>
@@ -3722,6 +3920,8 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script src="js/art-items.js"></script>
 <script src="js/design-cream.js"></script>
 <script src="js/dex-ui.js"></script>
+<script src="js/pet-dex-ui.js"></script>
+<script src="js/pet-ui.js"></script>
 <script src="js/mail-gift.js"></script>
 <script src="js/mail.js"></script>
 <script src="js/chest.js"></script>

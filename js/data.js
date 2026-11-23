@@ -572,7 +572,46 @@
       omegaPerLevel: 0.007, eternalPerLevel: 0.007, genesisPerLevel: 0.007, omegaDmg: 2, eternalDmg: 2, genesisDmg: 2,
       skillUpBase: 150, skillOwnedPer: 0.01, skillUpGrowth: 1.6, skillLvBonus: 0.2, skillMaxLv: 50,
       levelMax: 800, levelXpBase: 40, levelXpPow: 2, levelXpStage: 1.004, levelXpPerDiff: 100, levelAtk: 0.004, levelBossXp: 30, levelGems: 20
-    }
+    },
+    // 펫 (2026-11-23, 형: 펫으로 기준 잡자 · 전설까지 · 전설은 크고 무섭고 웅장하게): 5 groups × grades 0-3 (hiGrades 일반~전설).
+    // Pictures: the user's GPT art (art/pet-*.webp). js/pets.js keeps the rules, the codex page is js/pet-dex-ui.js.
+    petGroups: [
+      { id: 'forest', name: '숲', tint: '#dbe5cf' }, { id: 'sea', name: '바다', tint: '#cfe4e9' }, { id: 'fire', name: '불꽃', tint: '#f2dfcf' },
+      { id: 'sky', name: '하늘', tint: '#d8e2f2' }, { id: 'star', name: '별빛', tint: '#e3d8f1' }
+    ],
+    pets: [
+      { id: 'quokka', name: '클로버 쿼카', short: '쿼카', group: 'forest', grade: 0, art: 'pet-quokka' },
+      { id: 'redpanda', name: '새싹 레서판다', short: '레서판다', group: 'forest', grade: 1, art: 'pet-redpanda' },
+      { id: 'sloth', name: '꽃방울 나무늘보', short: '나무늘보', group: 'forest', grade: 2, art: 'pet-sloth' },
+      { id: 'behemoth', name: '고대 숲의 베헤모스', short: '베헤모스', group: 'forest', grade: 3, art: 'pet-behemoth' },
+      { id: 'dolphin', name: '물방울 아기 돌고래', short: '돌고래', group: 'sea', grade: 0, art: 'pet-dolphin' },
+      { id: 'flamingo', name: '거품 홍학', short: '홍학', group: 'sea', grade: 1, art: 'pet-flamingo' },
+      { id: 'narwhal', name: '진주 일각고래', short: '일각고래', group: 'sea', grade: 2, art: 'pet-narwhal' },
+      { id: 'leviathan', name: '심연의 리바이어던', short: '리바이어던', group: 'sea', grade: 3, art: 'pet-leviathan' },
+      { id: 'capybara', name: '불씨 카피바라', short: '카피바라', group: 'fire', grade: 0, art: 'pet-capybara' },
+      { id: 'meerkat', name: '숯불 미어캣', short: '미어캣', group: 'fire', grade: 1, art: 'pet-meerkat' },
+      { id: 'bonghwang', name: '아기 봉황', short: '봉황', group: 'fire', grade: 2, art: 'pet-bonghwang' },
+      { id: 'blackdragon', name: '업화의 흑룡', short: '흑룡', group: 'fire', grade: 3, art: 'pet-blackdragon' },
+      { id: 'lamb', name: '솜구름 아기 양', short: '아기 양', group: 'sky', grade: 0, art: 'pet-lamb' },
+      { id: 'hummingbird', name: '바람 벌새', short: '벌새', group: 'sky', grade: 1, art: 'pet-hummingbird' },
+      { id: 'giraffe', name: '천둥 구름 기린', short: '기린', group: 'sky', grade: 2, art: 'pet-giraffe' },
+      { id: 'thunderbird', name: '폭풍의 천둥새', short: '천둥새', group: 'sky', grade: 3, art: 'pet-thunderbird' },
+      { id: 'guinea', name: '별사탕 기니피그', short: '기니피그', group: 'star', grade: 0, art: 'pet-guinea' },
+      { id: 'koala', name: '달빛 코알라', short: '코알라', group: 'star', grade: 1, art: 'pet-koala' },
+      { id: 'haetae', name: '은하 아기 해태', short: '아기 해태', group: 'star', grade: 2, art: 'pet-haetae' },
+      { id: 'nebulahaetae', name: '성운의 대해태', short: '대해태', group: 'star', grade: 3, art: 'pet-nebula-haetae' }
+    ],
+    // setBonus: each full group claimed in the codex (펫의 힘, multiplied apart like a potion — 형 결정 6-0); allBonus: all 20
+    // eggs: about one per 15 minutes of hunting (a chance every frame, dt / eggEverySec), 10% a boss, one sure from a
+    // region boss (x-31); none from away time (형: 쉬었다 오면 받는 구조 싫음). Hatch grade by job: gradeEarly at 1차 →
+    // gradeLate at lateTier. Level cap lvBase + lvPerStar × ★; cost levelFood × levelGrowth^(lv−1) × gradeFood[grade].
+    // ★n → ★n+1 takes n shards; a shard past ★5 is fragFood snacks. Effect (펫의 힘): equip[grade] × (1 + perLevel ×
+    // (lv−1)) × (1 + perStar × (★−1)) for the worn pet, ownedFrac of it for every other pet.
+    petConf: { maxStar: 5, setBonus: 0.05, allBonus: 0.10, dexFood: 20,
+      eggEverySec: 900, bossEggChance: 0.10, regionBossEggs: 1, foodPerWave: 1, foodBoss: 30, foodRegionBoss: 120,
+      gradeEarly: [70, 25, 5, 0], gradeLate: [45, 30, 18, 7], lateTier: 11,
+      lvBase: 30, lvPerStar: 10, levelFood: 8, levelGrowth: 1.1, gradeFood: [1, 1.3, 1.7, 2.4], fragFood: 50,
+      equip: [0.04, 0.07, 0.11, 0.18], perLevel: 0.02, perStar: 0.15, ownedFrac: 0.2 }
   };
   // 하늘 세계 (2026-11-17): the ten regions of the second world, on the difficulties with world: 1. Same slots as DATA.regions
   // (stages 0-309, walls by slot). Until the user's pictures come (docs/하늘세계-GPT-그림-문구.md) each one borrows the

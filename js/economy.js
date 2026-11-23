@@ -183,6 +183,9 @@
     var TR = dep('training'), mo = TR && TR.markOver ? TR.markOver(state) : {};   // rate marks past the rank's cap
     for (var mk in mo) over[mk] = (over[mk] || 0) + mo[mk];
     for (var t in over) st[t] = cap(st[t] * (1 + OVER_PER * over[t]));
+    // 펫의 힘 (2026-11-23, 형 결정: 따로 곱해): js/pets.js, multiplied apart in hitDamage like a potion so it never drowns
+    // in the big added sums; the server wallet has no pets.js and stays at 1
+    var PT = dep('pets'); st.petMul = PT && PT.petMul ? PT.petMul(state) : 1;
     return st;
   }
   // the stat bonus 한계 돌파 gives a row right now: { stat, pct } (for the 성장 list)
@@ -227,6 +230,7 @@
     var d = st.atk * skill.mult * st.mastery * st.skillDmg * (1 + B.skillLvBonus * ((st.skillLv && st.skillLv[skill.id]) || 0));
     if (o.boss) d *= st.bossDmg; else d *= st.normalDmg || 1;
     d *= st.finalMul || 1;
+    d *= st.petMul || 1;
     var ct = o.critTier !== undefined ? o.critTier : (o.crit ? 1 : 0), dm = tierDmgs(st);
     d *= critMul(dm, ct);   // o.even: 2026-11-17 부터 합 방식이라 고른 크리(눌러 펴기)가 필요 없어 같은 값
     if (o.frozen) d *= B.freezeTaken;

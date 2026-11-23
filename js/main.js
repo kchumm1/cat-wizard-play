@@ -319,6 +319,7 @@
     // a field kill brings the two dusts (2026-11-17: no diamonds in the field, they come from bosses)
     var r0 = Math.floor(state.runeDust || 0), s0 = Math.floor(state.sigilDust || 0), dz = CW.addKillDust(state); if (CW.idleNote) CW.idleNote(dz);
     gained.runeDust = (gained.runeDust || 0) + Math.floor(state.runeDust) - r0; gained.sigilDust = (gained.sigilDust || 0) + Math.floor(state.sigilDust) - s0;
+    if (CW.petFoodWave) CW.petFoodWave(state);   // 펫 간식 (2026-11-23) with the dusts
     var reward = CW.fieldDrop(state);
     if (reward) {
       var idle = CW.idleActive();
@@ -344,6 +345,8 @@
     var sstone = CW.addSigilStone(state, CW.sigilStoneForBoss(state, isRB, stage)); if (sstone) gained.sigilStone = (gained.sigilStone || 0) + sstone;
     var sigs = CW.sigilDrop(state, isRB), runeGot = CW.runeDrop(state, isRB);
     gained.gold += gold; gained.gems += gems; gained.xp += bx;
+    var petGot = CW.petBossDrop ? CW.petBossDrop(state, isRB) : null;   // 펫 알 (10%, 지역 보스 확정) + 간식 (2026-11-23)
+    if (petGot && petGot.eggs) { gained.more.push({ t: '펫 알 +' + petGot.eggs, c: '#ffe08a' }); if (ui.petDot) ui.petDot(); }
     if (CW.idleNote) CW.idleNote({ kill: 1, gold: gold, xp: bx, rune: rstone });
     onLevel(CW.gainXp(state, bx));
     if (sameBossResult(state.bossResult, boss)) state.bossResult = null;
@@ -757,9 +760,11 @@
   var G = {
     showFieldIdleReport: showFieldIdleReport,
     get state() { return state; },
+    stats: function () { return st; },   // 전투력 칸 (2026-11-23): the stats refreshStats keeps, so the HUD does not run CW.stats every 0.1s
     boss: function () { return boss; },
     castingSlot: function () { return preview ? -1 : nowSlot; },
     canRetry: function () { return retryBossStage() >= 0; },
+    retryStage: retryBossStage,   // 보스 앞 판단 (2026-11-23): which boss the line is about
     bossResult: bossResult,
     upgradeN: function (k, n) { var c = CW.tryUpgradeN(state, k, n); if (c) { refreshStats(); snd.play('click'); save(); } return c; },
     upgrade: function (k) { var ok = CW.tryUpgrade(state, k); if (ok) { refreshStats(); snd.play('click'); } return ok; },
@@ -924,6 +929,10 @@
   // monster codex page (js/dex-ui.js) reads the live state; the 더보기 tab shows a dot while something new is unseen
   CW.dexState = function () { return state; };
   if (CW.dexDot) CW.dexDot(CW.dexHasNew(state));
+  // 펫 pages (2026-11-23, js/pet-dex-ui.js): the live state; after a change the stats (펫의 힘) are counted again and saved
+  CW.petState = function () { return state; };
+  CW.petChanged = function (quiet) { if (!quiet) refreshStats(); save(); if (ui.petDot) ui.petDot(); };
+  if (!CW.toast) CW.toast = function (m) { ui.toast(m); };
 
   var drawing;
   function applySettings() {
@@ -1041,6 +1050,8 @@
     } else if (state.bossTry) {
       startBoss();
     } else {
+      // 펫 알 (2026-11-23): about one per 15 minutes of plain hunting (not in a dungeon, a boss or a rest)
+      if (CW.petEggRoll && CW.petEggRoll(state, dt)) { gained.more.push({ t: '펫 알 +1', c: '#ffe08a' }); gained.t = 1; save(); if (ui.petDot) ui.petDot(); }
       var alive = aliveMobs().length;
       if (wave.left <= 0 && alive <= Math.floor(crowdMax() * CW.REFILL_AT)) { wave.left = crowdMax() - alive; wave.t = 0.2; }
       wave.left = CW.waveRoom(wave.left, crowdMax(), alive);

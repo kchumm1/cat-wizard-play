@@ -1492,7 +1492,10 @@
     '#sheet.opal#sheet.opal .skd-shots .p .orb{width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 40% 38%,#fff 0,var(--c) 45%,rgba(0,0,0,0) 72%);box-shadow:0 0 10px 3px var(--c);filter:saturate(1.3)}',
     '#sheet.opal#sheet.opal .dg-st{left:131px;top:-9px;width:17px;height:17px;background:var(--st) 50% 50%/contain no-repeat}',
     '#sheet.opal#sheet.opal .skd-info .chips{left:186px;top:17px;display:flex;gap:6px}',
+    // 넘칠 때만 (ui.js fitSkdChips, 2026-11-23): 간격·안쪽 여백을 줄이고, 그래도 넘치면 글씨를 상자에 맞게(--chf)
+    '#sheet.opal#sheet.opal .skd-info .chips.tight{gap:4px}#sheet.opal#sheet.opal .skd-info .chips.tight .c{padding:0 8px 0 6px;gap:4px}',
     '#sheet.opal#sheet.opal .skd-info .chips .c{display:flex;align-items:center;gap:6px;height:20px;padding:0 12px 0 9px;border:0 solid transparent;border-image:url(art/sk-pill.webp) 45 fill / 10px / 1.4px 1.4px 2.2px 1.4px stretch;font:800 13.5px/1 var(--body);color:var(--navy);white-space:nowrap}',
+    '#sheet.opal#sheet.opal .skd-info .chips .c{font-size:var(--chf,13.5px)}',
     '#sheet.opal#sheet.opal .skd-info .chips .c>i{width:12px;height:12px;-webkit-mask:var(--el,url(art/sk-spark.webp)) 50% 50%/contain no-repeat;mask:var(--el,url(art/sk-spark.webp)) 50% 50%/contain no-repeat;background:#3a9fbf}',
     '#sheet.opal#sheet.opal .skd-info .how{left:190px;top:46px;width:162px;height:34px;display:flex;align-items:center;font:700 13.5px/17px var(--body);color:var(--navy);white-space:normal;word-break:keep-all;overflow:hidden}',   // 길면 두 줄
     // 강화 1회 효과 (제목 y385, 상자 y403~487)

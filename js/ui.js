@@ -99,6 +99,7 @@
     }
     var ghdSeen = null, ghdPlay = false, ghdFrom = 0, ghdBar = 0;   // 뽑기 레벨 칸 움직임
     var skDetail = null, skRegOpen = false;   // 스킬 상세 (보기) · 유리한 지역 펼침
+    var skListY = 0;   // 보기를 누를 때 보던 목록 자리 — ‹ 로 돌아오면 거기로 (2026-11-23, 형: 견습 스킬 보는데 자꾸 맨 위 11차 스킬 칸으로 돌아감)
     var pickSkill = null, skTierF = 0;   // 스킬 카드 배치판 (2026-11-23): 고른 카드 · 차수 칩 (0 = 전체)
     var selDiff = -1, selRegion = -1, gearSub = 'gear', upMul = 1, trainSub = 'grow', selTalent = null, selRune = null, fxRune = null, rnFilter = 'all', rnGroup = 'all', selSigil = null, sgFilter = -1, moreSub = 0, tierAnim = false;
     function mmss(sec) { sec = Math.ceil(sec); return Math.floor(sec / 60) + ':' + ('0' + sec % 60).slice(-2); }
@@ -1266,6 +1267,52 @@
 
     // ---------- HUD ----------
     var lastPlace = '', lastSub = null, lastStars = '';
+    // 전투력 칸 (2026-11-23, js/power.js): the shown number, the change tracker, and the +N ▲ that is up right now
+    var powerT = CW.powerTrack ? CW.powerTrack() : null, lastPowerTxt = '', powerFxT = 0;
+    function powerHud(s) {
+      if (!powerT || !G.stats) return;
+      var st = G.stats(); if (!st) return;
+      var pv = CW.dps(s, st), txt = fmt(pv), now = Date.now();
+      if (txt !== lastPowerTxt) { lastPowerTxt = txt; $('powerTxt').textContent = txt; }
+      // a pet page covers the battle screen: wait, so the growth shows as one ▲ when it closes (검토 2026-11-23)
+      if ((CW.petPageIsOpen && CW.petPageIsOpen()) || (CW.petDexIsOpen && CW.petDexIsOpen())) return;
+      CW.powerSample(powerT, s, pv, now);
+      var d = CW.powerFlush(powerT, now), dt = d ? CW.powerDeltaText(d) : null;
+      if (!dt) return;
+      // one at a time: a new change replaces the one still floating (never a pile)
+      var fx = $('powerFx'); fx.innerHTML = '<em class="' + (dt.up ? 'up' : 'down') + '">' + dt.text + '</em>';
+      clearTimeout(powerFxT); powerFxT = setTimeout(function () { fx.innerHTML = ''; }, 1400);
+    }
+    // 펫 버튼 (2026-11-23): the worn pet's picture (an egg while there is none) and a red dot while an egg waits or a new pet
+    // is unseen; the DOM is touched only when one of those changes
+    var petKey = '';
+    function petBtnHud(s) {
+      if (!CW.petBox || !s) return;
+      var b = CW.petBox(s), dot = b.eggs > 0 || CW.petHasFresh(s);
+      var key = 'fox:' + dot; if (key === petKey) return; petKey = key;
+      var btn = document.querySelector('#quick [data-quick="pet"]'); if (!btn) return;
+      // the sleeping fox of the GPT design the user picked (1번), cut out of its plum tile so the tile itself is the same as
+      // 룬·신성력·도감 (형: 색깔은 다른 아이콘이랑 똑같이); art-src/ai-review/2026-11-23-pet-tile
+      var i = btn.querySelector('i'); if (!i.firstChild) i.innerHTML = '<img class="ico" src="' + (CW.ART_BASE || 'art/') + 'ic-pet-fox.webp" alt="" draggable="false">';
+      var d = btn.querySelector('.qdot');
+      if (dot && !d) { d = document.createElement('b'); d.className = 'qdot'; btn.appendChild(d); }
+      if (!dot && d) d.remove();
+    }
+    // 보스 앞 판단 한 줄 (2026-11-23): measured again only when the stats, the next boss, the difficulty, the skills or the
+    // loss record change (bossDpsTypical runs 151 short fights)
+    var hintCache = { key: null, st: null };
+    function bossHintHud(s, canRetry, result) {
+      var el = $('bossHint'); if (!el) return;
+      if (!canRetry || !CW.bossOutlook || !G.stats) { if (!el.hidden) { el.hidden = true; hintCache.key = null; } return; }
+      var st = G.stats(), stage = G.retryStage();
+      // the region is in the key: the weak element changes the boss power (검토 2026-11-23), like 자동 재도전's bossPower
+      var key = stage + ':' + CW.powerContext(s) + ':' + (s.slots || []).join(',') + ':' + (result ? result.stage + '/' + result.pct + '/' + result.power : '-');
+      if (!CW.outlookDue(hintCache, key, st, Date.now(), powerT ? powerT.last : 0, tab === 'battle')) return;
+      hintCache.key = key; hintCache.st = st;
+      var o = CW.bossOutlook(s, st, stage, result);
+      if (!o) { el.hidden = true; return; }
+      el.textContent = CW.OUTLOOK_TEXT[o.verdict]; el.className = o.verdict; el.hidden = false;
+    }
     // the star path under the stage plate (2026-11-18 starry HUD): the gold line runs to pct, and each of the six stars
     // lights once the line reaches it; while farming the whole path glows
     var STAR_AT = [8, 26, 44, 60, 76, 92];
@@ -1319,6 +1366,7 @@
       var canRetry = s.farming && !boss && !s.bossTry && G.canRetry() && !G.dunState();
       var pastResult = G.bossResult();
       $('bossActions').hidden = !canRetry;
+      bossHintHud(s, canRetry, pastResult);
       $('retry').classList.toggle('on', !!canRetry);
       $('lastBossResult').hidden = !pastResult || tab !== 'battle';
       if (bossSkillReturn && bossSkillReturn !== pastResult) { bossSkillReturn = null; $('bossResultReturn').hidden = true; }
@@ -1329,6 +1377,8 @@
       var lastT = CW.FRIEND ? CW.FRIEND_MAX_TIER : DATA.tiers.length; // 체험판 ends at the 9th job
       var next = s.tier < lastT ? CW.tierNeed(s.tier + 1) + ' ' + (s.tier + 1) + '차' : (s.best >= 309 ? '마왕 토벌 완료!' : '최종 목표 10-31 늑대 왕');
       var nk = G.nickName(); if ($('nick').textContent !== nk) { $('nick').textContent = nk; fitNick(); } if ($('questTxt').textContent !== next) $('questTxt').textContent = next;
+      powerHud(s);
+      petBtnHud(s);
     }
     // 2026-11-18 형: 운영자 상단도 내 핸드폰처럼 — a long nickname (귤귤귤귤귤, up to 8 letters) made the Lv box run under the
     // place tag and the stage plate in the middle. The box now ends before the place tag: the name gets smaller (down to
@@ -1344,6 +1394,19 @@
       if (nk.getBoundingClientRect().width > want + 0.5) nk.style.maxWidth = Math.floor(want) + 'px';
     }
     if (typeof root.addEventListener === 'function') root.addEventListener('resize', function () { clearTimeout(fitNick.t); fitNick.t = setTimeout(fitNick, 120); });
+    // 바로가기 줄 (2026-11-23, 펫 칸이 들어가 8칸): on a short phone (iPhone SE 667, small Galaxy 640, 568) the column ran into
+    // the 목표 line and the skill slots — even 7 did on the SE. Now it may be only as tall as the room above the skill bar;
+    // the tiles that do not fit go into a second column to its left (index.html #app #quick wrap-reverse). Portrait only:
+    // the landscape column has its own full-height rules.
+    function fitQuick() {
+      var q = $('quick'), bar = $('skillbar'); if (!q || !bar) return;
+      q.style.maxHeight = '';
+      if (root.matchMedia && root.matchMedia('(orientation:landscape) and (min-aspect-ratio:6/5)').matches) return;
+      var room = Math.floor(bar.getBoundingClientRect().top - q.getBoundingClientRect().top - 8);
+      if (room > 90 && q.scrollHeight > room) q.style.maxHeight = room + 'px';
+    }
+    if (typeof root.addEventListener === 'function') root.addEventListener('resize', function () { clearTimeout(fitQuick.t); fitQuick.t = setTimeout(fitQuick, 150); });
+    setTimeout(fitQuick, 0); setTimeout(fitQuick, 800);
     var lastXpWidth, lastSlotKey, lastPreset;
     function slots() {
       var s = G.state, now = G.castingSlot();
@@ -2078,6 +2141,17 @@
       fitGear.mem = { k: gkey, f: [].slice.call(panel.querySelectorAll('.opbag .ef b')).map(function (v) { return parseFloat(getComputedStyle(v).fontSize); }), bf: bk.map(function (k) { return parseFloat(getComputedStyle(k).fontSize); }) };
     }
     // 스킬 줄: 설명·이름이 칸보다 길면 글자만 줄임 (설명 10px, 이름 12px 까지)
+    // 스킬 상세의 칩 두 개(속성 · 대상)가 정보 상자 오른쪽 밖으로 나가던 것 (2026-11-23, 형: 전체공격 칸에서 벗어나서 줄칸 간격 맞춰;
+    // 47개 중 15개, 9~22px — '모든 원소', '여러 마리 공격'): 넘칠 때만 간격·안쪽 여백을 줄이고(.tight), 그래도 넘치면 글씨를 상자에 맞게
+    function fitSkdChips() {
+      var box = panel.querySelector('.skd-info'), ch = box && box.querySelector('.chips'); if (!ch) return;
+      ch.classList.remove('tight'); ch.style.removeProperty('--chf');
+      var room = box.clientWidth - ch.offsetLeft - 8;
+      if (room <= 0 || ch.scrollWidth <= room) return;
+      ch.classList.add('tight');
+      if (ch.scrollWidth <= room) return;
+      ch.style.setProperty('--chf', Math.max(10.5, Math.floor(13.5 * room / ch.scrollWidth * 10) / 10) + 'px');
+    }
     // 스킬 카드 배치판: 목록을 조금이라도 내리면 위 칸 줄이 작아짐(그림만), 맨 위로 오면 다시 커짐 (2026-11-23)
     function skMini() {
       var pinEl = tab === 'skill' && !skDetail && panel.querySelector(':scope > .skpin'), pin = !!pinEl, on = pin && panel.scrollTop > 24, sh = $('sheet');
@@ -2263,7 +2337,7 @@
       // → 그대로 남은 격자는 처음 값을 다시 씀(같은 값이면 다시 계산 안 함), 새로 만든 격자만 지금 시간값
       panel.querySelectorAll('.mcv, .alchhead.anw, .pgrid.anw, .ruv, .sgv, .rsgrid, .rsstrip').forEach(function (e) { if (!e.classList.contains('rsgrid') && !e.classList.contains('rsstrip')) { e.style.setProperty('--ph', phv); return; } if (!e._cwPh) e._cwPh = phv; e.style.setProperty('--ph', e._cwPh); });
       if (ghdPlay) { ghdPlay = false; var ghd = panel.querySelector('.ghd'); if (ghd) { ghd.style.setProperty('--from', ghdFrom + '%'); ghd.classList.add('play'); } }
-      keepCircle(); if (tab === 'stage') fitStageRows(); if (tab === 'up') { fitGrowNames(); fitAlch(); } if (tab === 'gear') fitGear(); if (tab === 'skill') fitSkillRows();
+      keepCircle(); if (tab === 'stage') fitStageRows(); if (tab === 'up') { fitGrowNames(); fitAlch(); } if (tab === 'gear') fitGear(); if (tab === 'skill') { fitSkillRows(); fitSkdChips(); }
       fitNarrow(); skMini();
       // 칸 높이를 맞추느라 잠깐 줄었다 늘어나는 사이 스크롤 자리가 짧아진 길이에 잘려 위로 올라가던 것 (사용자 2026-11-18 「성장에서 강화 누르면 스크롤돼서 위로」): 자리를 다시 돌려 놓음
       if (panel.scrollTop !== y) panel.scrollTop = y;
@@ -2371,8 +2445,8 @@
       var d = t.dataset;
       if (d.guide) { G.sound('click'); showGuide(d.guide); return; }   // 안내 카드 '자세히'
       if (t.matches(HOLD_STEP)) { if (e.detail === 0) stepAct(d, false); return; }   // a press is done on pointerdown; keys still work
-      if (d.skd) { skDetail = d.skd; skRegOpen = false; renderTop(); return; }
-      if (t.hasAttribute('data-skback')) { skDetail = null; renderTop(); return; }
+      if (d.skd) { skListY = panel.scrollTop; skDetail = d.skd; skRegOpen = false; renderTop(); return; }
+      if (t.hasAttribute('data-skback')) { skDetail = null; renderPanel(true); panel.scrollTop = skListY; return; }
       if (t.hasAttribute('data-skagain')) { var sv = panel.querySelector('.skd-v'); if (sv) { sv.classList.remove('run'); void sv.offsetWidth; sv.classList.add('run'); } return; }
       if (t.hasAttribute('data-skreg')) { skRegOpen = !skRegOpen; renderPanel(true); return; }
       if (d.prev) { G.previewSkill(d.prev); }
@@ -2625,6 +2699,7 @@
       var b = e.target.closest('[data-quick]'); if (!b) return; var q = b.dataset.quick; G.sound('click');
       if (q === 'map') { selDiff = selRegion = -1; openTab(tab === 'stage' ? 'battle' : 'stage'); }
       else if (q === 'alch') { trainSub = 'alch'; openTab('up'); }
+      else if (q === 'pet') { if (CW.petPageOpen) CW.petPageOpen(function () { petKey = ''; hud(); }); }   // 펫 (2026-11-23, js/pet-ui.js)
       else if (q === 'dex') { if (CW.dexOpen) CW.dexOpen(); }
       else if (q === 'chest') { openChest(); }
       else if (q === 'mail') { if (CW.mailOpen) CW.mailOpen(); }
@@ -2732,6 +2807,8 @@
         var corsP = /\/art\/(rn2|sg2|gf|sk-el)-/, isC = function (u) { return corsP.test(abs(u)); }, other = otherMenuPics(A);
         // 차례: 장비를 열면 처음 보이는 지팡이 목록 → 모든 메뉴 틀(CSS) → 룬·신성력·삼신기 그림 → 훈련·스킬·유물·코스튬 등 그림 → 마스크 → 나머지 장비 종류
         warmImgs(gearKindPics(bagKind).concat([A + 'ui-paw.webp', A + 'ui-chest-closed.webp', A + 'ui-chest-open.webp']));
+        // 펫 (2026-11-23): the small pictures of the shortcut tile, the 내 펫 list and the 펫도감 cards, the egg and snack icons
+        warmImgs((DATA.pets || []).map(function (p) { return A + p.art + '-s.webp'; }).concat([A + 'pet-egg.webp', A + 'pet-food.webp', A + 'ic-petbook.webp', A + 'ic-pet-fox.webp']), { decode: false });
         warmImgs(css.all, { decode: false });
         warmImgs(items.filter(isC), { cors: true });
         warmImgs(items.filter(function (u) { return !isC(u); }));
@@ -3036,7 +3113,7 @@
       var titleBox = '<section class="pfbox pftbox' + (profOpen.title ? ' on' : '') + '"><button class="pfhd" data-pfsec="title" aria-expanded="' + !!profOpen.title + '"><img src="art/prof-ico-title.webp" alt="">' +
         '<b>타이틀</b><span class="pfbar"></span><span class="pfbadge">' + esc(CW.titleById(worn).name) + '</span><em>변경</em></button><div class="pfin"><div class="ttls">' + titles + '</div></div></section>';
       return top + '<div class="pfbody">' + srcBox +
-        profBox('atk', 'atk', '공격 효과', '', profRow('스킬·모든 피해', x(st.skillDmg * st.mastery), ['skillDmg', 'finalPct'], by) + profRow('보스 피해', x(st.bossDmg), ['bossDmg'], by) + profRow('분노의 물약', x(st.finalMul), ['potion'], by)) +
+        profBox('atk', 'atk', '공격 효과', '', profRow('스킬·모든 피해', x(st.skillDmg * st.mastery), ['skillDmg', 'finalPct'], by) + profRow('보스 피해', x(st.bossDmg), ['bossDmg'], by) + profRow('분노의 물약', x(st.finalMul), ['potion'], by) + profRow('펫의 힘', x(st.petMul || 1), [], by)) +
         profBox('crit', 'crit', '크리티컬', '확률 ' + pct(st.critRate || 0) + ' · 배율 ' + x(st.critDmg || 0), '<div class="pfcols' + (overAny ? ' four' : '') + '"><span></span><em>확률</em><em>배율</em>' + (overAny ? '<em>초과 피해</em>' : '') + '</div>' + crit +
           (overAny ? '<div class="pfhint"><p class="hd">✦ 초과 피해란?</p>' +
             '<p>확률은 <b>100%</b>까지만 쓰여요. 넘은 확률 <b>1%p</b>마다 그 단계 피해가 <b>+' + DATA.critConf.overPer + '%</b> 더 붙어요.<span class="cap">최대 +' + Math.round(DATA.critConf.overMax * 100) + '%</span></p></div>' : '')) +
@@ -3087,7 +3164,8 @@
       profTheme(getComputedStyle(document.documentElement).getPropertyValue('--capc').trim());
     }
     document.querySelector('#hud .nh-prof').addEventListener('click', function () { G.sound('click'); openStats(); });
-    return { surgeGauge: surgeGauge, dunHud: dunHud, gainLog: gainLog, fieldPickup: fieldPickup, fieldSummary: fieldSummary, openTab: openTab, hud: hud, slots: slots, renderPanel: renderPanel, toast: toast, banner: banner, showOffline: showOffline, showDaily: showDaily, showTierUp: showTierUp, showGacha: showGacha, modal: modal, showBossResult: showBossResult, libraryCards: libraryCards, currentTab: function () { return tab; } };
+    $('powerChip').addEventListener('click', function () { G.sound('click'); openStats(); });   // 전투력 칸도 냥법사 기록 (2026-11-23)
+    return { petDot: function () { petKey = ''; petBtnHud(G.state); }, surgeGauge: surgeGauge, dunHud: dunHud, gainLog: gainLog, fieldPickup: fieldPickup, fieldSummary: fieldSummary, openTab: openTab, hud: hud, slots: slots, renderPanel: renderPanel, toast: toast, banner: banner, showOffline: showOffline, showDaily: showDaily, showTierUp: showTierUp, showGacha: showGacha, modal: modal, showBossResult: showBossResult, libraryCards: libraryCards, currentTab: function () { return tab; } };
   }
   CW.createUI = createUI;
 })(this);
