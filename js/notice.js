@@ -5,15 +5,19 @@
 // tools/build-site.cjs keeps what ops.html wrote (noticeMerge), the same way as mail.json.
 (function (root, f) { var m = f(); if (typeof module !== 'undefined' && module.exports) module.exports = m; else { root.CW = root.CW || {}; Object.assign(root.CW, m); } })(this, function () {
   var NOTICE_TAGS = ['공지', '업데이트', '이벤트', '점검'];
+  // 특별 화면 공지 (js/notice-pages.js): 이 공지를 열면 글 대신 그 화면 (2026-11-23: 다시 쓸 때도 함께 옮김)
+  var NOTICE_VIEWS = { guide: '📖 책장처럼 넘기는 모험 안내서', rates: '📊 뽑기 확률표', pack: '❄️ 겨울 패키지 화면' };
   function box(state) { if (!state.notice || typeof state.notice !== 'object') state.notice = {}; if (!state.notice.read || typeof state.notice.read !== 'object') state.notice.read = {}; return state.notice; }
   function day(s, end) { var t = Date.parse(s + (end ? 'T23:59:59+09:00' : 'T00:00:00+09:00')); return isFinite(t) ? t : (end ? Infinity : -Infinity); }
   function ok(n) { return n && typeof n.id === 'string' && n.id && typeof n.title === 'string'; }
-  // the order notices are shown in: pinned first; inside each group the ops page's order (2026-11-23, 형: 공지 순서를 운영자
-  // 페이지에서), notices without one after it, newest date first
+  // the order notices are shown in (2026-11-23, 형: 공지 순서를 운영자 페이지에서): see rank below
   function has(n) { return typeof n.order === 'number' && isFinite(n.order); }
+  // (2026-11-23 형: 고정 공지 밑의 공지도 ↑로 올라가게) the ops page's order is the order, 📌 or not; without one a pinned
+  // notice sits above every ordered one and an unpinned one below them, newest first
+  function rank(n) { return has(n) ? n.order : n.pin ? -Infinity : Infinity; }
   function cmp(a, b) {
-    return (!!b.n.pin - !!a.n.pin) || (has(b.n) - has(a.n)) || (has(a.n) && has(b.n) ? a.n.order - b.n.order : 0) ||
-      (b.n.date || '').localeCompare(a.n.date || '') || a.i - b.i;
+    var ra = rank(a.n), rb = rank(b.n);
+    return (ra < rb ? -1 : ra > rb ? 1 : 0) || (!!b.n.pin - !!a.n.pin) || (b.n.date || '').localeCompare(a.n.date || '') || a.i - b.i;
   }
   function sorted(list) { return (Array.isArray(list) ? list : []).map(function (n, i) { return { n: n, i: i }; }).filter(function (x) { return ok(x.n); }).sort(cmp); }
   // the notices shown now (in their days), in that order
@@ -49,6 +53,8 @@
     if (f.pin) n.pin = true;
     if (f.from && f.from > kstDay(now)) n.from = f.from;
     if (f.until) n.until = f.until;
+    if (f.view && Object.prototype.hasOwnProperty.call(NOTICE_VIEWS, f.view)) n.view = f.view;
+    if (f.only === 'owner') n.only = 'owner';   // 형꺼만 (친구꺼에서는 안 보임)
     n.by = 'ops';
     return n;
   }
@@ -60,7 +66,7 @@
     if (o.length) n = Object.assign({}, n, { order: Math.min.apply(null, o) - 1 });
     d.notices.unshift(n); return clean(d);
   }
-  // move one notice up (dir -1) or down (+1) past its neighbour in the shown order, inside its pinned / not pinned group;
+  // move one notice up (dir -1) or down (+1) past its neighbour in the shown order (across 📌 too);
   // every notice then gets its place as order 0, 1, 2… (the ones out of their days too, so the order stays the same later)
   // (2026-11-23 검토: the neighbour is the next notice the game shows now — notices out of their days are skipped)
   function noticeMove(doc, id, dir, now) {
@@ -69,7 +75,7 @@
     var live = function (n) { return (!n.from || now >= day(n.from)) && (!n.until || now <= day(n.until, true)); };
     var i = all.findIndex(function (n) { return n.id === id; }), st = dir < 0 ? -1 : 1, j = i + st;
     while (i >= 0 && j >= 0 && j < all.length && !live(all[j])) j += st;
-    if (i >= 0 && j >= 0 && j < all.length && !!all[i].pin === !!all[j].pin) { var t = all[i]; all[i] = all[j]; all[j] = t; }
+    if (i >= 0 && j >= 0 && j < all.length) { var t = all[i]; all[i] = all[j]; all[j] = t; }
     var at = {}; all.forEach(function (n, k) { at[n.id] = k; });
     d.notices = d.notices.map(function (n) { return n && at[n.id] !== undefined ? Object.assign({}, n, { order: at[n.id] }) : n; });
     return clean(d);
@@ -92,6 +98,6 @@
     return clean({ note: m.note || s.note, notices: out, removed: removed });
   }
   function noticeText(doc) { return JSON.stringify(doc, null, 2) + '\n'; }
-  return { NOTICE_TAGS: NOTICE_TAGS, noticeShown: noticeShown, noticeRead: noticeRead, noticeMarkRead: noticeMarkRead, noticeUnread: noticeUnread, noticeTag: noticeTag, noticeDate: noticeDate,
+  return { NOTICE_VIEWS: NOTICE_VIEWS, NOTICE_TAGS: NOTICE_TAGS, noticeShown: noticeShown, noticeRead: noticeRead, noticeMarkRead: noticeMarkRead, noticeUnread: noticeUnread, noticeTag: noticeTag, noticeDate: noticeDate,
     noticeCheck: noticeCheck, noticeMake: noticeMake, noticeAdd: noticeAdd, noticeMove: noticeMove, noticeRemove: noticeRemove, noticeMerge: noticeMerge, noticeText: noticeText };
 });
