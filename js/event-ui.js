@@ -7,29 +7,42 @@
 // 받은 보상은 아래에서 떠올랐다 사라짐. 움직임 줄이기 설정이면 다 멈춤.
 (function (root, f) { var m = f(root); if (typeof module !== 'undefined' && module.exports) module.exports = m; else { root.CW = root.CW || {}; Object.assign(root.CW, m); } })(this, function (root) {
   var W = 1086, H = 1448;
-  function CWo() { return (root && root.CW) || {}; }
+  function CWo() { return (root && root.CW) || (typeof globalThis !== 'undefined' && globalThis.CW) || {}; }
   function A() { return CWo().ART_BASE || 'art/'; }
   function box(x, y, w, h) { return 'left:' + (x / W * 100).toFixed(3) + '%;top:' + (y / H * 100).toFixed(3) + '%;width:' + (w / W * 100).toFixed(3) + '%;height:' + (h / H * 100).toFixed(3) + '%'; }
   function img(n, cls) { return '<img' + (cls ? ' class="' + cls + '"' : '') + ' src="' + A() + 'ev-' + n + '.webp" alt="" draggable="false">'; }
   function ico(k, g) { var C = CWo(); return C.giveIco ? C.giveIco(k, g) : ''; }
-  function gname(g) { var D = CWo().DATA; return D && D.hiGrades && D.hiGrades[g] ? D.hiGrades[g].name : g + '등급'; }
+  function gname(g) { var D = CWo().DATA || (typeof module !== 'undefined' && module.exports ? require('./data.js').DATA : null); return D && D.hiGrades && D.hiGrades[g] ? D.hiGrades[g].name : g + '등급'; }
   function short(n) { return n >= 10000 && n % 1000 === 0 ? (n / 10000) + '만' : Number(n).toLocaleString('ko-KR'); }
   function mins(m) { return m >= 60 ? (m / 60) + '시간' : m + '분'; }
-  // what a cell shows: [icon, short text] for each thing the give holds
-  function parts(g) {
-    var out = [];
-    if (g.gems) out.push([ico('gem'), short(g.gems)]);
-    if (g.pulls) out.push([ico('pull'), '뽑기 ' + g.pulls]);
-    if (g.goldMin) out.push([ico('gold'), mins(g.goldMin)]);
-    if (g.potionMin) out.push([ico('potion'), mins(g.potionMin)]);
-    if (g.mana) out.push([ico('mana'), short(g.mana)]);
-    (g.runes || []).forEach(function (x) { out.push([ico('rune', x.grade), gname(x.grade) + ' 룬']); });
-    if (g.runeStone) out.push([ico('runeStone'), short(g.runeStone)]);
-    (g.sigils || []).forEach(function (x) { out.push([ico('sigil', x.grade), gname(x.grade)]); });
-    if (g.sigilStone) out.push([ico('sigilStone'), short(g.sigilStone)]);
+  // gold given as "N minutes of hunting": the real amount at today's hunting speed (it is worked out again when taken)
+  function goldOf(min) {
+    var C = CWo(), s = C.evG && C.evG.state;
+    if (s && C.goldPerSecond) { var n = C.goldPerSecond(s) * 60 * min; return C.fmtGold ? C.fmtGold(n) : C.fmt ? C.fmt(n) : String(Math.floor(n)); }
+    return '사냥 ' + mins(min) + '치';
+  }
+  // what a cell shows: [icon, name + amount] for each thing the give holds (2026-11-23 다듬기, 형: 가독성 너무 엉망 — 「1시간」
+  // 「500」만으로는 무엇인지 몰라서 이름을 붙임)
+  // long: the full words for the line under the window (장비 뽑기 10회, 물약 3종 1시간, 영웅 신성력 1개, 골드 … (지금 사냥 1시간치));
+  // short: what fits a cell (뽑기 10회, 물약 1시간, 영웅 신성력)
+  function parts(g, long) {
+    var out = [], cnt = function (n) { return long ? ' ' + n + '개' : n > 1 ? ' ×' + n : ''; };
+    if (g.gems) out.push([ico('gem'), '다이아 ' + short(g.gems)]);
+    if (g.pulls) out.push([ico('pull'), (long ? '장비 뽑기 ' : '뽑기 ') + g.pulls + '회']);
+    if (g.goldMin) out.push([ico('gold'), '골드 ' + goldOf(g.goldMin) + (long && goldOf(g.goldMin).indexOf('사냥') < 0 ? ' (지금 사냥 ' + mins(g.goldMin) + '치)' : '')]);
+    if (g.potionMin) out.push([ico('potion'), (long ? '물약 3종 ' : '물약 ') + mins(g.potionMin)]);
+    if (g.mana) out.push([ico('mana'), '마력석 ' + short(g.mana)]);
+    (g.runes || []).forEach(function (x) { out.push([ico('rune', x.grade), gname(x.grade) + ' 룬' + cnt(x.n)]); });
+    if (g.runeStone) out.push([ico('runeStone'), '룬석 ' + short(g.runeStone)]);
+    (g.sigils || []).forEach(function (x) { out.push([ico('sigil', x.grade), gname(x.grade) + ' 신성력' + cnt(x.n)]); });
+    if (g.sigilStone) out.push([ico('sigilStone'), '신성석 ' + short(g.sigilStone)]);
     return out;
   }
-  function rewards(g, max) { return parts(g).slice(0, max || 9).map(function (p) { return '<span class="evrw"><i>' + p[0] + '</i><b>' + p[1] + '</b></span>'; }).join(''); }
+  // one thing: a big picture with its words under it; two or more: one row each (picture + words), so they fit the cell
+  function rewards(g, max) {
+    var p = parts(g).slice(0, max || 9);
+    return '<span class="evrws ' + (p.length > 1 ? 'rows' : 'one') + '">' + p.map(function (x) { return '<span class="evrw"><i>' + x[0] + '</i><b>' + x[1] + '</b></span>'; }).join('') + '</span>';
+  }
   function md(day) { var m = /^\d{4}-(\d{2})-(\d{2})$/.exec(day || ''); return m ? (+m[1]) + '.' + m[2] : ''; }
 
   // ---------- 출석 ----------
@@ -41,7 +54,7 @@
       var x = big ? 780 : [74, 308, 542][k % 3], y = big ? top : top + (k < 3 ? 0 : 150), w = big ? 228 : 214, h = big ? 280 : 130;
       var pic = img((big ? CHEST_PIC : ATT_PIC)[c.st], 'evpc');
       return '<button class="evcell ' + (big ? 'big ' : '') + c.st + '" data-evday="' + c.day + '" style="' + box(x, y, w, h) + '">' + pic +
-        '<em class="evday">' + c.day + '일</em><span class="evrws">' + rewards(c.give, big ? 4 : 2) + '</span></button>';
+        '<em class="evday">' + c.day + '일</em>' + rewards(c.give, big ? 4 : 2) + '</button>';
     }).join('');
     var btn = v.att.today ? img('claim-ready') + '<span>오늘 출석 받기</span>' : img('claim-done') + '<span>' + (v.att.n >= v.att.list.length ? '출석을 모두 받았어요' : '내일 또 만나요') + '</span>';
     return img('attendance-frame', 'evframe') +
@@ -56,21 +69,23 @@
     return pre + (final ? '-final-' : '-') + s;
   }
   function passHtml(v, friend) {
+    // 4 cells fill the strip exactly (4 × 202 + 3 × GAP = 946) and the strip stops cell by cell (형: 오른쪽 끝 칸이 반쯤 잘려 보임)
+    var GAP = 46;
     var P = v.pass, cols = '', X = 0;
     P.list.forEach(function (c) {
       var final = c.step === P.steps, w = final ? 250 : 202;
       var cell = function (line, cc, y) {
         if (!cc) return '';
         return '<button class="evpcell ' + line + ' ' + cc.st + (final ? ' final' : '') + '" data-evstep="' + c.step + '" data-evline="' + line + '" style="left:' + X + 'px;top:' + y + '%;width:' + w + 'px;height:' + (202 / 496 * 100).toFixed(3) + '%">' +
-          img(passPic(line, final, cc.st), 'evpc') + '<em class="evday">' + c.step + '</em><span class="evrws">' + rewards(cc.give, final ? 3 : 2) + '</span></button>';
+          img(passPic(line, final, cc.st), 'evpc') + '<em class="evday">' + c.step + '</em>' + rewards(cc.give, final ? 3 : 2) + '</button>';
       };
       cols += cell('free', c.free, 0) + cell('pass', c.pass, (278 / 496 * 100).toFixed(3));
-      X += w + 28;
+      X += w + GAP;
     });
     // the strip's inner units are frame units (px inside .evrow, scaled by --u = card width / 1086)
     // 친구꺼 (패스 줄 없음): 무료 줄을 가운데쯤으로
     var dy = friend ? 150 : 0;
-    var strip = '<div class="evstrip" style="' + box(70, 636 + dy, 946, 496) + '"><div class="evrow" style="width:' + X + 'px">' + cols + '</div></div>';
+    var strip = '<div class="evstrip" style="' + box(70, 636 + dy, 946, 496) + '"><div class="evrow" style="width:' + (X - GAP) + 'px">' + cols + '</div></div>';
     var next = P.step >= P.steps ? 1 : (P.pts - P.step * P.per) / P.per;
     var buy = !friend && !P.bought, all = P.claim > 0;
     var btns = buy
@@ -82,12 +97,18 @@
       '<b class="evdleft" style="' + box(814, 62, 188, 56) + '">' + (v.dLeft > 0 ? 'D-' + v.dLeft : '오늘 끝') + '</b>' +
       '<div class="evbar" style="' + box(76, 469, 926, 96) + '">' + img('progress-base', 'evbarbase') +
         '<i class="evfill" style="--p:' + (Math.max(0, Math.min(1, next)) * 100).toFixed(1) + '"><span>' + img('progress-fill') + '</span></i>' +
-        '<b class="evlv">' + P.step + '</b><small>' + (P.step >= P.steps ? '완성!' : P.capped ? '오늘 점수는 다 모았어요 · 내일 또' : '다음 단계까지 ' + (P.per * (P.step + 1) - P.pts) + '점') + '</small></div>' +
+        '<b class="evlv">' + P.step + '</b><b class="evpts">' + P.pts.toLocaleString('ko-KR') + ' / ' + (P.per * P.steps).toLocaleString('ko-KR') + '점</b>' +
+        '<small>' + (P.step >= P.steps ? '30단계 완성!' : P.capped ? '오늘 점수는 다 모았어요 · 내일 또 모아요' : '다음 단계까지 ' + (P.per * (P.step + 1) - P.pts) + '점') + '</small></div>' +
       '<b class="evlabel" style="' + box(70, 588 + dy, 168, 49) + '">' + img('free-label') + '<span>무료</span></b>' +
       (friend ? '' : '<b class="evlabel gold" style="' + box(70, 866, 168, 49) + '">' + img('premium-label') + '<span>패스</span></b>') +
       strip + btns;
   }
 
+  // what a tapped cell holds, for the line under the window (형: 칸이 무엇인지 잘 보이게)
+  function eventDetail(v, t, n, line) {
+    if (t === 'pass') { var c = v.pass.list[n - 1], cc = c && (line === 'pass' ? c.pass : c.free); return cc ? { title: (line === 'pass' ? '패스 ' : '무료 ') + n + '단계', give: cc.give, st: cc.st } : null; }
+    var a = v.att.list[n - 1]; return a ? { title: n + '일째 보상', give: a.give, st: a.st } : null;
+  }
   function eventHtml(v, tab, friend) {
     if (!v || !v.on) return '';
     if (friend === undefined) friend = !!v.pass.list[0] && v.pass.list[0].pass === null;
@@ -129,20 +150,26 @@
       '#evFx .evcell.big .evpc{left:-2.6%;top:-2.1%;width:105.7%;height:104.6%}',
       '#evFx .evpcell .evpc{left:-3.2%;top:-3%;width:106.4%;height:106%}',
       '#evFx .evpcell.final .evpc{left:-2.6%;top:-3%;width:105.2%;height:106%}',
-      '#evFx .evday{position:absolute;left:9%;top:9%;font:400 2.5cqw/1 var(--display,inherit);font-style:normal;color:#ffe7b8;text-shadow:0 1px 2px #2a1328}',
-      '#evFx .evpcell .evday{font-size:30px;left:9%;top:7%}',
-      '#evFx .evrws{position:absolute;inset:24% 4% 6%;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:.6cqw 1.6cqw}',
-      '#evFx .big .evrws{flex-direction:column;inset:14% 4% 26%}',
-      '#evFx .evrw{display:flex;align-items:center;gap:.5cqw}',
-      '#evFx .evrw i{width:4.6cqw;height:4.6cqw;display:flex;align-items:center;justify-content:center;font-style:normal}',
-      '#evFx .evrw i>*{width:100%!important;height:100%!important;font-size:4cqw}',
-      '#evFx .evrw b{font:400 2.5cqw/1.1 var(--display,inherit);color:#fff6e3;text-shadow:0 1px 2px #2a1328;white-space:nowrap}',
-      // inside the zoomed pass strip sizes are frame units (px), not cqw
-      '#evFx .evpcell .evrws{inset:22% 5% 8%;flex-direction:column;gap:8px}',
-      '#evFx .evpcell .evrw{gap:6px}#evFx .evpcell .evrw i{width:60px;height:60px}#evFx .evpcell .evrw i>*{font-size:52px}',
-      '#evFx .evpcell .evrw b{font-size:30px}',
+      // 칸 안 (2026-11-23 다듬기): 날짜·단계는 왼쪽 위 작은 글자, 그 밑 남은 자리에 보상. 하나면 큰 그림 + 이름, 둘 이상이면 한 줄씩
+      '#evFx .evday{position:absolute;left:7%;top:7%;font:400 2.4cqw/1 var(--display,inherit);font-style:normal;color:#ffe7b8;text-shadow:0 1px 2px #2a1328}',
+      '#evFx .evrws{position:absolute;left:5%;right:5%;top:27%;bottom:5%;display:flex;flex-direction:column;align-items:center;justify-content:center}',
+      '#evFx .evrw{display:flex;align-items:center;max-width:100%}',
+      '#evFx .evrw i{flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-style:normal}',
+      '#evFx .evrw i>*{width:100%!important;height:100%!important}',
+      '#evFx .evrw b{font:400 2.7cqw/1.15 var(--display,inherit);color:#fff6e3;text-shadow:0 0 2px #2a1328,0 1px 2px #2a1328;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '#evFx .one .evrw{flex-direction:column;gap:.3cqw}#evFx .one .evrw i{width:5.4cqw;height:5.4cqw}#evFx .one .evrw i>*{font-size:4.6cqw}',
+      '#evFx .rows{gap:.2cqw;align-items:flex-start;left:3%;right:2%}#evFx .rows .evrw{gap:.6cqw}#evFx .rows .evrw i{width:3.8cqw;height:3.8cqw}#evFx .rows .evrw i>*{font-size:3.3cqw}#evFx .rows .evrw b{font-size:2.5cqw}',
+      // 7·14일째 상자 칸: 줄을 위쪽에, 오른쪽 아래 상자 그림 자리는 비워 둠
+      '#evFx .big .evrws{top:15%;bottom:30%;left:5%;right:3%;justify-content:flex-start;gap:1.2cqw}#evFx .big .rows .evrw i{width:4.2cqw;height:4.2cqw}#evFx .big .rows .evrw b{font-size:2.6cqw}',
+      // inside the zoomed pass strip sizes are frame units (px, 1cqw ≈ 10.9px), not cqw
+      '#evFx .evpcell .evday{font-size:28px;left:8%;top:7%}',
+      '#evFx .evpcell .evrws{top:24%;bottom:6%;left:6%;right:6%}',
+      '#evFx .evpcell .evrw b{font-size:29px}',
+      '#evFx .evpcell .one .evrw{gap:4px}#evFx .evpcell .one .evrw i{width:66px;height:66px}#evFx .evpcell .one .evrw i>*{font-size:56px}',
+      '#evFx .evpcell .rows{gap:4px}#evFx .evpcell .rows .evrw{gap:6px}#evFx .evpcell .rows .evrw i{width:44px;height:44px}#evFx .evpcell .rows .evrw i>*{font-size:38px}#evFx .evpcell .rows .evrw b{font-size:26px}',
       // 30단계 칸은 오른쪽 아래에 상자 그림이 있어 글자를 그 위로
-      '#evFx .evpcell.final .evrws{inset:20% 8% 38% 6%;gap:4px}#evFx .evpcell.final .evrw b{font-size:28px}',
+      '#evFx .evpcell.final .evrws{top:20%;bottom:36%;right:8%;justify-content:flex-start}',
+      '#evFx .evpcell.free,#evFx .evpcell.pass{scroll-snap-align:start}',
       '#evFx .got .evrws,#evFx .lock .evrws,#evFx .wait .evrws{opacity:.7}',
       '#evFx .ready .evpc{animation:evGlow 1.6s ease-in-out infinite}',
       '@keyframes evGlow{50%{filter:brightness(1.15) drop-shadow(0 0 1cqw #ffd98a)}}',
@@ -157,13 +184,15 @@
       '#evFx .evfill{position:absolute;left:10.6%;top:40.6%;height:23.9%;width:calc(87.6% * var(--p) / 100);overflow:hidden;border-radius:2cqw;transition:width .7s cubic-bezier(.3,.9,.3,1)}',
       '#evFx .evfill span{position:absolute;left:0;top:0;width:100cqw;height:100%}#evFx .evfill img{position:absolute;left:0;top:0;width:74.8cqw;height:100%}',
       '#evFx .evlv{position:absolute;left:0;top:0;width:10.2%;height:100%;display:flex;align-items:center;justify-content:center;font:400 4.6cqw/1 var(--display,inherit);color:#fff6e3}',
-      '#evFx .evbar small{position:absolute;right:3%;top:-32%;font:400 2.5cqw/1 var(--display,inherit);color:#f5dcea}',
-      '#evFx .evstrip{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}',
+      '#evFx .evpts{position:absolute;left:12%;right:3%;top:38%;height:28%;display:flex;align-items:center;justify-content:center;font:400 2.7cqw/1 var(--display,inherit);color:#fff6e3;text-shadow:0 0 2px #2a1328,0 1px 2px #2a1328}',
+      '#evFx .evbar small{position:absolute;right:2%;top:100%;margin-top:.4cqw;font:400 2.6cqw/1 var(--display,inherit);color:#ffe7b8;text-shadow:0 1px 2px #2a1328}',
+      '#evFx .evstrip{scroll-snap-type:x mandatory;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}',
       '#evFx .evstrip::-webkit-scrollbar{display:none}',
       '#evFx .evrow{position:relative;height:100%}',
       '#evFx .evrow>*{position:absolute}',
       '#evFx .evgot{left:8%;right:8%;bottom:13%;margin:0;display:flex;flex-wrap:wrap;justify-content:center;gap:1cqw 2.4cqw;padding:2cqw 3cqw;border-radius:3cqw;background:rgba(74,40,72,.95);box-shadow:0 0 0 .4cqw #ffd98a;opacity:0;transform:translateY(4cqw);transition:opacity .25s,transform .35s cubic-bezier(.2,1.4,.4,1);pointer-events:none}',
       '#evFx .evgot.on{opacity:1;transform:none}#evFx .evgot li{list-style:none;display:flex;align-items:center;gap:1cqw;font:400 3cqw/1.2 var(--display,inherit)}',
+      '#evFx .evgot .evgt{flex:0 0 100%;justify-content:center;color:#ffd98a}#evFx .evgot .evnote{flex:0 0 100%;justify-content:center;color:#f5dcea;font-size:2.6cqw}',
       '#evFx .evgot .wpi{width:5cqw;height:5cqw;display:flex}#evFx .evgot .wpi>*{width:100%!important;height:100%!important}',
       '#evFx .stamp .evpc{animation:evStamp .45s cubic-bezier(.2,1.6,.4,1) both}',
       '@keyframes evStamp{0%{transform:scale(1.45);filter:brightness(1.6)}100%{transform:none}}',
@@ -207,16 +236,27 @@
     if (row && cardEl) { row.style.height = '496px'; row.style.zoom = String(cardEl.clientWidth / 1086); }
     return row;
   }
+  function listHtml(rows) { return rows.map(function (p) { return '<li><i class="wpi">' + p[0] + '</i><span>' + p[1] + '</span></li>'; }).join(''); }
   function showGot(lines) {
     var C = CWo(), g = fx && fx.querySelector('.evgot'); if (!g || !lines) return;
-    var give = {}; lines.forEach(function (o) {
+    var give = {}, gold = 0; lines.forEach(function (o) {
       if (o.k === 'gems' || o.k === 'pulls' || o.k === 'mana' || o.k === 'runeStone' || o.k === 'sigilStone') give[o.k] = (give[o.k] || 0) + o.n;
-      else if (o.k === 'gold') give.goldMin = (give.goldMin || 0) + o.min;
+      else if (o.k === 'gold') gold += o.gold || 0;
       else if (o.k === 'potion') give.potionMin = (give.potionMin || 0) + o.n;
       else if (o.k === 'rune' || o.k === 'sigil') (give[o.k + 's'] = give[o.k + 's'] || []).push({ grade: o.grade, n: o.n });
     });
-    g.innerHTML = C.giveList ? C.giveList(give) : '';
+    var rows = parts(give, true);
+    if (gold) rows.unshift([ico('gold'), '골드 ' + (C.fmtGold ? C.fmtGold(gold) : Math.floor(gold))]);
+    g.innerHTML = '<li class="evgt">받았어요!</li>' + listHtml(rows);
     g.classList.add('on'); clearTimeout(showGot.t); showGot.t = setTimeout(function () { g.classList.remove('on'); }, 2600);
+  }
+  // a tapped cell that cannot be taken now: what it holds, in the line under the window
+  function info(t, n, line) {
+    var C = CWo(), g = fx && fx.querySelector('.evgot'), dt = eventDetail(view(), t, n, line); if (!g || !dt) return;
+    var note = dt.st === 'got' ? '이미 받았어요' : dt.st === 'lock' ? '패스를 열면 받을 수 있어요' : t === 'att' ? n + '번째 출석하는 날 받아요' : '점수를 더 모으면 받아요';
+    g.innerHTML = '<li class="evgt">' + dt.title + '</li>' + listHtml(parts(dt.give, true)) + '<li class="evnote">' + note + '</li>';
+    g.classList.add('on'); clearTimeout(showGot.t); showGot.t = setTimeout(function () { g.classList.remove('on'); }, 3000);
+    sound('click');
   }
   function spark(sel) {
     var el = fx && fx.querySelector(sel); if (!el) return;
@@ -266,12 +306,11 @@
     if (d.evyes) { t.closest('.evask').remove(); var r = G().passBuy(); if (r) after(r, function () { render(false); toast('패스가 열렸어요!'); }); return; }
     if (d.evbuy) { askBuy(); return; }
     if (d.evattend) { attend(); return; }
-    if (d.evday) { if (t.classList.contains('ready')) attend(); return; }
+    if (d.evday) { if (t.classList.contains('ready')) attend(); else info('att', +d.evday); return; }
     if (d.evall) { if (!t.classList.contains('off')) claim('all'); else toast('지금 받을 수 있는 보상이 없어요'); return; }
     if (d.evstep) {
       if (t.classList.contains('ready')) claim(d.evline, +d.evstep);
-      else if (t.classList.contains('lock')) toast(WHY.locked);
-      else if (t.classList.contains('wait')) toast('점수를 더 모으면 받을 수 있어요');
+      else info('pass', +d.evstep, d.evline);
     }
   }
   function eventOpen(t, close) {
@@ -301,5 +340,5 @@
   // 오늘 패스 창을 이미 자동으로 보여 줬는지 (하루 한 번, 폰에만 기억)
   // kind: '' 패스 창, 'att' 출석 창
   function eventSeenToday(day, mark, kind) { var k = 'cwEvSeen' + (kind ? '-' + kind : ''); if (mark) store(k, day); return store(k) === day; }
-  return { eventHtml: eventHtml, eventOpen: eventOpen, eventClose: eventClose, eventIsOpen: eventIsOpen, eventSeenToday: eventSeenToday };
+  return { eventHtml: eventHtml, eventDetail: eventDetail, eventParts: function (g, long) { return parts(g, long).map(function (p) { return p[1]; }); }, eventOpen: eventOpen, eventClose: eventClose, eventIsOpen: eventIsOpen, eventSeenToday: eventSeenToday };
 });

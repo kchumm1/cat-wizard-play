@@ -685,7 +685,7 @@ table.prob th:first-child,table.prob td:first-child{text-align:left}
 #tabs button[aria-selected=true]::after{content:'';position:absolute;left:28%;right:28%;bottom:0;height:3px;border-radius:3px;background:var(--gold)}
 /* ---------- battle: side shortcuts and skill presets ---------- */
 /* 오픈 기념 이벤트 칸 (2026-11-23): 맨 위, 그림이 조금 크고 2.4초마다 빛이 한 번 지나감 */
-#quick .qev i,#quick .qev i .ico{transform:scale(1.18)}#quick .qev{overflow:hidden}
+#quick .qev{overflow:hidden}
 #quick .qev::after{content:"";position:absolute;inset:-20% auto -20% -60%;width:40%;background:linear-gradient(100deg,transparent,rgba(255,240,200,.75),transparent);transform:skewX(-18deg);animation:qevShine 2.4s ease-in-out infinite;pointer-events:none}
 @keyframes qevShine{0%,55%{left:-60%}100%{left:130%}}
 @media (prefers-reduced-motion:reduce){#quick .qev::after{animation:none;display:none}}
@@ -3635,6 +3635,13 @@ html.cw-calm #killBar.loop + #killBarFx,html.cw-calm #surgeGauge.full i::after,h
 #app #quick i .ico{filter:drop-shadow(0 1px 2px rgba(10,4,30,.6))}
 /* short phones (iPhone SE 667, Galaxy 740 tall): seven bigger boxes ran into the preset row, so they shrink back a little there */
 @media (max-height:760px){#app #quick{gap:4px}#app #quick button{width:44px;padding:4px 0 2px}#app #quick i,#app #quick i .ico,#app #quick i img{width:22px;height:22px}#app #quick span{font-size:10px}}
+/* 오픈 기념 이벤트 다듬기 (2026-11-23, 형: 이벤트 위로 살짝 올리고 공지 밑에 방치 — 줄이 아래 스킬 줄에 닿아 방치가 왼쪽
+   둘째 줄로 넘어가던 것): 줄 전체를 30px 위로 (오른쪽 위 지갑 칸 밑은 비어 있음). 이벤트 그림은 글자를 가리지 않게 살짝 위로. */
+#app #quick{top:calc(var(--hudH) + var(--cap,0px) - 30px + env(safe-area-inset-top,0px))}
+#app #quick .qev i{width:30px;height:30px;margin:-4px 0 0}#app #quick .qev i img,#app #quick .qev i .ico{width:30px;height:30px;object-fit:contain;filter:drop-shadow(0 1px 1px rgba(10,4,30,.6))}
+#app #quick .qev span{position:relative;z-index:1}
+/* 짧은 폰 (아이폰 SE 667 등): 8칸이 한 줄에 들어가게 그림·여백을 조금 줄임 (방치가 왼쪽 둘째 줄로 넘어가던 것) */
+@media (max-height:760px){#app #quick{gap:3px}#app #quick button{padding:3px 0 2px}#app #quick .qev i,#app #quick [data-quick="pet"] i,#app #quick [data-quick="goals"] i,#app #quick .qev i img,#app #quick [data-quick="pet"] i img,#app #quick [data-quick="goals"] i img{width:24px;height:24px;margin:0}#app #quick .qev i{margin:-2px 0 0}#app #quick i,#app #quick i .ico,#app #quick i img{width:21px;height:21px}}
 #quest b{color:#3a2400;background:linear-gradient(180deg,#fff0bf,#dcb86c 60%,#b8913f);text-shadow:none}
 #quest span,#questTxt{color:#fffaf2}
 #pre button[aria-pressed=true]{background:linear-gradient(180deg,#fff0bf,#dcb86c 60%,#b8913f);color:#3a2400;text-shadow:none;box-shadow:inset 0 0 0 1.5px #f6e2a6,0 2px 0 #8a6a2a,0 3px 8px rgba(20,10,60,.35)}
