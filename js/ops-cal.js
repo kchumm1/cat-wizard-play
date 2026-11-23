@@ -1,7 +1,8 @@
 // 운영 달력 화면 (2026-11-23, 형: 쿠폰·패키지를 달력에 적으면 알아서 기간을 걸고, 점검해 주고, 관리해 주게).
 // ops.html only. What the month shows and what the 점검 lines say, from the server's calendar rows (ops_calendar), the
 // coupons, the notices (notice.json) and the letters (mail.json). Days are Korean days 'YYYY-MM-DD'.
-(function (root, f) { var m = f(); if (typeof module !== 'undefined' && module.exports) module.exports = m; else { root.CW = root.CW || {}; Object.assign(root.CW, m); } })(this, function () {
+(function (root, f) { var m = f(root); if (typeof module !== 'undefined' && module.exports) module.exports = m; else { root.CW = root.CW || {}; Object.assign(root.CW, m); } })(this, function (root) {
+  var isNode = typeof module !== 'undefined' && module.exports;
   function kday(t) { var n = typeof t === 'number' ? t : Date.parse(t || ''); return isFinite(n) ? new Date(n + 9 * 3600e3).toISOString().slice(0, 10) : ''; }
   var NAME = { pack: '패키지', coupon: '쿠폰', notice: '공지', mail: '편지' }, JOSA = { pack: '가', coupon: '이', notice: '가', mail: '가' };
   function who(x) { return '「' + x.label + '」 ' + NAME[x.kind] + JOSA[x.kind]; }
@@ -44,6 +45,22 @@
       if (!x.row || !x.until || !(x.ended || x.until < today)) return;
       var ago = diff(x.until, today); if (ago < 0 || ago > 3) return;
       out.push({ level: 'done', id: x.id, text: who(x) + ' ' + (ago === 0 ? '오늘' : md(x.until) + '에') + ' 끝났어요.' });
+    });
+    // 같은 공지 (2026-11-23, 형: 다시 쓴 공지 삭제): 지금 보이는 공지 중 제목이 같은 것 → 가장 최근 것만 남기고 예전 것(old)을 지울 수 있게
+    var byTitle = {};
+    (notices || []).forEach(function (n) {
+      if (!n || !n.id || !n.title || (n.from && n.from > today) || (n.until && n.until < today)) return;
+      (byTitle[n.title] = byTitle[n.title] || []).push(n);
+    });
+    Object.keys(byTitle).forEach(function (t) {
+      var g = byTitle[t]; if (g.length < 2) return;
+      // 남길 것: 특별 화면(view)이 있는 것 먼저, 그다음 최근 것 (다시 쓸 때 화면이 빠진 공지가 있을 수 있음)
+      g = g.slice().sort(function (a, b) { return (!!b.view - !!a.view) || String(b.date || '').localeCompare(String(a.date || '')); });
+      var keep = g[0], old = g.slice(1), special = keep.view && !old.every(function (n) { return n.view === keep.view; });
+      var VIEWS = (isNode ? require('./notice.js') : root.CW).NOTICE_VIEWS || {};
+      out.push({ level: 'dup', id: keep.id, old: old.map(function (n) { return n.id; }),
+        text: '「' + t + '」 공지가 ' + g.length + '개 있어요. ' + (special ? '특별 화면(' + (VIEWS[keep.view] || keep.view) + ')이 있는 ' + md(keep.date) + ' 것만 남기고 나머지(' : md(keep.date) + '에 다시 쓴 것만 남기고 예전 것(') +
+          old.map(function (n) { return md(n.date); }).join(', ') + (special ? ')를 지울 수 있어요.' : ')을 지울 수 있어요.') });
     });
     return out;
   }

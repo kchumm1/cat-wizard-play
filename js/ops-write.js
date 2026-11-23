@@ -124,13 +124,16 @@
           { title: '새 업데이트 소식', text: para(['새 업데이트 소식을 전해 드립니다.'].concat(body)) },
           { title: '업데이트 내용 안내', text: para(body.concat(['업데이트 뒤에는 게임을 한 번 다시 켜 주시기 바랍니다.'])) }], n);
       } },
-    { tag: '이벤트', name: '🎉 이벤트', icon: '🎉', label: '이벤트', desc: '기간·내용·받는 곳', fields: [{ key: 'name', label: '이벤트 이름', ph: '예: 첫눈' }, { key: 'period', label: '기간', ph: '예: 12월 1일~12월 14일' }, { key: 'what', label: '내용', ph: '예: 접속하면 선물' }, { key: 'where', label: '받는 곳', ph: '우편함' }],
+    { tag: '이벤트', name: '🎉 이벤트', icon: '🎉', label: '이벤트', desc: '핫타임·기간·혜택', fields: [{ key: 'name', label: '이벤트 이름', ph: '예: 첫눈' }, { key: 'period', label: '기간', ph: '예: 12월 1일~12월 14일' }, { key: 'what', label: '내용', ph: '예: 접속하면 선물' }, { key: 'where', label: '보상 받는 곳 (있을 때만)', ph: '예: 우편함 (우편으로 보상을 보낼 때만, 비우면 안 적어요)' }],
       write: function (f, n) {
-        var nm = v(f.name), lines = [v(f.period) && '기간: ' + v(f.period), v(f.what) && '내용: ' + v(f.what), '받는 곳: ' + (v(f.where) || '우편함')];
+        // 받는 곳: 적었거나 보상이 있는 이벤트일 때만 (2026-11-23, 형: 「첫눈 이벤트 2주」에 우편함은 뭐야)
+        var nm = v(f.name), where = v(f.where), auto = /핫\s*타임|\d+\s*배/.test(nm + ' ' + v(f.what));   // 받는 곳: 적었을 때만 (형: 이벤트는 게임 안 이벤트)
+        var lines = [v(f.period) && '기간: ' + v(f.period), v(f.what) && (auto ? '혜택: ' : '내용: ') + v(f.what), where && '보상 받는 곳: ' + where, auto ? '접속해 있으면 자동으로 적용됩니다.' : ''];
+        var ev = (nm ? nm + ' ' : '') + '이벤트', open = v(f.what) ? '' : ev + '를 진행합니다.';
         return pick([
-          { title: nm ? nm + ' 이벤트' : '이벤트 안내', text: para([lines]) },
-          { title: nm ? nm + ' 이벤트 안내' : '새 이벤트 안내', text: para(['즐거운 이벤트가 시작됩니다!', lines]) },
-          { title: nm ? nm + ' 이벤트 시작!' : '이벤트 시작!', text: para([lines, '많은 참여 부탁드립니다.']) }], n);
+          { title: nm ? nm + ' 이벤트' : '이벤트 안내', text: para([open, lines, open ? '많은 참여 부탁드립니다.' : '']) },
+          { title: nm ? nm + ' 이벤트 안내' : '새 이벤트 안내', text: para(['즐거운 ' + ev + '가 시작됩니다!', lines, open ? '냥법사님의 많은 참여를 기다리겠습니다.' : '']) },
+          { title: nm ? nm + ' 이벤트 시작!' : '이벤트 시작!', text: para([open ? ev + '가 시작되었습니다.' : '', lines, '많은 참여 부탁드립니다.']) }], n);
       } },
     { tag: '점검', name: '🛠 점검 안내', icon: '🛠', label: '점검', desc: '점검 시간·내용·보상', fields: [{ key: 'time', label: '점검 시간', ph: '예: 11월 24일 02:00~04:00' }, { key: 'what', label: '점검 내용', ph: '예: 서버 정리' }, { key: 'reward', label: '보상', ph: '예: 다이아 300' }],
       write: function (f, n) {

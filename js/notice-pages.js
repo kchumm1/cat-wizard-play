@@ -122,7 +122,7 @@
         '<ul>' + giveList(p.give) + '</ul></div>';
     }).join('');
     var html = '<div class="wpwrap"><div class="wsnow" aria-hidden="true">' + flakes + '</div>' +
-      '<div class="wphero" style="background-image:url(' + (CW.ART_BASE || 'art/') + 'ui-winter-banner.webp)"><b>겨울 신규<br>냥법사</b><small>새로 온 냥법사님 겨울 선물<br>각 1번' + (m ? ' · ' + (+m[2]) + '월 ' + (+m[3]) + '일까지' : '') + '</small></div>' +
+      '<div class="wphero" style="background-image:url(' + (CW.ART_BASE || 'art/') + 'ui-winter-banner.webp)"><b>겨울 신규<br>냥법사</b><small>새로 온 냥법사님 겨울 선물<br>각 1번' + (m ? ' · ' + m[1] + '년 ' + (+m[2]) + '월 ' + (+m[3]) + '일까지 판매' : '') + '</small></div>' +   // 연도까지 (2026-11-23, 형: 언제까지인지 헷갈려)
       '<div class="wpscroll">' + cards + '<p class="wpnote">룬은 3차, 신성력은 5차 전직부터 장착할 수 있어요.<br>그 전에는 가방에 잘 보관돼요.</p></div>' +
       '<button class="nzgo2 ice" data-nzjump="packs"><span>패키지 보러 가기</span></button></div>';
     return { html: html, cls: 'nzpack' };

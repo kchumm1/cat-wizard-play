@@ -20,6 +20,8 @@
   // ---- days
   function dayAt(today, add) { var d = new Date(today + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + add); return d.toISOString().slice(0, 10); }
   function md(day) { var m = /^\d{4}-(\d\d)-(\d\d)$/.exec(day || ''); return m ? (+m[1]) + '월 ' + (+m[2]) + '일' : ''; }
+  // 기간은 연도까지 (2026-11-23, 형: 12월 31일이 아니라 2026년 12월 31일까지 — 언제까지인지 헷갈리잖아)
+  function ymd(day) { var m = /^(\d{4})-(\d\d)-(\d\d)$/.exec(day || ''); return m ? m[1] + '년 ' + (+m[2]) + '월 ' + (+m[3]) + '일' : ''; }
   function wd(day) { return '일월화수목금토'[new Date(day + 'T12:00:00Z').getUTCDay()]; }
   function kday(t) { var n = Date.parse(t || ''); return isFinite(n) ? new Date(n + 9 * 3600e3).toISOString().slice(0, 10) : ''; }
   // 「11월 25일」 → that day this year (or next year when it already passed long ago)
@@ -63,7 +65,7 @@
     var group = cats.length === 1 ? CAT[cats[0]] || '새' : '새', name = group + ' 패키지';
     var wins = (ctx.packWindows || []).filter(function (w) { return list.some(function (p) { return p.id === w.id; }); });
     var from = wins.map(function (w) { return w.from; }).sort()[0], until = wins.map(function (w) { return w.until; }).sort().pop();
-    var period = wins.length && list.every(function (p) { return p.cal; }) ? md(from) + ' ~ ' + md(until) : '상시';
+    var period = wins.length && list.every(function (p) { return p.cal; }) ? ymd(from) + ' ~ ' + ymd(until) : '상시';
     var lines = []; list.forEach(function (p) {
       lines.push([p.icon + ' ' + p.name + ' · ' + ko(p.won) + '원' + (p.limit === 1 ? ' · 한 번만' : '') + (p.need && p.need.tier ? ' · ' + p.need.tier + '차 전직 후' : ''), '- ' + giveText(D, p.give)]);
     });
@@ -85,7 +87,7 @@
     var c = named || live[0] || null;
     var code = c ? c.code : (m ? m[0].toUpperCase() : '(번호를 적어 주세요)');
     var from = c && c.starts_at ? kday(c.starts_at) : '', until = c && c.ends_at ? kday(c.ends_at) : '';
-    var period = from || until ? (from ? md(from) : '지금부터') + ' ~ ' + (until ? md(until) : '끝없음') : '';
+    var period = from || until ? (from ? ymd(from) : '지금부터') + ' ~ ' + (until ? ymd(until) : '끝없음') : '';
     var reward = c && c.reward && ctx.giftText ? ctx.giftText(c.reward) : '';
     var lines = ['쿠폰 번호: ' + code, period && '사용 기간: ' + period, reward && '보상: ' + reward, '쓰는 곳: 설정 › 쿠폰 입력'];
     var t = pick([
@@ -145,21 +147,46 @@
     var r = W().noticeWrite('업데이트', fields, n);
     return { kind: 'update', tag: '업데이트', title: r.title, text: r.text, fields: fields, note: '업데이트 · 새로 생긴 것 ' + added.length + '개 · 고친 것 ' + fixed.length + '개' };
   }
-  // ---- 이벤트: 이름 · 기간 · 내용
+  // ---- 이벤트: 이름 · 기간 · 시간대 · 혜택 (2026-11-23, 형: 이벤트는 게임 안 이벤트 — 핫타임처럼 공지로 알리고 우편함이 아님)
+  // 받는 곳은 저절로 넣지 않음 (우편으로 따로 보낼 때만 형이 적음)
   function eventNotice(text, ctx, n) {
-    var t = ' ' + text + ' ', from = ctx.today, until = '', m;
+    var t = ' ' + text + ' ', from = ctx.today, until = '', m, day = '';
     var take = function (re) { var x = re.exec(t); if (x) t = t.replace(x[0], ' '); return x; };
+    // 기간: 「12월 20일~12월 26일」·「N주/N일/N달」·「12월 31일까지」
     if ((m = take(/(\d{1,2})\s*월\s*(\d{1,2})\s*일\s*(?:~|-|부터)\s*(?:(\d{1,2})\s*월\s*)?(\d{1,2})\s*일(?:\s*까지)?/))) {
       from = mdDay(ctx.today, +m[1], +m[2]); until = mdDay(ctx.today, m[3] ? +m[3] : +m[1], +m[4]); if (until < from) until = (+until.slice(0, 4) + 1) + until.slice(4);
-    } else if ((m = take(/(\d{1,2})\s*(주|일|달|개월)(?:\s*동안|간)?/))) {
+    } else if ((m = take(/(\d{1,2})\s*(주|일|달|개월)(?:\s*동안|간)?(?=\s)/))) {
       var k = +m[1], u = m[2];
       if (u === '주') until = dayAt(from, k * 7 - 1); else if (u === '일') until = dayAt(from, k - 1);
-      else { var W2 = isNode ? require('./ops-cal.js') : root.CW; until = W2.calRange(from, k >= 2 ? 'month2' : 'month').until; }
+      else { var C2 = isNode ? require('./ops-cal.js') : root.CW; until = C2.calRange(from, k >= 2 ? 'month2' : 'month').until; }
     } else if ((m = take(/(\d{1,2})\s*월\s*(\d{1,2})\s*일\s*까지/))) until = mdDay(ctx.today, +m[1], +m[2]);
-    var parts = t.split(/이벤트/), name = v((parts[0] || '').replace(/오늘부터|부터|새로운|새/g, ' ').replace(/\s+/g, ' ')), what = v((parts[1] || '').replace(/\s+/g, ' ').replace(/^(을|를|은|는|안내|시작)\s*/, ''));
-    var fields = { name: name, period: until ? md(from) + ' ~ ' + md(until) : '', what: what, where: /출석|접속/.test(text) ? '우편함' : '' };
+    // 하루짜리: 오늘·내일·모레·「11월 25일」
+    if (!until) {
+      if ((m = take(/(\d{1,2})\s*월\s*(\d{1,2})\s*일/))) day = mdDay(ctx.today, +m[1], +m[2]);
+      else if ((m = take(/모레/))) day = dayAt(ctx.today, 2);
+      else if ((m = take(/내일/))) day = dayAt(ctx.today, 1);
+      else if ((m = take(/오늘/))) day = ctx.today;
+    }
+    var daily = !!take(/매일/);
+    // 시간대: 「저녁 8시~10시」·「밤 9시부터 11시까지」
+    var ap = take(/(새벽|오전|오후|저녁|밤)/), pm = ap && /오후|저녁|밤/.test(ap[1]), clock = '';
+    var hour = function (h) { h = +h; return pm && h < 12 ? h + 12 : h; };
+    if ((m = take(/(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분|\s*(반))?\s*(?:~|-|부터)\s*(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분|\s*(반))?(?:\s*까지)?/))) {
+      var st = [hour(m[1]), m[2] ? +m[2] : m[3] ? 30 : 0], en = [hour(m[4]), m[5] ? +m[5] : m[6] ? 30 : 0];
+      if (en[0] < st[0] && pm && en[0] + 12 < 24) en[0] += 12;
+      clock = hhmm(st[0], st[1]) + ' ~ ' + hhmm(en[0], en[1]);
+    }
+    var hot = /핫\s*타임/.test(text);
+    if (hot) take(/핫\s*타임/);
+    var parts = t.split(/이벤트/);
+    var name = hot ? '핫타임' : v((parts[0] || '').replace(/오늘부터|부터|새로운|새/g, ' ').replace(/\s+/g, ' '));
+    var what = v((hot ? t.replace(/이벤트/g, ' ') : (parts[1] || '')).replace(/\s+/g, ' ').replace(/^(을|를|은|는|안내|시작)\s*/, ''));
+    var period = '';
+    if (until) period = ymd(from) + ' ~ ' + ymd(until) + (clock ? ' · ' + (daily ? '매일 ' : '') + clock : '');
+    else if (clock || day) { var d0 = day || ctx.today; period = daily ? '매일 ' + clock : md(d0) + '(' + wd(d0) + ')' + (clock ? ' ' + clock : ''); }
+    var fields = { name: name, period: period, what: what, where: '' };
     var r = W().noticeWrite('이벤트', fields, n);
-    return { kind: 'event', tag: '이벤트', title: r.title, text: r.text, fields: fields, note: '이벤트 · ' + (name || '이름 없음') + (fields.period ? ' · ' + fields.period : '') };
+    return { kind: 'event', tag: '이벤트', title: r.title, text: r.text, fields: fields, note: '이벤트 · ' + (name || '이름 없음') + (period ? ' · ' + period : '') + (what ? ' · ' + what : '') };
   }
 
   function smartNotice(text, ctx, n) {
@@ -167,8 +194,8 @@
     if (/점검/.test(text)) return maintNotice(text, ctx, n);
     if (/쿠폰/.test(text)) return couponNotice(text, ctx, n);
     if (/패키지|상품|판매/.test(text)) return packNotice(text, ctx, n);
+    if (/이벤트|핫\s*타임/.test(text)) return eventNotice(text, ctx, n);
     if (/업데이트|추가|고침|고쳤|수정|버그|새\s*기능|출시/.test(text)) return updateNotice(text, ctx, n);
-    if (/이벤트/.test(text)) return eventNotice(text, ctx, n);
     return null;
   }
   return { smartNotice: smartNotice, josa: josa, packGiveText: giveText };

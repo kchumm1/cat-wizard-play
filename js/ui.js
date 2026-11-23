@@ -1806,7 +1806,7 @@
         if (sec[0] === 'winter') {   // a frosty showcase with falling snow (2026-11-17, the user: 애니메이션화해서 보기 좋게)
           var dleft = Math.max(0, Math.ceil((Date.parse((CW.packCalEnd ? CW.packCalEnd(list[0].id) : '') + 'T23:59:59+09:00') - Date.now()) / 864e5)) || 0;   // 운영 달력 끝날 (2026-11-23)
           var flakes = ''; for (var fi = 0; fi < 16; fi++) flakes += '<i style="--x:' + ((fi * 37) % 100) + '%;--d:' + (5 + (fi * 7) % 6) + 's;--w:' + (-((fi * 13) % 9)) + 's;--z:' + (0.5 + (fi % 4) * 0.25) + '"></i>';
-          return '<div class="wpk"><div class="wsnow" aria-hidden="true">' + flakes + '</div><div class="wpkhead" style="background-image:url(' + (CW.ART_BASE || 'art/') + 'ui-winter-banner.webp)"><b>겨울 신규 냥법사</b><span>처음 오신 냥법사님께 · 각 1번</span><em>D-' + dleft + '</em></div>' +
+          return '<div class="wpk"><div class="wsnow" aria-hidden="true">' + flakes + '</div><div class="wpkhead" style="background-image:url(' + (CW.ART_BASE || 'art/') + 'ui-winter-banner.webp)"><b>겨울 신규 냥법사</b><span>처음 오신 냥법사님께 · 각 1번' + (function (e) { var m = /^(\d{4})-(\d\d)-(\d\d)$/.exec(e || ''); return m ? ' · ' + m[1] + '년 ' + (+m[2]) + '월 ' + (+m[3]) + '일까지' : ''; })(CW.packCalEnd ? CW.packCalEnd(list[0].id) : '') + '</span><em>D-' + dleft + '</em></div>' +
             '<div class="pkgrid winter">' + list.map(packRow).join('') + '</div><p class="wpknote">룬은 3차, 신성력은 5차 전직 후 장착할 수 있어요 (가방에 보관)</p></div>';
         }
         return '<div class="subh">' + sec[1] + '</div><div class="pkgrid">' + list.map(packRow).join('') + '</div>' + (sec[0] === 'daily' ? dailyRow() : '');
