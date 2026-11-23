@@ -433,6 +433,7 @@
       return '<h3 class="opsubh">유물 수집 <b>' + have + ' / ' + DATA.relics.length + '</b></h3>' + show + pulls + '<div class="rlgrid">' + grid + '</div>';
     }
     var cosPrev = null;   // 코스튬 미리보기 (저장 안 함, 착용과 별개)
+    var cosView = null;   // 아래 목록: 'cos' 코스튬 · 'look' 멸망 외형 (고르기 전에는 지금 보고 있는 옷 쪽)
     function costumePanel() {
       var s = G.state, own = s.costume.owned, wear = CW.costumeLook(s).id;
       var cards = DATA.costumes.map(function (c) {
@@ -446,13 +447,16 @@
       var nOwn = DATA.costumes.filter(function (c) { return own[c.id]; }).length, CC = DATA.costumeConf;
       // 멸망 외형 열 벌 (2026-11-23, 형꺼만): 능력치 없이 모습·발동 효과만, 다이아로 사서 입기만 한다 (강화·별·수집 보너스 없음)
       var LOOKS = CW.FRIEND ? [] : (DATA.looks || []), nLook = LOOKS.filter(function (c) { return own[c.id]; }).length;
-      var looksHtml = !LOOKS.length ? '' : '<h3 class="opsubh">멸망 외형 <b>' + nLook + ' / ' + LOOKS.length + '</b></h3><p class="opcard-f">능력치 없이 모습과 발동 효과만 바뀌어요 · 갈아입을 때와 스테이지 첫 스킬 때 발동</p><div class="cgrid looks">' + LOOKS.map(function (c) {
+      var looksHtml = !LOOKS.length ? '' : '<p class="opcard-f cosview-note">능력치 없이 모습과 발동 효과만 바뀌어요 · 갈아입을 때와 스테이지 첫 스킬 때 발동</p><div class="cgrid looks">' + LOOKS.map(function (c) {
         var lv = own[c.id] || 0, img = (CW.ICO && CW.ICO.cosArt && CW.ICO.cosArt(c.id, true)) || G.costumeThumb(c.id), on = wear === c.id;
         var act = !lv ? '<button class="buy gemb' + (s.gems < c.price ? ' off' : '') + '" data-cbuy="' + c.id + '"><i class="gem"></i>' + fmt(c.price) + '</button>'
           : '<div class="cbtns"><button class="btn' + (on ? ' on' : '') + '" data-cwear="' + c.id + '">' + (on ? '입는 중' : '입기') + '</button></div>';
         return '<div class="ccard look' + (on ? ' on' : '') + (lv ? '' : ' none') + ((cosPrev || wear) === c.id ? ' prev' : '') + '" style="--gc:' + hc(c.grade) + '"><em class="cbadge ' + (on ? 'wear' : lv ? 'own' : 'none') + '">' + (on ? '착용 중' : lv ? '보유' : '미보유') + '</em><div class="cgrade">' + hn(c.grade) + ' 외형</div>' + (img ? '<button class="cprevb" data-cprev="' + c.id + '" aria-label="' + esc(c.name) + ' 미리보기"><img src="' + img + '" alt=""></button>' : '') + (on ? '<em class="cb wear mini">착용 중</em>' : '') +
           '<b>' + c.name + '</b><span class="cdesc">' + c.desc + '</span><small>능력치 없음 · 모습과 발동 효과만</small>' + act + '</div>';
       }).join('') + '</div>';
+      var curC = CW.costumeById(cosPrev || wear), view = !LOOKS.length ? 'cos' : (cosView || (curC && curC.look ? 'look' : 'cos'));
+      var seg = !LOOKS.length ? '' : '<div class="cosview" role="tablist" aria-label="코스튬 종류"><button role="tab" aria-selected="' + (view === 'cos') + '" data-cview="cos">코스튬 <b>' + nOwn + '/' + DATA.costumes.length + '</b></button>' +
+        '<button class="look" role="tab" aria-selected="' + (view === 'look') + '" data-cview="look">멸망 외형 <b>' + nLook + '/' + LOOKS.length + '</b></button></div>';
       // 오팔 (2026-11-16): 위에 큰 캐릭터. 카드 그림을 누르면 「미리보기」만 바뀌고(cosPrev), 실제 착용(state.costume.wear)은
       // 입기 버튼이 성공했을 때만 바뀐다. 미보유는 입기 대신 구매 조건. 효과는 그대로 보유한 모든 코스튬 합.
       if (cosPrev && !CW.costumeById(cosPrev)) cosPrev = null;
@@ -475,7 +479,7 @@
       // 승인 시안 순서: 전시 → 이름 → 효과 → 입기·강화 → 의상 목록 (수집 효과는 목록 아래)
       var explore=s.dungeon && s.dungeon.explore;
       var expeditionOutfit=explore && explore.maps ? '<div class="ex-map"><div><strong>유적 탐험가 냥이</strong><p>보물 지도를 완성한 탐험가의 의상</p></div><button class="ex-btn" data-ex-wear="1">'+(explore.wearing?'탐험복 벗기':'탐험복 입기')+'</button></div>' : '';
-      return '<h3 class="ophide">코스튬</h3>' + expeditionOutfit + stage + '<div class="cgrid">' + cards + '</div>' +
+      return '<h3 class="ophide">코스튬</h3>' + expeditionOutfit + stage + seg + (view === 'look' ? looksHtml : '<div class="cgrid">' + cards + '</div>' +
         // 수집 카드 (2026-11-17, 사용자: 코스튬 수집 부분 이쁘게): 제목·개수 → 진행 막대 → 지금 효과 | 다음 하나 더
         (function () {
           var nAll = DATA.costumes.length, done = nOwn >= nAll;
@@ -484,7 +488,7 @@
             '<div class="ccol-cells"><p><small>지금 효과</small><b>모든 피해 +' + pct(Math.max(0, nOwn - 1) * CC.collect) + '</b></p>' +
             '<p class="' + (done ? 'max' : 'nx') + '"><small>' + (done ? '모두 모음' : '하나 더 모으면') + '</small><b>' + (done ? '최대' : '모든 피해 +' + pct(nOwn * CC.collect)) + '</b></p></div>' +
             '<p class="opcard-f">두 번째 코스튬부터 하나 모을 때마다 모든 피해 +' + pct(CC.collect) + '</p></div>';
-        })() + looksHtml;
+        })());
     }
     var selDivine = null;   // 삼신기 설명·강화 대상 (보기만)
     function divinePanel() {
@@ -2508,6 +2512,7 @@
       else if (d.act === 'bagall') { bagAll = !bagAll; renderPanel(true); }
       else if (d.rlsel) { selRelic = d.rlsel; renderPanel(true); }
       else if (d.cprev) { cosPrev = d.cprev; renderPanel(true); }   // 보기만 바꿈: 착용·구매 안 함
+      else if (d.cview) { cosView = d.cview; renderPanel(true); }   // 아래 목록만 코스튬 ↔ 멸망 외형
       else if (d.cwear) { if (G.wearCostume(d.cwear) && (!CW.opalUI || (CW.opalUI.fx('cos:' + d.cwear), 1))) toast(CW.costumeById(d.cwear).name + ' 착용 완료'); renderPanel(true); }
       else if (d.dstar) { if (G.starUp(d.dstar) && (!CW.opalUI || (CW.opalUI.fx('dvs:' + d.dstar), 1))) toast('별 강화 완료!'); else toast(!CW.divineOpen(G.state) ? DATA.divineConf.unlockTier + '차 전직 후 해금' : !G.state.divine[d.dstar].lv ? '먼저 삼신기를 깨워 주세요.' : '신기 조각이 부족해요.'); renderPanel(true); }
       else if (d.preset !== undefined) { G.switchPreset(+d.preset); toast('스킬 프리셋 ' + (+d.preset + 1) + ' 적용'); renderPanel(true); slots(); }

@@ -73,8 +73,10 @@
       .map(function (x) { return { grade: Math.floor(x.grade), stat: x.stat || '', best: !!x.best, n: Math.min(num(x.n), 150) }; });
     var relics = rows(g.relics, function (x) { return !!byId(DATA.relics, x.id) && num(x.n); }).map(function (x) { return { id: x.id, n: Math.min(num(x.n), 1000) }; });
     var costumes = rows(g.costumes, function (x) { return !!byId(DATA.costumes, x.id); }).map(function (x) { return { id: x.id }; });
+    // 멸망 외형 (DATA.looks): 능력치·레벨 없이 갖기만. 친구꺼에서는 받아도 보이지 않는다
+    var looks = rows(g.looks, function (x) { return !!byId(DATA.looks || [], x.id); }).map(function (x) { return { id: x.id }; });
     if (gear.length) o.gear = gear; if (runes.length) o.runes = runes; if (sigils.length) o.sigils = sigils;
-    if (relics.length) o.relics = relics; if (costumes.length) o.costumes = costumes;
+    if (relics.length) o.relics = relics; if (costumes.length) o.costumes = costumes; if (looks.length) o.looks = looks;
     var pets = rows(g.pets, function (x) { return !!byId(DATA.pets || [], x.id) && num(x.n); }).map(function (x) { return { id: x.id, n: Math.min(num(x.n), 100) }; });
     if (pets.length) o.pets = pets;
     PETCUR.forEach(function (c) { var n = num(g[c.key]); if (n) o[c.key] = Math.min(n, c.max); });
@@ -95,6 +97,7 @@
     (g.sigils || []).forEach(function (x) { out.push({ icon: '💠', mark: { k: 'sigil', grade: x.grade }, text: DATA.hiGrades[x.grade].name + ' 신성력' + (x.stat ? '(' + sigilStatName(x.stat) + ')' : '') + ' 최상급' + (x.n > 1 ? ' ×' + x.n : ''), name: '신성력' }); });
     (g.relics || []).forEach(function (x) { var r = byId(DATA.relics, x.id); out.push({ icon: r.icon, mark: { k: 'relic', id: x.id }, text: '유물 ' + r.name + (x.n > 1 ? ' ×' + x.n : ''), name: r.name }); });
     (g.costumes || []).forEach(function (x) { var c = byId(DATA.costumes, x.id); out.push({ icon: '👘', text: '코스튬 ' + c.name, name: c.name }); });
+    (g.looks || []).forEach(function (x) { var c = byId(DATA.looks || [], x.id); out.push({ icon: '🎭', text: '멸망 외형 ' + c.name, name: c.name }); });
     (g.pets || []).forEach(function (x) { var p = byId(DATA.pets, x.id); out.push({ icon: '🐾', mark: { k: 'pet', id: x.id }, text: PGRADE[p.grade] + ' 펫 ' + p.name + (x.n > 1 ? ' ×' + x.n : ''), name: p.name }); });
     if (g.petEggs) out.push({ icon: '🥚', mark: { k: 'petEggs' }, text: '펫 알 ' + ko(g.petEggs) + '개', name: '펫 알' });
     if (g.petFood) out.push({ icon: '🍖', mark: { k: 'petFood' }, text: '펫 간식 ' + ko(g.petFood), name: '펫 간식' });
@@ -153,6 +156,10 @@
       var own = state.costume.owned, cmax = DATA.costumeConf.maxLv;
       g.costumes.forEach(function (x) { own[x.id] = Math.min(cmax, (own[x.id] || 0) + 1); });
     }
+    if (g.looks) {
+      if (!state.costume) state.costume = { owned: { basic: 1 }, wear: 'basic' };
+      g.looks.forEach(function (x) { state.costume.owned[x.id] = 1; });   // 외형은 레벨이 없다: 이미 있으면 그대로
+    }
     var PT = (g.pets || g.petEggs || g.petFood) && petMod();
     if (PT) {
       (g.pets || []).forEach(function (x) { for (var i = 0; i < x.n; i++) PT.petAdd(state, x.id, now); });
@@ -173,6 +180,7 @@
       potStats: DATA.potConf.stats.map(function (s) { return { id: s.stat, name: sigilStatName(s.stat) }; }),
       sigilStats: (DATA.sigilStats.map(function (s) { return { id: s.stat, name: sigilStatName(s.stat) + (s.awaken ? ' (각성)' : '') }; })),
       relics: DATA.relics.map(function (r) { return { id: r.id, name: r.name, icon: r.icon, divine: !!r.divine }; }),
+      looks: (DATA.looks || []).map(function (l) { return { id: l.id, name: l.name }; }),
       costumes: DATA.costumes.map(function (c) { return { id: c.id, name: c.name, grade: DATA.hiGrades[c.grade] ? DATA.hiGrades[c.grade].name : '' }; }),
       pets: (DATA.pets || []).map(function (p) { var gr = byId(DATA.petGroups || [], p.group); return { id: p.id, name: p.name, grade: PGRADE[p.grade], group: gr ? gr.name : '' }; }),
       petCur: PETCUR.map(function (c) { return { key: c.key, name: c.name, icon: c.icon }; })
