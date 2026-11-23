@@ -111,7 +111,8 @@
   CW.giveList = giveList;   // 가방 (js/ui.js openChest): 연 상자 구성품을 같은 마크로
   function pack() {
     var list = D().packs.filter(function (p) { return p.cat === 'winter'; }), s = S();
-    var until = list[0] && list[0].until, m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(until || '');
+    // 끝 날: 운영 달력 기간 (2026-11-23부터 겨울 패키지는 until 대신 달력, js/pack-cal.js packCalEnd)
+    var until = list[0] && ((CW.packCalEnd && CW.packCalEnd(list[0].id)) || list[0].until), m =/^(\d{4})-(\d{2})-(\d{2})$/.exec(until || '');
     var flakes = ''; for (var i = 0; i < 18; i++) flakes += '<i style="--x:' + ((i * 41) % 100) + '%;--d:' + (6 + (i * 7) % 6) + 's;--w:' + (-((i * 11) % 9)) + 's;--z:' + (0.45 + (i % 4) * 0.22) + '"></i>';
     var BADGE = ['입문 추천', '가장 인기', '최고 가치'];
     var cards = list.map(function (p, k) {

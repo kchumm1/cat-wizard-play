@@ -90,16 +90,19 @@
         li.appendChild(s); li.appendChild(x); ul.appendChild(li);
       });
     }
-    // 재화 · 펫 알/간식 · 물약 · 입장권 (접힘)
-    var more = el('details', 'gifts'), sm = el('summary', '', '다른 재화 · 펫 알/간식 · 물약(분) · 던전 입장권'); more.appendChild(sm);
-    var grid = el('div', 'grid'); more.appendChild(grid); box.appendChild(more);
-    function num(key, label) {
-      var d = el('div'), lb = el('label', '', label), inp = el('input'); inp.id = id(key); lb.htmlFor = inp.id; inp.type = 'number'; inp.inputMode = 'numeric'; inp.min = '0'; inp.step = '1'; inp.placeholder = '0';
-      inp.addEventListener('input', ch); d.appendChild(lb); d.appendChild(inp); grid.appendChild(d);
+    // 재화 · 펫 · 물약 · 입장권 (접힘) — 묶음마다 제목과 단위, 칸은 그림·이름 한 줄 + 숫자 칸 (2026-11-23, 형: 보기 좋게, 폰도)
+    var more = el('details', 'gifts gpick'), sm = el('summary', '', '다른 재화 · 펫 · 물약 · 던전 입장권'); more.appendChild(sm); box.appendChild(more);
+    function group(title, unit) { var g = el('div', 'gpgrp'), h = el('h4', '', title), u = el('small', '', unit); h.appendChild(u); g.appendChild(h); var grid = el('div', 'gpgrid'); g.appendChild(grid); more.appendChild(g); return grid; }
+    function num(grid, key, icon, label) {
+      var d = el('label', 'gpcell'), i = el('i', '', icon), t = el('span', '', label), inp = el('input');
+      inp.id = id(key); inp.type = 'number'; inp.inputMode = 'numeric'; inp.min = '0'; inp.step = '1'; inp.placeholder = '0'; inp.setAttribute('aria-label', label);
+      inp.addEventListener('input', function () { d.classList.toggle('has', +inp.value > 0); ch(); }); d.appendChild(i); d.appendChild(t); d.appendChild(inp); grid.appendChild(d);
     }
-    CAT.currencies.concat(CAT.petCur).forEach(function (c) { num('cur-' + c.key, c.icon + ' ' + c.name); });
-    CAT.potions.forEach(function (p) { num('pot-' + p.id, p.icon + ' ' + p.name + ' (분)'); });
-    CAT.tickets.forEach(function (d) { num('tk-' + d.id, d.icon + ' ' + d.name + ' 입장권'); });
+    var g1 = group('재화', '개'), g2 = group('펫', '개'), g3 = group('물약', '분'), g4 = group('던전 입장권', '장');
+    CAT.currencies.forEach(function (c) { num(g1, 'cur-' + c.key, c.icon, c.name); });
+    CAT.petCur.forEach(function (c) { num(g2, 'cur-' + c.key, c.icon, c.name); });
+    CAT.potions.forEach(function (p) { num(g3, 'pot-' + p.id, p.icon, p.name); });
+    CAT.tickets.forEach(function (d) { num(g4, 'tk-' + d.id, d.icon, d.name); });
     function give() {
       var g = {}, p = {}, tk = {};
       CAT.currencies.concat(CAT.petCur).forEach(function (c) { var n = +get('cur-' + c.key).value || 0; if (n > 0) g[c.key] = n; });
@@ -117,15 +120,15 @@
       CW.giftLines({ give: give() }).forEach(function (x) { a.push(x.icon + ' ' + x.text); });
       return a;
     }
-    function clear() { gi.value = ''; di.value = ''; items = []; [].forEach.call(grid.querySelectorAll('input'), function (x) { x.value = ''; }); more.open = false; draw(); gi.dispatchEvent(new Event('input')); }
+    function clear() { gi.value = ''; di.value = ''; items = []; [].forEach.call(more.querySelectorAll('input'), function (x) { x.value = ''; x.parentNode.classList.remove('has'); }); more.open = false; draw(); gi.dispatchEvent(new Event('input')); }
     function fill(gv, gj, gm) {
       clear(); gv = gv || {};
       if (gj > 0) gi.value = CW.countText(Math.round(gj * 1e12)); if (gm > 0) di.value = gm;
       Object.keys(gv).forEach(function (k) {
         var val = gv[k];
-        if (k === 'potions' || k === 'tickets') Object.keys(val).forEach(function (x) { var e = get((k === 'potions' ? 'pot-' : 'tk-') + x); if (e) { e.value = val[x]; more.open = true; } });
+        if (k === 'potions' || k === 'tickets') Object.keys(val).forEach(function (x) { var e = get((k === 'potions' ? 'pot-' : 'tk-') + x); if (e) { e.value = val[x]; e.parentNode.classList.add('has'); more.open = true; } });
         else if (Array.isArray(val)) val.forEach(function (o) { items.push(Object.assign({ t: k }, o)); });
-        else { var e = get('cur-' + k); if (e) { e.value = val; more.open = true; } }
+        else { var e = get('cur-' + k); if (e) { e.value = val; e.parentNode.classList.add('has'); more.open = true; } }
       });
       draw(); gi.dispatchEvent(new Event('input'));
     }

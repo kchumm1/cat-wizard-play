@@ -24,6 +24,10 @@
   // 점검 줄: calendar rows only (the things the calendar turns on and off)
   function calChecks(items, notices, today) {
     var ids = {}; (notices || []).forEach(function (n) { if (n && n.id) ids[n.id] = 1; });
+    // 지금 보이는 공지가 그 패키지 이름·쿠폰 번호를 말하고 있으면 안내 공지가 있는 것으로 (2026-11-23: 겨울 패키지 출시 공지)
+    var liveText = (notices || []).filter(function (n) { return n && (!n.from || n.from <= today) && (!n.until || n.until >= today); })
+      .map(function (n) { return (n.title || '') + ' ' + (n.text || ''); }).join(' | ');
+    function named(x) { return (x.label && liveText.indexOf(x.label) >= 0) || (x.row && x.row.ref && liveText.indexOf(x.row.ref) >= 0); }
     var out = [];
     (items || []).forEach(function (x) {
       if (!x.row || x.ended || !on(x, today)) return;
@@ -33,7 +37,7 @@
     });
     (items || []).forEach(function (x) {
       if (!x.row || x.ended || !on(x, today)) return;
-      if (!x.row.notice_id || !ids[x.row.notice_id]) out.push({ level: 'info', id: x.id, text: who(x) + ' 열려 있는데 안내 공지가 없어요.' });
+      if ((!x.row.notice_id || !ids[x.row.notice_id]) && !named(x)) out.push({ level: 'info', id: x.id, text: who(x) + ' 열려 있는데 안내 공지가 없어요.' });
     });
     // 끝난 것 (2026-11-23): 마지막 날이 지났거나 「지금 끝내기」 한 달력 줄, 끝난 지 3일 안만
     (items || []).forEach(function (x) {
