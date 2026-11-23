@@ -53,6 +53,8 @@ self.addEventListener('fetch', (e) => {
   if (url.origin === location.origin) {
     // 운영자 화면(ops.html)은 저장해 두지 않고 늘 새로 받음 (2026-11-18, 형: 핸드폰은 안 바뀜)
     if (url.pathname.endsWith('/ops.html')) { e.respondWith(fetch(req.url, { cache: 'no-store' }).catch(() => fetch(req))); return; }
+    // 운영자 화면이 읽는 파일(js·그림)도 늘 새로 받음 — 저장해 둔 예전 js를 쓰면 새 화면이 멈춤 (2026-11-23, 형: 공지 자동 작성이 안 돼)
+    if ((req.referrer || '').indexOf('/ops.html') >= 0) { e.respondWith(fetch(req.url, { cache: 'no-store' }).catch(() => caches.match(req, { ignoreSearch: true }).then((hit) => hit || fetch(req)))); return; }
     e.respondWith(caches.match(req, { ignoreSearch: true }).then((hit) => hit || fetch(req)));
   } else if (/cdnjs\.cloudflare\.com|fonts\.(googleapis|gstatic)\.com/.test(url.host)) {
     e.respondWith(caches.open(EXTRA).then((c) => c.match(req).then((hit) => {
