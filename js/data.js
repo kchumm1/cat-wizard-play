@@ -576,30 +576,31 @@
     // 펫 (2026-11-23, 형: 펫으로 기준 잡자 · 전설까지 · 전설은 크고 무섭고 웅장하게): 5 groups × grades 0-3 (hiGrades 일반~전설).
     // Pictures: the user's GPT art (art/pet-*.webp). js/pets.js keeps the rules, the codex page is js/pet-dex-ui.js.
     petGroups: [
-      { id: 'forest', name: '숲', tint: '#dbe5cf' }, { id: 'sea', name: '바다', tint: '#cfe4e9' }, { id: 'fire', name: '불꽃', tint: '#f2dfcf' },
-      { id: 'sky', name: '하늘', tint: '#d8e2f2' }, { id: 'star', name: '별빛', tint: '#e3d8f1' }
+      // fam: the skill family of the group (docs/펫기술-업적-GPT-문구.md 1장): 응원 · 묶기 · 한 방 · 번개 · 별비
+      { id: 'forest', name: '숲', tint: '#dbe5cf', fam: 'cheer' }, { id: 'sea', name: '바다', tint: '#cfe4e9', fam: 'bubble' }, { id: 'fire', name: '불꽃', tint: '#f2dfcf', fam: 'flame' },
+      { id: 'sky', name: '하늘', tint: '#d8e2f2', fam: 'bolt' }, { id: 'star', name: '별빛', tint: '#e3d8f1', fam: 'star' }
     ],
     pets: [
-      { id: 'quokka', name: '클로버 쿼카', short: '쿼카', group: 'forest', grade: 0, art: 'pet-quokka' },
-      { id: 'redpanda', name: '새싹 레서판다', short: '레서판다', group: 'forest', grade: 1, art: 'pet-redpanda' },
-      { id: 'sloth', name: '꽃방울 나무늘보', short: '나무늘보', group: 'forest', grade: 2, art: 'pet-sloth' },
-      { id: 'behemoth', name: '고대 숲의 베헤모스', short: '베헤모스', group: 'forest', grade: 3, art: 'pet-behemoth' },
-      { id: 'dolphin', name: '물방울 아기 돌고래', short: '돌고래', group: 'sea', grade: 0, art: 'pet-dolphin' },
-      { id: 'flamingo', name: '거품 홍학', short: '홍학', group: 'sea', grade: 1, art: 'pet-flamingo' },
-      { id: 'narwhal', name: '진주 일각고래', short: '일각고래', group: 'sea', grade: 2, art: 'pet-narwhal' },
-      { id: 'leviathan', name: '심연의 리바이어던', short: '리바이어던', group: 'sea', grade: 3, art: 'pet-leviathan' },
-      { id: 'capybara', name: '불씨 카피바라', short: '카피바라', group: 'fire', grade: 0, art: 'pet-capybara' },
-      { id: 'meerkat', name: '숯불 미어캣', short: '미어캣', group: 'fire', grade: 1, art: 'pet-meerkat' },
-      { id: 'bonghwang', name: '아기 봉황', short: '봉황', group: 'fire', grade: 2, art: 'pet-bonghwang' },
-      { id: 'blackdragon', name: '업화의 흑룡', short: '흑룡', group: 'fire', grade: 3, art: 'pet-blackdragon' },
-      { id: 'lamb', name: '솜구름 아기 양', short: '아기 양', group: 'sky', grade: 0, art: 'pet-lamb' },
-      { id: 'hummingbird', name: '바람 벌새', short: '벌새', group: 'sky', grade: 1, art: 'pet-hummingbird' },
-      { id: 'giraffe', name: '천둥 구름 기린', short: '기린', group: 'sky', grade: 2, art: 'pet-giraffe' },
-      { id: 'thunderbird', name: '폭풍의 천둥새', short: '천둥새', group: 'sky', grade: 3, art: 'pet-thunderbird' },
-      { id: 'guinea', name: '별사탕 기니피그', short: '기니피그', group: 'star', grade: 0, art: 'pet-guinea' },
-      { id: 'koala', name: '달빛 코알라', short: '코알라', group: 'star', grade: 1, art: 'pet-koala' },
-      { id: 'haetae', name: '은하 아기 해태', short: '아기 해태', group: 'star', grade: 2, art: 'pet-haetae' },
-      { id: 'nebulahaetae', name: '성운의 대해태', short: '대해태', group: 'star', grade: 3, art: 'pet-nebula-haetae' }
+      { id: 'quokka', name: '클로버 쿼카', short: '쿼카', group: 'forest', grade: 0, art: 'pet-quokka', skill: '행운 클로버' },
+      { id: 'redpanda', name: '새싹 레서판다', short: '레서판다', group: 'forest', grade: 1, art: 'pet-redpanda', skill: '새싹 응원' },
+      { id: 'sloth', name: '꽃방울 나무늘보', short: '나무늘보', group: 'forest', grade: 2, art: 'pet-sloth', skill: '꽃향기 노래' },
+      { id: 'behemoth', name: '고대 숲의 베헤모스', short: '베헤모스', group: 'forest', grade: 3, art: 'pet-behemoth', skill: '고대의 포효' },
+      { id: 'dolphin', name: '물방울 아기 돌고래', short: '돌고래', group: 'sea', grade: 0, art: 'pet-dolphin', skill: '물방울 감옥' },
+      { id: 'flamingo', name: '거품 홍학', short: '홍학', group: 'sea', grade: 1, art: 'pet-flamingo', skill: '거품 춤' },
+      { id: 'narwhal', name: '진주 일각고래', short: '일각고래', group: 'sea', grade: 2, art: 'pet-narwhal', skill: '진주 소용돌이' },
+      { id: 'leviathan', name: '심연의 리바이어던', short: '리바이어던', group: 'sea', grade: 3, art: 'pet-leviathan', skill: '심연의 소용돌이' },
+      { id: 'capybara', name: '불씨 카피바라', short: '카피바라', group: 'fire', grade: 0, art: 'pet-capybara', skill: '불씨 톡' },
+      { id: 'meerkat', name: '숯불 미어캣', short: '미어캣', group: 'fire', grade: 1, art: 'pet-meerkat', skill: '숯불 던지기' },
+      { id: 'bonghwang', name: '아기 봉황', short: '봉황', group: 'fire', grade: 2, art: 'pet-bonghwang', skill: '불씨 한 방' },
+      { id: 'blackdragon', name: '업화의 흑룡', short: '흑룡', group: 'fire', grade: 3, art: 'pet-blackdragon', skill: '업화 브레스' },
+      { id: 'lamb', name: '솜구름 아기 양', short: '아기 양', group: 'sky', grade: 0, art: 'pet-lamb', skill: '정전기 솜뭉치' },
+      { id: 'hummingbird', name: '바람 벌새', short: '벌새', group: 'sky', grade: 1, art: 'pet-hummingbird', skill: '번개 깃털' },
+      { id: 'giraffe', name: '천둥 구름 기린', short: '기린', group: 'sky', grade: 2, art: 'pet-giraffe', skill: '천둥 뿔' },
+      { id: 'thunderbird', name: '폭풍의 천둥새', short: '천둥새', group: 'sky', grade: 3, art: 'pet-thunderbird', skill: '폭풍 낙뢰' },
+      { id: 'guinea', name: '별사탕 기니피그', short: '기니피그', group: 'star', grade: 0, art: 'pet-guinea', skill: '별사탕 비' },
+      { id: 'koala', name: '달빛 코알라', short: '코알라', group: 'star', grade: 1, art: 'pet-koala', skill: '달빛 가루' },
+      { id: 'haetae', name: '은하 아기 해태', short: '아기 해태', group: 'star', grade: 2, art: 'pet-haetae', skill: '별 구슬 비' },
+      { id: 'nebulahaetae', name: '성운의 대해태', short: '대해태', group: 'star', grade: 3, art: 'pet-nebula-haetae', skill: '성운 강림' }
     ],
     // setBonus: each full group claimed in the codex (펫의 힘, multiplied apart like a potion — 형 결정 6-0); allBonus: all 20
     // eggs: about one per 15 minutes of hunting (a chance every frame, dt / eggEverySec), 10% a boss, one sure from a
@@ -607,6 +608,14 @@
     // gradeLate at lateTier. Level cap lvBase + lvPerStar × ★; cost levelFood × levelGrowth^(lv−1) × gradeFood[grade].
     // ★n → ★n+1 takes n shards; a shard past ★5 is fragFood snacks. Effect (펫의 힘): equip[grade] × (1 + perLevel ×
     // (lv−1)) × (1 + perStar × (★−1)) for the worn pet, ownedFrac of it for every other pet.
+    // 펫 기술 (2026-11-23, 처음 값 — 해 보고 맞춤): every [일반 희귀 영웅 전설] seconds, perStar / perLv faster (above ★1 / Lv.1), never under
+    // minSec; n = surge steps (응원) or enemies trapped / chained (묶기 · 번개), a legend all (Infinity); gold = seconds of hunting gold (별비)
+    // power: 세기 = seconds of the hero's own boss damage (CW.bossDps) per cast, by grade, +powLv a level, +powStar a star — the same
+    // share of the hero at 2차 or 11차 (an average hero hit was +382% of the hero at 6차 for a top legend and 0% at the 11차 end:
+    // 2026-11-23 measure, dev/testsave.json · dev/ops-max-save.json). share = the part each target takes by family (한 방 all of
+    // it, 번개 · 별비 spread over many), shareBig for the legends' big skills. A fresh common pet ≈ +5% of the hero, a top legend ≈ +85%
+    petSkill: { every: [12, 11, 10, 9], perStar: 0.4, perLv: 0.02, minSec: 6, n: [2, 3, 4], gold: [3, 5, 8, 15],
+      power: [0.6, 1.0, 1.6, 2.6], powLv: 0.005, powStar: 0.1, share: { flame: 1, bolt: 0.5, star: 0.3 }, shareBig: { flame: 1, bolt: 0.6, star: 0.5 } },
     petConf: { maxStar: 5, setBonus: 0.05, allBonus: 0.10, dexFood: 20,
       eggEverySec: 900, bossEggChance: 0.10, regionBossEggs: 1, foodPerWave: 1, foodBoss: 30, foodRegionBoss: 120,
       gradeEarly: [70, 25, 5, 0], gradeLate: [45, 30, 18, 7], lateTier: 11,

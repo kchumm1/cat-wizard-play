@@ -7,7 +7,10 @@
 //     runes:    [{ kind, grade, n }],                      룬 (grade 0..10 = 일반..멸망, level 0)
 //     sigils:   [{ grade, stat, best, n }],                신성력, always 최상급 (the form always picks a stat; '' / '@aw' = random only in old letters)
 //     relics:   [{ id, n }],                               유물 (each copy +1 level; past the top it turns into diamonds like a summon)
-//     costumes: [{ id }] }                                 코스튬 (not owned → owned at Lv.1, owned → one level up)
+//     costumes: [{ id }],                                  코스튬 (not owned → owned at Lv.1, owned → one level up)
+//     pets: [{ id, n }], petEggs, petFood }                펫 (2026-11-23): each copy like a hatch (new → Lv.1 ★1, else a shard,
+//                                                          past ★5 snacks) · 펫 알 · 펫 간식. Not server wallet fields: the server has
+//                                                          no js/pets.js and skips them; the phone gives them when it replays (no rng)
 // Used by the game (js/mail.js claims a letter) and by ops.html (the form and the preview). Rune and sigil bags have a
 // room limit: a letter whose runes or sigils do not fit is not claimed at all (the player frees room and claims again).
 (function (root, f) { var m = f(root); if (typeof module !== 'undefined' && module.exports) module.exports = m; else { root.CW = root.CW || {}; Object.assign(root.CW, m); } })(this, function (root) {
@@ -19,6 +22,11 @@
     { key: 'sigilStone', name: '신성석', icon: '💠' }, { key: 'shards', name: '신기 조각', icon: '✦' },
     { key: 'awakenShard', name: '각성 파편', icon: '🔆' }
   ];
+  // 펫 알 · 펫 간식 (2026-11-23, 형: 운영자 페이지에서 펫도 선물할 수 있게): counts kept in state.pets, capped per letter
+  var PETCUR = [{ key: 'petEggs', name: '펫 알', icon: '🥚', max: 999 }, { key: 'petFood', name: '펫 간식', icon: '🍖', max: 1e6 }];
+  var PGRADE = ['일반', '희귀', '영웅', '전설'];
+  // js/pets.js where there is one: the phone and the tests. The server's require knows only the rule files and throws → null
+  function petMod() { if (isNode) { try { return require('./pets.js'); } catch (e) { return null; } } return root.CW && root.CW.petAdd ? root.CW : null; }
   var MAX = 1e15;   // per kind per letter, so a typo cannot break a save
   function num(v) { v = Math.floor(+v || 0); return v > 0 ? Math.min(v, MAX) : 0; }
   function byId(list, id) { for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return null; }
@@ -67,6 +75,9 @@
     var costumes = rows(g.costumes, function (x) { return !!byId(DATA.costumes, x.id); }).map(function (x) { return { id: x.id }; });
     if (gear.length) o.gear = gear; if (runes.length) o.runes = runes; if (sigils.length) o.sigils = sigils;
     if (relics.length) o.relics = relics; if (costumes.length) o.costumes = costumes;
+    var pets = rows(g.pets, function (x) { return !!byId(DATA.pets || [], x.id) && num(x.n); }).map(function (x) { return { id: x.id, n: Math.min(num(x.n), 100) }; });
+    if (pets.length) o.pets = pets;
+    PETCUR.forEach(function (c) { var n = num(g[c.key]); if (n) o[c.key] = Math.min(n, c.max); });
     return o;
   }
   function giftHas(l) { return Object.keys(giftOf(l)).length > 0; }
@@ -84,6 +95,9 @@
     (g.sigils || []).forEach(function (x) { out.push({ icon: '💠', mark: { k: 'sigil', grade: x.grade }, text: DATA.hiGrades[x.grade].name + ' 신성력' + (x.stat ? '(' + sigilStatName(x.stat) + ')' : '') + ' 최상급' + (x.n > 1 ? ' ×' + x.n : ''), name: '신성력' }); });
     (g.relics || []).forEach(function (x) { var r = byId(DATA.relics, x.id); out.push({ icon: r.icon, mark: { k: 'relic', id: x.id }, text: '유물 ' + r.name + (x.n > 1 ? ' ×' + x.n : ''), name: r.name }); });
     (g.costumes || []).forEach(function (x) { var c = byId(DATA.costumes, x.id); out.push({ icon: '👘', text: '코스튬 ' + c.name, name: c.name }); });
+    (g.pets || []).forEach(function (x) { var p = byId(DATA.pets, x.id); out.push({ icon: '🐾', mark: { k: 'pet', id: x.id }, text: PGRADE[p.grade] + ' 펫 ' + p.name + (x.n > 1 ? ' ×' + x.n : ''), name: p.name }); });
+    if (g.petEggs) out.push({ icon: '🥚', mark: { k: 'petEggs' }, text: '펫 알 ' + ko(g.petEggs) + '개', name: '펫 알' });
+    if (g.petFood) out.push({ icon: '🍖', mark: { k: 'petFood' }, text: '펫 간식 ' + ko(g.petFood), name: '펫 간식' });
     return out;
   }
   function giftText(l) { return giftLines(l).map(function (x) { return x.text; }).join(' · '); }
@@ -139,6 +153,11 @@
       var own = state.costume.owned, cmax = DATA.costumeConf.maxLv;
       g.costumes.forEach(function (x) { own[x.id] = Math.min(cmax, (own[x.id] || 0) + 1); });
     }
+    var PT = (g.pets || g.petEggs || g.petFood) && petMod();
+    if (PT) {
+      (g.pets || []).forEach(function (x) { for (var i = 0; i < x.n; i++) PT.petAdd(state, x.id, now); });
+      var pb = PT.petBox(state); pb.eggs += g.petEggs || 0; pb.food += g.petFood || 0;
+    }
     return true;
   }
   // what the operator's form offers (ops.html)
@@ -154,7 +173,9 @@
       potStats: DATA.potConf.stats.map(function (s) { return { id: s.stat, name: sigilStatName(s.stat) }; }),
       sigilStats: (DATA.sigilStats.map(function (s) { return { id: s.stat, name: sigilStatName(s.stat) + (s.awaken ? ' (각성)' : '') }; })),
       relics: DATA.relics.map(function (r) { return { id: r.id, name: r.name, icon: r.icon, divine: !!r.divine }; }),
-      costumes: DATA.costumes.map(function (c) { return { id: c.id, name: c.name, grade: DATA.hiGrades[c.grade] ? DATA.hiGrades[c.grade].name : '' }; })
+      costumes: DATA.costumes.map(function (c) { return { id: c.id, name: c.name, grade: DATA.hiGrades[c.grade] ? DATA.hiGrades[c.grade].name : '' }; }),
+      pets: (DATA.pets || []).map(function (p) { var gr = byId(DATA.petGroups || [], p.group); return { id: p.id, name: p.name, grade: PGRADE[p.grade], group: gr ? gr.name : '' }; }),
+      petCur: PETCUR.map(function (c) { return { key: c.key, name: c.name, icon: c.icon }; })
     };
   }
   return { giftOf: giftOf, giftHas: giftHas, giftLines: giftLines, giftText: giftText, giftRoom: giftRoom, giftApply: giftApply, giftCatalog: giftCatalog };

@@ -1049,6 +1049,10 @@
         case 'gear': return [CW.GEAR_IMG && CW.GEAR_IMG[o.id] ? '<img src="' + CW.GEAR_IMG[o.id] + '" alt="" draggable="false">' : '', DATA.grades[o.grade].name + ' ' + DATA.kindName[o.id], o.n + '개'];
         case 'relic': var rl = CW.relicById(o.id); return [(I.misc && I.misc('relic', o.id)) || '', rl ? rl.name : '유물', o.n + '개'];
         case 'costume': var cs = (DATA.costumes || []).filter(function (x) { return x.id === o.id; })[0]; return ['<b class="cfemo">👘</b>', cs ? cs.name : '코스튬', '코스튬'];
+        // 운영자 선물 펫 (2026-11-23): the pet's small picture, the egg, the snack bowl
+        case 'pet': var pp = CW.petById && CW.petById(o.id), AB = CW.ART_BASE || 'art/'; return [pp ? '<img src="' + AB + pp.art + '-s.webp" alt="" draggable="false">' : '<b class="cfemo">🐾</b>', pp ? pp.name : '펫', o.n + '마리'];
+        case 'petEggs': return ['<img src="' + (CW.ART_BASE || 'art/') + 'pet-egg.webp" alt="" draggable="false">', '펫 알', o.n + '개'];
+        case 'petFood': return ['<img src="' + (CW.ART_BASE || 'art/') + 'pet-food.webp" alt="" draggable="false">', '펫 간식', fmt(o.n)];
       }
       return ['', o.k, ''];
     }

@@ -79,6 +79,10 @@
     else if (m.k === 'ticket' && I.misc) h = I.misc('dungeon', m.id);
     else if (m.k === 'relic' && I.misc) h = I.misc('relic', m.id);
     else if (m.k === 'gear' && CW.GEAR_IMG && CW.GEAR_IMG[m.id]) h = '<img src="' + CW.GEAR_IMG[m.id] + '" alt="" draggable="false">';
+    // 펫 선물 (2026-11-23): the pet's small picture, the egg, the snack bowl (the same pictures as the 내 펫 page)
+    else if (m.k === 'pet' && CW.petById && CW.petById(m.id)) h = '<img src="' + (CW.ART_BASE || 'art/') + CW.petById(m.id).art + '-s.webp" alt="" draggable="false">';
+    else if (m.k === 'petEggs') h = '<img src="' + (CW.ART_BASE || 'art/') + 'pet-egg.webp" alt="" draggable="false">';
+    else if (m.k === 'petFood') h = '<img src="' + (CW.ART_BASE || 'art/') + 'pet-food.webp" alt="" draggable="false">';
     return h ? '<i class="mlmk' + (cls ? ' ' + cls : '') + '">' + h + '</i>' : '<i' + (cls ? ' class="' + cls + '"' : '') + '>' + esc(x.icon) + '</i>';
   }
   // any item on a letter (2026-11-16): small chips, each with its picture, in the reward box (it slides when full)

@@ -126,7 +126,40 @@
     return { eggs: eggs, food: food };
   }
   function petFoodWave(state) { var b = petBox(state); b.food += C.foodPerWave; return C.foodPerWave; }
-  return { petBox: petBox, petById: petById, petGroupOf: petGroupOf, petsInGroup: petsInGroup, petAdd: petAdd, petSeen: petSeen,
+  // 펫 기술 (2026-11-23): the worn pet casts it by itself every petSkillEvery seconds (js/pet-battle.js)
+  var SK = DATA.petSkill;
+  function petSkillOf(id) {
+    var p = BY[id], g = p && petGroupOf(id); if (!p || !g) return null;
+    var big = p.grade === 3, fam = g.fam;
+    return { id: id, name: p.skill, fam: fam, grade: p.grade, big: big,
+      n: fam === 'cheer' || fam === 'bubble' || fam === 'bolt' ? (big ? Infinity : SK.n[p.grade]) : 0,
+      gold: fam === 'star' ? SK.gold[p.grade] : 0 };
+  }
+  // seconds between casts; 0 when the pet is not owned
+  function petSkillEvery(state, id) {
+    var p = BY[id], o = p && petBox(state).owned[id]; if (!o) return 0;
+    var t = SK.every[p.grade] - SK.perStar * (o.star - 1) - SK.perLv * (o.lv - 1);
+    return Math.max(SK.minSec, Math.round(t * 100) / 100);
+  }
+  // 세기 per target in seconds of the hero's boss damage; 0 for 응원 · 묶기 (no damage) and for a pet not owned
+  function petSkillPower(state, id) {
+    var k = petSkillOf(id), o = k && petBox(state).owned[id]; if (!o) return 0;
+    var sh = (k.big ? SK.shareBig : SK.share)[k.fam] || 0; if (!sh) return 0;
+    return SK.power[k.grade] * (1 + SK.powLv * (o.lv - 1)) * (1 + SK.powStar * (o.star - 1)) * sh;
+  }
+  function x1(v) { return String(v < 10 ? Math.round(v * 100) / 100 : Math.round(v * 10) / 10); }
+  // the 내 펫 skill line (js/pet-ui.js): { name, every: '8초마다', what }
+  function petSkillLine(state, id) {
+    var k = petSkillOf(id), t = k && petSkillEvery(state, id); if (!t) return null;
+    var pw = ' · 냥법사 ' + x1(petSkillPower(state, id)) + '초치', n = k.n, what;
+    if (k.fam === 'cheer') what = k.big ? '폭주 게이지를 꽉 채워 바로 폭주' : '폭주 게이지 +' + n + '칸';
+    else if (k.fam === 'bubble') what = (k.big ? '화면의 적을 모두 끌어모아 가둠' : '가까운 적 ' + n + '마리를 거품에 가둠') + ' · 받는 피해 ×1.3';
+    else if (k.fam === 'flame') what = (k.big ? '일직선 불길로 줄 위의 적 모두' : '가장 센 적에게 큰 한 방') + pw;
+    else if (k.fam === 'bolt') what = (k.big ? '화면 전체에 낙뢰 + 감전' : '적 ' + n + '마리를 잇는 번개 + 감전') + pw;
+    else what = (k.big ? '성운이 내려앉는 큰 별비' : '모든 적에게 별비') + ' · 골드 사냥 ' + k.gold + '초치' + pw;
+    return { name: k.name, every: x1(t) + '초마다', what: what };
+  }
+  return { petBox: petBox, petSkillPower: petSkillPower, petSkillLine: petSkillLine, petSkillOf: petSkillOf, petSkillEvery: petSkillEvery, petById: petById, petGroupOf: petGroupOf, petsInGroup: petsInGroup, petAdd: petAdd, petSeen: petSeen,
     petHasFresh: petHasFresh, petDex: petDex, petClaimSet: petClaimSet, petClaimAll: petClaimAll, petMul: petMul,
     petLvCap: petLvCap, petLvCost: petLvCost, petLevelUp: petLevelUp, petStarCost: petStarCost, petStarUp: petStarUp, petWear: petWear,
     petEquipBonus: petEquipBonus, petOwnedBonus: petOwnedBonus, petGradeWeights: petGradeWeights, petHatch: petHatch,

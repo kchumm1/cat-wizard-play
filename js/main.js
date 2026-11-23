@@ -437,6 +437,72 @@
       .sort(function (a, b) { return (a.gone - b.gone) || (a.d - b.d); }).map(function (o) { return o.m; });
     return list.slice(0, CW.targetCount(skill, !!dun));
   }
+  // ---------- 펫 전투 기술 (2026-11-23, js/pet-battle.js · js/pet-sprite.js; 형: 작은 기술도 쓰기 · 나머지 펫스킬도 작업하자) ----------
+  // The worn pet floats behind the hero and casts by itself every petSkillEvery seconds (with no one to aim at it keeps the
+  // charge). Its hits go through the hero's own onHit — crits, 빙결 · 감전, the little ones, numbers, kills, dungeons — at
+  // seconds of the hero's boss damage (CW.bossDps, so the same share of the hero at any step). 응원 only fills the 폭주 gauge,
+  // 묶기 only traps (the 빙결 boss rule). Not in the offline earnings (js/state.js offlineReward).
+  var petFx = CW.createPetSprite ? CW.createPetSprite(sc) : null, petT = 0, petWorn, petPull = null;
+  var PET_COL = { cheer: 0x8fe07a, bubble: 0x7fd8ff, flame: 0xff7a2a, bolt: 0xbfe0ff, star: 0xc9a2ff };
+  var PET_FLASH = { cheer: 'rgba(150,230,120,0.22)', bubble: 'rgba(120,210,255,0.22)', flame: 'rgba(255,120,40,0.26)', bolt: 'rgba(205,230,255,0.3)', star: 'rgba(200,160,255,0.26)' };
+  function petTick(dt) {
+    var b = CW.petBox ? CW.petBox(state) : null, id = b ? b.worn : null;
+    if (petFx) { if (id !== petWorn) { petWorn = id; petT = 0; petFx.set(id ? CW.petById(id) : null); } petFx.update(dt); }
+    if (petPull) { petPull.t -= dt; if (petPull.t <= 0) { petPull.list.forEach(function (m) { m.pull = undefined; m.pullZ = undefined; }); petPull = null; } }
+    if (!id || !CW.petBattlePlan || preview || restT > 0 || (!dun && !boss && state.bossTry)) return;
+    var every = CW.petSkillEvery(state, id); if (!every) return;
+    petT = Math.min(petT + dt, every); if (petT < every) return;
+    var H = sc.heroState(), p = CW.petBattlePlan(state, aliveMobs().filter(aimable), { x: H.x, z: H.z });
+    if (!p) return;
+    petT = 0; petCast(p);
+  }
+  function petCast(p) {
+    var T3 = sc.THREE.Vector3, col = PET_COL[p.fam] || 0xffffff, from = petFx && petFx.shown() ? petFx.center() : sc.heroCenter(), vx = fx.vfx;
+    var E = function (o) { if (vx) vx.emit(o); }, top = function (m) { return sc.mobTop(m); }, rnd = function (a) { return (Math.random() - 0.5) * a; };
+    if (petFx) petFx.pop();
+    sc.damageText(from.clone().add(new T3(0, 0.5, 0)), p.name, 0, hexCss(col));   // 기술 이름이 펫 머리 위에 잠깐 (아이콘 그림은 GPT 그림이 오면)
+    if (p.big) { sc.shake(0.28); sc.flash(PET_FLASH[p.fam], 0.16); }
+    if (p.fam === 'cheer') {
+      var C = DATA.surgeConf.charge, hc = sc.heroCenter();
+      state.surge = p.surge === Infinity ? C : Math.min(C, (state.surge || 0) + p.surge);
+      ui.surgeGauge(state.surge, C);
+      for (var i = 0; i < (p.big ? 14 : 6); i++) E({ pos: from.clone(), vel: hc.clone().sub(from).multiplyScalar(2.2).add(new T3(rnd(1.2), Math.random() * 1.2, 0)), frame: i % 2 ? 'star' : 'glow', color: [0xffffff, col], size: [0.24, 0.05], life: 0.5, delay: i * 0.03 });
+      if (sc.castPulse) sc.castPulse();
+      return;
+    }
+    if (p.fam === 'bubble') {
+      p.targets.forEach(function (m) {
+        if (!m.boss) m.frozen = Math.max(m.frozen || 0, 2); else if (!(m.frzCd > 0)) { m.frozen = Math.max(m.frozen || 0, 0.7); m.frzCd = 2.8; }
+        var q = sc.mobPos(m);
+        E({ pos: q.clone().add(new T3(0, 0.35, 0.2)), frame: 'circle', color: [0xffffff, col], size: [0.3, 1.1], life: 0.9, alpha: 0.75 });
+        E({ pos: q.clone().add(new T3(0, 0.2, 0.2)), frame: 'ring', color: col, size: [0.2, 1.2], life: 0.35, alpha: 0.8 });
+      });
+      // 심연의 소용돌이: everyone drawn to the middle for a moment (the 블랙홀 way: m.pull, cleared in petTick)
+      if (p.pull && p.targets.length > 1) {
+        var cx = 0, cz = 0; p.targets.forEach(function (m) { cx += m.x; cz += m.z; }); cx /= p.targets.length; cz /= p.targets.length;
+        p.targets.forEach(function (m) { if (!m.boss) { m.pull = cx; m.pullZ = cz; } }); petPull = { list: p.targets.slice(), t: 1.1 };
+      }
+      return;
+    }
+    var base = { id: 'pet', mult: CW.petHeroMult(state) }, one = CW.hitDamage(st, base, { boss: true, critTier: 0 }) * CW.critFactor(st);
+    var rate = one > 0 ? CW.bossDps(state, st) / one : 0;
+    var sk = { id: 'pet-' + p.fam, mult: base.mult, color: col, el: 'pet', status: p.shock ? 'shock' : null, targets: p.targets.length > 3 ? 99 : 1 };
+    var hit = onHit(sk, p.mul * rate), tops = p.targets.map(top);
+    if (vx && p.fam === 'flame') {
+      if (p.big) { var far = tops.reduce(function (a, q) { return q.distanceTo(from) > a.distanceTo(from) ? q : a; }, tops[0]); vx.lightning(from, far, { color: col, w: 0.45, amp: 0.03, branches: 0, life: 0.35 }); }
+      else vx.lightning(from, tops[0], { color: col, w: 0.2, amp: 0.04, branches: 0, life: 0.3 });
+    } else if (vx && p.fam === 'bolt') {
+      var prev = from; tops.forEach(function (q) { vx.lightning(p.big ? q.clone().add(new T3(rnd(0.6), 4, 0)) : prev, q, { color: col, w: 0.12, life: 0.3 }); prev = q; });
+    } else if (p.fam === 'star') {
+      tops.forEach(function (q) { for (var j = 0; j < (p.big ? 3 : 1); j++) E({ pos: q.clone().add(new T3(rnd(0.5), 2.2 + j * 0.4, 0)), vel: new T3(0, -5, 0), frame: 'star', color: [0xffffff, col], size: [0.35, 0.2], life: 0.42, delay: j * 0.06 }); });
+    }
+    p.targets.forEach(function (m, k) { if (p.fam !== 'star') fx.impact(tops[k].clone(), col, p.big ? 1.2 : 1.0); hit(m, 1, p.big ? 1.4 : 1.1); });
+    // 별비: a little of the hunting gold (seconds of it), not in a dungeon (it pays no field gold)
+    if (p.gold && !dun && CW.goldPerSecond) {
+      var g = CW.goldPerSecond(state) * p.gold;
+      if (g > 0) { state.gold += g; gained.gold += g; if (CW.idleNote) CW.idleNote({ gold: g }); fx.coinPop(from, p.big ? 6 : 3); flyCoins(from, p.big ? 4 : 2); }
+    }
+  }
   function castNext() {
     var peek = aliveMobs().filter(aimable);
     if (!peek.length) { castT = 0.12; return; }
@@ -1059,6 +1125,7 @@
       trimT -= dt; if (trimT <= 0) { trimT = 0.25; if (CW.excessMobs(alive, crowdMax()) > 0) dismissFarthest(); }   // the quality dropped mid-wave: fill only up to the new field size
       if (wave.left > 0) { wave.t -= dt; if (wave.t <= 0) { spawnNormal(); wave.left--; wave.t = (0.05 + Math.random() * 0.12) * 3 / CROWD; } }   // smaller monsters come that much faster: the same health per second walks in as when three made a stage (2026-11-15)
     }
+    petTick(dt);
     if (preview) { preview.t += dt; if (preview.t > 1.5) preview = null; }
     castT -= dt;
     if (castT <= 0 && !preview) castNext();

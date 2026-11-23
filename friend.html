@@ -2399,9 +2399,12 @@ html.fullh #prof{position:absolute;bottom:auto;height:var(--apph)}
 #petpage .ppeff div,#petpage .ppskill,#petpage .ppegg{background:rgba(40,24,80,.42);border:1.5px solid #c6a56e}
 #petpage .ppeff div{flex:1;height:51px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
 #petpage .ppeff b{font:800 14px/1.1 var(--body)}#petpage .ppeff span{font:700 11.5px/1.1 var(--body);color:#f3ecff}
-#petpage .ppskill{display:flex;align-items:center;gap:9px;height:40.5px;margin-top:8.5px;padding:0 14px;border-radius:14px}
-#petpage .ppskill i{font-style:normal;font-size:16px;color:#ffb35a}#petpage .ppskill b{font:800 15px/1 var(--body)}
-#petpage .ppskill span{margin-left:auto;font:600 11px/1.2 var(--body);color:#e6dcf6;text-align:right}
+/* 펫 기술 줄 (2026-11-23): 이름과 몇 초마다(왼쪽 두 줄), 하는 일·세기(오른쪽, 길면 두 줄) */
+#petpage .ppskill{display:flex;align-items:center;gap:9px;min-height:40.5px;margin-top:8.5px;padding:6px 14px;border-radius:14px;box-sizing:border-box}
+#petpage .ppskill i{font-style:normal;font-size:16px;color:#ffb35a;flex:none}#petpage .ppskill b{font:800 15px/1 var(--body)}
+#petpage .ppskill .pskn{display:flex;flex-direction:column;gap:3px;flex:none;max-width:44%}#petpage .ppskill .pskn b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#petpage .ppskill .pskn em{font:700 10.5px/1 var(--body);font-style:normal;color:#ffcf8a}
+#petpage .ppskill span{margin-left:auto;font:600 11px/1.25 var(--body);color:#e6dcf6;text-align:right;word-break:keep-all}
 #petpage .ppbtns{display:flex;align-items:center;gap:6.5px;margin-top:7.5px;height:60px}
 #petpage .ppbtn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:14px;background:#fdebc9;border:1.5px solid #c9a46c;color:#3a2a33;padding:0}
 #petpage .ppbtn.lvup{height:60px}#petpage .ppbtn.star{height:53px}#petpage .ppbtn.wear{height:44px}
@@ -3874,6 +3877,7 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script src="js/titles.js"></script>
 <script src="js/dex.js"></script>
 <script src="js/pets.js"></script>
+<script src="js/pet-battle.js"></script>
 <script src="js/dex-text.js"></script>
 <script src="js/sigil.js"></script>
 <script src="js/alchemy.js"></script>
@@ -3922,6 +3926,7 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script src="js/dex-ui.js"></script>
 <script src="js/pet-dex-ui.js"></script>
 <script src="js/pet-ui.js"></script>
+<script src="js/pet-sprite.js"></script>
 <script src="js/mail-gift.js"></script>
 <script src="js/mail.js"></script>
 <script src="js/chest.js"></script>

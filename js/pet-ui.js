@@ -54,7 +54,7 @@
     }).join('');
     page.querySelector('.ppbody').innerHTML = stage(s) +
       '<div class="ppeff"><div><b>장착 효과</b><span>펫의 힘 ' + eq + '</span></div><div><b>보유 효과</b><span>펫의 힘 ' + ow + '</span></div></div>' +
-      '<div class="ppskill"><i aria-hidden="true">✦</i><b>' + (p ? '펫 기술' : '기술') + '</b><span>곧 열려요 · 전투에서 펫이 기술을 써요</span></div>' +
+      skillRow(s) +
       '<div class="ppbtns">' + lvBtn + stBtn + wearBtn + '</div>' +
       '<div class="ppegg"><img src="' + A() + 'pet-egg.webp" alt="" draggable="false"><b>알 ' + fmt(b.eggs) + '개</b>' +
         '<button class="pppill" data-pp="hatch"' + (b.eggs < 1 ? ' aria-disabled="true"' : '') + '>부화</button>' +
@@ -62,6 +62,12 @@
         '<button class="pplink" data-pp="odds">확률 보기</button></div>' +
       '<div class="pplisth"><h4>내 펫</h4><span><img src="' + A() + 'pet-food.webp" alt="" draggable="false">펫 간식 ' + fmt(b.food) + '</span></div>' +
       (list.length ? '<div class="ppgrid">' + grid + '</div>' : '<p class="ppnone">아직 펫이 없어요. 알을 부화해 보세요.</p>');
+  }
+  // 펫 기술 줄 (2026-11-23): 이름 · 몇 초마다 · 하는 일과 세기 (js/pets.js petSkillLine); 데리고 다니는 펫이 전투에서 씀
+  function skillRow(s) {
+    var k = sel && CW.petSkillLine ? CW.petSkillLine(s, sel) : null;
+    if (!k) return '<div class="ppskill"><i aria-hidden="true">✦</i><div class="pskn"><b>펫 기술</b></div><span>펫을 고르면 기술이 보여요</span></div>';
+    return '<div class="ppskill"><i aria-hidden="true">✦</i><div class="pskn"><b>' + esc(k.name) + '</b><em>' + k.every + '</em></div><span>' + esc(k.what) + '</span></div>';
   }
   function changed() { if (CW.petChanged) CW.petChanged(); }
   function act(what) {

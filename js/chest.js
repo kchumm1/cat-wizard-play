@@ -88,6 +88,10 @@
       (gf.sigils || []).forEach(function (x) { add({ k: 'sigil', n: x.n, grade: x.grade, to: 'sigil' }); });
       (gf.relics || []).forEach(function (x) { add({ k: 'relic', id: x.id, n: x.n, to: 'now' }); });
       (gf.costumes || []).forEach(function (x) { add({ k: 'costume', id: x.id, n: 1, to: 'now' }); });
+      // 펫 (2026-11-23): on the phone only (js/mail-gift.js gives them there); the cards show what the letter carries
+      (gf.pets || []).forEach(function (x) { add({ k: 'pet', id: x.id, n: x.n, to: 'now' }); });
+      if (gf.petEggs) add({ k: 'petEggs', n: gf.petEggs, to: 'now' });
+      if (gf.petFood) add({ k: 'petFood', n: gf.petFood, to: 'now' });
     }
     // 가방으로 돌아간 수를 그 보상에 적음 (같은 등급 룬·신성력 줄에 차례로)
     rew.forEach(function (o) { if ((o.k === 'rune' || o.k === 'sigil') && back[o.k + ':' + o.grade]) { var b = Math.min(o.n, back[o.k + ':' + o.grade]); o.back = b; back[o.k + ':' + o.grade] -= b; } });
