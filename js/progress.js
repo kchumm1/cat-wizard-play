@@ -103,6 +103,21 @@
     state.stage = b; state.farming = false; state.bossTry = true; state.kills = 0;
     return true;
   }
+  // 자동 재도전 (2026-11-23, 형: 보스에 지면 강해졌을 때 알아서 다시 도전): the last loss remembers how strong the wizard was
+  // (result.power, the usual boss damage a second) and how much of the boss was left (result.pct). Dealing (1 - pct) of
+  // its health at that power, the wizard needs power / (1 - pct) to finish it, and RETRY_MARGIN more so a near loss is
+  // not fought again and again. Auto boss off (설정) waits for the button as before.
+  var RETRY_MARGIN = 1.15;
+  function retryNeed(result) {
+    if (!result || !(result.power > 0) || !(result.pct > 0)) return Infinity;
+    // no cap: a boss left at 99.99% really does need thousands of times the power (damage is in proportion to power)
+    var dealt = 1 - Math.min(100, result.pct) / 100;
+    return dealt > 0 ? result.power / dealt * RETRY_MARGIN : Infinity;
+  }
+  function autoRetryReady(state, result, power) {
+    if (!state || state.bossTry || !state.farming || (state.settings && state.settings.autoBoss === false)) return false;
+    return power > 0 && power >= retryNeed(result);
+  }
   function onHidden(state) {
     if (!state.bossTry) return;
     state.bossTry = false; state.stage = Math.max(0, state.stage - 1); state.farming = true; state.kills = 0;
@@ -128,5 +143,5 @@
     state.farming = state.stage <= state.best;
     return true;
   }
-  return { worldOf: worldOf, regionsOf: regionsOf, regionAt: regionAt, sceneRegion: sceneRegion, clearKey: clearKey, setDifficulty: setDifficulty, stageLabel: stageLabel, stageInfo: stageInfo, stageBoss: stageBoss, isTierTrial: isTierTrial, lateTier: lateTier, tierNeed: tierNeed, tierGoal: tierGoal, onKill: onKill, onBossResult: onBossResult, retryBoss: retryBoss, onHidden: onHidden, goStage: goStage, LAST_STAGE: LAST };
+  return { worldOf: worldOf, regionsOf: regionsOf, regionAt: regionAt, sceneRegion: sceneRegion, clearKey: clearKey, setDifficulty: setDifficulty, stageLabel: stageLabel, stageInfo: stageInfo, stageBoss: stageBoss, isTierTrial: isTierTrial, lateTier: lateTier, tierNeed: tierNeed, tierGoal: tierGoal, onKill: onKill, onBossResult: onBossResult, retryBoss: retryBoss, retryNeed: retryNeed, autoRetryReady: autoRetryReady, RETRY_MARGIN: RETRY_MARGIN, onHidden: onHidden, goStage: goStage, LAST_STAGE: LAST };
 });

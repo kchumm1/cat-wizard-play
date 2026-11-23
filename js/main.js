@@ -331,6 +331,7 @@
     }
     var r = CW.onKill(state);
     if (r) onStageMoved(r);
+    else autoRetry();
   }
   function bossWin(pos) {
     var stage = state.stage, key = CW.clearKey(state, stage), first = !state.firstClear[key];
@@ -387,12 +388,25 @@
     var def = CW.stageBoss(result.stage, result.diff);
     return def && def.art === result.art ? result : null;
   }
+  // the usual boss damage a second for a fight at this stage (js/economy.js bossDpsTypical)
+  function bossPower(stage) { return CW.bossDpsTypical(state, st, CW.stageInfo(stage).timeLimit || 30); }
+  // 자동 재도전 (2026-11-23): while farming after a loss, go back to the boss once the wizard has grown enough
+  function autoRetry() {
+    var result = bossResult();
+    if (!result) return false;
+    var power = bossPower(result.stage);
+    if (!(result.power > 0)) { result.power = power; save(); return false; }   // a loss saved before this rule: grow from now
+    if (!CW.autoRetryReady(state, result, power) || !CW.retryBoss(state)) return false;
+    smallKills = 0; syncRegion(); startBoss(false);
+    ui.toast('더 강해졌어요 · 보스에 다시 도전해요');
+    return true;
+  }
   function bossFail() {
     var fight = boss, mob = fight.mob, previous = state.bossResult;
     var pct = Math.min(100, (mob.hp / mob.maxHp) * 100);
     if (validBossPct(pct)) {
       state.bossResult = {
-        stage: fight.stage, diff: fight.diff, art: mob.id, pct: pct,
+        stage: fight.stage, diff: fight.diff, art: mob.id, pct: pct, power: bossPower(fight.stage),
         previous: sameBossResult(previous, fight) && validBossPct(previous.pct) ? previous.pct : null
       };
     }
