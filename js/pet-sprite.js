@@ -2,17 +2,22 @@
 // follows it a little late and bobs; a legend stands behind it nearly as tall as the hero (1.1×) and swells like a roar when
 // it casts, the others are about half the hero (40% was hard to see on a phone) and hop. One picture plane (the same shader as the little ones, js/minions.js,
 // so its colours are the picture's own). Tapping it opens the 내 펫 page. js/main.js: CW.createPetSprite(sc) once, then
-// set(pet or null) when the worn pet changes, update(dt) every frame, pop() on a cast, top() / center() for effects.
+// set(pet or null) when the worn pet changes, update(dt) every frame, pop() and icon(url, big) on a cast, top() / center() for effects.
 (function (root) {
   var CW = root.CW = root.CW || {};
   var TILT = 0.6, HERO_H = 1.02;
   var VS = 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';
   var FS = 'uniform sampler2D map; uniform float uGlow; varying vec2 vUv;' +
     'void main() { vec4 t = texture2D(map, vUv); if (t.a < 0.06) discard; gl_FragColor = vec4(t.rgb * (1.0 + uGlow), t.a); }';
+  // the skill icon over the pet (GPT 그림 art/sk-pet-*.webp): fades by uA
+  var FS_ICON = 'uniform sampler2D map; uniform float uA; varying vec2 vUv;' +
+    'void main() { vec4 t = texture2D(map, vUv); if (t.a * uA < 0.02) discard; gl_FragColor = vec4(t.rgb, t.a * uA); }';
 
   CW.createPetSprite = function (sc) {
     var T = sc.THREE, GEO = new T.PlaneGeometry(1, 1); GEO.translate(0, 0.5, 0);
     var mesh = null, tex = null, cur = null, big = false, h = 0.45, at = null, y = 0, ph = 0, popT = 0, glow = 0;
+    // 기술 아이콘: one plane reused, the five pictures loaded once each (kept: they are small and come back every few seconds)
+    var ico = null, icoTex = {}, icoT = 0, icoBig = false, ICO_LIFE = 1.15;
     function drop() {
       if (mesh) { sc.scene.remove(mesh); mesh.material.dispose(); mesh = null; }
       if (tex) { tex.dispose(); tex = null; }
@@ -43,10 +48,27 @@
       mesh.position.set(at.x, y, at.z); mesh.scale.set(s, s, 1);
       mesh.rotation.set(-TILT, sc.camView().yaw, 0);
       mesh.material.uniforms.uGlow.value = glow * (big ? 0.55 : 0.35);
+      if (ico && ico.visible) { icoT -= dt; if (icoT <= 0) ico.visible = false; else placeIcon(); }
     }
     function center() { return new T.Vector3(at ? at.x : 0, y + h * 0.5, at ? at.z : 0); }
     function top() { return new T.Vector3(at ? at.x : 0, y + h * 1.02, at ? at.z : 0); }
     function pop() { popT = 1; glow = 1; }
+    function icon(url, isBig) {
+      var show = function (t) {
+        if (!ico) { ico = new T.Mesh(GEO, new T.ShaderMaterial({ uniforms: { map: { value: t }, uA: { value: 0 } }, vertexShader: VS, fragmentShader: FS_ICON, transparent: true, depthWrite: false, depthTest: false })); ico.rotation.order = 'YXZ'; ico.renderOrder = 6; sc.scene.add(ico); }
+        ico.material.uniforms.map.value = t; ico.visible = true; icoT = ICO_LIFE; icoBig = !!isBig; placeIcon();
+      };
+      if (icoTex[url]) { if (icoTex[url].image) show(icoTex[url]); return; }
+      icoTex[url] = new T.TextureLoader().load(url, show);
+    }
+    // just over the pet's head: pops up big, settles, fades out (an iPhone held upright and the side views alike: it turns to the camera)
+    function placeIcon() {
+      if (!ico || !at) return;
+      var k = 1 - icoT / ICO_LIFE, grow = k < 0.18 ? 0.6 + 0.6 * (k / 0.18) : 1.2 - 0.2 * Math.min(1, (k - 0.18) / 0.2), sz = (icoBig ? 0.72 : 0.58) * grow;
+      ico.position.set(at.x, y + h * 1.0 + 0.05 + k * 0.12, at.z); ico.scale.set(sz, sz, 1);
+      ico.rotation.set(-TILT, sc.camView().yaw, 0);
+      ico.material.uniforms.uA.value = k > 0.72 ? Math.max(0, 1 - (k - 0.72) / 0.28) : 1;
+    }
     // 탭하면 내 펫 화면 (no hover needed): a short tap that lands on the pet, not a drag that turns the camera
     var down = null, el = sc.renderer && sc.renderer.domElement;
     if (el && el.addEventListener) {
@@ -59,6 +81,6 @@
         if (dx * dx + dy * dy <= rad * rad) CW.petPageOpen();
       }, { passive: true });
     }
-    return { set: set, update: update, center: center, top: top, pop: pop, big: function () { return big; }, shown: function () { return !!mesh; } };
+    return { set: set, update: update, center: center, top: top, pop: pop, icon: icon, big: function () { return big; }, shown: function () { return !!mesh; } };
   };
 })(this);

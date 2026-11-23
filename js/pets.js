@@ -131,7 +131,7 @@
   function petSkillOf(id) {
     var p = BY[id], g = p && petGroupOf(id); if (!p || !g) return null;
     var big = p.grade === 3, fam = g.fam;
-    return { id: id, name: p.skill, fam: fam, grade: p.grade, big: big,
+    return { id: id, name: p.skill, fam: fam, grade: p.grade, big: big, icon: 'sk-pet-' + fam,   // 계열 아이콘 (GPT 그림, art/ 256px)
       n: fam === 'cheer' || fam === 'bubble' || fam === 'bolt' ? (big ? Infinity : SK.n[p.grade]) : 0,
       gold: fam === 'star' ? SK.gold[p.grade] : 0 };
   }
@@ -147,18 +147,21 @@
     var sh = (k.big ? SK.shareBig : SK.share)[k.fam] || 0; if (!sh) return 0;
     return SK.power[k.grade] * (1 + SK.powLv * (o.lv - 1)) * (1 + SK.powStar * (o.star - 1)) * sh;
   }
-  function x1(v) { return String(v < 10 ? Math.round(v * 100) / 100 : Math.round(v * 10) / 10); }
-  // the 내 펫 skill line (js/pet-ui.js): { name, every: '8초마다', what }
+  // the 내 펫 skill line (js/pet-ui.js), in plain words (2026-11-23, 형: 「화면 전체에 낙뢰 + 감전 · 냥법사 1.56초치」 이게 뭔 말이야
+  // → 실제 피해 숫자로): { name, every: '8.2초마다', what it does, note: what that brings ('' when nothing), hit: { label, secs } or
+  // null, icon }. The page turns hit into 「번개 한 번에 피해 1.2조」 with the hero's boss damage per second now (CW.heroBossDps)
   function petSkillLine(state, id) {
     var k = petSkillOf(id), t = k && petSkillEvery(state, id); if (!t) return null;
-    var pw = ' · 냥법사 ' + x1(petSkillPower(state, id)) + '초치', n = k.n, what;
-    if (k.fam === 'cheer') what = k.big ? '폭주 게이지를 꽉 채워 바로 폭주' : '폭주 게이지 +' + n + '칸';
-    else if (k.fam === 'bubble') what = (k.big ? '화면의 적을 모두 끌어모아 가둠' : '가까운 적 ' + n + '마리를 거품에 가둠') + ' · 받는 피해 ×1.3';
-    else if (k.fam === 'flame') what = (k.big ? '일직선 불길로 줄 위의 적 모두' : '가장 센 적에게 큰 한 방') + pw;
-    else if (k.fam === 'bolt') what = (k.big ? '화면 전체에 낙뢰 + 감전' : '적 ' + n + '마리를 잇는 번개 + 감전') + pw;
-    else what = (k.big ? '성운이 내려앉는 큰 별비' : '모든 적에게 별비') + ' · 골드 사냥 ' + k.gold + '초치' + pw;
-    return { name: k.name, every: x1(t) + '초마다', what: what };
+    var n = k.n, what, note = '', label = '';
+    if (k.fam === 'cheer') { what = k.big ? '폭주 게이지를 꽉 채워요' : '폭주 게이지 +' + n + '칸'; note = k.big ? '다음 공격이 바로 폭주' : '폭주가 더 빨리 와요'; }
+    else if (k.fam === 'bubble') { what = k.big ? '화면의 적을 모두 모아 가둬요' : '가까운 적 ' + n + '마리를 거품에 가둬요'; note = '갇힌 적은 받는 피해 +30%'; }
+    else if (k.fam === 'flame') { what = k.big ? '일직선 불길로 줄 위의 적 모두' : '가장 센 적에게 큰 한 방'; label = k.big ? '한 마리당' : '한 번에'; }
+    else if (k.fam === 'bolt') { what = k.big ? '화면 모든 적에게 낙뢰' : '적 ' + n + '마리를 번개로 이어 쳐요'; note = '감전되면 받는 피해 +25%'; label = '번개 한 번에'; }
+    else { what = k.big ? '성운이 내려앉는 큰 별비' : '모든 적에게 별비'; note = '사냥 골드 ' + k.gold + '초치도 받아요'; label = '별 하나에'; }
+    return { name: k.name, every: String(Math.round(t * 10) / 10) + '초마다', what: what, note: note, hit: label ? { label: label, secs: petSkillPower(state, id) } : null, icon: k.icon };
   }
+
+
   return { petBox: petBox, petSkillPower: petSkillPower, petSkillLine: petSkillLine, petSkillOf: petSkillOf, petSkillEvery: petSkillEvery, petById: petById, petGroupOf: petGroupOf, petsInGroup: petsInGroup, petAdd: petAdd, petSeen: petSeen,
     petHasFresh: petHasFresh, petDex: petDex, petClaimSet: petClaimSet, petClaimAll: petClaimAll, petMul: petMul,
     petLvCap: petLvCap, petLvCost: petLvCost, petLevelUp: petLevelUp, petStarCost: petStarCost, petStarUp: petStarUp, petWear: petWear,

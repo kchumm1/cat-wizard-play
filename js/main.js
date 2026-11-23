@@ -445,6 +445,8 @@
   var petFx = CW.createPetSprite ? CW.createPetSprite(sc) : null, petT = 0, petWorn, petPull = null;
   var PET_COL = { cheer: 0x8fe07a, bubble: 0x7fd8ff, flame: 0xff7a2a, bolt: 0xbfe0ff, star: 0xc9a2ff };
   var PET_FLASH = { cheer: 'rgba(150,230,120,0.22)', bubble: 'rgba(120,210,255,0.22)', flame: 'rgba(255,120,40,0.26)', bolt: 'rgba(205,230,255,0.3)', star: 'rgba(200,160,255,0.26)' };
+  // 내 펫 기술 줄의 피해 숫자 (js/pet-ui.js): the hero's boss damage per second now, with the stats in use
+  CW.heroBossDps = function () { return CW.bossDps(state, st); };
   function petTick(dt) {
     var b = CW.petBox ? CW.petBox(state) : null, id = b ? b.worn : null;
     if (petFx) { if (id !== petWorn) { petWorn = id; petT = 0; petFx.set(id ? CW.petById(id) : null); } petFx.update(dt); }
@@ -459,8 +461,9 @@
   function petCast(p) {
     var T3 = sc.THREE.Vector3, col = PET_COL[p.fam] || 0xffffff, from = petFx && petFx.shown() ? petFx.center() : sc.heroCenter(), vx = fx.vfx;
     var E = function (o) { if (vx) vx.emit(o); }, top = function (m) { return sc.mobTop(m); }, rnd = function (a) { return (Math.random() - 0.5) * a; };
-    if (petFx) petFx.pop();
-    sc.damageText(from.clone().add(new T3(0, 0.5, 0)), p.name, 0, hexCss(col));   // 기술 이름이 펫 머리 위에 잠깐 (아이콘 그림은 GPT 그림이 오면)
+    // 펫이 뛰고(전설은 부풀고), 머리 위에 계열 아이콘이 잠깐 (GPT 그림 art/sk-pet-*), 그 위에 기술 이름
+    if (petFx) { petFx.pop(); petFx.icon((CW.ART_BASE || 'art/') + 'sk-pet-' + p.fam + '.webp', p.big); }
+    sc.damageText((petFx && petFx.shown() ? petFx.top() : from.clone()).add(new T3(0, p.big ? 0.75 : 0.6, 0)), p.name, 0, hexCss(col));
     if (p.big) { sc.shake(0.28); sc.flash(PET_FLASH[p.fam], 0.16); }
     if (p.fam === 'cheer') {
       var C = DATA.surgeConf.charge, hc = sc.heroCenter();

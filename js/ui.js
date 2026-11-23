@@ -2812,7 +2812,7 @@
         // 차례: 장비를 열면 처음 보이는 지팡이 목록 → 모든 메뉴 틀(CSS) → 룬·신성력·삼신기 그림 → 훈련·스킬·유물·코스튬 등 그림 → 마스크 → 나머지 장비 종류
         warmImgs(gearKindPics(bagKind).concat([A + 'ui-paw.webp', A + 'ui-chest-closed.webp', A + 'ui-chest-open.webp']));
         // 펫 (2026-11-23): the small pictures of the shortcut tile, the 내 펫 list and the 펫도감 cards, the egg and snack icons
-        warmImgs((DATA.pets || []).map(function (p) { return A + p.art + '-s.webp'; }).concat([A + 'pet-egg.webp', A + 'pet-food.webp', A + 'ic-petbook.webp', A + 'ic-pet-fox.webp']), { decode: false });
+        warmImgs((DATA.pets || []).map(function (p) { return A + p.art + '-s.webp'; }).concat([A + 'pet-egg.webp', A + 'pet-food.webp', A + 'ic-petbook.webp', A + 'ic-pet-fox.webp'], ['cheer', 'bubble', 'flame', 'bolt', 'star'].map(function (f) { return A + 'sk-pet-' + f + '.webp'; })), { decode: false });
         warmImgs(css.all, { decode: false });
         warmImgs(items.filter(isC), { cors: true });
         warmImgs(items.filter(function (u) { return !isC(u); }));

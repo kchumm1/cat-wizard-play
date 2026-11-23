@@ -66,8 +66,11 @@
   // 펫 기술 줄 (2026-11-23): 이름 · 몇 초마다 · 하는 일과 세기 (js/pets.js petSkillLine); 데리고 다니는 펫이 전투에서 씀
   function skillRow(s) {
     var k = sel && CW.petSkillLine ? CW.petSkillLine(s, sel) : null;
+    // 피해 숫자: 지금 냥법사가 보스에게 1초에 주는 피해 × 몇 초치 — 전투에서 뜨는 숫자와 같은 단위 (형 고름 2026-11-23)
+    var dps = k && k.hit && CW.heroBossDps ? CW.heroBossDps() : 0;
+    var hit = dps > 0 ? '<span class="p3">' + k.hit.label + ' 피해 ' + CW.fmt(dps * k.hit.secs) + '</span>' : '';
     if (!k) return '<div class="ppskill"><i aria-hidden="true">✦</i><div class="pskn"><b>펫 기술</b></div><span>펫을 고르면 기술이 보여요</span></div>';
-    return '<div class="ppskill"><i aria-hidden="true">✦</i><div class="pskn"><b>' + esc(k.name) + '</b><em>' + k.every + '</em></div><span>' + esc(k.what) + '</span></div>';
+    return '<div class="ppskill"><img class="psico" src="' + A() + k.icon + '.webp" alt="" draggable="false"><div class="pskn"><b>' + esc(k.name) + '</b><em>' + k.every + '</em></div><span class="psw"><span class="p1">' + esc(k.what) + '</span>' + (k.note ? '<span class="p2">' + esc(k.note) + '</span>' : '') + hit + '</span></div>';
   }
   function changed() { if (CW.petChanged) CW.petChanged(); }
   function act(what) {
