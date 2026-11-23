@@ -220,6 +220,8 @@
       '#evFx .evask small{display:block;margin-top:1cqw;font-size:3cqw;color:#f5dcea}',
       '#evFx .evask p{display:flex;gap:3cqw;margin:4cqw 0 0}#evFx .evask button{flex:1;min-height:44px;border-radius:999px;border:0;font:400 4cqw/1 var(--display,inherit);background:#7b4670;color:#fff}',
       '#evFx .evask button.yes{background:linear-gradient(180deg,#ffd98a,#e3a84f);color:#4a2618}',
+      // 가로 화면 (형 2026-11-24: 가로모드에서 창 잘림): 출석·패스·닫기를 창 옆 세로 줄로, 창은 화면 높이에 맞춤
+      '@media (orientation:landscape) and (max-height:540px){#evFx{flex-direction:row;gap:10px;--evw:calc((100dvh - 16px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)) * .75)}#evFx .evtop{flex-direction:column;width:auto;align-self:center}#evFx .evx{margin:8px 0 0 0}}',
       '@media (prefers-reduced-motion:reduce){#evFx *,#evFx.pop .evcard{animation:none!important;transition:none!important}}'
     ].join('\n');
     root.document.head.appendChild(s);

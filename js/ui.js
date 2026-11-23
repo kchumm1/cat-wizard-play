@@ -1460,6 +1460,18 @@
     }
     if (typeof root.addEventListener === 'function') root.addEventListener('resize', function () { clearTimeout(fitQuick.t); fitQuick.t = setTimeout(fitQuick, 150); });
     setTimeout(fitQuick, 0); setTimeout(fitQuick, 800);
+    // 가로 화면 버프 칸 (형 2026-11-24: 버프 창이 카메라 칸에 가림 → 전투력 칸 밑으로): the 전투력 plate's own place differs
+    // by phone and notch side, so the 물약·펫 버프 chips are put right under it, measured. Portrait keeps the old place.
+    function placeBuffs() {
+      var b = $('buffs'), p = document.querySelector('#hud .nh-power'); if (!b) return;
+      var land = root.matchMedia && root.matchMedia('(orientation:landscape) and (min-aspect-ratio:6/5)').matches;
+      if (!land || !p || !p.offsetParent) { b.style.left = ''; b.style.top = ''; return; }
+      var par = b.offsetParent || document.body, pr = par.getBoundingClientRect(), r = p.getBoundingClientRect();
+      b.style.left = Math.round(r.left - pr.left + 4) + 'px';
+      b.style.top = Math.round(r.top + r.height / 2 + 14 + 6 - pr.top) + 'px';   // the plate is 28px tall in the middle of the 55px touch area
+    }
+    if (typeof root.addEventListener === 'function') root.addEventListener('resize', function () { clearTimeout(placeBuffs.t); placeBuffs.t = setTimeout(placeBuffs, 150); });
+    setTimeout(placeBuffs, 0); setTimeout(placeBuffs, 800); setInterval(placeBuffs, 2000);
     var lastXpWidth, lastSlotKey, lastPreset;
     function slots() {
       var s = G.state, now = G.castingSlot();
