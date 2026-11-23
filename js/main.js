@@ -232,10 +232,12 @@
     return n;
   }
   function doomed(m) { return !m.boss && m.hp - bookedOn(m) <= 0; }
+  // 바로 겨누기 (js/fx.js canAim): a monster walking in is a target as soon as it is on the field, not only once it stops
+  function aimable(m) { return fx.canAim ? fx.canAim(m) : m.arrived; }
   function bookCast(skill, mul, targets) {
     var list = [];
     // a wide spell lands on everyone on the field: it books its blow on each monster standing there now
-    if (skill.targets >= 99) targets = aliveMobs().filter(function (m) { return m.arrived; });
+    if (skill.targets >= 99) targets = aliveMobs().filter(aimable);
     targets.forEach(function (m) {
       if (m.boss) return;
       var b = { mob: m, left: CW.hitDamage(st, skill, { boss: false, critTier: 0, even: true }) * mul, until: clockT + BOOK_T };
@@ -414,12 +416,12 @@
     // nearest first, leaning toward the ones the wizard already faces so it does not keep turning round
     var H = sc.heroState(), dist = function (m) { var dx = m.x - H.x, dz = m.z - H.z, sx = sc.scrX ? sc.scrX(dx, dz) : dx; return (dx * dx + dz * dz) * (sx * H.faceT < -0.3 ? 1.8 : 1); };
     // monsters already covered by damage on its way go last: they are only aimed at when no one else is left
-    var list = aliveMobs().filter(function (m) { return m.arrived; }).map(function (m) { return { m: m, d: dist(m), gone: doomed(m) }; })
+    var list = aliveMobs().filter(aimable).map(function (m) { return { m: m, d: dist(m), gone: doomed(m) }; })
       .sort(function (a, b) { return (a.gone - b.gone) || (a.d - b.d); }).map(function (o) { return o.m; });
     return list.slice(0, CW.targetCount(skill, !!dun));
   }
   function castNext() {
-    var peek = aliveMobs().filter(function (m) { return m.arrived; });
+    var peek = aliveMobs().filter(aimable);
     if (!peek.length) { castT = 0.12; return; }
     var s = rot.next(); if (!s) { castT = 0.5; return; }
     nowSlot = rot.index();

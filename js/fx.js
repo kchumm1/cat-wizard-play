@@ -252,6 +252,10 @@
     function halfX(z) { return 2.2 + (3.8 - z) * 0.16; }
     function onField(m) { return m.z > -4.9 && m.z < 4.1 && Math.abs(m.x) < halfX(m.z) + 0.3 && m.y < 1.6; }
     function liveMobs() { return sc.mobs().filter(function (m) { return m.alive && (m.arrived || (m.entry !== 'burrow' && m.entry !== 'unseal' && onField(m))); }); }
+    // 바로 겨누기 (2026-11-23, 형: 보이면 바로 쏘기 → 다 넣어봐): a monster still walking in may be aimed at once it is on
+    // the field the spells can reach (the same edge liveMobs uses), instead of the wizard standing idle until it stops.
+    // Bosses still have to arrive first (their timer starts on arrival), and nothing in the air or under the ground counts.
+    function canAim(m) { return !!m && m.alive && (m.arrived || (!m.boss && m.entry !== 'burrow' && m.entry !== 'unseal' && onField(m))); }
     function gp(m) { return V(m.x, 0, m.z); }
     function near(list, x, z, max) { var best = null, bd = max === undefined ? Infinity : max * max; list.forEach(function (m) { var d = (m.x - x) * (m.x - x) + (m.z - z) * (m.z - z); if (d < bd) { bd = d; best = m; } }); return best; }
     // straight up on the screen: the camera looks down at the field, so "up" leans away from it
@@ -1656,7 +1660,7 @@
     function setBright(v) { vx.setBright(v); P3.setBright(v); }
     function setRegion(regionData) { dustCol = new T.Color(regionData.ground).lerp(new T.Color(0xffffff), 0.45).getHex(); P3.warm(); warmPics(); }
     function clear() { epoch++; carry = []; timers.length = 0; ticks.length = 0; meteorLive = 0; scorchAt.length = 0; vx.clear(); P3.clear(); picClear(); if (WOOD && WOOD.clear) WOOD.clear(); if (WATER) WATER.clear(); if (BEASTS) BEASTS.clear(); sc.mobs().forEach(function (m) { m.pull = undefined; m.pullZ = undefined; m.lift = undefined; }); }
-    return { setStaffColor: function (c) { staffCol = c; }, setCostume: function (f) { cosFx = f; cosAcc = 0; }, cast: cast, update: update, setQuality: setQuality, setLoad: setLoad, load: function () { return vx.load(); }, setBright: setBright, setRegion: setRegion, clear: clear, count: vx.count, minionBurst: minionBurst,
+    return { setStaffColor: function (c) { staffCol = c; }, setCostume: function (f) { cosFx = f; cosAcc = 0; }, cast: cast, canAim: canAim, update: update, setQuality: setQuality, setLoad: setLoad, load: function () { return vx.load(); }, setBright: setBright, setRegion: setRegion, clear: clear, count: vx.count, minionBurst: minionBurst,
       impact: impact, levelUp: levelUp, bossEnter: bossEnter, coinPop: coinPop, burst: function (pos, col) { impact(pos, col, 0.8); }, vfx: vx,
       // for checks: 3D parts alive, and painted heads alive (only those of the given pictures when names are given)
       count3d: function () { return P3.count(); }, bm3d: function (k) { return P3.bmList(k); }, beasts: function () { return BEASTS ? BEASTS.count() : 0; }, spikeTops: function () { return P3.spikeTops(); }, batchSmoke: function (v) { P3.setBatchSmoke(v); }, smoke3d: function () { return P3.smoke(); }, batchChips: function (v) { P3.setBatchChips(v); }, watch: function (fn) { watcher = fn || null; }, picCount: function (names) { return picHeads.filter(function (h) { return !names || names.indexOf(h.name) >= 0; }).length; } };
