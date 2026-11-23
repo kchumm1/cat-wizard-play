@@ -105,7 +105,15 @@
     var list = unlockedSkills(state.tier).sort(function (a, b) { return skillScore(state, b) - skillScore(state, a); });
     for (var i = 0; i < state.slots.length; i++) state.slots[i] = list[i] ? list[i].id : null;
   }
+  // 추천 장착 (형 2026-11-23: 자동 배치와 다르게 — 약점 스킬 우선): the skills weak to where the player is now first (isWeak(skill)),
+  // the rest by the same score as 자동 배치. Returns how many weak ones went in.
+  function autoFillWeak(state, isWeak) {
+    var list = unlockedSkills(state.tier).sort(function (a, b) { return (isWeak(b) ? 1 : 0) - (isWeak(a) ? 1 : 0) || skillScore(state, b) - skillScore(state, a); });
+    var n = 0;
+    for (var i = 0; i < state.slots.length; i++) { state.slots[i] = list[i] ? list[i].id : null; if (list[i] && isWeak(list[i])) n++; }
+    return n;
+  }
   // the skill menu says who a skill hits (2026-11-15)
   function skillTargetText(n) { return n >= 99 ? '전체 공격' : n <= 1 ? '단일 공격' : '여러 마리 공격'; }
-  return { skillOwnedStats: skillOwnedStats, skillTargetText: skillTargetText, skillUpAll: skillUpAll, switchPreset: switchPreset, unequipSkill: unequipSkill, placeSkill: placeSkill, autoFillSkills: autoFillSkills, skillScore: skillScore, skillLevel: skillLevel, skillUpCost: skillUpCost, trySkillUp: trySkillUp, rotation: rotation, castTime: castTime, unlockedSkills: unlockedSkills, equipSkill: equipSkill, autoSlotNew: autoSlotNew, skillById: byId };
+  return { skillOwnedStats: skillOwnedStats, skillTargetText: skillTargetText, skillUpAll: skillUpAll, switchPreset: switchPreset, unequipSkill: unequipSkill, placeSkill: placeSkill, autoFillSkills: autoFillSkills, autoFillWeak: autoFillWeak, skillScore: skillScore, skillLevel: skillLevel, skillUpCost: skillUpCost, trySkillUp: trySkillUp, rotation: rotation, castTime: castTime, unlockedSkills: unlockedSkills, equipSkill: equipSkill, autoSlotNew: autoSlotNew, skillById: byId };
 });

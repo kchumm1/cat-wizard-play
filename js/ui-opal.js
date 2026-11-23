@@ -1332,17 +1332,17 @@
     '#sheet.opal#sheet.opal .skx3::after{content:"";position:absolute;left:50%;top:50%;width:9px;height:9px;transform:translate(-50%,-50%);background:linear-gradient(45deg,transparent 42%,#fff 42%,#fff 58%,transparent 58%),linear-gradient(-45deg,transparent 42%,#fff 42%,#fff 58%,transparent 58%)}',
     '#sheet.opal#sheet.opal .skx3:active{transform:scale(.9)}',
     // 판 아래 한 줄: 차례 안내 · 모두 빼기
-    '#sheet.opal#sheet.opal .skfoot{position:relative;z-index:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:9px;padding:0 4px}',
-    '#sheet.opal#sheet.opal .skallout2{height:30px;padding:0 13px!important;border-radius:999px!important;background:rgba(255,255,255,.09)!important;box-shadow:inset 0 0 0 1px rgba(220,205,255,.4)!important;font:700 12px/1 var(--body)!important;color:#efe9fb!important;white-space:nowrap}',
+    // 판 아랫줄 (형 2026-11-23: 모두 빼기 줄이 텅 비어 보기 싫어 → 프리셋은 보기 좋게 저기다): 왼쪽 프리셋, 오른쪽 모두 빼기
+    '#sheet.opal#sheet.opal .skfoot{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px;padding:0 2px}',
+    '#sheet.opal#sheet.opal .skallout2{height:34px;padding:0 13px!important;border-radius:999px!important;background:rgba(255,255,255,.09)!important;box-shadow:inset 0 0 0 1px rgba(220,205,255,.4)!important;font:700 12px/1 var(--body)!important;color:#efe9fb!important;white-space:nowrap}',
     '#sheet.opal#sheet.opal .skallout2:active{transform:scale(.96)}',
-    // 도구 줄 (어두운 유리 알약, 고른 프리셋은 연보라) — 프리셋 묶음 | 자동 배치 · 일괄 강화
+    // 도구 줄 (어두운 유리 알약) — 자동 배치 · 일괄 강화. 프리셋 묶음은 판 아랫줄 왼쪽 (고른 프리셋은 연보라)
     '#sheet.opal#sheet.opal .sktools{display:flex;gap:7px;margin:10px 0 0;align-items:center}',
-    '#sheet.opal#sheet.opal .sktools .pp{flex:none;display:flex;align-items:center;gap:4px;height:40px;padding:0 4px 0 12px;border-radius:999px;background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px rgba(220,205,255,.18);font:700 13.5px/1 var(--body);color:#efe9fb;position:relative;margin-right:9px}',
-    '#sheet.opal#sheet.opal .sktools .pp::after{content:"";position:absolute;right:-9px;top:9px;bottom:9px;width:1px;background:rgba(220,205,255,.22)}',
-    '#sheet.opal#sheet.opal .sktools .pp>span{margin-right:4px}',
-    '#sheet.opal#sheet.opal .sktools .pb{width:32px;height:32px;border-radius:10px!important;background:rgba(255,255,255,.06)!important;box-shadow:inset 0 0 0 1px rgba(220,205,255,.25)!important;font:700 14px/1 var(--body)!important;color:#efe9fb!important}',
-    '#sheet.opal#sheet.opal :is(.sktools .pb.on,.skchip.on){background:linear-gradient(180deg,#c6a8f2,#9372c9)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.4),0 0 10px rgba(180,140,255,.5)!important;color:#fff!important}',
-    '#sheet.opal#sheet.opal .sktools .auto,#sheet.opal#sheet.opal .sktools .bulk{flex:1;height:40px;display:grid!important;place-items:center;border-radius:999px!important;background:rgba(255,255,255,.05)!important;box-shadow:inset 0 0 0 1px rgba(220,205,255,.22),inset 0 1px 0 rgba(255,255,255,.06)!important;font:700 13.5px/1 var(--body)!important;color:#efe9fb!important;white-space:nowrap}',
+    '#sheet.opal#sheet.opal .skfoot .pp{flex:none;display:flex;align-items:center;gap:4px;height:38px;padding:0 4px 0 12px;border-radius:999px;background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 1px rgba(220,205,255,.22);font:700 13.5px/1 var(--body);color:#efe9fb}',
+    '#sheet.opal#sheet.opal .skfoot .pp>span{margin-right:4px}',
+    '#sheet.opal#sheet.opal :is(.sktools,.skfoot) .pb{width:32px;height:32px;border-radius:10px!important;background:rgba(255,255,255,.06)!important;box-shadow:inset 0 0 0 1px rgba(220,205,255,.25)!important;font:700 14px/1 var(--body)!important;color:#efe9fb!important}',
+    '#sheet.opal#sheet.opal :is(.skfoot .pb.on,.skchip.on){background:linear-gradient(180deg,#c6a8f2,#9372c9)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.4),0 0 10px rgba(180,140,255,.5)!important;color:#fff!important}',
+    '#sheet.opal#sheet.opal .sktools :is(.auto,.weak,.bulk){flex:1;height:40px;display:grid!important;place-items:center;border-radius:999px!important;background:rgba(255,255,255,.05)!important;box-shadow:inset 0 0 0 1px rgba(220,205,255,.22),inset 0 1px 0 rgba(255,255,255,.06)!important;font:700 13.5px/1 var(--body)!important;color:#efe9fb!important;white-space:nowrap}',
     '#sheet.opal#sheet.opal .sktools button:active,#sheet.opal#sheet.opal .skchip:active{filter:brightness(1.15);transform:scale(.97)}',
     // 차수 칩 (옆으로 밀림)
     '#sheet.opal#sheet.opal .skchips{display:flex;gap:7px;overflow-x:auto;padding:10px 2px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}',

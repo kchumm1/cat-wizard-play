@@ -1609,9 +1609,11 @@
         body += '<div class="sksec" style="--ec:' + (SK_EC[te] || '#9d8cf0') + '"><i></i><b>' + n + '차</b><span>' + t.name + '</span></div><div class="skgrid">' + list.map(card).join('') + '</div>';
       }
       // 시안 순서: 성운 판(칸 4개 + 차례 안내·모두 빼기) → 도구 줄 → 차수 칩. 시안의 걸터앉은 냥법사는 뺌 (형 2026-11-23 「애 빼자」)
-      var tools = '<div class="sktools"><div class="pp"><span>프리셋</span>' + [0, 1, 2].map(function (i) { return '<button class="pb' + ((s.preset || 0) === i ? ' on' : '') + '" data-preset="' + i + '" aria-pressed="' + ((s.preset || 0) === i) + '">' + (i + 1) + '</button>'; }).join('') + '</div>' +
-        '<button class="auto" data-act="autoskill">자동 배치</button><button class="bulk" data-act="skillall">일괄 강화</button></div>';
-      var pin = '<div class="skpin"><div class="skbox"><div class="skslots3">' + cells + '</div>' + (allOut ? '<div class="skfoot">' + allOut + '</div>' : '') + '</div>' +   // 「1 › 2 › 3 › 4 ↻ 차례로 써요」 뺌 (형 2026-11-23 「1234 다시 돌아가는 표시, 설명표시도 없애 → 전부 다 지워」)
+      // 판 아랫줄 (형 2026-11-23: 모두 빼기 줄이 텅 비어 보기 싫어 → 프리셋은 보기 좋게 저기다): 왼쪽 프리셋 1·2·3, 오른쪽 모두 빼기
+      var presets = '<div class="pp"><span>프리셋</span>' + [0, 1, 2].map(function (i) { return '<button class="pb' + ((s.preset || 0) === i ? ' on' : '') + '" data-preset="' + i + '" aria-pressed="' + ((s.preset || 0) === i) + '">' + (i + 1) + '</button>'; }).join('') + '</div>';
+      // 도구 줄 (형 2026-11-23: 자동배치 추천장착 일괄강화 세 개, 프리셋 빠진 자리에): 추천 장착 = 지금 지역 약점 스킬 먼저
+      var tools = '<div class="sktools"><button class="auto" data-act="autoskill">자동 배치</button><button class="weak" data-act="weakskill">추천 장착</button><button class="bulk" data-act="skillall">일괄 강화</button></div>';
+      var pin = '<div class="skpin"><div class="skbox"><div class="skslots3">' + cells + '</div>' + '<div class="skfoot">' + presets + allOut + '</div>' + '</div>' +   // 「1 › 2 › 3 › 4 ↻ 차례로 써요」 뺌 (형 2026-11-23 「1234 다시 돌아가는 표시, 설명표시도 없애 → 전부 다 지워」)
         tools + '<div class="skchips">' + chips + '</div></div>';
       tools = '<div class="skown2"><span>보유 효과 · 모든 스킬 피해</span><b data-opv="skown">+' + pct(CW.skillOwnedStats(s).skillDmg) + '</b></div>';
       if (pk) {   // 고른 카드: 아래 고정 자리 서랍 (룬·신성력 고른 물건 칸과 같은 자리)
@@ -2588,6 +2590,7 @@
       else if (d.preset !== undefined) { G.switchPreset(+d.preset); toast('스킬 프리셋 ' + (+d.preset + 1) + ' 적용'); renderPanel(true); slots(); }
       else if (d.act === 'skillall') { var nn = G.skillUpAll(); toast(nn ? '스킬 강화 +' + nn + ' 완료' : '골드가 부족해요.'); renderPanel(true); hud(); slots(); }
       else if (d.act === 'autoskill') { G.autoSkills(); toast('추천 스킬 4개를 배치했어요.'); renderPanel(true); slots(); }
+      else if (d.act === 'weakskill') { var wn = G.weakSkills(); toast(wn ? '지금 지역 약점 스킬 ' + wn + '개를 먼저 넣었어요.' : '지금 지역 약점 스킬이 없어서 센 스킬로 넣었어요.'); renderPanel(true); slots(); }
       else if (d.dsel !== undefined) { var nd = ((selDiff < 0 ? (G.state.diff || 0) : selDiff) + +d.dsel + DATA.difficulties.length) % DATA.difficulties.length; selDiff = nd; selRegion = 0; renderPanel(true); }
       else if (d.rsel !== undefined) { selRegion = +d.rsel; renderPanel(true); }
       else if (d.wlock !== undefined) { toast(+d.wlock < 1 ? '이 난이도는 아직 잠겨 있어요.' : CW.regionAt(selDiff < 0 ? (G.state.diff || 0) : selDiff, +d.wlock - 1).name + ' 보스 처치 시 해금'); }

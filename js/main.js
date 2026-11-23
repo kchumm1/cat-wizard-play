@@ -842,6 +842,7 @@
     placeSkill: function (id, slot) { var at = CW.placeSkill(state, id, slot); if (at >= 0) { snd.play('click'); save(); } return at; },
     unequipSkill: function (slot) { var ok = CW.unequipSkill(state, slot); if (ok) save(); return ok; },
     autoSkills: function () { CW.autoFillSkills(state); snd.play('click'); save(); },
+    weakSkills: function () { var n = CW.autoFillWeak(state, function (sk) { return CW.isWeak(sk, CW.regionOf(state), state.diff); }); snd.play('click'); save(); return n; },
     skillUp: function (id) { var ok = CW.trySkillUp(state, id); if (ok) { goalCount('skillUp', 1); refreshStats(); snd.play('click'); var sk = CW.skillById(id); fx.levelUp(state.tier, sk.color, true); save(); } return ok; },
     summonRelics: function (n) { if (G.wallet) return walletDo('summonRelics', { n: n }, function () { snd.play('pull'); }); var r = CW.summonRelics(state, n); if (r) { refreshStats(); snd.play('pull'); save(); } return r; },
     buyCostume: function (id) { if (G.wallet) return walletDo('buyCostume', { id: id }, function () { snd.play('win'); }); var ok = CW.buyCostume(state, id); if (ok) { refreshStats(); snd.play('win'); save(); } return ok; },
