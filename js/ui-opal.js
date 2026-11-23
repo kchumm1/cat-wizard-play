@@ -538,8 +538,8 @@
     '#sheet.opal .cstage.cosnew .ns-obj::after{animation-delay:-2.1s;transform:scaleX(-1)}',
     '@keyframes opRise{0%{opacity:0;translate:0 0}20%{opacity:1}80%{opacity:.8}100%{opacity:0;translate:0 -60px}}',
     '#sheet.opal#sheet.opal .cs-name{position:relative;justify-content:center;min-height:28px;align-items:center}',
-    '#sheet.opal#sheet.opal .cs-name .cb{position:absolute;right:4px;top:50%;transform:translateY(-50%);margin:0;padding:3px 12px 3px 10px;background:none!important;box-shadow:none!important;border:0 solid transparent;border-image:url(art/opal-pearl.webp) 23 23 23 23 fill / 50% 11px stretch;font:700 12px/1.25 var(--body);color:var(--navy)}',
-    '#sheet.opal#sheet.opal .cs-name.long{padding-right:84px}#sheet.opal#sheet.opal .cs-name.long b{font-size:18px!important}',   // 긴 이름(9자 이상)은 오른쪽 알약과 안 겹치게
+    '#sheet.opal#sheet.opal .cs-name .cb{position:static;transform:none;margin:0 0 0 4px;flex:none;padding:3px 12px 3px 10px;background:none!important;box-shadow:none!important;border:0 solid transparent;border-image:url(art/opal-pearl.webp) 23 23 23 23 fill / 50% 11px stretch;font:700 12px/1.25 var(--body);color:var(--navy)}',
+    '#sheet.opal#sheet.opal .cs-name.long b{font-size:18px!important}',   // 긴 이름(9자 이상)은 오른쪽 알약과 안 겹치게
     '#sheet.opal#sheet.opal .cs-name .cb.wear{color:#1f6d68}#sheet.opal#sheet.opal .cs-name .cb i{font-style:normal;color:#5d6487;font-size:10px;margin-right:6px}',
     '#sheet.opal#sheet.opal .cstage .ns-obj{position:absolute;left:0;right:0;bottom:30px;display:grid;place-items:end center}#sheet.opal#sheet.opal .cstage .ns-obj>img{height:178px!important}',
     // 성장: 지금 → 다음 한 줄, 최대·돌파·피해는 그 아래 줄 (라벨 + 값)

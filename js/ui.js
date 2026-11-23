@@ -441,7 +441,7 @@
         for (var ci = 0; ci < DATA.costumeConf.maxLv / DATA.costumeConf.starEvery; ci++) cst += '<i class="' + (ci < ns ? 'on' : '') + '">★</i>';
         var act = !lv ? '<button class="buy gemb' + (s.gems < c.price ? ' off' : '') + '" data-cbuy="' + c.id + '"><i class="gem"></i>' + fmt(c.price) + '</button>'
           : '<div class="cbtns"><button class="btn' + (on ? ' on' : '') + '" data-cwear="' + c.id + '">' + (on ? '입는 중' : '입기') + '</button><button class="buy gemb' + (max || s.gems < CW.costumeUpCost(c, lv) ? ' off' : '') + '" data-cup="' + c.id + '">' + (max ? '최대' : '<small>강화</small><span><i class="gem"></i>' + fmt(CW.costumeUpCost(c, lv)) + '</span>') + '</button></div>';
-        return '<div class="ccard' + (on ? ' on' : '') + (lv ? '' : ' none') + ((cosPrev || wear) === c.id ? ' prev' : '') + '" style="--gc:' + hc(c.grade) + '"><em class="cbadge ' + (on ? 'wear' : lv ? 'own' : 'none') + '">' + (on ? '착용 중' : lv ? '보유' : '미보유') + '</em><div class="cgrade">' + hn(c.grade) + (lv ? ' Lv.' + lv + '/' + DATA.costumeConf.maxLv : '') + '</div>' + (img ? '<button class="cprevb" data-cprev="' + c.id + '" aria-label="' + esc(c.name) + ' 미리보기"><img src="' + img + '" alt=""></button>' : '') + (on ? '<em class="cb wear mini">착용 중</em>' : '') +
+        return '<div class="ccard' + (on ? ' on' : '') + (lv ? '' : ' none') + ((cosPrev || wear) === c.id ? ' prev' : '') + '" style="--gc:' + hc(c.grade) + '"><em class="cbadge ' + (on ? 'wear' : lv ? 'own' : 'none') + '">' + (on ? '착용 중' : lv ? '보유' : '미보유') + '</em><div class="cgrade">' + hn(c.grade) + (lv ? ' Lv.' + lv + '/' + DATA.costumeConf.maxLv : '') + '</div>' + (img ? '<button class="cprevb" data-cprev="' + c.id + '" aria-label="' + esc(c.name) + '"><img src="' + img + '" alt=""></button>' : '') + (on ? '<em class="cb wear mini">착용 중</em>' : '') +
           '<b>' + c.name + '</b><span class="cdesc">' + c.desc + '</span><div class="cstars">' + cst + '</div><small>' + bonusText(c.stat, CW.costumeValue(c, Math.max(1, lv))) + (lv ? '' : ' (보유 시 적용)') + '</small>' + act + '</div>';
       }).join('');
       var nOwn = DATA.costumes.filter(function (c) { return own[c.id]; }).length, CC = DATA.costumeConf;
@@ -451,7 +451,7 @@
         var lv = own[c.id] || 0, img = (CW.ICO && CW.ICO.cosArt && CW.ICO.cosArt(c.id, true)) || G.costumeThumb(c.id), on = wear === c.id;
         var act = !lv ? '<button class="buy gemb' + (s.gems < c.price ? ' off' : '') + '" data-cbuy="' + c.id + '"><i class="gem"></i>' + fmt(c.price) + '</button>'
           : '<div class="cbtns"><button class="btn' + (on ? ' on' : '') + '" data-cwear="' + c.id + '">' + (on ? '입는 중' : '입기') + '</button></div>';
-        return '<div class="ccard look' + (on ? ' on' : '') + (lv ? '' : ' none') + ((cosPrev || wear) === c.id ? ' prev' : '') + '" style="--gc:' + hc(c.grade) + '"><em class="cbadge ' + (on ? 'wear' : lv ? 'own' : 'none') + '">' + (on ? '착용 중' : lv ? '보유' : '미보유') + '</em><div class="cgrade">' + hn(c.grade) + ' 외형</div>' + (img ? '<button class="cprevb" data-cprev="' + c.id + '" aria-label="' + esc(c.name) + ' 미리보기"><img src="' + img + '" alt=""></button>' : '') + (on ? '<em class="cb wear mini">착용 중</em>' : '') +
+        return '<div class="ccard look' + (on ? ' on' : '') + (lv ? '' : ' none') + ((cosPrev || wear) === c.id ? ' prev' : '') + '" style="--gc:' + hc(c.grade) + '"><em class="cbadge ' + (on ? 'wear' : lv ? 'own' : 'none') + '">' + (on ? '착용 중' : lv ? '보유' : '미보유') + '</em><div class="cgrade">' + hn(c.grade) + ' 외형</div>' + (img ? '<button class="cprevb" data-cprev="' + c.id + '" aria-label="' + esc(c.name) + '"><img src="' + img + '" alt=""></button>' : '') + (on ? '<em class="cb wear mini">착용 중</em>' : '') +
           '<b>' + c.name + '</b><span class="cdesc">' + c.desc + '</span><small>능력치 없음 · 모습과 발동 효과만</small>' + act + '</div>';
       }).join('') + '</div>';
       var curC = CW.costumeById(cosPrev || wear), view = !LOOKS.length ? 'cos' : (cosView || (curC && curC.look ? 'look' : 'cos'));
@@ -462,7 +462,7 @@
       if (cosPrev && !CW.costumeById(cosPrev)) cosPrev = null;
       var pc = CW.costumeById(cosPrev || wear) || DATA.costumes[0], plv = own[pc.id] || 0, pon = wear === pc.id, pnew = CW.ICO && CW.ICO.cosArt && CW.ICO.cosArt(pc.id), pimg = pnew || G.costumeThumb(pc.id, 360), pmax = plv >= CC.maxLv;
       var pns = CW.costumeStars(plv), toStar = plv && !pmax ? CC.starEvery - plv % CC.starEvery : 0;
-      var badge = pon ? '<em class="cb wear">✓ 착용 중</em>' : '<em class="cb ' + (plv ? 'own' : 'none') + '"><i>▶</i>미리보기</em>';   // 시안: 이름 오른쪽 진주 알약 (보유 여부는 카드 꼬리표·구매 버튼)
+      var badge = pon ? '<em class="cb wear">✓ 착용 중</em>' : '';   // 시안: 이름 오른쪽 진주 알약 (보유 여부는 카드 꼬리표·구매 버튼)
       var pact = !plv ? '<button class="buy gemb' + (s.gems < pc.price ? ' off' : '') + '" data-cbuy="' + pc.id + '"><small>구매</small><span><i class="gem"></i>' + fmt(pc.price) + '</span></button>'
         : '<button class="btn' + (pon ? ' on' : '') + '" data-cwear="' + pc.id + '">' + (pon ? '착용 중' : '입기') + '</button><button class="buy gemb' + (pmax || s.gems < CW.costumeUpCost(pc, plv) ? ' off' : '') + '" data-cup="' + pc.id + '">' + (pmax ? '최대' : '<small>강화</small><span><i class="gem"></i>' + fmt(CW.costumeUpCost(pc, plv)) + '</span>') + '</button>';
       // 승인 시안 오른쪽: 큰 캐릭터 성운 전시 → 이름 → 한 덩어리 효과 영역(외형·보유 효과·Lv/★/다음 별) → 입기(청록)·강화
