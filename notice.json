@@ -10,7 +10,7 @@
       "until": "2027-02-28",
       "only": "owner",
       "view": "pack",
-      "order": 1
+      "order": 0
     },
     {
       "id": "notice-20261117-rates",
@@ -29,7 +29,7 @@
       "date": "2026-11-17",
       "pin": true,
       "view": "guide",
-      "order": 0
+      "order": 1
     }
   ],
   "removed": [
