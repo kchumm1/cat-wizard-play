@@ -9,8 +9,8 @@
   function mod(f) { return isNode ? require('./' + f + '.js') : root.CW; }
 
   var ACTIONS = ['pull', 'summonRelics', 'runeSummon', 'sigilSummon', 'rollPotential', 'buyCostume', 'upCostume',
-    'buyShop', 'buyPack', 'openChest', 'takeOut', 'claimDaily', 'mailTake', 'coupon', 'dungeonClaim'];
-  var OWNER_ONLY = ['buyShop', 'buyPack'];   // practice purchases (real payments later)
+    'buyShop', 'buyPack', 'openChest', 'takeOut', 'claimDaily', 'mailTake', 'coupon', 'dungeonClaim', 'eventAttend', 'passClaim', 'passBuy'];
+  var OWNER_ONLY = ['buyShop', 'buyPack', 'passBuy'];   // practice purchases (real payments later)
 
   // the day key the game uses ('2026-11-18' without zero padding: G.dayKey, js/dungeon.js), as a Korean day
   function kDay(now) { var d = new Date(now + 9 * 3600e3); return d.getUTCFullYear() + '-' + (d.getUTCMonth() + 1) + '-' + d.getUTCDate(); }
@@ -68,6 +68,13 @@
         }
         return yes({ gems: gems });
       }
+      // 오픈 기념 이벤트 (js/open-event.js): a rune or sigil whose bag is full goes into the 가방 (js/chest.js)
+      case 'eventAttend': case 'passClaim': {
+        var OE = mod('open-event'), CHS = mod('chest'), sp = function (kind, it) { CHS.chestSpill(state, kind, it, now); };
+        var er = action === 'eventAttend' ? OE.evAttend(state, now, rng, sp) : OE.evClaim(state, now, { line: args.line, step: args.step, upto: args.upto }, rng, sp, false);
+        return er.ok ? yes(er) : no(er.code);
+      }
+      case 'passBuy': { var pb = mod('open-event').evBuyPass(state, now); return pb.ok ? yes(pb) : no(pb.code); }
     }
     return no('nope');
   }

@@ -1320,6 +1320,20 @@
       if (dot && !d) { d = document.createElement('b'); d.className = 'qdot'; btn.appendChild(d); }
       if (!dot && d) d.remove();
     }
+    // 오픈 기념 이벤트 칸 (2026-11-23): 코덱스·GPT 아이콘, 받을 게 있으면 빨간 점, 기간이 끝나면 칸이 없어짐. 2초에 한 번만 봄.
+    var evKey = '', evT = 0;
+    function evBtnHud(s) {
+      if (!G.evView || !s) return;
+      var now = Date.now(); if (evKey && now - evT < 2000) return; evT = now;
+      var v = G.evView(), key = v.on + ':' + v.dot; if (key === evKey) return; evKey = key;
+      var btn = document.querySelector('#quick [data-quick="event"]'); if (!btn) return;
+      btn.hidden = !v.on;
+      var i = btn.querySelector('i'); if (!i.firstChild) i.innerHTML = '<img class="ico" src="' + (CW.ART_BASE || 'art/') + 'ev-event-icon.webp" alt="" draggable="false">';
+      var d = btn.querySelector('.qdot');
+      if (v.dot && !d) { d = document.createElement('b'); d.className = 'qdot'; btn.appendChild(d); }
+      if (!v.dot && d) d.remove();
+      if (typeof fitQuick === 'function') fitQuick();
+    }
     function petBtnHud(s) {
       if (!CW.petBox || !s) return;
       var b = CW.petBox(s), dot = b.eggs > 0 || CW.petHasFresh(s);
@@ -1415,6 +1429,7 @@
       powerHud(s);
       petBtnHud(s);
       goalsBtnHud(s);
+      evBtnHud(s);
     }
     // 2026-11-18 형: 운영자 상단도 내 핸드폰처럼 — a long nickname (귤귤귤귤귤, up to 8 letters) made the Lv box run under the
     // place tag and the stage plate in the middle. The box now ends before the place tag: the name gets smaller (down to
@@ -2774,6 +2789,7 @@
       var b = e.target.closest('[data-quick]'); if (!b) return; var q = b.dataset.quick; G.sound('click');
       if (q === 'map') { selDiff = selRegion = -1; openTab(tab === 'stage' ? 'battle' : 'stage'); }
       else if (q === 'alch') { trainSub = 'alch'; openTab('up'); }
+      else if (q === 'event') { if (CW.eventOpen) { var ev = G.evView(); CW.eventOpen(!ev.att.today && ev.pass.claim ? 'pass' : 'att', function () { evKey = ''; hud(); }); } }   // 오픈 기념 이벤트 (2026-11-23, js/event-ui.js)
       else if (q === 'goals') { if (CW.goalsOpen) CW.goalsOpen(function () { goalsT = 0; goalsKey = ''; hud(); }); }   // 할 일 · 업적 (2026-11-23, js/goals-ui.js)
       else if (q === 'pet') { if (CW.petPageOpen) CW.petPageOpen(function () { petKey = ''; hud(); }); }   // 펫 (2026-11-23, js/pet-ui.js)
       else if (q === 'dex') { if (CW.dexOpen) CW.dexOpen(); }
@@ -2963,10 +2979,16 @@
     // auto: opened by itself (on entering the game): only when today's gems are waiting and "오늘 하루 보지 않기" is off.
     var DW = 1086, DH = 1448, DCOL = [105, 400, 695], DROW = [[447, 243], [700, 229]];
     function dbox(x, y, w, h) { return 'left:' + (x / DW * 100) + '%;top:' + (y / DH * 100) + '%;width:' + (w / DW * 100) + '%;height:' + (h / DH * 100) + '%'; }
-    function showDaily(auto) {
-      var v = G.dailyView();
-      if (auto && (!v.today || v.hidden)) return;
-      if (!v.total) return;
+    // onClose (형 2026-11-23, 접속하면 뜨는 창 차례): called when it closes, or at once when it does not open
+    // already open and asked again (돌아왔어요 while the start popups wait on it): both callers hear when it closes
+    var dailyWait = [];
+    function dailyDone() { var w = dailyWait; dailyWait = []; w.forEach(function (f) { f(); }); }
+    function showDaily(auto, onClose) {
+      var v = G.dailyView(), fx0 = $('dailyFx');
+      if (onClose) dailyWait.push(onClose);
+      if (fx0 && !fx0.hidden) return;
+      if (auto && (!v.today || v.hidden)) { dailyDone(); return; }
+      if (!v.total) { dailyDone(); return; }
       var fx = $('dailyFx');
       if (!fx) { fx = document.createElement('div'); fx.id = 'dailyFx'; document.body.appendChild(fx); }
       var A = CW.ART_BASE || 'art/', hide = v.hidden;
@@ -3000,7 +3022,7 @@
       fx.onclick = function (e) {
         var t = e.target.closest('[data-dclaim],[data-dclose],[data-dhide]'); if (!t) return;
         if (t.dataset.dhide) { hide = !hide; G.hideDaily(hide); t.classList.toggle('on', hide); G.sound('click'); return; }
-        if (t.dataset.dclose) { fx.hidden = true; G.sound('click'); renderPanel(true); return; }
+        if (t.dataset.dclose) { fx.hidden = true; G.sound('click'); renderPanel(true); dailyDone(); return; }
         var day = G.dailyView().taken + 1;
         G.later(G.claimDaily(), function (n) { if (n) { draw(day); toast('다이아 +' + fmt(n) + ' 수령 완료'); hud(); renderPanel(true); } else toast('오늘은 이미 받았어요.'); });
       };

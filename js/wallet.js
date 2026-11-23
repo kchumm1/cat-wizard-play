@@ -52,7 +52,7 @@
     // the server got it (an answer came, even a refusal): the kept request can go; net/busy keep it for later
     // the kept request goes only on a real answer about the action (done, or refused for a reason of the game); anything
     // else (no line, a newer site, a login or server trouble) keeps it, to be sent again with the same id (최종 검토)
-    var ANSWERS = { gems: 1, nope: 1, used: 1, full: 1, ticket: 1, member: 1, time: 1, slow: 1 };
+    var ANSWERS = { gems: 1, nope: 1, used: 1, full: 1, ticket: 1, member: 1, time: 1, slow: 1, over: 1, locked: 1, done: 1 };   // over·locked·done: 오픈 기념 이벤트 (js/main.js ANSWERS와 같게)
     function settled(reply) { return !!reply && (reply.ok === true || !!ANSWERS[reply.code]); }
 
     function act(action, args, saveText) {

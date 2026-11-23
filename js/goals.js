@@ -8,7 +8,7 @@
 (function (root, f) { var m = f(root); if (typeof module !== 'undefined' && module.exports) module.exports = m; else { root.CW = root.CW || {}; Object.assign(root.CW, m); } })(this, function (root) {
   var isNode = typeof module !== 'undefined' && module.exports;
   function pets() { if (isNode) { try { return require('./pets.js'); } catch (e) { return null; } } return root.CW && root.CW.petBox ? root.CW : null; }
-  var KEYS = ['kills', 'bossTry', 'dungeon', 'upgrades', 'skillUp', 'potion', 'hatch', 'petLv', 'boxDays'];
+  var KEYS = ['kills', 'bossTry', 'dungeon', 'upgrades', 'skillUp', 'potion', 'hatch', 'petLv', 'boxDays', 'goalsDone'];
   function obj(v) { return !!v && typeof v === 'object' && !Array.isArray(v); }
   function whole(v) { v = Math.floor(Number(v)); return isFinite(v) && v > 0 ? v : 0; }
 
@@ -79,7 +79,9 @@
   function goalText(x) { return CAND[x.id] ? CAND[x.id].text(x.need) : x.id; }
   function goalClaim(state, i, ctx) {
     var x = goalsBox(state).goals.list[i]; if (!x || x.got || goalHave(state, x) < x.need) return null;
-    var r = rewardOf(x.rw, ctx || {}); give(state, r); x.got = true; return r;
+    var r = rewardOf(x.rw, ctx || {}); give(state, r); x.got = true;
+    goalCount(state, 'goalsDone', 1);   // 오픈 기념 패스 점수 (js/open-event.js)
+    return r;
   }
   function goalBoxReady(state) { var g = goalsBox(state).goals; return g.list.length > 0 && !g.box && g.list.every(function (x) { return x.got; }); }
   // 오늘의 상자: a pet egg and snacks
@@ -88,6 +90,8 @@
     var g = goalsBox(state).goals; if (!g.owed.length) return null;
     var sum = { gold: 0, food: 0, mana: 0, runeStone: 0 };
     g.owed.forEach(function (o) { var r = typeof o === 'string' ? rewardOf(o, ctx) : rewardOf(o && o.rw, ctx, o && o.w); for (var k in r) sum[k] += r[k]; });
+    // 오픈 기념 패스 점수: 넘어간 일일 미션도 한 개씩 (주간은 안 셈)
+    goalCount(state, 'goalsDone', g.owed.filter(function (o) { return typeof o === 'string' || !(o && o.w); }).length);
     g.owed = []; give(state, sum); return sum;
   }
 

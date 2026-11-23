@@ -31,9 +31,14 @@
   // what a package holds, given now. spill(kind, item) (가방, js/chest.js): a rune or sigil whose bag is full goes there
   // instead (without it a full rune bag gives rune stones as before). got.gold = the gold given
   function packGive(state, id, rng, now, spill) {
-    var p = packById(id), S = mod('./sigil.js'); if (!p) return [];
+    var p = packById(id); if (!p) return [];
+    return giveApply(state, p.give, rng, now, spill);
+  }
+  // a give object (the package shape: gems, goldMin, potionMin, pulls, daily, runes, runeStone, mana, sigils, sigilStone)
+  // given now — packages and the 오픈 기념 이벤트 (js/open-event.js) both use it
+  function giveApply(state, g, rng, now, spill) {
+    var S = mod('./sigil.js'), got = [];
     S.sigilById(state, '');
-    var g = p.give, got = [];
     if (g.gems) state.gems += g.gems;
     if (g.goldMin) { got.gold = mod('./economy.js').goldPerSecond(state) * 60 * g.goldMin; state.gold += got.gold; }
     if (g.potionMin) {
@@ -70,5 +75,5 @@
     return { total: total, taken: Math.max(0, total - left), left: left, today: left > 0 && d.last !== dayKey, hidden: d.hide === dayKey, gems: d.gems || 0 };
   }
   function hideDaily(state, dayKey, on) { daily(state).hide = on ? dayKey : ''; }
-  return { dailyView: dailyView, hideDaily: hideDaily, packById: packById, packSigils: packSigils, packOpen: packOpen, buyPack: buyPack, packGive: packGive, claimDaily: claimDaily };
+  return { dailyView: dailyView, hideDaily: hideDaily, packById: packById, packSigils: packSigils, packOpen: packOpen, buyPack: buyPack, packGive: packGive, giveApply: giveApply, claimDaily: claimDaily };
 });

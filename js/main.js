@@ -1244,28 +1244,54 @@
   }
 
   // ---------- leaving and coming back ----------
-  function giveOffline() {
+  // fromHidden: back from the background without closing the app (형 2026-11-23: 「돌아왔어요」는 그때만). Opening the game
+  // (모험 시작, a save loaded from the cloud) gives the same reward with one line on top, then the start popups (startQueue).
+  function giveOffline(fromHidden) {
     if (state.needsFirstNick) {
       if (loginGate && !loginGate.loggedIn()) return;
       ui.modal('<h2>닉네임 설정</h2><p>캐릭터 이름을 1~8글자로 입력해 주세요.</p><input class="nickin" maxlength="8" aria-label="닉네임" autocomplete="off">', [{
         label: '모험 시작', pri: true, fn: function () {
           var name = $('modalCard').querySelector('.nickin').value.trim();
-          if (!name) { giveOffline(); ui.toast('닉네임을 입력해 주세요.'); return; }
+          if (!name) { giveOffline(fromHidden); ui.toast('닉네임을 입력해 주세요.'); return; }
           delete state.needsFirstNick;
-          G.setNick(name); ui.hud(); giveOffline();
+          G.setNick(name); ui.hud(); giveOffline(fromHidden);
         }
       }], { variant: 'guide' });
       return;
     }
     begun = true;   // (모험 시작 pressed: an owed job celebration may play — state.tierShow)
     var r = CW.offlineReward(state, Date.now());
-    if (r.seconds < 60) { ui.showDaily(true); return; }
+    var then = fromHidden ? backQueue : startQueue;
+    if (r.seconds < 60) { then(); return; }
     state.gold += r.gold; state.gems += r.gems; state.runeDust = (state.runeDust || 0) + (r.runeDust || 0); state.sigilDust = (state.sigilDust || 0) + (r.sigilDust || 0); CW.setGoldScale(CW.capGold(state)); var lv = CW.gainXp(state, r.xp || 0); r.levels = lv.levels; if (lv.levels) refreshStats(); save();
-    ui.showOffline(r, function () { ui.showDaily(true); });
+    if (fromHidden) ui.showOffline(r, then);
+    else { ui.toast('쉬는 동안 골드 ' + CW.fmt(r.gold) + '를 모았어요'); then(); }
+  }
+  // 접속하면 뜨는 창 (형 2026-11-23): 업데이트 화면(모험 시작) → 7일 다이아(받을 날만) → 오픈 기념 출석(오늘 안 받았으면) →
+  // 오픈 기념 패스(하루 한 번). 앞 창을 닫아야 다음 창. 한 번 켤 때 한 번만.
+  var queued = false;
+  function startQueue() {
+    if (queued) return; queued = true;
+    var day = CW.evDay ? CW.evDay(evNow()) : '';
+    var steps = [
+      function (next) { ui.showDaily(true, next); },
+      function (next) { var v = CW.eventOpen && G.evView(); if (v && v.on && v.att.today) { CW.eventSeenToday(day, true, 'att'); CW.eventOpen('att', next); } else next(); },
+      function (next) {
+        var v = CW.eventOpen && G.evView();
+        if (v && v.on && !CW.eventSeenToday(day)) { CW.eventSeenToday(day, true); CW.eventOpen('pass', next); } else next();
+      }
+    ];
+    (function go(i) { if (i < steps.length) steps[i](function () { setTimeout(function () { go(i + 1); }, 250); }); })(0);
+  }
+  // 백그라운드에서 돌아옴: 7일 다이아, 그리고 날이 바뀌어 오늘 출석이 남았으면 출석 창만
+  function backQueue() {
+    if (!queued) return;   // 「모험 시작」 전: 업데이트 화면 위로 창을 띄우지 않음
+    var day = CW.evDay ? CW.evDay(evNow()) : '';
+    ui.showDaily(true, function () { var v = CW.eventOpen && G.evView(); if (v && v.on && v.att.today && !CW.eventIsOpen() && !CW.eventSeenToday(day, false, 'att')) { CW.eventSeenToday(day, true, 'att'); CW.eventOpen('att'); } });
   }
   document.addEventListener('visibilitychange', function () {
     if (document.hidden) { if (CW.idleOff) CW.idleOff(); CW.onHidden(state); clearField(true); save(); }   // 방치모드 ends when the app is left: the usual 돌아왔어요 comes back
-    else { last = performance.now(); syncRegion(); giveOffline(); }
+    else { last = performance.now(); syncRegion(); giveOffline(true); }
   });
   root.addEventListener('pagehide', save);
   root.addEventListener('resize', function () { sc.size(); });
@@ -1377,7 +1403,7 @@
   var wallet = !CW.FRIEND && CW.createWallet && playerSync ? CW.createWallet({ enabled: true, sync: playerSync, fetch: root.fetch ? root.fetch.bind(root) : null, store: storage, rules: CW.WALLET_RULES }) : null;
   G.wallet = wallet;
   // the game's own refusals (the screen says why, e.g. 다이아가 부족해요); anything else is a line or server problem (최종 검토)
-  var WFAIL = { walletFail: true }, wBusy = false, ANSWERS = { gems: 1, nope: 1, used: 1, full: 1, ticket: 1, time: 1, slow: 1 };
+  var WFAIL = { walletFail: true }, wBusy = false, ANSWERS = { gems: 1, nope: 1, used: 1, full: 1, ticket: 1, time: 1, slow: 1, over: 1, locked: 1, done: 1 };
   function wToast(code) {
     ui.toast(code === 'rules' ? '게임이 새로 나왔어요. 새로 고쳐 주세요.' : code === 'member' ? '이 기기는 아직 서버 지갑을 쓸 수 없어요.' : code === 'wait' ? '잠시만요, 앞의 요청을 처리하고 있어요.' : '인터넷 연결이 필요해요.');
   }
@@ -1417,6 +1443,7 @@
       wBusy = false;
       if (!reply.ok && reply.code === 'member') { wallet = null; G.wallet = null; ui.toast('이 기기는 서버 지갑 없이 계속해요. 한 번 더 눌러 주세요.'); return WFAIL; }
       if (!reply.ok && !ANSWERS[reply.code]) { wToast(reply.code); return WFAIL; }
+      G.walletCode = reply.ok ? '' : reply.code;   // why it was refused (the 오픈 기념 이벤트 window says it)
       var out = reply.ok ? replayAct(action, args, reply) : (CW.applyReply(state, reply, null), null);
       refreshStats(); save(); ui.hud();
       if (reply.ok && done) done(out);
@@ -1427,6 +1454,34 @@
   G.later = function (r, fn) { return Promise.resolve(r).then(function (x) { if (x && x.walletFail) return; fn(x); }); };
   // 쿠폰 (2026-11-18): only with the wallet
   var friendCoupon = CW.FRIEND && CW.createFriendCoupon({ state: state, save: save, store: storage, fetch: root.fetch && root.fetch.bind(root) });
+  // 오픈 기념 이벤트 (js/open-event.js, js/event-ui.js): the server wallet when there is one, otherwise the same rule here.
+  // Each answers { ok, code } or the rule's result with .lines (reward cards, js/chest.js giveLines).
+  function evSpill(kind, it) { CW.chestSpill(state, kind, it, Date.now()); }
+  function evLines(r) {
+    if (!r || !r.ok) return r;
+    r.lines = r.give ? CW.giveLines(r.give, r.got) : [].concat.apply([], (r.list || []).map(function (x) { return CW.giveLines(x.give, x.got); }));
+    return r;
+  }
+  function evDo(action, args, local) {
+    if (wallet) return walletDo(action, args, function () { snd.play('win'); }).then(function (out) { return out && out.walletFail ? out : out ? evLines(out) : { ok: false, code: G.walletCode || 'nope' }; });
+    var r = local(); if (r.ok) { snd.play('win'); refreshStats(); save(); ui.hud(); }
+    return Promise.resolve(evLines(r));
+  }
+  // 지갑 없는 기기 (2026-11-23, 형: 폰 시계를 앞당겨 상한을 푸는 것 막기): 날짜는 사이트 서버의 시계(HTTP Date)로 셈.
+  // 서버 시계를 아직 모르면(인터넷 없음) 받기·사기를 막음. 지갑이 있으면 서버가 어차피 자기 시계로 판정.
+  var evOffset = null;
+  function evClock() {
+    if (!root.fetch) return;
+    root.fetch(root.location.href.split('#')[0], { method: 'HEAD', cache: 'no-store' }).then(function (r) { var o = CW.evClockOffset(r.headers.get('date'), Date.now()); if (o !== null) evOffset = o; }, function () {});
+  }
+  evClock(); document.addEventListener('visibilitychange', function () { if (!document.hidden) evClock(); });
+  function evNow() { return Date.now() + (evOffset || 0); }
+  G.evView = function () { CW.evBase(state); return CW.evView(state, evNow(), !!CW.FRIEND); };
+  function evLocal(f) { return function () { if (evOffset === null) return { ok: false, code: 'net' }; return f(); }; }
+  G.evAttend = function () { if (!wallet && evOffset === null) return Promise.resolve({ ok: false, code: 'net' }); return evDo('eventAttend', {}, evLocal(function () { return CW.evAttend(state, evNow(), Math.random, evSpill); })); };
+  G.passClaim = function (line, step) { var a = line === 'all' ? { line: 'all', upto: CW.evPoints(state, evNow()).step } : { line: line, step: step }; if (!wallet && evOffset === null) return Promise.resolve({ ok: false, code: 'net' }); return evDo('passClaim', a, evLocal(function () { return CW.evClaim(state, evNow(), a, Math.random, evSpill, !!CW.FRIEND); })); };
+  G.passBuy = function () { if (CW.FRIEND) return false; if (!wallet && evOffset === null) return Promise.resolve({ ok: false, code: 'net' }); return evDo('passBuy', {}, evLocal(function () { return CW.evBuyPass(state, evNow()); })); };
+  CW.evG = G;   // js/event-ui.js
   G.coupon = friendCoupon || function (code) { return wallet ? walletDo('coupon', { code: code }, function () { snd.play('win'); }) : Promise.resolve(WFAIL); };
   if (wallet) { var wStart = setInterval(function () { if (ready) { clearInterval(wStart); setTimeout(function () { walletResume().then(walletFlush); }, 6000); } }, 1000); }
   // 저장 되돌리기 (설정 › 문제 확인용, 형꺼 only): the save kept on the server takes this phone's place

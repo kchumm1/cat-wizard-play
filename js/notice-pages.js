@@ -100,7 +100,7 @@
     if (g.gems) out.push([giveIco('gem'), '다이아 ' + n(g.gems)]);
     if (g.pulls) out.push([giveIco('pull'), '장비 뽑기 ' + g.pulls + '번']);
     if (g.goldMin) out.push([giveIco('gold'), '골드 (사냥 ' + (g.goldMin >= 60 ? g.goldMin / 60 + '시간' : g.goldMin + '분') + '치)']);
-    if (g.potionMin) out.push([giveIco('potion'), '물약 3종 ' + g.potionMin / 60 + '시간']);
+    if (g.potionMin) out.push([giveIco('potion'), '물약 3종 ' + (g.potionMin >= 60 ? g.potionMin / 60 + '시간' : g.potionMin + '분')]);
     if (g.mana) out.push([giveIco('mana'), '마력석 ' + n(g.mana)]);
     (g.runes || []).forEach(function (x) { out.push([giveIco('rune', x.grade), hn(x.grade) + ' 룬 ' + x.n + '개']); });
     if (g.runeStone) out.push([giveIco('runeStone'), '룬석 ' + n(g.runeStone)]);

@@ -50,6 +50,29 @@
     if (box.src === 'sigil' && freeSigils(state) < 1) return '신성력 칸이 가득 찼어요';
     return '';
   }
+  // a rune or sigil that did not fit its bag, kept in the 가방 (오픈 기념 이벤트 rewards, js/wallet-actions.js)
+  // the 가방 full too (2026-11-23): a rune becomes the rune stones it would dismantle into, a sigil its sigil stones (null)
+  function chestSpill(state, kind, it, now) {
+    if (!chestFull(state)) return put(state, Object.assign({ src: kind, at: now }, it));
+    if (kind === 'rune') state.runeStone = (state.runeStone || 0) + DATA.runeConf.dismantleBase[it.grade];
+    else { mod('./sigil.js').sigilById(state, ''); state.sigil.stone += DATA.sigilConf.stones[it.grade]; }
+    return null;
+  }
+  // the reward lines (cards) for a give object (the package shape) after js/packs.js giveApply gave it (got: what it returned)
+  function giveLines(g, got) {
+    var rew = [], add = function (o) { rew.push(o); };
+    if (g.gems) add({ k: 'gems', n: g.gems, to: 'gem' });
+    if (g.goldMin) add({ k: 'gold', gold: got && got.gold, min: g.goldMin, to: 'gold' });
+    if (g.pulls) add({ k: 'pulls', n: g.pulls, to: 'gear' });
+    if (g.daily) add({ k: 'daily', n: g.daily.days, gems: g.daily.gems, to: 'now' });
+    if (g.potionMin) add({ k: 'potion', n: g.potionMin, to: 'now' });
+    if (g.mana) add({ k: 'mana', n: g.mana, to: 'now' });
+    (g.runes || []).forEach(function (x) { add({ k: 'rune', n: x.n, grade: x.grade, to: 'rune' }); });
+    if (g.runeStone) add({ k: 'runeStone', n: g.runeStone, to: 'rune' });
+    (g.sigils || []).forEach(function (x) { add({ k: 'sigil', n: x.n, grade: x.grade, to: 'sigil' }); });
+    if (g.sigilStone) add({ k: 'sigilStone', n: g.sigilStone, to: 'sigil' });
+    return rew;
+  }
   // 열기 (형 2026-11-17: 열면 바로 들어가고, 룬·신성력 칸이 없으면 가방으로 돌아와 보관 · 7일 다이아 같은 건 바로 실행):
   // { ok, box, rewards: [{ k, n, grade, gold, to: 'rune'|'sigil'|'gear'|'gem'|'gold'|'now', back (가방으로 돌아간 수) }], go, got }
   function chestOpen(state, id, goldScale, rng, now) {
@@ -61,20 +84,7 @@
     var add = function (o) { rew.push(o); };
     if (box.src === 'pack') {
       var PK = mod('./packs.js'), p = PK.packById(box.pack);
-      if (p) {
-        var g = p.give;
-        got = PK.packGive(state, box.pack, rng, now, spill);
-        if (g.gems) add({ k: 'gems', n: g.gems, to: 'gem' });
-        if (g.goldMin) add({ k: 'gold', gold: got.gold, min: g.goldMin, to: 'gold' });
-        if (g.pulls) add({ k: 'pulls', n: g.pulls, to: 'gear' });
-        if (g.daily) add({ k: 'daily', n: g.daily.days, gems: g.daily.gems, to: 'now' });
-        if (g.potionMin) add({ k: 'potion', n: g.potionMin, to: 'now' });
-        if (g.mana) add({ k: 'mana', n: g.mana, to: 'now' });
-        (g.runes || []).forEach(function (x) { add({ k: 'rune', n: x.n, grade: x.grade, to: 'rune' }); });
-        if (g.runeStone) add({ k: 'runeStone', n: g.runeStone, to: 'rune' });
-        (g.sigils || []).forEach(function (x) { add({ k: 'sigil', n: x.n, grade: x.grade, to: 'sigil' }); });
-        if (g.sigilStone) add({ k: 'sigilStone', n: g.sigilStone, to: 'sigil' });
-      }
+      if (p) { got = PK.packGive(state, box.pack, rng, now, spill); rew = giveLines(p.give, got); }
     } else {
       var l = box.mail, gf = mod('./mail-gift.js').giftOf(l), M = mod('./mail.js');
       var gold = M.mailGive(state, l, goldScale, rng, now, spill);
@@ -116,5 +126,5 @@
     return { ok: true, why: '', box: box, go: go, rewards: [{ k: box.src, id: box.kind, n: 1, grade: box.grade, to: box.src }] };
   }
   return { CHEST_CAP: CAP, chestFull: chestFull, chestItems: chestItems, chestCount: chestCount, chestById: chestById, chestBuyPack: chestBuyPack, chestTakeMail: chestTakeMail,
-    chestTitle: chestTitle, chestIcon: chestIcon, chestRoom: chestRoom, chestOpen: chestOpen, chestTakeOut: chestTakeOut, chestIsItem: chestIsItem };
+    chestTitle: chestTitle, chestIcon: chestIcon, chestRoom: chestRoom, chestOpen: chestOpen, chestTakeOut: chestTakeOut, chestIsItem: chestIsItem, giveLines: giveLines, chestSpill: chestSpill };
 });
