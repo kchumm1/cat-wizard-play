@@ -2,6 +2,18 @@
   "note": "공지 목록 (js/notice.js, js/notice-ui.js). id는 한 번만 쓰고 바꾸지 않는다. tag: 공지·업데이트·이벤트·점검 중 하나. title 제목, text 본문(줄바꿈 \\n, 빈 줄은 문단), date 올린 날(YYYY-MM-DD), pin true면 맨 위에 고정. from/until은 보이는 날(한국 시간). 운영자 화면(ops.html)에서 쓰고 지울 수 있다. view: rates(뽑기 확률표)·pack(겨울 패키지)·guide(책 가이드)면 js/notice-pages.js의 그림 화면으로 열린다. only: owner면 체험판(친구꺼)에는 안 보인다.",
   "notices": [
     {
+      "id": "notice-20261123235126-716q",
+      "tag": "이벤트",
+      "title": "겨울 신규 냥법사 패키지 출시",
+      "text": "안녕하세요, 냥법사님!\n\n처음 오신 냥법사님을 위한 겨울 선물 3종이 나왔어요.\n첫눈 선물 · 눈사람 성장 상자 · 겨울왕국 대모험\n\n다이아·장비 뽑기·골드·물약에 룬과 신성력까지!\n각각 한 번씩, 2월 28일까지 더보기 → 패키지에서 받을 수 있어요.",
+      "date": "2026-11-23",
+      "until": "2026-12-31",
+      "view": "pack",
+      "only": "owner",
+      "by": "ops",
+      "order": -1
+    },
+    {
       "id": "notice-20261123233550-awh0",
       "tag": "공지",
       "title": "처음 만나는 냥법사 모험 안내서",
