@@ -3,7 +3,7 @@
   // it with its own random numbers (server/wallet-core.cjs runAction) and sends them back; the phone (js/wallet.js) runs
   // the very same line with those numbers, so the save on both sides changes the same way.
   //   performAction(state, action, args, env) → { ok: true, result } | { ok: false, code }
-  //   env: { rng, now (server ms), gemRoom (diamonds the daily cap still allows), letter, coupon }
+  //   env: { rng, now (server ms), gemRoom (diamonds the daily cap still allows), letter, coupon, packCal (운영 달력에 열린 패키지) }
   // Days are always Korean days, worked out from env.now here, so the server (UTC) and the phone agree.
   var isNode = typeof module !== 'undefined' && module.exports;
   function mod(f) { return isNode ? require('./' + f + '.js') : root.CW; }
@@ -39,7 +39,7 @@
       case 'buyCostume': return mod('costume').buyCostume(state, args.id) ? yes(true) : no('gems');
       case 'upCostume': return mod('costume').upCostume(state, args.id) ? yes(true) : no('gems');
       case 'buyShop': { var g = mod('state').buy(state, +args.i); return g ? yes(g) : no('nope'); }
-      case 'buyPack': { var box = mod('chest').chestBuyPack(state, args.id, now); return box ? yes(box) : no('full'); }
+      case 'buyPack': { var box = mod('chest').chestBuyPack(state, args.id, now, Array.isArray(env.packCal) ? env.packCal : mod('packs').packCalDefaultOpen(now)); /* 없으면 양쪽 다 처음 기간 */ return box ? yes(box) : no('full'); }
       case 'openChest': { var o = mod('chest').chestOpen(state, String(args.id), +args.goldScale || 1, rng, now); return o.ok ? yes(o) : no('nope'); }
       case 'takeOut': { var t = mod('chest').chestTakeOut(state, String(args.id), rng); return t.ok ? yes(t) : no('full'); }
       case 'claimDaily': { var d = mod('packs').claimDaily(state, kDay(now)); return d ? yes(d) : no('used'); }

@@ -12,9 +12,11 @@
   function costumeUpCost(c, lv) { return Math.ceil(C.upBase * Math.pow(C.upGrowth, c.grade) * (1 + lv * C.upLv)); }
   function costumeStars(lv) { return Math.floor((lv || 0) / C.starEvery); }
   function buyCostume(state, id) {
-    var c = byId(id), own = owned(state); if (!c || own[id] || state.gems < c.price) return false;
+    var c = byId(id), own = owned(state); if (!c || c.past || own[id] || state.gems < c.price) return false;   // 지난 코스튬(past)은 못 삼
     state.gems -= c.price; own[id] = 1; return true;
   }
+  // 지난 코스튬 (2026-11-23): 판매가 끝난 코스튬(past: true)은 가진 사람에게만 보임 (쿠폰·편지로 받으면 바로 보임)
+  function costumeVisible(state, c) { return !!c && (!c.past || !!owned(state)[c.id]); }
   function upCostume(state, id) {
     var c = byId(id), own = owned(state), lv = own[id] || 0; if (!c || c.look || !lv || lv >= C.maxLv) return false;
     var cost = costumeUpCost(c, lv); if (state.gems < cost) return false;
@@ -29,6 +31,6 @@
     if (n > 1) b.finalPct = (b.finalPct || 0) + (n - 1) * C.collect;
     return b;
   }
-  return { costumeById: byId, costumeUpCost: costumeUpCost, costumeStars: costumeStars, costumeValue: costumeValue, buyCostume: buyCostume, upCostume: upCostume,
+  return { costumeVisible: costumeVisible, costumeById: byId, costumeUpCost: costumeUpCost, costumeStars: costumeStars, costumeValue: costumeValue, buyCostume: buyCostume, upCostume: upCostume,
     wearCostume: wearCostume, costumeLook: costumeLook, costumeStats: costumeStats };
 });

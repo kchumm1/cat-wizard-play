@@ -181,7 +181,7 @@
       sigilStats: (DATA.sigilStats.map(function (s) { return { id: s.stat, name: sigilStatName(s.stat) + (s.awaken ? ' (각성)' : '') }; })),
       relics: DATA.relics.map(function (r) { return { id: r.id, name: r.name, icon: r.icon, divine: !!r.divine }; }),
       looks: (DATA.looks || []).map(function (l) { return { id: l.id, name: l.name }; }),
-      costumes: DATA.costumes.map(function (c) { return { id: c.id, name: c.name, grade: DATA.hiGrades[c.grade] ? DATA.hiGrades[c.grade].name : '' }; }),
+      costumes: DATA.costumes.map(function (c) { return { id: c.id, name: c.name, grade: DATA.hiGrades[c.grade] ? DATA.hiGrades[c.grade].name : '', past: !!c.past }; }),   // past: 지난 코스튬 (2026-11-23)
       pets: (DATA.pets || []).map(function (p) { var gr = byId(DATA.petGroups || [], p.group); return { id: p.id, name: p.name, grade: PGRADE[p.grade], group: gr ? gr.name : '' }; }),
       petCur: PETCUR.map(function (c) { return { key: c.key, name: c.name, icon: c.icon }; })
     };

@@ -20,8 +20,8 @@
   function put(state, box) { var c = chest(state); box.id = 'c' + (++c.seq); box.at = box.at || Date.now(); c.items.push(box); return box; }
 
   // a package bought → one box (false when it cannot be bought now; js/packs.js packOpen says why)
-  function chestBuyPack(state, id, now) {
-    var PK = mod('./packs.js'); if (chestFull(state) || PK.packOpen(state, id) !== 'ok') return false;
+  function chestBuyPack(state, id, now, cal) {
+    var PK = mod('./packs.js'); if (chestFull(state) || PK.packOpen(state, id, cal, now) !== 'ok') return false;
     state.packs = state.packs || {}; state.packs[id] = (state.packs[id] || 0) + 1;
     return put(state, { src: 'pack', pack: id, at: now });
   }

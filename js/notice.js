@@ -8,12 +8,20 @@
   function box(state) { if (!state.notice || typeof state.notice !== 'object') state.notice = {}; if (!state.notice.read || typeof state.notice.read !== 'object') state.notice.read = {}; return state.notice; }
   function day(s, end) { var t = Date.parse(s + (end ? 'T23:59:59+09:00' : 'T00:00:00+09:00')); return isFinite(t) ? t : (end ? Infinity : -Infinity); }
   function ok(n) { return n && typeof n.id === 'string' && n.id && typeof n.title === 'string'; }
-  // the notices shown now (in their days), pinned first, then newest date first
+  // the order notices are shown in: pinned first; inside each group the ops page's order (2026-11-23, 형: 공지 순서를 운영자
+  // 페이지에서), notices without one after it, newest date first
+  function has(n) { return typeof n.order === 'number' && isFinite(n.order); }
+  function cmp(a, b) {
+    return (!!b.n.pin - !!a.n.pin) || (has(b.n) - has(a.n)) || (has(a.n) && has(b.n) ? a.n.order - b.n.order : 0) ||
+      (b.n.date || '').localeCompare(a.n.date || '') || a.i - b.i;
+  }
+  function sorted(list) { return (Array.isArray(list) ? list : []).map(function (n, i) { return { n: n, i: i }; }).filter(function (x) { return ok(x.n); }).sort(cmp); }
+  // the notices shown now (in their days), in that order
   function noticeShown(list, now) {
     now = now || Date.now();
-    return (Array.isArray(list) ? list : []).map(function (n, i) { return { n: n, i: i }; }).filter(function (x) {
-      var n = x.n; return ok(n) && (!n.from || now >= day(n.from)) && (!n.until || now <= day(n.until, true));
-    }).sort(function (a, b) { return (!!b.n.pin - !!a.n.pin) || (b.n.date || '').localeCompare(a.n.date || '') || a.i - b.i; }).map(function (x) { return x.n; });
+    return sorted(list).filter(function (x) {
+      var n = x.n; return (!n.from || now >= day(n.from)) && (!n.until || now <= day(n.until, true));
+    }).map(function (x) { return x.n; });
   }
   function noticeRead(state, n) { return !!(n && box(state).read[n.id]); }
   function noticeMarkRead(state, n) { if (!n || noticeRead(state, n)) return false; box(state).read[n.id] = 1; return true; }
@@ -46,7 +54,26 @@
   }
   function doc0(doc) { doc = doc && typeof doc === 'object' ? doc : {}; return { note: doc.note, notices: Array.isArray(doc.notices) ? doc.notices.slice() : [], removed: Array.isArray(doc.removed) ? doc.removed.slice() : [] }; }
   function clean(doc) { var o = {}; if (doc.note) o.note = doc.note; o.notices = doc.notices; if (doc.removed.length) o.removed = doc.removed; return o; }
-  function noticeAdd(doc, n) { var d = doc0(doc); d.notices.unshift(n); return clean(d); }
+  // a new notice goes on top (above any order the ops page set)
+  function noticeAdd(doc, n) {
+    var d = doc0(doc), o = d.notices.filter(function (x) { return x && has(x); }).map(function (x) { return x.order; });
+    if (o.length) n = Object.assign({}, n, { order: Math.min.apply(null, o) - 1 });
+    d.notices.unshift(n); return clean(d);
+  }
+  // move one notice up (dir -1) or down (+1) past its neighbour in the shown order, inside its pinned / not pinned group;
+  // every notice then gets its place as order 0, 1, 2… (the ones out of their days too, so the order stays the same later)
+  // (2026-11-23 검토: the neighbour is the next notice the game shows now — notices out of their days are skipped)
+  function noticeMove(doc, id, dir, now) {
+    now = now || Date.now();
+    var d = doc0(doc), all = sorted(d.notices).map(function (x) { return x.n; });
+    var live = function (n) { return (!n.from || now >= day(n.from)) && (!n.until || now <= day(n.until, true)); };
+    var i = all.findIndex(function (n) { return n.id === id; }), st = dir < 0 ? -1 : 1, j = i + st;
+    while (i >= 0 && j >= 0 && j < all.length && !live(all[j])) j += st;
+    if (i >= 0 && j >= 0 && j < all.length && !!all[i].pin === !!all[j].pin) { var t = all[i]; all[i] = all[j]; all[j] = t; }
+    var at = {}; all.forEach(function (n, k) { at[n.id] = k; });
+    d.notices = d.notices.map(function (n) { return n && at[n.id] !== undefined ? Object.assign({}, n, { order: at[n.id] }) : n; });
+    return clean(d);
+  }
   function noticeRemove(doc, id) {
     var d = doc0(doc); d.notices = d.notices.filter(function (n) { return !n || n.id !== id; });
     if (d.removed.indexOf(id) < 0) d.removed.push(id);
@@ -66,5 +93,5 @@
   }
   function noticeText(doc) { return JSON.stringify(doc, null, 2) + '\n'; }
   return { NOTICE_TAGS: NOTICE_TAGS, noticeShown: noticeShown, noticeRead: noticeRead, noticeMarkRead: noticeMarkRead, noticeUnread: noticeUnread, noticeTag: noticeTag, noticeDate: noticeDate,
-    noticeCheck: noticeCheck, noticeMake: noticeMake, noticeAdd: noticeAdd, noticeRemove: noticeRemove, noticeMerge: noticeMerge, noticeText: noticeText };
+    noticeCheck: noticeCheck, noticeMake: noticeMake, noticeAdd: noticeAdd, noticeMove: noticeMove, noticeRemove: noticeRemove, noticeMerge: noticeMerge, noticeText: noticeText };
 });

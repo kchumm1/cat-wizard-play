@@ -436,15 +436,17 @@
     var cosView = null;   // 아래 목록: 'cos' 코스튬 · 'look' 멸망 외형 (고르기 전에는 지금 보고 있는 옷 쪽)
     function costumePanel() {
       var s = G.state, own = s.costume.owned, wear = CW.costumeLook(s).id;
-      var cards = DATA.costumes.map(function (c) {
+      // 지난 코스튬(past)은 가진 사람에게만 (2026-11-23)
+      var COS = DATA.costumes.filter(function (c) { return CW.costumeVisible(s, c); });
+      var cards = COS.map(function (c) {
         var lv = own[c.id] || 0, img = (CW.ICO && CW.ICO.cosArt && CW.ICO.cosArt(c.id, true)) || G.costumeThumb(c.id), on = wear === c.id, max = lv >= DATA.costumeConf.maxLv, ns = CW.costumeStars(lv), cst = '';
         for (var ci = 0; ci < DATA.costumeConf.maxLv / DATA.costumeConf.starEvery; ci++) cst += '<i class="' + (ci < ns ? 'on' : '') + '">★</i>';
         var act = !lv ? '<button class="buy gemb' + (s.gems < c.price ? ' off' : '') + '" data-cbuy="' + c.id + '"><i class="gem"></i>' + fmt(c.price) + '</button>'
           : '<div class="cbtns"><button class="btn' + (on ? ' on' : '') + '" data-cwear="' + c.id + '">' + (on ? '입는 중' : '입기') + '</button><button class="buy gemb' + (max || s.gems < CW.costumeUpCost(c, lv) ? ' off' : '') + '" data-cup="' + c.id + '">' + (max ? '최대' : '<small>강화</small><span><i class="gem"></i>' + fmt(CW.costumeUpCost(c, lv)) + '</span>') + '</button></div>';
         return '<div class="ccard' + (on ? ' on' : '') + (lv ? '' : ' none') + ((cosPrev || wear) === c.id ? ' prev' : '') + '" style="--gc:' + hc(c.grade) + '"><em class="cbadge ' + (on ? 'wear' : lv ? 'own' : 'none') + '">' + (on ? '착용 중' : lv ? '보유' : '미보유') + '</em><div class="cgrade">' + hn(c.grade) + (lv ? ' Lv.' + lv + '/' + DATA.costumeConf.maxLv : '') + '</div>' + (img ? '<button class="cprevb" data-cprev="' + c.id + '" aria-label="' + esc(c.name) + '"><img src="' + img + '" alt=""></button>' : '') + (on ? '<em class="cb wear mini">착용 중</em>' : '') +
-          '<b>' + c.name + '</b><span class="cdesc">' + c.desc + '</span><div class="cstars">' + cst + '</div><small>' + bonusText(c.stat, CW.costumeValue(c, Math.max(1, lv))) + (lv ? '' : ' (보유 시 적용)') + '</small>' + act + '</div>';
+          '<b>' + c.name + (c.past ? ' <small class="cpast">지난 코스튬</small>' : '') + '</b><span class="cdesc">' + c.desc + '</span><div class="cstars">' + cst + '</div><small>' + bonusText(c.stat, CW.costumeValue(c, Math.max(1, lv))) + (lv ? '' : ' (보유 시 적용)') + '</small>' + act + '</div>';
       }).join('');
-      var nOwn = DATA.costumes.filter(function (c) { return own[c.id]; }).length, CC = DATA.costumeConf;
+      var nOwn = COS.filter(function (c) { return own[c.id]; }).length, CC = DATA.costumeConf;
       // 멸망 외형 열 벌 (2026-11-23, 형꺼만): 능력치 없이 모습·발동 효과만, 다이아로 사서 입기만 한다 (강화·별·수집 보너스 없음)
       var LOOKS = CW.FRIEND ? [] : (DATA.looks || []), nLook = LOOKS.filter(function (c) { return own[c.id]; }).length;
       var looksHtml = !LOOKS.length ? '' : '<p class="opcard-f cosview-note">능력치 없이 모습과 발동 효과만 바뀌어요 · 갈아입을 때와 스테이지 첫 스킬 때 발동</p><div class="cgrid looks">' + LOOKS.map(function (c) {
@@ -482,7 +484,7 @@
       return '<h3 class="ophide">코스튬</h3>' + expeditionOutfit + stage + seg + (view === 'look' ? looksHtml : '<div class="cgrid">' + cards + '</div>' +
         // 수집 카드 (2026-11-17, 사용자: 코스튬 수집 부분 이쁘게): 제목·개수 → 진행 막대 → 지금 효과 | 다음 하나 더
         (function () {
-          var nAll = DATA.costumes.length, done = nOwn >= nAll;
+          var nAll = COS.length, done = nOwn >= nAll;
           return '<div class="opcard ccol"><div class="opcard-h"><b>코스튬 수집</b><span class="ccol-n"><b>' + nOwn + '</b> / ' + nAll + '</span></div>' +
             '<i class="ccol-bar"><em style="width:' + (100 * nOwn / nAll).toFixed(1) + '%"></em></i>' +
             '<div class="ccol-cells"><p><small>지금 효과</small><b>모든 피해 +' + pct(Math.max(0, nOwn - 1) * CC.collect) + '</b></p>' +
@@ -1800,7 +1802,7 @@
         var list = DATA.packs.filter(function (p) { return p.cat === sec[0] && !p.off && CW.packOpen(s, p.id) !== 'over'; });
         if (!list.length) return '';
         if (sec[0] === 'winter') {   // a frosty showcase with falling snow (2026-11-17, the user: 애니메이션화해서 보기 좋게)
-          var dleft = Math.max(0, Math.ceil((Date.parse(list[0].until + 'T23:59:59+09:00') - Date.now()) / 864e5));
+          var dleft = Math.max(0, Math.ceil((Date.parse((CW.packCalEnd ? CW.packCalEnd(list[0].id) : '') + 'T23:59:59+09:00') - Date.now()) / 864e5)) || 0;   // 운영 달력 끝날 (2026-11-23)
           var flakes = ''; for (var fi = 0; fi < 16; fi++) flakes += '<i style="--x:' + ((fi * 37) % 100) + '%;--d:' + (5 + (fi * 7) % 6) + 's;--w:' + (-((fi * 13) % 9)) + 's;--z:' + (0.5 + (fi % 4) * 0.25) + '"></i>';
           return '<div class="wpk"><div class="wsnow" aria-hidden="true">' + flakes + '</div><div class="wpkhead" style="background-image:url(' + (CW.ART_BASE || 'art/') + 'ui-winter-banner.webp)"><b>겨울 신규 냥법사</b><span>처음 오신 냥법사님께 · 각 1번</span><em>D-' + dleft + '</em></div>' +
             '<div class="pkgrid winter">' + list.map(packRow).join('') + '</div><p class="wpknote">룬은 3차, 신성력은 5차 전직 후 장착할 수 있어요 (가방에 보관)</p></div>';

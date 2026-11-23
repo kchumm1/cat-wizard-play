@@ -8,9 +8,17 @@
   function daily(state) { if (!state.dailyGems) state.dailyGems = { left: 0, last: '' }; return state.dailyGems; }
   // 'ok', or why it cannot be bought now: 'tier' (that job is not reached yet), 'limit' (bought as often as it can be),
   // 'daily' (the daily gems still have days left), 'over' (its season ended), 'none' (no such package)
-  function packOpen(state, id) {
+  // 운영 달력 (2026-11-23): a cal package sells only while the calendar has it open. cal = the open ids (the server's env.packCal);
+  // without it the phone's calendar (js/pack-cal.js, packCalUse) and, before that ever came, DATA.packCalDefault
+  var calFn = null;
+  function packCalUse(fn) { calFn = typeof fn === 'function' ? fn : null; }
+  function kst(now) { return new Date((now || Date.now()) + 9 * 3600e3).toISOString().slice(0, 10); }
+  function packCalDefaultOpen(now) { var t = kst(now); return (DATA.packCalDefault || []).filter(function (x) { return x.from <= t && t <= x.until; }).map(function (x) { return x.id; }); }
+  function packCalOpenIds(cal, now) { if (Array.isArray(cal)) return cal; var c = calFn && calFn(now); return Array.isArray(c) ? c : packCalDefaultOpen(now); }
+  function packOpen(state, id, cal, now) {
     var p = packById(id); if (!p) return 'none';
-    if (p.until && new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10) > p.until) return 'over';   // 겨울 패키지: its season is over
+    if (p.cal && packCalOpenIds(cal, now).indexOf(id) < 0) return 'over';   // 달력에 열린 기간이 아님
+    if (p.until && kst(now) > p.until) return 'over';
     if (p.need && p.need.tier && (state.tier || 1) < p.need.tier) return 'tier';
     if (p.limit && ((state.packs || {})[id] || 0) >= p.limit) return 'limit';
     if (p.give.daily && daily(state).left > 0) return 'daily';
@@ -20,8 +28,8 @@
   }
   // returns the list of sigils given (empty when none; gear pulled is on it as .gear), or false when the package cannot
   // be bought now or the sigil bag has no room (then nothing is given)
-  function buyPack(state, id, rng, now) {
-    if (packOpen(state, id) !== 'ok') return false;
+  function buyPack(state, id, rng, now, cal) {
+    if (packOpen(state, id, cal, now) !== 'ok') return false;
     var p = packById(id), S = mod('./sigil.js'), need = packSigils(p);
     if (need) { S.sigilById(state, ''); if (state.sigil.items.length + need > DATA.sigilConf.cap) return false; }
     var got = packGive(state, id, rng, now);
@@ -75,5 +83,5 @@
     return { total: total, taken: Math.max(0, total - left), left: left, today: left > 0 && d.last !== dayKey, hidden: d.hide === dayKey, gems: d.gems || 0 };
   }
   function hideDaily(state, dayKey, on) { daily(state).hide = on ? dayKey : ''; }
-  return { dailyView: dailyView, hideDaily: hideDaily, packById: packById, packSigils: packSigils, packOpen: packOpen, buyPack: buyPack, packGive: packGive, giveApply: giveApply, claimDaily: claimDaily };
+  return { packCalUse: packCalUse, packCalDefaultOpen: packCalDefaultOpen, dailyView: dailyView, hideDaily: hideDaily, packById: packById, packSigils: packSigils, packOpen: packOpen, buyPack: buyPack, packGive: packGive, giveApply: giveApply, claimDaily: claimDaily };
 });

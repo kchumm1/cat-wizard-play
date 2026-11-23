@@ -15,21 +15,32 @@
     return m.pid;
   }
   function day(s, end) { var t = Date.parse(s + (end ? 'T23:59:59+09:00' : 'T00:00:00+09:00')); return isFinite(t) ? t : (end ? Infinity : -Infinity); }
+  // 지운 편지 (2026-11-23): state.mail.del[id] — kept on the phone only (not a server field)
+  function gone(state, l) { var m = state.mail; return !!(m && m.del && m.del[l.id]); }
   function forMe(state, l) { return l.to === 'all' || (Array.isArray(l.to) && l.to.indexOf(mailPid(state)) >= 0); }
   // the letters still waiting for this player
   function mailWaiting(state, list, now) {
     var got = box(state).got; now = now || Date.now();
     return (Array.isArray(list) ? list : []).filter(function (l) {
-      return l && typeof l.id === 'string' && l.id && !got[l.id] && forMe(state, l) && (!l.from || now >= day(l.from)) && (!l.until || now <= day(l.until, true));
+      return l && typeof l.id === 'string' && l.id && !got[l.id] && !gone(state, l) && forMe(state, l) && (!l.from || now >= day(l.from)) && (!l.until || now <= day(l.until, true));
     });
   }
   // every letter for this player that is in its days, claimed or not, newest first (the 전체 tab)
   function mailAll(state, list, now) {
     now = now || Date.now();
-    return (Array.isArray(list) ? list : []).filter(function (l) { return l && typeof l.id === 'string' && l.id && forMe(state, l) && (!l.from || now >= day(l.from)) && (!l.until || now <= day(l.until, true)); });
+    return (Array.isArray(list) ? list : []).filter(function (l) { return l && typeof l.id === 'string' && l.id && !gone(state, l) && forMe(state, l) && (!l.from || now >= day(l.from)) && (!l.until || now <= day(l.until, true)); });
   }
   function mailGot(state, l) { return !!(l && box(state).got[l.id]); }
   function mailHasReward(l) { var G = gift(); return mailGold(l) > 0 || +l.gems > 0 || !!(G && G.giftHas(l)); }
+  // a player may delete a letter once nothing is left to take on it (taken, or nothing on it) — never an untaken reward
+  function mailCanDel(state, l) { return !!(l && l.id) && (mailGot(state, l) || !mailHasReward(l)); }
+  function mailDel(state, l) {
+    if (!mailCanDel(state, l)) return false;
+    var m = box(state); if (!m.del || typeof m.del !== 'object') m.del = {};
+    m.del[l.id] = 1; return true;
+  }
+  // every letter in the list that can go (the 전체 tab's 「받은 우편 지우기」); returns how many went
+  function mailDelAll(state, list, now) { return mailAll(state, list, now).filter(function (l) { return mailDel(state, l); }).length; }
   // why a letter cannot be claimed right now ('' = it can): runes or sigils that do not fit their bag
   function mailClaimBlock(state, l) { var G = gift(); return G && G.giftHas(l) ? G.giftRoom(state, l) : ''; }
   // when it was sent, the way a letter says it: 오늘 · 어제 · 11월 3일 (Korean time)
@@ -86,5 +97,5 @@
     if (G && G.giftHas(l)) a.push(G.giftText(l));
     return a.join(' · ');
   }
-  return { mailGive: mailGive, mailMarkGot: mailMarkGot, mailClaimBlock: mailClaimBlock, mailAll: mailAll, mailGot: mailGot, mailHasReward: mailHasReward, mailWhen: mailWhen, mailPid: mailPid, mailWaiting: mailWaiting, mailClaim: mailClaim, mailRewardText: mailRewardText, mailGold: mailGold, mailGoldText: mailGoldText, goldWords: goldWords, goldShort: goldShort };
+  return { mailCanDel: mailCanDel, mailDel: mailDel, mailDelAll: mailDelAll, mailGive: mailGive, mailMarkGot: mailMarkGot, mailClaimBlock: mailClaimBlock, mailAll: mailAll, mailGot: mailGot, mailHasReward: mailHasReward, mailWhen: mailWhen, mailPid: mailPid, mailWaiting: mailWaiting, mailClaim: mailClaim, mailRewardText: mailRewardText, mailGold: mailGold, mailGoldText: mailGoldText, goldWords: goldWords, goldShort: goldShort };
 });

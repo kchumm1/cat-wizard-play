@@ -890,6 +890,9 @@
     },   // items and relics change the stats (2026-11-16)
     // 공지: remember that this notice was opened (js/notice.js)
     readNotice: function (n) { if (CW.noticeMarkRead(state, n)) save(); },
+    // 우편함 지우기 (2026-11-23): only letters with nothing left to take (js/mail.js mailCanDel)
+    delMail: function (l) { var ok = CW.mailDel(state, l); if (ok) save(); return ok; },
+    delMailAll: function (list) { var n = CW.mailDelAll(state, list); if (n) save(); return n; },
     claimDaily: function () { if (G.wallet) return walletDo('claimDaily', {}, function () { snd.play('win'); }); var n = CW.claimDaily(state, G.dayKey()); if (n) { snd.play('win'); save(); } return n; },
     runeUp: function (id) { var ok = CW.runeUp(state, id); if (ok) { refreshStats(); snd.play('click'); } return ok; },
     runeSwap: function (oldId, newId) { var ok = CW.runeSwap(state, oldId, newId); if (ok) { refreshStats(); snd.play('click'); save(); } return ok; },
@@ -1400,6 +1403,9 @@
   // ---------- 서버 지갑 1단계 (2026-11-18, js/wallet.js): 형꺼 diamonds belong to the server ----------
   // Diamond actions go to the function act; the answer's random numbers replay the same line of js/wallet-actions.js
   // here, so the save changes as the server's did. Needs the save sync (its login); 체험판 and local previews: off.
+  // 운영 달력 읽기 (2026-11-23, 형: 익명 말고 실사용자만): 이미 로그인한 기기만 그 토큰으로 읽음 (js/pack-cal.js), 새 로그인은 만들지 않음
+  CW.packCalAuth = function () { return playerSync && playerSync.userId() ? playerSync.authed() : Promise.resolve(null); };
+  if (CW.packCalFetch) CW.packCalFetch(true);
   var wallet = !CW.FRIEND && CW.createWallet && playerSync ? CW.createWallet({ enabled: true, sync: playerSync, fetch: root.fetch ? root.fetch.bind(root) : null, store: storage, rules: CW.WALLET_RULES }) : null;
   G.wallet = wallet;
   // the game's own refusals (the screen says why, e.g. 다이아가 부족해요); anything else is a line or server problem (최종 검토)

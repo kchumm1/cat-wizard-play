@@ -230,9 +230,9 @@
       // 겨울 신규 냥법사 (2026-11-17, the user: 곧 겨울, 신규로 오는 사람들을 위한 패키지 — 있는 것들 조합해서): once each, until
       // the end of February (until, KST). Gems stay on the shop curve; the rest (pulls, gold, potions, mana, runes, sigils —
       // the user: 겨울 패키지에 신성력하고 룬도) is the bonus. Runes and sigils wait in their bags until 3차 / 5차 opens them.
-      { id: 'winterS', cat: 'winter', name: '첫눈 선물', won: 1200, icon: '❄️', limit: 1, until: '2027-02-28', give: { gems: 480, pulls: 10, goldMin: 60, runes: [{ grade: 2, n: 1 }], sigils: [{ grade: 2, n: 1 }] } },
-      { id: 'winterM', cat: 'winter', name: '눈사람 성장 상자', won: 9900, icon: '⛄', limit: 1, until: '2027-02-28', give: { gems: 4000, pulls: 30, goldMin: 300, potionMin: 180, runes: [{ grade: 3, n: 2 }], runeStone: 1500, sigils: [{ grade: 3, n: 2 }] } },
-      { id: 'winterL', cat: 'winter', name: '겨울왕국 대모험', won: 29900, icon: '🎄', limit: 1, until: '2027-02-28', give: { gems: 12000, pulls: 100, goldMin: 600, potionMin: 360, mana: 100000, runes: [{ grade: 4, n: 2 }], runeStone: 5000, sigils: [{ grade: 4, n: 2 }], sigilStone: 3000 } },
+      { id: 'winterS', cat: 'winter', name: '첫눈 선물', won: 1200, icon: '❄️', limit: 1, cal: true, give: { gems: 480, pulls: 10, goldMin: 60, runes: [{ grade: 2, n: 1 }], sigils: [{ grade: 2, n: 1 }] } },
+      { id: 'winterM', cat: 'winter', name: '눈사람 성장 상자', won: 9900, icon: '⛄', limit: 1, cal: true, give: { gems: 4000, pulls: 30, goldMin: 300, potionMin: 180, runes: [{ grade: 3, n: 2 }], runeStone: 1500, sigils: [{ grade: 3, n: 2 }] } },
+      { id: 'winterL', cat: 'winter', name: '겨울왕국 대모험', won: 29900, icon: '🎄', limit: 1, cal: true, give: { gems: 12000, pulls: 100, goldMin: 600, potionMin: 360, mana: 100000, runes: [{ grade: 4, n: 2 }], runeStone: 5000, sigils: [{ grade: 4, n: 2 }], sigilStone: 3000 } },
       // off: kept for old saves and tests, not shown in 더보기 (2026-11-17, the user: 성장은 골드 꾸러미·마력석 꾸러미만, 룬하고 장비 뽑기는 빼)
       { id: 'dailyGem', cat: 'daily', name: '매일 다이아 7일', won: 6900, icon: '📅', give: { daily: { days: 7, gems: 340 } } },
       { id: 'goldS', cat: 'grow', name: '골드 꾸러미', won: 3300, icon: '💰', give: { goldMin: 120, gems: 1100 } },
@@ -256,6 +256,9 @@
       { id: 'sigilD', off: true, cat: 'rune', name: '신성력 멸망 패키지', won: 119000, icon: '💠', give: { sigils: [{ grade: 10, n: 1 }, { grade: 8, n: 2 }], sigilStone: 60000, gems: 50000 } },
       { id: 'mixed', off: true, cat: 'rune', name: '룬·신성력 성장 세트', won: 22000, icon: '🎁', give: { runeStone: 5000, sigils: [{ grade: 4, n: 1 }], sigilStone: 5000, gems: 8300 } }
     ],
+    // 운영 달력 (2026-11-23, 형: 달력에 「패키지 2달」이라고 적으면 그 기간만 팔리고 끝나면 자동으로 안 팔리게): cal: true 패키지는
+    // 서버 표 ops_calendar에 열린 기간에만 팔린다(서버 act가 확인). 이 목록은 그 표를 한 번도 못 받은 기기가 쓰는 처음 기간(KST 날짜).
+    packCalDefault: [{ id: 'winterS', from: '2026-11-17', until: '2027-02-28' }, { id: 'winterM', from: '2026-11-17', until: '2027-02-28' }, { id: 'winterL', from: '2026-11-17', until: '2027-02-28' }],
     // the three star items (staff, cape, charm): level with gold, stars from boss shards
     divine: [
       { id: 'staff', name: '별무리 지팡이', desc: '별똥별 천 개를 묶어 만든 지팡이', stat: 'atkPct', per: 0.03, icon: '🪄', kind: '무기' },
