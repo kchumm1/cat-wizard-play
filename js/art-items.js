@@ -64,7 +64,10 @@
   // 스킬 새 원화 (사용자 2026-11-16, tools/import-skill-parts.py): 21종만 새 그림, 나머지는 null → 예전 아이콘
   // 10차 나무 4종 (2026-11-16, 로컬 ComfyUI, 사용자 고름 3232): rootSpikes·flytrap·leafBlades·worldTree
   // 11차 물 4종 (2026-11-17, 사용자 GPT 그림, tools/cut-water-cards.py): tidalWave·bubblePrison·waterBurst·skyFalls
-  var SK2 = ['tidalWave', 'bubblePrison', 'waterBurst', 'skyFalls', 'rootSpikes', 'flytrap', 'leafBlades', 'worldTree', 'ballLightning', 'chainLightning', 'cometStrike', 'fireball', 'flamePillar', 'flameWave', 'frostNova', 'furBomb', 'glacierSpikes', 'iceLance', 'iceStorm', 'inferno', 'magicClaw', 'meteorRain', 'pawStamp', 'sparkRing', 'starDust', 'starShot', 'stormCloud', 'thunderStrike', 'yarnBall'];
+  var SK2 = ['tidalWave', 'bubblePrison', 'waterBurst', 'skyFalls', 'rootSpikes', 'flytrap', 'leafBlades', 'worldTree', 'ballLightning', 'chainLightning', 'cometStrike', 'fireball', 'flamePillar', 'flameWave', 'frostNova', 'furBomb', 'glacierSpikes', 'iceLance', 'iceStorm', 'inferno', 'magicClaw', 'meteorRain', 'pawStamp', 'sparkRing', 'starDust', 'starShot', 'stormCloud', 'thunderStrike', 'yarnBall',
+    // 5~9차 18종 (2026-11-23, 코덱스 그림 art-src/ai-review/2026-11-23-skill-icons, tools/import-skill-icons-5to9.py): 이제 모든 스킬이 새 그림
+    'starBarrage', 'constellation', 'moonLaser', 'crescentWave', 'moonFall', 'moonOrbs', 'solarBurst', 'sunSpear', 'sunArrows', 'coronaRing',
+    'blackHole', 'voidRift', 'gravityCrush', 'darkStar', 'elementNova', 'elementStorm', 'prismBeam', 'elementWheel'];
   I.skillArt = function (id) { return SK2.indexOf(id) >= 0 ? (CW.ART_BASE || 'art/') + 'sk2-' + id + '.webp' : null; };
   I.cosFeetShift = function (id) { return COS_FEET[id] ? (COS_FEET[id] - 1204) / 1254 : 0; };
 
