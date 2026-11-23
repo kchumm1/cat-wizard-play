@@ -76,5 +76,8 @@
   CW.GEAR_IMG = {};
   ['hat', 'staff', 'robe', 'belt', 'necklace', 'ear', 'ring'].forEach(function (k) { CW.GEAR_IMG[k] = (CW.ART_BASE || 'art/') + 'g-' + k + '.webp'; });
   // costume pictures load only when a costume is worn or its card is shown
-  CW.COSTUME_ART = ['cos1', 'cos2', 'cos3', 'cos4', 'cos5', 'cos6', 'cos7', 'cos8', 'cos9', 'cos10', 'cos11', 'cos12', 'cos13', 'cos14', 'cos15', 'cos16', 'cos17', 'cos18'];
+  CW.COSTUME_ART = ['cos1', 'cos2', 'cos3', 'cos4', 'cos5', 'cos6', 'cos7', 'cos8', 'cos9', 'cos10', 'cos11', 'cos12', 'cos13', 'cos14', 'cos15', 'cos16', 'cos17', 'cos18', 'cos19', 'cos20', 'cos21', 'cos22', 'cos23', 'cos24', 'cos25', 'cos26', 'cos27', 'cos28'];
+  // 네 방향 중 같은 그림을 쓰는 자리: 멸망 코스튬 2차 아홉 벌은 옆(v2)도 앞 사선(v1) 그림을 쓴다 (원화에 옆모습이 없다)
+  CW.COSTUME_VIEW_SAME = {};
+  ['cos20', 'cos21', 'cos22', 'cos23', 'cos24', 'cos25', 'cos26', 'cos27', 'cos28'].forEach(function (c) { CW.COSTUME_VIEW_SAME[c] = { 2: 1 }; });
 })(this);

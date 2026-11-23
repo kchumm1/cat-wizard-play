@@ -36,6 +36,9 @@
   // monster codex (2026-11-15): an old save gets its codex filled once from how far it went
   if (CW.dexBackfill) CW.dexBackfill(state);
   var params = new URLSearchParams(location.search);
+  // 멸망 코스튬 2차 미리보기 (js/doom-costumes.js): 내 컴퓨터에서 ?doomcos=bell 로 열 때만 그 옷을 입혀 보고, 5초마다 한 번 발동한다. 저장은 그대로.
+  var lookAct = null, lookStage = null;   // 멸망 외형 발동: 갈아입은 뒤 기다리는 것 / 이미 발동한 스테이지
+  var DOOM_PREVIEW = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && CW.DOOM_COSTUMES && CW.DOOM_COSTUMES[params.get('doomcos')] || null, doomLoop = 0;
   var FAST = Math.max(1, Math.min(60, +params.get('fast') || 1));
 
   var sc = CW.createScene($('cv'), $('ov')), fx = CW.createFx(sc), snd = CW.sound;
@@ -79,7 +82,7 @@
   // paw), and every costume (staff drawn in; cos11/cos16 2026-11-15, the other sixteen 2026-11-17, rigs js/rig.js
   // VIEW_RIGS); a costume's views are fetched when it is worn
   var VIEW_SETS = { hero: VIEW_IDS };
-  CW.COSTUME_ART.forEach(function (c) { VIEW_SETS[c] = [0, 1, 2, 3].map(function (i) { return c + '-v' + i; }); });
+  CW.COSTUME_ART.forEach(function (c) { VIEW_SETS[c] = [0, 1, 2, 3].map(function (i) { var same = (CW.COSTUME_VIEW_SAME || {})[c] || {}; return c + '-v' + (same[i] === undefined ? i : same[i]); }); });
   // the staff cut out of the plain wizard's picture, trimmed to itself, with where the paw holds it (rig armL.p) and
   // where its star is (armL.tip), in picture heights from its bottom-left — for the side views' paws (scene.js)
   function staffPiece(cv, base, mk) {
@@ -94,7 +97,7 @@
     return { tex: mk(c), w: bw / H, h: bh / H, gx: g[0], gy: g[1], tx: t[0], ty: t[1] };
   }
   function applyLook(silent) {
-    var l = CW.lookOf(state), cl = CW.costumeLook(state), key = CW.lookKey(l) + '|' + cl.id + '|' + (art[cl.art] ? cl.art : 'hero') + '|' + (VIEW_SETS[cl.art] || []).filter(function (id) { return art[id]; }).length;
+    var l = CW.lookOf(state), cl = DOOM_PREVIEW || CW.costumeLook(state), key = CW.lookKey(l) + '|' + cl.id + '|' + (art[cl.art] ? cl.art : 'hero') + '|' + (VIEW_SETS[cl.art] || []).filter(function (id) { return art[id]; }).length;
     if (key === lastLook || !art.hero) return;
     var first = lastLook === null; lastLook = key;
     var base = art[cl.art];
@@ -123,6 +126,7 @@
     if (!useViews) sc.setHeroViews(null);
     else if (base.id !== 'hero') sc.setHeroViews(vset.map(function (id) { return art[id]; }), vset.map(function (id) { return art[id].tex; }), null);
     if (cl.id !== lastCos) { lastCos = cl.id; sc.setCostumeFx(cl.fx); fx.setCostume(cl.fx); }
+    if (DOOM_PREVIEW && !doomLoop) doomLoop = setInterval(function () { if (!document.hidden) fx.costumeAct(DOOM_PREVIEW.act); }, 5200);
     if (!first && !silent) { fx.levelUp(state.tier, CW.staffColor(l), true); ui.toast('캐릭터 모습이 변경됐어요.'); }
   }
   function hexCss(h) { return '#' + ('000000' + h.toString(16)).slice(-6); }
@@ -527,6 +531,10 @@
     if (surge) { sc.shake(0.3); sc.flash('rgba(190,140,255,0.32)', 0.22); }
     var mul = (surge ? st.surgeMul : 1) * (weak ? st.weakMul : 1), bk = bookCast(s, mul, tg);
     fx.cast(s, state.tier, tg, onHit(s, mul, bk), st.speedMul, CW.skillLevel(state, s.id), surge);
+    // 멸망 외형: 스테이지마다 첫 스킬 때 한 번 발동 — 전투 화면을 보고 있을 때만 (메뉴가 덮고 있으면 메뉴를 닫은 뒤 첫 스킬 때),
+    // 그림이 아직 준비 안 됐으면 다음 스킬 때 다시
+    var lkc = CW.costumeLook(state), lks = (state.diff || 0) + ':' + state.stage;
+    if (lkc.look && lkc.act && lookStage !== lks && !lookAct && ui.currentTab() === 'battle' && heroArtId === lkc.art && fx.costumeAct(lkc.act)) lookStage = lks;
     ui.surgeGauge(state.surge || 0, DATA.surgeConf.charge);
     snd.play('cast');
     castT = CW.castTime(s, st.speedMul);
@@ -855,7 +863,7 @@
     summonRelics: function (n) { if (G.wallet) return walletDo('summonRelics', { n: n }, function () { snd.play('pull'); }); var r = CW.summonRelics(state, n); if (r) { refreshStats(); snd.play('pull'); save(); } return r; },
     buyCostume: function (id) { if (G.wallet) return walletDo('buyCostume', { id: id }, function () { snd.play('win'); }); var ok = CW.buyCostume(state, id); if (ok) { refreshStats(); snd.play('win'); save(); } return ok; },
     upCostume: function (id) { if (G.wallet) return walletDo('upCostume', { id: id }, function () { snd.play('click'); }); var ok = CW.upCostume(state, id); if (ok) { refreshStats(); snd.play('click'); save(); } return ok; },
-    wearCostume: function (id) { var ok = CW.wearCostume(state, id); if (ok) { applyLook(); save(); } return ok; },
+    wearCostume: function (id) { var ok = CW.wearCostume(state, id); if (ok) { applyLook(); save(); var lk = CW.costumeById(id); lookAct = lk && lk.look ? { id: id, t: 8 } : null; } return ok; },
     costumeThumb: function (id, size) {   // size: 오팔 코스튬 전시용 큰 그림 (2026-11-16), 없으면 목록용 150px
       size = size || 150;
       thumbs = thumbs || {}; var key = 'c:' + id + (size !== 150 ? ':' + size : ''); if (thumbs[key] !== undefined) return thumbs[key];
@@ -1223,6 +1231,9 @@
       try {
         if (!battleCovered) updateCoins(rdt);
         lookT -= rdt; if (lookT <= 0) { lookT = 0.25; applyLook(); }
+        // 멸망 외형으로 갈아입었으면, 메뉴를 닫고 전투 화면으로 돌아왔을 때 발동을 한 번 보여 준다 (메뉴가 전투를 덮고 있으면 기다리고,
+        // 전투 화면에서 8초 안에 그림이 준비되지 않으면 그만)
+        if (lookAct && ui.currentTab() === 'battle') { lookAct.t -= rdt; var lkl = CW.costumeLook(state); if (lkl.id !== lookAct.id || lookAct.t <= 0) lookAct = null; else if (heroArtId === lkl.art && fx.costumeAct(lkl.act)) { lookAct = null; lookStage = (state.diff || 0) + ':' + state.stage; } }   // 같은 스테이지 첫 스킬 발동과 겹치지 않게
         gained.t += rdt; if (gained.t >= 1) { if (state.fieldIdleReport && !document.hidden) showFieldIdleReport(); ui.gainLog(gained); gained.gold = gained.xp = gained.gems = gained.dmg = gained.runeDust = gained.sigilDust = gained.runeStone = gained.sigilStone = 0; gained.t = 0; gained.more.length = 0; }
         uiT += rdt; panelT += rdt; saveT += rdt;
         if (uiT > 0.1) { uiT = 0; CW.setGoldScale(CW.capGold(state)); ui.hud(); if (nowSlot !== lastSlot) { lastSlot = nowSlot; ui.slots(); } }

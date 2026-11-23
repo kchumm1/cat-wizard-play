@@ -54,7 +54,9 @@
   // ---------- 코스튬 새 원화 19종 (사용자, 2026-11-16, tools/import-costumes.py) ----------
   // 메뉴 전시·목록에만 쓰는 그림 (전투 캐릭터 모습은 그대로). 캔버스 1254 기준 발(알파 맨 아래) 위치 — 전시 때 발을 받침대에 맞춤
   var COS_FEET = { aurora: 1197, basic: 1200, blossom: 1187, celestial: 1204, chaos: 1190, cheese: 1203, doom: 1189, doomClock: 1200, doomDragon: 1210,
-    doomFrost: 1200, doomHoly: 1189, doomNight: 1201, doomPlume: 1190, doomPrism: 1204, doomRose: 1203, ember: 1216, forest: 1219, midnight: 1189, royal: 1215 };
+    doomFrost: 1200, doomHoly: 1189, doomNight: 1201, doomPlume: 1190, doomPrism: 1204, doomRose: 1203, ember: 1216, forest: 1219, midnight: 1189, royal: 1215,
+    // 멸망 외형 열 벌 (2026-11-23, tools/cut-doom-sheets.py: 860칸 캔버스의 발 835)
+    doomBell: 1218, doomDiver: 1218, doomPuppet: 1218, doomPotter: 1218, doomBinder: 1218, doomTailor: 1218, doomConductor: 1218, doomPilgrim: 1218, doomSurveyor: 1218, doomProjector: 1218 };
   // small: 목록 카드용 (투명 여백을 잘라 낸 240px). 그림이 없는 새 코스튬은 null → 예전 방식 썸네일
   I.cosArt = function (id, small) {
     if (!COS_FEET[id]) return null;

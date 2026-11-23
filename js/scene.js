@@ -12,7 +12,7 @@
   // Billboard shader: puppet bones (head, arms, legs, tail, wings bend their own part of the picture),
   // jelly bend from the feet, squash/stretch, white hit flash, ice tint, spell light and a burning dissolve.
   var BB_VS = [
-    'uniform float uBend; uniform vec2 uScale; uniform float uH;',
+    'uniform float uBend; uniform vec2 uScale; uniform float uH; uniform float uBendLin;',
     'uniform vec2 uBP[8]; uniform float uBA[8]; uniform vec2 uBT[8];',
     'attribute vec4 aW0; attribute vec4 aW1; varying vec2 vUv;',
     '#ifdef MONSTER_WING_FLEX',
@@ -27,7 +27,7 @@
     '  d.y += uWingFlex * (w[6]*leftReach*leftReach + w[7]*rightReach*rightReach);',
     '#endif',
     '  p.xy = q + d; float k = clamp(p.y / uH, 0.0, 1.0);',
-    '  p.x = p.x * uScale.x + uBend * k * k * uH; p.y *= uScale.y;',
+    '  p.x = p.x * uScale.x + uBend * mix(k * k, k * 0.7, uBendLin) * uH; p.y *= uScale.y;',
     '  gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0); }'].join('\n');
   var BB_FS = [
     'uniform sampler2D map; uniform vec3 uTint; uniform float uFlash; uniform vec3 uFlashCol; uniform float uFreeze; uniform float uDissolve; uniform vec3 uEdge; uniform vec3 uLight; uniform float uOpacity;',
@@ -363,7 +363,7 @@
       return new T.ShaderMaterial({
         uniforms: { uDesert:desertLight, uArtRole:{value:0}, map: { value: tex }, uTint: { value: new T.Color(tint === undefined || tint === null ? 0xffffff : tint) }, uFlash: { value: 0 }, uFlashCol: { value: new T.Color(0xffffff) },
           uFreeze: { value: 0 }, uDissolve: { value: 0 }, uEdge: { value: new T.Color(0xffd84a) }, uLight: { value: new T.Color(0) }, uOpacity: { value: 1 },
-          uBend: { value: 0 }, uScale: { value: new T.Vector2(1, 1) }, uH: { value: 1 }, uBP: { value: bp }, uBA: { value: new Float32Array(8) }, uBT: { value: bt } },
+          uBend: { value: 0 }, uBendLin: { value: 0 }, uScale: { value: new T.Vector2(1, 1) }, uH: { value: 1 }, uBP: { value: bp }, uBA: { value: new Float32Array(8) }, uBT: { value: bt } },
         vertexShader: BB_VS, fragmentShader: BB_FS, transparent: true, depthWrite: true, side: T.DoubleSide
       });
     }
@@ -398,6 +398,7 @@
     }
     function billboard(art, height, tint, role) {
       var w = height * art.aspect, mat = bbMaterial(art.tex, tint);
+      mat.uniforms.uBendLin.value = art.rig && art.rig.stiff ? 1 : 0;   // 곧은 소품을 든 옷은 곧게 기운다
       mat.uniforms.uArtRole.value=role || 0;
       var expeditionMob = /^exmob-/.test(art.id);
       if (expeditionMob) mat.defines = Object.assign({}, mat.defines, { EXPEDITION_MOB: 1 });
@@ -432,7 +433,7 @@
       }
       x += dx; y += dy;
       var k = Math.max(0, Math.min(1, y)), sc = d.u.uScale.value;
-      return new T.Vector3((x * sc.x + d.u.uBend.value * k * k) * d.h, y * sc.y * d.h, 0);
+      return new T.Vector3((x * sc.x + d.u.uBend.value * (d.u.uBendLin.value ? k * 0.7 : k * k)) * d.h, y * sc.y * d.h, 0);
     }
     // Animates the bones: walk cycle, arm swing, breathing, tail wag, wing flaps. Returns true on a footstep.
     function animRig(g, dt, P, sharedPose) {
@@ -649,8 +650,74 @@
       hero.userData.body.visible = false;
       viewAuras();
     }
+    // ---------- a costume's drawn moment (js/doom-costumes.js, 2026-11-23) ----------
+    // Up to two flat pictures stand in for the wizard — same spot, size and facing, and they squash with it — so one can
+    // cross-fade into the next. pic = { tex, w, h, x, y }: size and middle in wizard heights, x from the middle of the
+    // feet, y up from them. A shown picture hides the wizard's own (unless its userData.hide is false: fading out over it).
+    var actRoot = null, actPics = [], actWas = false, actNoise = null;
+    // 컷이 바뀔 때 통째로 바뀌지 않고, 효과가 시작되는 자리(center, 정면 그림의 u·v)에서 얼룩지며 번져 나온다(reveal 0 → 1).
+    // 번지는 가장자리에는 그 옷 색(edge)의 빛 테두리가 지나간다. 텍스처는 sRGB 그대로 읽어 그대로 내보낸다(빌보드와 같은 방식).
+    var ACT_VS = 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';
+    var ACT_FS = ['uniform sampler2D map; uniform sampler2D uNoise; uniform float uOpacity; uniform float uReveal; uniform vec2 uCenter; uniform vec3 uEdge; uniform float uAsp; varying vec2 vUv;',
+      'void main() { vec4 c = texture2D(map, vUv); if (c.a < 0.004) discard;',
+      '  float n = texture2D(uNoise, vUv * 1.7).r; float d = length((vUv - uCenter) * vec2(uAsp, 1.0)) + (n - 0.5) * 0.32;',
+      '  float r = uReveal * 1.35 - 0.08; float m = smoothstep(r + 0.015, r - 0.05, d); float e = (1.0 - smoothstep(0.0, 0.032, abs(d - r + 0.012))) * step(uReveal, 0.999);',
+      '  gl_FragColor = vec4(c.rgb + uEdge * e * 0.9, max(c.a * m, e * 0.55 * c.a) * uOpacity); }'].join('\n');
+    function noiseTex() {
+      var S = 128, data = new Uint8Array(S * S * 4), g = [], i, x, y;
+      for (i = 0; i < 17 * 17; i++) g.push(Math.random());
+      for (y = 0; y < S; y++) for (x = 0; x < S; x++) {
+        var v = 0, amp = 0.6, f = 1;
+        for (var o = 0; o < 3; o++) { var gx = (x / S) * 16 * f % 16, gy = (y / S) * 16 * f % 16, x0 = Math.floor(gx), y0 = Math.floor(gy), tx = gx - x0, ty = gy - y0;
+          tx = tx * tx * (3 - 2 * tx); ty = ty * ty * (3 - 2 * ty);
+          var a = g[y0 * 17 + x0], b = g[y0 * 17 + x0 + 1], c2 = g[(y0 + 1) * 17 + x0], d2 = g[(y0 + 1) * 17 + x0 + 1];
+          v += amp * (a + (b - a) * tx + (c2 - a) * ty + (a - b - c2 + d2) * tx * ty); amp *= 0.5; f *= 2; }
+        var k = (y * S + x) * 4; data[k] = data[k + 1] = data[k + 2] = Math.min(255, v / 1.05 * 255); data[k + 3] = 255;
+      }
+      var t = new T.DataTexture(data, S, S, T.RGBAFormat); t.wrapS = t.wrapT = T.RepeatWrapping; t.magFilter = t.minFilter = T.LinearFilter; t.needsUpdate = true; return t;
+    }
+    function heroActPic(slot, pic) {
+      if (!hero) return null;
+      if (!actRoot) { actRoot = new T.Group(); actRoot.rotation.x = -TILT; }
+      if (actRoot.parent !== hero) hero.add(actRoot);
+      var m = actPics[slot];
+      if (!pic) { if (m) m.visible = false; return null; }
+      if (!m) {
+        if (!actNoise) actNoise = noiseTex();
+        m = new T.Mesh(new T.PlaneGeometry(1, 1), new T.ShaderMaterial({ vertexShader: ACT_VS, fragmentShader: ACT_FS, transparent: true, depthWrite: false, side: T.DoubleSide,
+          uniforms: { map: { value: null }, uNoise: { value: actNoise }, uOpacity: { value: 1 }, uReveal: { value: 1 }, uCenter: { value: new T.Vector2(0.5, 0.5) }, uEdge: { value: new T.Color(0) }, uAsp: { value: 1 } } }));
+        m.renderOrder = 4 + slot * 0.1; actPics[slot] = m; actRoot.add(m);
+        // 예전처럼 material.opacity로도 쓸 수 있게
+        Object.defineProperty(m.material, 'opacity', { get: function () { return this.uniforms.uOpacity.value; }, set: function (v) { if (this.uniforms) this.uniforms.uOpacity.value = v; }, configurable: true });
+      }
+      var U = m.material.uniforms; U.map.value = pic.tex; U.uOpacity.value = 1; U.uReveal.value = pic.reveal === undefined ? 1 : pic.reveal;
+      // 번지기 시작하는 자리: 정면 그림의 (u, v) → 이 그림의 uv
+      var asp = hero.userData.aspect || 1, at = pic.at || [0.5, 0.5], X = (at[0] - 0.5) * asp, Y = at[1];
+      U.uCenter.value.set((X - (pic.x - pic.w / 2)) / pic.w, (Y - (pic.y - pic.h / 2)) / pic.h); U.uAsp.value = pic.w / pic.h;
+      U.uEdge.value.setHex(pic.edge === undefined ? 0xffffff : pic.edge);
+      m.userData = { pic: pic, k: 1, hide: true }; m.visible = true;
+      return m;
+    }
+    function actTick(hd) {
+      var on = false, hide = false;
+      for (var i = 0; i < actPics.length; i++) {
+        var m = actPics[i]; if (!m || !m.visible) continue;
+        var p = m.userData.pic, k = m.userData.k || 1; on = true; if (m.userData.hide !== false) hide = true;
+        m.scale.set(p.w * k, p.h * k, 1); m.position.set(p.x * k, p.y * k, 0.02 + i * 0.004);
+      }
+      actRoot.visible = on;
+      if (on) { var s = hd.u.uScale.value; actRoot.scale.set(HERO_H * s.x, HERO_H * s.y, HERO_H); }
+      if (hide) { hd.body.visible = false; if (views) views.list.forEach(function (g) { g.visible = false; }); }
+      else if (actWas) { if (!views || frontT > 0) hd.body.visible = true; }
+      actWas = hide;
+    }
+    var frontT = 0;
     function viewsTick(dt, arms) {
       var V = views, hd = hero.userData, f = HB.focus, lx = 0, lz = 0, want = V.cur;
+      // a costume's one big moment (js/doom-costumes.js) is played on the front picture, whose staff is its own stiff piece:
+      // in a side view the staff only bends with the arm, which smears when it is swung all the way down
+      if (frontT > 0) { frontT -= dt; for (var fi = 0; fi < V.list.length; fi++) V.list[fi].visible = false; hd.body.visible = true; V.front = true; return; }
+      if (V.front) { V.front = false; hd.body.visible = false; hd.sq.v -= 0.5; }
       if (f && f.alive && HB.cheer <= 0 && f.arrived) { lx = f.x - HB.x; lz = f.z - HB.z; }
       else if (HB.sp > 0.35) { lx = HB.vx; lz = HB.vz; }
       // seen from where the camera is now: lx across the screen, lz toward the camera
@@ -692,6 +759,22 @@
       var p = pointOn(hero, u, v), o = bbPt(p.x, p.y, 0.1);
       return new T.Vector3(heroGroup.position.x + hero.position.x + o.x, heroGroup.position.y + hero.position.y + o.y, heroGroup.position.z + hero.position.z + o.z);
     }
+    // a point of the front picture either as part of the body (the staff arm left out) or as part of the staff cut out of it
+    // (turned stiffly at the paw, like the staff piece itself) — for a chain that hangs between the two (js/doom-costumes.js)
+    function heroPart(u, v, staff, toward) {
+      var d = hero.userData, x = (u - 0.5) * d.aspect, y = v, dx = 0, dy = 0;
+      if (d.rig && d.crop) {
+        var ws = CW.rigWeightsAt(d.rig, d.crop, u, v), P = d.u.uBP.value, A = d.u.uBA.value, TT = d.u.uBT.value;
+        for (var i = 0; i < 8; i++) {
+          var w = i === 1 ? (staff ? 1 : 0) : (staff ? 0 : ws[i]); if (w <= 0.001) continue;
+          var rx = x - P[i].x, ry = y - P[i].y, c = Math.cos(A[i]), sn = Math.sin(A[i]);
+          dx += w * (rx * c - ry * sn - rx + TT[i].x); dy += w * (rx * sn + ry * c - ry + TT[i].y);
+        }
+      }
+      x += dx; y += dy;
+      var k = Math.max(0, Math.min(1, y)), sc = d.u.uScale.value, o = bbPt((x * sc.x + d.u.uBend.value * (d.u.uBendLin.value ? k * 0.7 : k * k)) * d.h, y * sc.y * d.h, toward === undefined ? 0.16 : toward);
+      return new T.Vector3(heroGroup.position.x + hero.position.x + o.x, heroGroup.position.y + hero.position.y + o.y, heroGroup.position.z + hero.position.z + o.z);
+    }
     // The staff's head in the picture now worn: the rig's tip (rig.js armL.tip), else the top of its staff strip. (It used
     // to be the plain wizard's star for every picture, which in a costume is beside the helmet — the staff's twinkles and
     // its swing trail came from there, 2026-11-15.)
@@ -714,6 +797,8 @@
       toss: { ab: -0.19, as: -0.09, ax: -0.03, rb: 3.0, rs: 2.6, rl: 0.9, rx: 0.6, hb: 0.07, hs: 0, aR: 1.15, rR: -0.95, aL: -0.35, rL: 0.65, kick: 0.4 },
       spin: { ab: 0, as: -0.12, ax: 0, rb: 0.5, rs: 3.0, rl: 2.0, rx: 0, hb: 0, hs: 0.05, hop: 3.1, aR: 0.3, rR: 0.9, aL: -0.3, rL: 0.85 },
       // the big moment of a spell (2026-11-15): the staff comes down hard as it bursts, the body ducks into it
+      // 검은 종의 파수꾼 (2026-11-23): 종추를 머리 위로 들었다가 발밑에 내려친다
+      toll: { ab: -0.1, as: 0.07, ax: -0.02, rb: 3.2, rs: -3.2, rl: -0.6, rx: 0.6, hb: 0.1, hs: -0.09, aR: 0.35, rR: -0.5, aL: -1.4, rL: 2.0, kick: 0.3 },
       slam: { ab: 0.04, as: 0.05, ax: 0, rb: 3.0, rs: -2.6, rl: -0.6, rx: 1.0, hb: 0.08, hs: -0.06, aR: 0.2, rR: -0.9, aL: -0.15, rL: 1.15, kick: 0.3 }
     };
     var pose = null, heroGlow = 0, heroGlowCol = new T.Color();
@@ -734,7 +819,7 @@
       var gh = null; for (var i = 0; i < ghosts.length; i++) if (ghosts[i].t >= ghosts[i].life) { gh = ghosts[i]; break; }
       if (!gh) return;
       var u = gh.mesh.material.uniforms, hu = hero.userData.u;
-      u.uBend.value = hu.uBend.value; u.uScale.value.copy(hu.uScale.value); u.uH.value = hu.uH.value;
+      u.uBend.value = hu.uBend.value; u.uBendLin.value = hu.uBendLin.value; u.uScale.value.copy(hu.uScale.value); u.uH.value = hu.uH.value;
       for (var b = 0; b < 8; b++) { u.uBP.value[b].copy(hu.uBP.value[b]); u.uBT.value[b].copy(hu.uBT.value[b]); u.uBA.value[b] = hu.uBA.value[b]; }
       if (views) { var vd = views.list[views.cur].userData; gh.mesh.geometry = vd.body.geometry; u.map.value = vd.u.map.value; u.uScale.value.copy(vd.u.uScale.value); for (var vb = 0; vb < 8; vb++) { u.uBP.value[vb].copy(vd.u.uBP.value[vb]); u.uBT.value[vb].copy(vd.u.uBT.value[vb]); u.uBA.value[vb] = vd.u.uBA.value[vb]; } if (gh.staff) gh.staff.visible = false; }
       u.uFlash.value = 0.55; u.uFlashCol.value.setHex(color); u.uOpacity.value = 0.55;
@@ -984,7 +1069,7 @@
       if (f.sheen) return attachSheen(on);
       var tg = on || hero, hu = tg.userData.u, body = tg.userData.body, dark = /shadow|void|doom/.test(f.parts || '');
       var mat = new T.ShaderMaterial({
-        uniforms: { map: hu.map, uBend: hu.uBend, uScale: hu.uScale, uH: hu.uH, uBP: hu.uBP, uBA: hu.uBA, uBT: hu.uBT,
+        uniforms: { map: hu.map, uBend: hu.uBend, uBendLin: hu.uBendLin, uScale: hu.uScale, uH: hu.uH, uBP: hu.uBP, uBA: hu.uBA, uBT: hu.uBT,
           uCol: { value: new T.Color(f.col) }, uCol2: { value: new T.Color(f.col2 || f.col) }, uTime: { value: 0 }, uAmt: { value: f.aura }, uAdd: { value: dark ? 0 : 1 } },
         vertexShader: BB_VS, fragmentShader: AURA_FS, transparent: true, depthWrite: false, blending: dark ? T.NormalBlending : T.AdditiveBlending, side: T.DoubleSide });
       var am = new T.Mesh(body.geometry, mat); am.scale.set(1.2, 1.12, 1); am.position.z = -0.03; am.renderOrder = 2;
@@ -994,7 +1079,7 @@
     function attachSheen(on) {
       var f = cos.fx, s = f.sheen, tg = on || hero, hu = tg.userData.u, body = tg.userData.body;
       var mat = new T.ShaderMaterial({
-        uniforms: { map: hu.map, uBend: hu.uBend, uScale: hu.uScale, uH: hu.uH, uBP: hu.uBP, uBA: hu.uBA, uBT: hu.uBT,
+        uniforms: { map: hu.map, uBend: hu.uBend, uBendLin: hu.uBendLin, uScale: hu.uScale, uH: hu.uH, uBP: hu.uBP, uBA: hu.uBA, uBT: hu.uBT,
           uCol: { value: new T.Color(f.col) }, uCol2: { value: new T.Color(f.col2 || f.col) }, uTime: { value: 0 },
           uRim: { value: s.rim === undefined ? 0.35 : s.rim }, uSweep: { value: s.sweep === undefined ? 0.55 : s.sweep },
           uGlint: { value: s.glint === undefined ? 0.9 : s.glint }, uPeriod: { value: s.period || 3.6 }, uRainbow: { value: s.rainbow || 0 } },
@@ -1405,6 +1490,7 @@
       if (hero) {
         var moving = heroBrain(dt);
         var hd = hero.userData, fs = HB.faceT, rest = { bend: Math.sin(time * 1.3) * 0.018 + scrX(HB.vx, HB.vz) * 0.036 + HB.lean + (HB.dash > 0 ? scrX(HB.dvx, HB.dvz) * 0.03 : 0), sq: Math.sin(time * 2.4) * 0.016 - (HB.dash > 0 ? 0.12 : 0), lift: 0, slide: 0 };
+        if (actRoot && actRoot.visible) rest.bend *= 0.1;   // 그려진 컷을 보여 주는 동안은 기울지 않게 (그림이 비스듬해 보인다)
         var arms = { walk: HB.walk, speed: HB.sp, stride: 0.4, air: HB.y > 0.08, armR: 0, armL: 0, head: 0, wag: 0, cheer: HB.cheer > 0 ? 1 : 0 };
         if (pose) {
           var P = pose.P; pose.t += dt;
@@ -1435,6 +1521,7 @@
         lightAt(heroCenter(), hd.light); hd.light.r += heroGlowCol.r * heroGlow * 0.22; hd.light.g += heroGlowCol.g * heroGlow * 0.22; hd.light.b += heroGlowCol.b * heroGlow * 0.22;
         hd.u.uLight.value.copy(hd.light);
         if (views) viewsTick(dt, arms);
+        if (actRoot) actTick(hd);
         heroGlow = Math.max(0, heroGlow - dt * 2.6);
       }
       ghosts.forEach(function (gh) {
@@ -1716,7 +1803,7 @@
     size();
     return {
       THREE: T, scene: scene, camera: camera, renderer: renderer, fxGroup: fxGroup, desertLight: desertLight, glow: GLOW, hooks: hooks,
-      size: size, setRegion: setRegion, setHero: setHero, setHeroTexture: setHeroTexture, setHeroViews: setHeroViews, setCostumeFx: setCostumeFx, heroTip: heroTip, heroPaw: heroPaw, heroCenter: heroCenter, heroPose: heroPose, heroBeatAt: function () { return beatT; }, heroGlow: heroGlowPulse, ghost: ghost,
+      size: size, setRegion: setRegion, setHero: setHero, setHeroTexture: setHeroTexture, setHeroViews: setHeroViews, setCostumeFx: setCostumeFx, heroTip: heroTip, heroActPic: heroActPic, heroPart: function (u, v, staff, toward) { return hero ? heroPart(u, v, staff, toward) : heroCenter(); }, heroFront: function (sec) { frontT = Math.max(0, sec || 0); if (hero) hero.userData.sq.v -= 0.5; }, heroShadow: function (on) { if (hero) hero.userData.shadow.visible = !!on; }, heroPaw: heroPaw, heroCenter: heroCenter, heroPose: heroPose, heroBeatAt: function () { return beatT; }, heroGlow: heroGlowPulse, ghost: ghost,
       castPulse: function () { heroGlow = 1; }, heroState: function () { return HB; }, heroFaceTo: heroFaceTo, heroCheer: heroCheer, setViewShift: setViewShift, setLandView: setLandView, landView: function () { return landView; },
       minions: minions, spawnMob: spawnMob, hitMob: hitMob, killMob: killMob, dismissMob: dismissMob, clearMobs: clearMobs, mobs: function () { return mobs; }, mobPos: mobPos, mobTop: mobTop,
       setTierAura: setTierAura, setDamageHidden: setDamageHidden, damageText: damageText, screenPos: screenPos, flash: flash, dim: dim, shake: shake, punch: camPunch, light: light,

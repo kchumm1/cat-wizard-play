@@ -1356,6 +1356,7 @@
       P3: P3, liveMobs: liveMobs, gp: gp, near: near, share: share, volley: volley, lateComers: lateComers, ringHits: ringHits, passHits: passHits, skyBolt: skyBolt, zapHit: zapHit, beamOf: beamOf, picHead: picHead, picAt: picAt, picFall: picFall,
       dustCol: function () { return dustCol; } };
     if (CW.fxMore) CW.fxMore(KIT, S);
+    var DOOMCOS = CW.fxDoomCos ? CW.fxDoomCos(KIT) : null;   // 멸망 코스튬 2차의 한 번 터지는 순간 (js/doom-costumes.js)
     var WOOD = CW.fxWood ? CW.fxWood(KIT, S) : null;   // 10차 나무 (js/fx-wood.js); its painted pieces are cleared with the rest
     var WATER = CW.fxWater ? CW.fxWater(KIT, S) : null;   // 11차 물 (js/fx-water.js)
     // 1차 스킬 7개는 3D 몸으로 (js/fx-tier1.js)
@@ -1586,7 +1587,10 @@
       p.x = H.x + Math.cos(d.a) * d.R; p.z = H.z + Math.sin(d.a) * d.R * 0.45; p.y = d.y; return true; }
     function quietParticle(f) {
       var H = sc.heroCenter(), c1 = f.col, c2 = f.col2 || f.col, x = H.x, z = H.z, P = f.parts, q = Math.random();
-      if (P === 'holy') {                       // tiny gold motes rising like dust in cathedral light, a rare pink jewel wink
+      if (DOOMCOS && DOOMCOS.idle(f, H)) return;   // 멸망 코스튬 2차 (js/doom-costumes.js)
+      if (P === 'bell') {                       // 누더기에서 녹가루가 떨어진다 (눈은 그림에 크게 그려져 있어 따로 빛내지 않는다)
+        E({ sys: 'norm', pos: V(x + rr(-0.4, 0.4), rr(0.25, 0.8), z + rr(-0.1, 0.2)), vel: V(rr(-0.04, 0.04), rr(-0.3, -0.18), 0), frame: 'dot', color: [0x6a4a2a, 0x2a1c12], size: [rr(0.04, 0.06), 0.02], alpha: 0.85, life: rr(1.2, 1.8), fadeIn: 0.2, fadeOut: 0.5, white: true });
+      } else if (P === 'holy') {                       // tiny gold motes rising like dust in cathedral light, a rare pink jewel wink
         if (q < 0.8) E({ pos: V(x + rr(-0.55, 0.55), rr(0.1, 1.2), z + rr(-0.2, 0.25)), vel: V(rr(-0.05, 0.05), rr(0.25, 0.5), 0), frame: 'dot', color: [0xfff4c8, c2], size: [rr(0.06, 0.09), 0.03], alpha: 0.95, life: rr(1.8, 2.6), fadeIn: 0.3, fadeOut: 0.6 });
         else E({ pos: V(x + rr(-0.45, 0.45), rr(0.6, 1.7), z + 0.2), frame: 'star', color: [0xffffff, c1], size: [0.03, 0.2], ease: 2, alpha: 0.95, life: 0.6, spin: 1.5, fadeOut: 0.4 });
       } else if (P === 'qi') {                  // a gold wisp of dragon breath winding up around the body
@@ -1680,8 +1684,8 @@
     function setLoad(k) { vx.setLoad(k); }
     function setBright(v) { vx.setBright(v); P3.setBright(v); }
     function setRegion(regionData) { dustCol = new T.Color(regionData.ground).lerp(new T.Color(0xffffff), 0.45).getHex(); P3.warm(); warmPics(); }
-    function clear() { epoch++; carry = []; timers.length = 0; ticks.length = 0; meteorLive = 0; scorchAt.length = 0; vx.clear(); P3.clear(); picClear(); if (WOOD && WOOD.clear) WOOD.clear(); if (WATER) WATER.clear(); if (BEASTS) BEASTS.clear(); sc.mobs().forEach(function (m) { m.pull = undefined; m.pullZ = undefined; m.lift = undefined; }); }
-    return { setStaffColor: function (c) { staffCol = c; }, setCostume: function (f) { cosFx = f; cosAcc = 0; }, cast: cast, canAim: canAim, update: update, setQuality: setQuality, setLoad: setLoad, load: function () { return vx.load(); }, setBright: setBright, setRegion: setRegion, clear: clear, count: vx.count, minionBurst: minionBurst,
+    function clear() { epoch++; carry = []; timers.length = 0; ticks.length = 0; meteorLive = 0; scorchAt.length = 0; vx.clear(); P3.clear(); picClear(); if (DOOMCOS) DOOMCOS.stop(); if (WOOD && WOOD.clear) WOOD.clear(); if (WATER) WATER.clear(); if (BEASTS) BEASTS.clear(); sc.mobs().forEach(function (m) { m.pull = undefined; m.pullZ = undefined; m.lift = undefined; }); }
+    return { setStaffColor: function (c) { staffCol = c; }, setCostume: function (f) { cosFx = f; cosAcc = 0; if (DOOMCOS) { DOOMCOS.stop(); DOOMCOS.prepare(f); } }, costumeAct: function (kind) { return DOOMCOS ? DOOMCOS.act(kind, cosFx) : false; }, cast: cast, canAim: canAim, update: update, setQuality: setQuality, setLoad: setLoad, load: function () { return vx.load(); }, setBright: setBright, setRegion: setRegion, clear: clear, count: vx.count, minionBurst: minionBurst,
       impact: impact, levelUp: levelUp, bossEnter: bossEnter, coinPop: coinPop, burst: function (pos, col) { impact(pos, col, 0.8); }, vfx: vx,
       // for checks: 3D parts alive, and painted heads alive (only those of the given pictures when names are given)
       count3d: function () { return P3.count(); }, bm3d: function (k) { return P3.bmList(k); }, beasts: function () { return BEASTS ? BEASTS.count() : 0; }, spikeTops: function () { return P3.spikeTops(); }, batchSmoke: function (v) { P3.setBatchSmoke(v); }, smoke3d: function () { return P3.smoke(); }, batchChips: function (v) { P3.setBatchChips(v); }, watch: function (fn) { watcher = fn || null; }, picCount: function (names) { return picHeads.filter(function (h) { return !names || names.indexOf(h.name) >= 0; }).length; } };

@@ -202,6 +202,20 @@
         fx: { col: 0xffb24a, col2: 0x6af0c0, aura: 0.3, glow: 0.1, parts: 'tick', rate: 2.6, sheen: { rim: 0.38, sweep: 0.83, glint: 0.96, period: 3.0 } } }
     ],
     // enhance with diamonds: cost = upBase × upGrowth^grade × (1 + lv × upLv); a star every starEvery levels (+starBonus each);
+    // 멸망 외형 (2026-11-23, 형: 외형만·다이아로 사기·3만): 능력치도 수집 보너스도 없이 모습과 발동 효과만. 산 것은 코스튬과 같은 칸
+    // (costume.owned[id] = 1)에 남고, 강화는 없다. 그림·발동 효과는 js/doom-costumes.js가 붙인다. 형꺼만 — 친구꺼에서는 보이지 않는다.
+    looks: [
+      { id: 'doomBell', name: '검은 종의 파수꾼', desc: '종추를 내려치면 발밑 그림자가 둥근 웅덩이로 갈라져요', art: 'cos19', grade: 10, price: 30000, look: true },
+      { id: 'doomDiver', name: '침몰선의 잠수사', desc: '잠수창의 눈이 켜지면 바닷물과 뱀장어가 창 안으로 빨려 들어요', art: 'cos20', grade: 10, price: 30000, look: true },
+      { id: 'doomPuppet', name: '무너진 극장의 인형사', desc: '붉은 실이 당겨지면 도자기 가면이 뜯기고 안쪽의 웃음이 드러나요', art: 'cos21', grade: 10, price: 30000, look: true },
+      { id: 'doomPotter', name: '금간 대지의 도공', desc: '검은 소매가 터지며 하얗게 달아오른 속이 드러나요', art: 'cos22', grade: 10, price: 30000, look: true },
+      { id: 'doomBinder', name: '마지막 장의 제본사', desc: '책 투구가 턱처럼 벌어져 먹귀를 물고 책장에 눌러 찍어요', art: 'cos23', grade: 10, price: 30000, look: true },
+      { id: 'doomTailor', name: '백야를 삼킨 재단사', desc: '흰 봉합실을 당기면 그림자의 솔기가 한 땀씩 뜯겨 벌어져요', art: 'cos24', grade: 10, price: 30000, look: true },
+      { id: 'doomConductor', name: '마지막 열차의 차장', desc: '레버를 내리면 붉은 선로가 달려 나가 유령 그림자를 갈라요', art: 'cos25', grade: 10, price: 30000, look: true },
+      { id: 'doomPilgrim', name: '말라붙은 바다의 순례자', desc: '유령 물고기의 물기를 끌어내 꼬리부터 소금뼈로 바스러뜨려요', art: 'cos26', grade: 10, price: 30000, look: true },
+      { id: 'doomSurveyor', name: '지워진 왕국의 측량사', desc: '발밑에 등고선이 그려지고 땅이 지도처럼 접혀 그림자를 가둬요', art: 'cos27', grade: 10, price: 30000, look: true },
+      { id: 'doomProjector', name: '최후의 영사기사', desc: '렌즈가 필름을 비추면 마지막 칸에서 긴 발톱의 귀신이 기어 나와요', art: 'cos28', grade: 10, price: 30000, look: true }
+    ],
     // every owned costume adds collect to all damage
     costumeConf: { maxLv: 50, upBase: 20, upGrowth: 1.6, upLv: 0.15, starEvery: 10, starBonus: 0.1, collect: 0.05 },
     // shop packages (practice only, no real payment)
