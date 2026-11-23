@@ -2435,23 +2435,49 @@
       var r = e.target.closest('[data-range]'); if (!r) return;
       G.setSetting(r.dataset.range, +r.value); G.showDamageSample(); renderPanel(true);
     });
-    function stopHold() { clearTimeout(holdT); clearInterval(holdI); holdT = holdI = null; }
+    var holdTok = 0;   // 누를 때마다 새 번호: 서버 답을 기다리던 꾸욱은 손을 떼면(번호가 바뀌면) 거기서 멈춤
+    function stopHold() { clearTimeout(holdT); clearInterval(holdI); holdT = holdI = null; holdTok++; }
     // talent, costume, divine item and skill level-ups (2026-11-15, the user: 꾸욱 누르면 쭈욱): one step a press like
     // the rest, then repeating while held. The first step says why it cannot go on; the repeats stop quietly.
     function stepAct(d, quiet) {
       var ok;
       if (d.tup) { ok = G.talentUp(d.tup); if (ok) { /* 성공은 글 없이 노드 빛으로만 (사용자 2026-11-16) */ } else if (!quiet) toast(CW.talentSpent(G.state) >= CW.talentPoints(G.state) ? '사용할 특성 포인트가 없어요.' : '해금 조건을 먼저 달성해 주세요.'); }
-      else if (d.cup) { ok = G.upCostume(d.cup); if (ok && ok.then) { G.later(ok, function (v) { if (v) toast(CW.costumeById(d.cup).name + ' Lv.' + G.state.costume.owned[d.cup]); else toast(G.state.costume.owned[d.cup] >= DATA.costumeConf.maxLv ? '최대 레벨에 도달했어요.' : '다이아가 부족해요.'); renderPanel(true); hud(); }); ok = false; } else if (ok) toast(CW.costumeById(d.cup).name + ' Lv.' + G.state.costume.owned[d.cup]); else if (!quiet) toast(G.state.costume.owned[d.cup] >= DATA.costumeConf.maxLv ? '최대 레벨에 도달했어요.' : '다이아가 부족해요.'); }
+      else if (d.cup) {
+        ok = G.upCostume(d.cup);
+        // 형꺼 다이아는 서버 지갑(js/main.js walletDo): 답이 나중에 옴 → 답을 돌려줘서 꾸욱이 답을 받은 뒤 다음 강화를 이어 감 (2026-11-23,
+        // 형: 코스튬 강화 꾸욱 눌러도 강화가 안 됨 — 예전엔 답을 기다리는 길이면 첫 번째에서 연속 강화를 그만뒀음). 연결 문제는 walletDo가 이미 알림
+        if (ok && ok.then) return ok.then(function (v) {
+          if (v && v.walletFail) return false;
+          if (v) toast(CW.costumeById(d.cup).name + ' Lv.' + G.state.costume.owned[d.cup]); else if (!quiet) toast(G.state.costume.owned[d.cup] >= DATA.costumeConf.maxLv ? '최대 레벨에 도달했어요.' : '다이아가 부족해요.');
+          return stepDone(d, !!v);
+        });
+        if (ok) toast(CW.costumeById(d.cup).name + ' Lv.' + G.state.costume.owned[d.cup]); else if (!quiet) toast(G.state.costume.owned[d.cup] >= DATA.costumeConf.maxLv ? '최대 레벨에 도달했어요.' : '다이아가 부족해요.');
+      }
       else if (d.dlv) { ok = G.divineUp(d.dlv); if (ok) toast('삼신기 레벨이 올랐어요.'); else if (!quiet) toast(!CW.divineOpen(G.state) ? DATA.divineConf.unlockTier + '차 전직 후 해금' : '골드가 부족해요.'); }
       else if (d.sup) { ok = G.skillUp(d.sup); if (ok) toast(CW.skillById(d.sup).name + ' +' + CW.skillLevel(G.state, d.sup) + ' · 스킬 강화 완료'); else if (!quiet) toast(CW.skillLevel(G.state, d.sup) >= DATA.balance.skillMaxLv ? '최대 강화에 도달했어요.' : '골드가 부족해요.'); }
+      return stepDone(d, ok);
+    }
+    // 강화 한 번 끝: 반응 · 바뀐 글자만 고치기 (서버 답이 손가락이 닿은 채로 와도 버튼을 통째로 갈지 않음 — 아이폰이 그때 글자를 물방울 손잡이로 잡았음)
+    function stepDone(d, ok) {
       if (ok && CW.opalUI) CW.opalUI.fx(d.tup ? 'tal:' + d.tup : d.cup ? 'cos:' + d.cup : d.dlv ? 'dv:' + d.dlv : 'sk:' + d.sup);   // 성공했을 때만 반응
       softRender = true; try { renderPanel(true); } finally { softRender = false; } hud(); if (d.sup) slots();
       return ok;
     }
     var HOLD_STEP = '[data-tup],[data-cup],[data-dlv],[data-sup]';
+    // 꾸욱: 첫 번째는 누르자마자, 두 번째는 누른 지 0.38초, 그다음 0.09초마다. 서버 답을 기다리는 강화(코스튬)는 답이 온 뒤에 다음 것
+    function holdSteps(dd) {
+      stopHold(); var tok = holdTok, t0 = performance.now();
+      var step = function (quiet) {
+        var r = stepAct(dd, quiet);
+        if (r && r.then) { r.then(function (v) { if (v && tok === holdTok) next(); }); return; }
+        if (r) next(); else if (quiet) stopHold();
+      };
+      var next = function () { if (tok !== holdTok) return; holdT = setTimeout(function () { step(true); }, Math.max(90, 380 - (performance.now() - t0))); };
+      step(false);
+    }
     var onDown = function (e) {
       var hs = e.target.closest(HOLD_STEP);
-      if (hs) { var dd = { tup: hs.dataset.tup, cup: hs.dataset.cup, dlv: hs.dataset.dlv, sup: hs.dataset.sup }; stopHold(); if (!stepAct(dd, false)) return; holdT = setTimeout(function () { holdI = setInterval(function () { if (!stepAct(dd, true)) stopHold(); }, 90); }, 380); return; }
+      if (hs) { holdSteps({ tup: hs.dataset.tup, cup: hs.dataset.cup, dlv: hs.dataset.dlv, sup: hs.dataset.sup }); return; }
       var b = e.target.closest('[data-up],[data-mark],[data-mkhold],[data-circle],[data-blv],[data-rune],[data-sglv]'); if (!b) return;
       var key = b.dataset.up, mk = b.dataset.mark || b.dataset.mkhold, ci = b.dataset.circle, bl = b.dataset.blv, ru = b.dataset.rune, sl = b.dataset.sglv;
       var once = function () { var ok = bl ? G.levelUp(bl) : ru ? G.runeUp(ru) : sl ? G.sigilLvUp() : mk ? G.markUp(mk) : ci ? G.circleUp() : (upMul > 1 ? G.upgradeN(key, upMul) : G.upgrade(key)); if (ok) { if (key) upSel = key; fxRune = ru || null; if (CW.opalUI) CW.opalUI.fx(key ? 'up:' + key : mk ? 'mk:' + mk : bl ? 'bl:' + bl : ru ? 'ru:' + ru : sl ? 'sglv' : 'circle'); softRender = true; try { renderPanel(true); } finally { softRender = false; } fxRune = null; hud(); } else stopHold(); };
@@ -2466,6 +2492,10 @@
     panel.addEventListener('touchstart', function (e) { var t = e.touches[0]; if (t) { holdX = t.clientX; holdY = t.clientY; } }, { passive: true });
     window.addEventListener('touchmove', function (e) { var t = e.touches[0]; if (t && Math.abs(t.clientX - holdX) + Math.abs(t.clientY - holdY) > 10) stopHold(); }, { passive: true, capture: true });
     panel.addEventListener('pointerdown', onDown); dock.addEventListener('pointerdown', onDown);
+    // 코스튬 강화 버튼 (2026-11-23, 형 아이폰: 꾸욱 누르면 물방울 손잡이로 잡힘 — 11/18 글자 잡힘 막기(index.html)를 넣은 뒤에도):
+    // 아이폰 길게 누르기(글자 잡기·돋보기·메뉴)를 손이 닿을 때부터 꺼 버림. 이 버튼은 누르자마자 강화라 스크롤을 시작하는 자리가 아니고,
+    // 강화는 pointerdown(onDown)·멈춤은 pointerup이라 click이 안 와도 그대로 됨
+    panel.addEventListener('touchstart', function (e) { if (e.touches.length === 1 && e.target.closest && e.target.closest('[data-cup]')) e.preventDefault(); }, { passive: false });
     // 패키지 상자 꾸욱 (0.45초 가만히): 구성품 창. 손가락이 10px 넘게 움직이면(스크롤) 취소, 폰 기본 길게 누르기 메뉴는 막음
     (function () {
       var x0 = 0, y0 = 0, stop = function () { clearTimeout(pkHoldT); pkHoldT = null; };

@@ -76,11 +76,28 @@
         (all ? '<span class="gpdone">완료</span>' : ok ? '<button class="gpget" data-gp="a' + a.id + '">받기</button>' : '') + '</div></div>';
     }).join('');
   }
+  // 바뀐 것만 고치기 (2026-11-23, 형: 탭 누르면 바로 떠야 하는데 한 번씩 버벅): 사냥하는 동안 0.7초마다 창 안을 통째로 새로 만들면
+  // 그림이 전부 새로 붙고 그네·숨쉬기·별 움직임이 처음 자세로 툭 돌아갔음(10초에 5번, CPU 4배 느리게 실측) → 글자·막대·속성만 고침
+  function morph(a, b) {   // a = 화면에 있는 것, b = 새로 만든 것
+    if (a.nodeType !== b.nodeType || a.nodeName !== b.nodeName) { a.parentNode.replaceChild(b, a); return; }
+    if (a.nodeType !== 1) { if (a.nodeValue !== b.nodeValue) a.nodeValue = b.nodeValue; return; }
+    var i, at;
+    for (i = a.attributes.length - 1; i >= 0; i--) { at = a.attributes[i].name; if (!b.hasAttribute(at)) a.removeAttribute(at); }
+    for (i = 0; i < b.attributes.length; i++) { at = b.attributes[i]; if (a.getAttribute(at.name) !== at.value) a.setAttribute(at.name, at.value); }
+    morphKids(a, b);
+  }
+  function morphKids(a, b) {
+    var ak = [].slice.call(a.childNodes), bk = [].slice.call(b.childNodes);
+    if (ak.length !== bk.length) { while (a.firstChild) a.removeChild(a.firstChild); bk.forEach(function (n) { a.appendChild(n); }); return; }
+    for (var i = 0; i < ak.length; i++) morph(ak[i], bk[i]);
+  }
   function render() {
     var s = st(); if (!page || !s) return;
     var col = page.querySelector('.gpcol'), body = page.querySelector('.gpbody'), y = body.scrollTop;
     col.className = 'gpcol ' + tab;
-    body.innerHTML = tab === 'day' ? dayHtml(s) : tab === 'week' ? weekHtml(s) : achHtml(s);
+    var html = tab === 'day' ? dayHtml(s) : tab === 'week' ? weekHtml(s) : achHtml(s);
+    if (!enterNext && body.firstChild) { var t = document.createElement('div'); t.innerHTML = html; morphKids(body, t); }   // 같은 탭 다시 그리기
+    else body.innerHTML = html;                                                                                            // 열 때·탭 바꿀 때
     body.scrollTop = y;
     page.querySelectorAll('.gptabs button').forEach(function (b) { b.classList.toggle('on', b.dataset.gt === tab); });
     // 열 때·탭 바꿀 때만: 줄이 차례로 올라오고 막대가 0에서 차오름 (0.7초마다 다시 그릴 땐 그대로)
@@ -152,4 +169,7 @@
   }
   function close() { if (!page) return; page.classList.remove('on'); clearInterval(pollT); pollT = 0; var cb = onClose; onClose = null; if (cb) cb(); }
   CW.goalsOpen = open; CW.goalsClose = close; CW.goalsIsOpen = function () { return !!(page && page.classList.contains('on')); };
+  // 창이 화면을 다 덮음 (폰 세로: .gpcol 폭 520 이하): 뒤의 전투는 안 보이니 js/main.js가 방치모드처럼 드물게만 그림 (2026-11-23,
+  // 덮인 채로 3D를 1초 60번 그리느라 탭 전환·줄 올라오는 움직임이 버벅였음. 넓은 화면은 양옆에 전투가 보여서 그대로)
+  CW.goalsCovers = function () { return CW.goalsIsOpen() && root.innerWidth <= 520; };
 })(this);

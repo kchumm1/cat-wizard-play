@@ -2433,7 +2433,7 @@ html.fullh #prof{position:absolute;bottom:auto;height:var(--apph)}
 @keyframes gpTwinkle{0%,100%{opacity:.2;transform:scale(.55)}50%{opacity:1;transform:scale(var(--s,1))}}
 @keyframes gpFloat{from{transform:translate(0,0);opacity:.55}to{transform:translate(9px,-15px);opacity:1}}
 @keyframes gpRise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
-@keyframes gpFill{from{width:0}}
+@keyframes gpFill{from{transform:translateX(-100%)}}/* 막대가 왼쪽에서 밀려 들어오며 차오름: 폭(width)을 바꾸면 매 장면 배치를 다시 계산해 폰에서 버벅여서(2026-11-23) 그림 옮기기(transform)만, 바깥 .gpbar가 둥글게 잘라 줌 */
 @keyframes gpBounce{0%,100%{transform:translateY(0)}35%{transform:translateY(-4px) scale(1.05)}60%{transform:translateY(0)}}
 @keyframes gpFly{0%{opacity:1;transform:translateY(0) scale(1.1)}100%{opacity:0;transform:translateY(var(--dy,-200px)) scale(.55)}}
 @keyframes gpShake{0%,100%{transform:rotate(0)}15%{transform:rotate(-8deg)}30%{transform:rotate(7deg)}45%{transform:rotate(-5deg)}60%{transform:rotate(3deg)}75%{transform:rotate(0)}}

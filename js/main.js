@@ -1186,9 +1186,12 @@
     requestAnimationFrame(frame);
     if (loginGate && loginGate.isSuspended()) return;
     // fewer frames on purpose (절전 / menu open / no touch for a while / no monster / 방치모드): this refresh is skipped
+    // 미션 창이 폰 화면을 다 덮음 (js/goals-ui.js, 2026-11-23): 방치모드처럼 드물게 돌고 3D는 아예 안 그림 — 덮인 채 1초 60번 그리느라
+    // 탭 전환·줄 올라오는 움직임이 버벅였고, 1초 5번으로 줄여도 그릴 때마다 툭 끊겼음 (CPU 4배 느리게 실측). 싸움·계산은 그대로
+    var goalsCover = ready && !!(CW.goalsCovers && CW.goalsCovers());
     if (ready) {
       pace.setQuiet(!dun && !boss && !preview && aliveMobs().length === 0);
-      pace.setHidden(document.documentElement.classList.contains('idling'));
+      pace.setHidden(document.documentElement.classList.contains('idling') || goalsCover);   // 방치모드 · 화면을 다 덮은 미션 창
       var calmNow = pace.calm(now); if (calmNow !== calmOn) { calmOn = calmNow; document.documentElement.classList.toggle('cw-calm', calmOn); }
     }
     if (!pace.shouldDraw(now)) return;
@@ -1229,7 +1232,7 @@
       } catch (e) { noteError(e); }
     }
     if (t0 && sc.renderer) sc.renderer.info.reset();
-    try { if (!battleCovered) sc.render(); } catch (e) { noteError(e); }
+    try { if (!battleCovered && !goalsCover) sc.render(); } catch (e) { noteError(e); }
     if (t0) {
       try {
         var t1 = performance.now(); perf.frame(gap, t1 - t0, aim);
