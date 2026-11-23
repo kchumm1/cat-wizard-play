@@ -1189,6 +1189,7 @@
     // (the picture stood still until the app was reopened)
     requestAnimationFrame(frame);
     if (loginGate && loginGate.isSuspended()) return;
+    if (G.maint && G.maint.on()) return;   // 서버 점검 중: 싸움·계산·그리기 모두 멈춤 (끝나면 새로 열림)
     // fewer frames on purpose (절전 / menu open / no touch for a while / no monster / 방치모드): this refresh is skipped
     // 미션 창이 폰 화면을 다 덮음 (js/goals-ui.js, 2026-11-23): 방치모드처럼 드물게 돌고 3D는 아예 안 그림 — 덮인 채 1초 60번 그리느라
     // 탭 전환·줄 올라오는 움직임이 버벅였고, 1초 5번으로 줄여도 그릴 때마다 툭 끊겼음 (CPU 4배 느리게 실측). 싸움·계산은 그대로
@@ -1401,6 +1402,18 @@
     document.addEventListener('visibilitychange', function () { if (ready) { if (document.hidden) playerSync.push('hide'); else playerSync.warm(); } });
   }
   G.playerSync = playerSync;
+  // ---------- 서버 점검 (2026-11-24, js/maint.js): 점검 중이면 저장하고 게임을 멈춘 뒤 점검 화면으로 덮음 ----------
+  // 형꺼·친구꺼 둘 다. 운영자 계정(nyangops)은 그대로 놀 수 있음. 로컬은 ?maintdemo=1 / ?maintdemo=soon 으로만 봄
+  var maintDemoQ = (location.search.match(/[?&]maintdemo=([a-z0-9]+)/) || [])[1];
+  var maint = CW.createMaint && (maintDemoQ || CW.playerSyncAllowed(location)) ? CW.createMaint({
+    fetch: root.fetch ? root.fetch.bind(root) : null,
+    demo: maintDemoQ ? CW.maintDemo(maintDemoQ) : null,
+    token: function () { return playerSync && playerSync.userId() ? playerSync.authed().then(function (a) { return a && a.access; }) : null; },
+    onStart: function () { if (ready) { if (CW.idleOff) CW.idleOff(); save(); } },
+    onEnd: function () { if (maintDemoQ) location.href = location.pathname; else location.reload(); }
+  }) : null;
+  G.maint = maint;
+  if (maint) maint.start();
   // ---------- 서버 지갑 1단계 (2026-11-18, js/wallet.js): 형꺼 diamonds belong to the server ----------
   // Diamond actions go to the function act; the answer's random numbers replay the same line of js/wallet-actions.js
   // here, so the save changes as the server's did. Needs the save sync (its login); 체험판 and local previews: off.
