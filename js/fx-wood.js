@@ -155,10 +155,15 @@
         heave(G0, 0, 0.6, c.D(0.4), col); K.dust(G0, N(5, c), 1.0); sc.shake(0.1);
         K.gRing(G0, 0xc01020, 1.0, 0.3);
         var d2 = function (m) { return (m.x - G0.x) * (m.x - G0.x) + (m.z - G0.z) * (m.z - G0.z); };
+        // (2026-11-23) the roots go for the monsters on the field as they leave the ground, not those at the cast
+        var now = c.pool(); if (now.length) list = now; else if (!list.some(function (m) { return m.alive; })) { c.recover(); return; }
         list = list.slice().sort(function (a, b) { return d2(a) - d2(b); });
-        var n = list.length;
-        list.forEach(function (mob, i) {
-          var t = 0, run = c.D(0.22 + 0.36 * (n > 1 ? i / (n - 1) : 0)), done = 0, head = P3.bm('woodMound', { col: col }), yaw = 0;
+        var n = list.length, late = n;
+        list.forEach(function (mob, i) { root(mob, i, c.D(0.22 + 0.36 * (n > 1 ? i / (n - 1) : 0))); });
+        // one that walks in while the roots are still running under the ground gets its own (a quick one)
+        K.lateComers(c, list.slice(), c.D(0.58), function (m) { root(m, late++, c.D(0.26)); });
+        function root(mob, i, run) {
+          var t = 0, done = 0, head = P3.bm('woodMound', { col: col }), yaw = 0;
           tick(function (dt) {
             t += dt; var k = Math.min(1, t / run), to = gp(mob), dx = to.x - G0.x, dz = to.z - G0.z;
             yaw = Math.atan2(-dz, dx);
@@ -183,7 +188,7 @@
             E({ sys: 'gnorm', pos: V(to.x, 0.026, to.z + 0.1), frame: 'smoke', color: 0x2a1a10, size: [0.5, 0.95], ease: 1, life: 1.4, alpha: 0.42, fadeIn: 0.05, fadeOut: 0.5 });
             return true;
           });
-        });
+        }
       });
     };
 
@@ -848,14 +853,18 @@
           // the burst
           E({ sys: 'gnorm', pos: V(Hg.x, 0.035, Hg.z), frame: 'shock', color: 0x2f7a26, size: [0.34, 3.8], ease: 1, life: 0.42, fadeOut: 0.3, rot: 0, alpha: 0.8 }); K.gRing(Hg, GOLD, 1.7, 0.22);   // (a dark ring on the ground, no white glare)
           sc.shake(0.26); sc.climax(0.6, 0.22); sc.light(V(H.x, 0.8, H.z), 0x9fd84a, 1.6, 0.3); K.dust(Hg, N(6, c), 1.2);   // (climax: time nearly stops for a blink as it bursts)
-          slashAll(c, list, Hg);
+          // (2026-11-23) the blades fly at the monsters on the field as it bursts, not the ones there at the cast (felled by
+          // then by the spells before it, while the ones that walked in were left standing)
+          var now = c.pool(); if (now.length) slashAll(c, now, Hg); else c.recover();
+          // and one that walks in while the blades are still flying gets its own flight
+          K.lateComers(c, now.slice(), c.D(0.3), function (m) { slashAll(c, [m], Hg, true); });
         }
         return !live;
       });
     };
     // the flights that cut every monster (nearest first): two blades cross through it leaving gold-green trails, a third
     // follows; the first to reach it is the hit
-    function slashAll(c, list, Hg) {
+    function slashAll(c, list, Hg, late) {
       var d2 = function (m) { return (m.x - Hg.x) * (m.x - Hg.x) + (m.z - Hg.z) * (m.z - Hg.z); };
       list = list.slice().sort(function (a, b) { return d2(a) - d2(b); });
       var trails = 0;
@@ -878,7 +887,7 @@
                   if (!hitDone) {
                     hitDone = true; var q0 = sc.mobPos(mob);
                     K.flare(q0, 0xd8f080, 0.5, 0.08); for (var f = 0; f < 3; f++) toss('leafBlade', q0, K.rdir(2.2).add(V(0, 2, 0)), rr(0.14, 0.2), K.pick(BLADE), true); K.sparks(q0, [GOLD, 0x9fe05a, 0x2f7a26], N(8, c), 4.2, { dir: cut, spread: 0.4, size: 0.13, stretch: 0.14 });
-                    sc.light(q0, 0x9fd84a, 1.1, 0.22); if (!i) { sc.hitStop(0.05); sc.shake(0.18); }
+                    sc.light(q0, 0x9fd84a, 1.1, 0.22); if (!i && !late) { sc.hitStop(0.05); sc.shake(0.18); }
                     c.hit(mob, 1, 0.9);
                   }
                 }

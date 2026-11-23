@@ -392,7 +392,17 @@
     return def && def.art === result.art ? result : null;
   }
   // the usual boss damage a second for a fight at this stage (js/economy.js bossDpsTypical)
-  function bossPower(stage) { return CW.bossDpsTypical(state, st, CW.stageInfo(stage).timeLimit || 30); }
+  // (2026-11-23 검토) it is 151 made-up fights (3–4 ms on a PC, several times that on a phone) and autoRetry asked again
+  // after every few kills for as long as a loss stood: the last answer is kept while the stats (st is a new object on
+  // every refreshStats), the spells in the slots and the place stay the same
+  var powerMemo = null;
+  function bossPower(stage) {
+    var key = stage + '|' + (state.diff || 0) + '|' + state.stage + '|' + (state.slots || []).join(',');
+    if (powerMemo && powerMemo.st === st && powerMemo.key === key) return powerMemo.v;
+    var v = CW.bossDpsTypical(state, st, CW.stageInfo(stage).timeLimit || 30);
+    powerMemo = { st: st, key: key, v: v };
+    return v;
+  }
   // 자동 재도전 (2026-11-23): while farming after a loss, go back to the boss once the wizard has grown enough
   function autoRetry() {
     var result = bossResult();

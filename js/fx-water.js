@@ -153,7 +153,7 @@
       var X0 = Math.min(B.x0 - 3.0, H.x - 2.4), X1 = Math.max(B.x1 + 2.4, H.x + 3.4), RISE = c.D(0.2), RUN = c.D(0.95), CRASH = c.D(0.18), t = 0, fm = 0;
       var tap = tapper(), wave = P3.bm('waveSheet', {}), flood = P3.bm('floodSheet', {}), q = yawQ(-Math.PI / 2 - 0.3), qi = q.clone().invert(), hit = [], first = true, crashed = false, SZ = V(), FL = V(), LO = V(), LIP = V(), HITZ = 0.85;
       // The same local front used for damage starts the fold above the first monster.
-      var breaker = V(), impactTime = null;
+      var breaker = V(), impactTime = null, caught = false;
       // the swell gathering at the side: water welling up out of the ground in a line
       for (var i = 0; i < N(7, c); i++) foam(V(X0 + rr(-0.2, 0.3), 0, cz + rr(-DEP / 2, DEP / 2)), rr(0.9, 1.4), c.D(0.35));
       sc.shake(0.08);
@@ -164,9 +164,13 @@
         var down = crashed ? Math.min(1, (t - RISE - RUN) / CRASH) : 0;
         var hgt = HT * (0.10 + 0.90 * rise) * (1 - 0.85 * down), k = Math.min(1, 0.35 + 0.55 * rise + 0.1 * run);
         SZ.set(DEP, hgt, HT * 0.95);
+        // (2026-11-23, 형: 다른 스킬 후 파도 지나가는 거 안 맞는 거) the monsters on the field now, not the ones there when it
+        // was cast: after other spells those had mostly fallen, and the ones that walked in meanwhile were rolled over
+        // untouched (40 s at tier 11: after the first wave, every wave missed all 6–8 it passed over)
+        var now = c.pool();
         if (impactTime === null) {
           var closest = -Infinity;
-          list.forEach(function (m) {
+          now.forEach(function (m) {
             LO.set(m.x - x, 0, m.z - cz).applyQuaternion(qi);
             if (LO.z > closest) { closest = LO.z; breaker.x = Math.max(-0.5, Math.min(0.5, LO.x / DEP)); }
           });
@@ -192,7 +196,7 @@
           spray(top, 1, 2.4, 1.0, V(1, 0.2, 0)); whiteSpray(top, 3, 2.6, V(1, 0.3, 0));
           if (Math.random() < 0.25) foam(top, rr(1.0, 1.5), c.D(0.22), V(rr(1, 3), rr(0, 1), 0));
         }
-        list.forEach(function (m) {
+        now.forEach(function (m) {
           if (t < RISE || hit.indexOf(m) >= 0) return;   // (not before it has risen)
           // the monster in the wave's frame: hit once the curling front (local z -0.55 … ahead) has come over it
           LO.set(m.x - x, 0, m.z - cz).applyQuaternion(qi);
@@ -217,13 +221,17 @@
             ripple(at, rr(1.0, 1.45));
             whiteSpray(at, 5, 2.9, V(1, 0.12, 0));
           }
-          list.forEach(function (m) { wet(gp(m), 1.6, c.D(1.6)); });
+          now.forEach(function (m) { wet(gp(m), 1.6, c.D(1.6)); });
         }
-        // anything the wave missed is caught as it crashes
-        if (crashed && down >= 1 && hit.length >= list.length) { wave.set(V(x, -10, cz), q, SZ, 0, k); }
-        if (crashed && down >= 1 && hit.length < list.length) list.forEach(function (m) { if (hit.indexOf(m) < 0) { hit.push(m); c.hit(m, 1, 1.2); hitMark(m); } });
+        // anything the wave missed (standing past its end) is caught as it crashes, once — every one on the field then
+        if (crashed && down >= 1 && !caught) {
+          caught = true; wave.set(V(x, -10, cz), q, SZ, 0, k);
+          now.forEach(function (m) { if (hit.indexOf(m) < 0) { hit.push(m); c.hit(m, 1, 1.2); hitMark(m); } });
+        }
         if (crashed && t >= RISE + RUN + c.D(0.7)) {
-          wave.kill(); flood.kill(); return true;
+          wave.kill(); flood.kill();
+          if (!hit.length) c.recover();   // the field emptied before it reached anyone: its blow waits for the next to come
+          return true;
         }
         return false;
       });
@@ -376,7 +384,12 @@
       sc.shake(0.06); after(c.D(0.16), function () { sc.shake(0.1); }); after(c.D(0.28), function () { sc.shake(0.14); });
       // (in a crowd every burst keeps its shape, but each throws less loose water: twenty of them buried the field)
       var kq = Math.min(1, Math.max(0.25, 5 / list.length)), n = function (k) { return Math.max(1, Math.round(N(k, c) * kq)); };
-      list.forEach(function (m, i) {
+      // (2026-11-23, 형: 모든 스킬 타격 제대로) a monster that walks in before the first jets have burst gets its own (it was
+      // left standing dry: 8 in a test). They come later than the rest, never as the first (i past the cast's monsters)
+      var late = list.length;
+      K.lateComers(c, list.slice(), BURST, function (m) { burstOne(m, late++); });
+      list.forEach(burstOne);
+      function burstOne(m, i) {
         // (one size always — not thinner in a crowd: another size at every cast read as the skill changing)
         var g = gp(m), big = (m.boss ? 1.4 : 1) * s / 3 * 0.85, t = 0, lag = i ? rr(0, c.D(0.05)) : 0, q = yawQ(rr(0, 6.3));
         var X = (i && !m.boss ? 1.46 : 1.74) * big, H = (i && !m.boss ? 2.79 : 3.23) * big, MR = 0.62 * big, MH = 0.5 * big, mound = P3.bm('waterMound', {}), jet = null, shot = false, burst = false, bub = 0, spurt = 0, gx = g.x, gz = g.z;
@@ -439,7 +452,7 @@
           jet.kill(); foam(g, 1.2 * big, c.D(0.5)); ripple(g, 1.4 * big);
           return true;
         });
-      });
+      }
     };
 
     // ---- 4. 하늘 폭포 (every monster, the biggest): a whirl of water opens in the sky over the field; a great fall
@@ -590,6 +603,15 @@
         if (landed) {
           var age = t - LAND, fill = ease(age / FILL);
           var surge = Math.max(0, (age - FILL) / RUN);
+          // (2026-11-23) the monsters on the field now — the ones that walked in after the cast are struck as the wall reaches
+          // them too (it struck only those there at the cast, most of them felled meanwhile by the spells before it); and
+          // while it is still spreading it runs out as far as the farthest of them (it fell at the edge of the field where
+          // the monsters were at the cast and stopped short of the others: they waited for the end to be struck)
+          var now = c.pool();
+          if (surge < 1) {
+            var farNow = far; now.forEach(function (m) { farNow = Math.max(farNow, Math.min(6.5, Math.hypot(m.x - G.x, (m.z - G.z) / 0.8))); });
+            far += (farNow - far) * Math.min(1, dt * 8);
+          }
           var drain = ease((age - FILL - RUN - c.D(0.31)) / c.D(0.54));
           var basin = Math.min(2.45, far * 0.65);
           var spill = Math.min(1, surge);
@@ -601,7 +623,7 @@
             V(surface, 0.20, surface * 0.8), 0.73 * (1 - drain), 1);
           wall.set(V(G.x, 0.08 + 0.22 * fill * (1 - drain), G.z), yawQ(0),
             V(R, (0.18 * fill + 2.65 * crest) * s / 3, R * 0.8), (0.22 * fill + 0.42 * crest) * (1 - drain), 1);
-          list.forEach(function (m) {
+          now.forEach(function (m) {
             // (9th) as the wall's outer face reaches it, while it still shows — it was hit once it was inside the water
             if (surge <= 0 || hit.indexOf(m) >= 0 || Math.hypot(m.x - G.x, (m.z - G.z) / 0.8) > R + SKYLEAD) return;
             hit.push(m); var g = gp(m);
@@ -623,7 +645,8 @@
           // the mist that lingers, drifting
           if (surge < 1 && Math.random() < dt * 14) E({ sys: 'gnorm', pos: V(G.x + rr(-2, 2), 0.3, G.z + rr(-1.5, 1.5)), vel: V(rr(-0.3, 0.3), rr(0.2, 0.5), 0), frame: 'smoke', color: 0xbfe6f5, size: [0.8, 1.8], ease: 1, life: 1.2, alpha: 0.35, fadeIn: 0.15, fadeOut: 0.6 });
           if (drain >= 1) {
-            list.forEach(function (m) { if (hit.indexOf(m) < 0) { hit.push(m); c.hit(m, 1, 1.4); hitMark(m); } });
+            now.forEach(function (m) { if (hit.indexOf(m) < 0) { hit.push(m); c.hit(m, 1, 1.4); hitMark(m); } });
+            if (!hit.length) c.recover();
             swept.forEach(function (o) { if (o.m.pull !== undefined) { o.m.pull = undefined; o.m.pullZ = undefined; } }); swept.length = 0;
             simulation.dispose(); fall.kill(); wall.kill(); pool.kill(); return true;
           }

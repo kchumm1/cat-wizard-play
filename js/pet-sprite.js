@@ -19,6 +19,8 @@
     // 기술 아이콘: one plane reused, the five pictures loaded once each (kept: they are small and come back every few seconds)
     var ico = null, icoTex = {}, icoT = 0, icoBig = false, ICO_LIFE = 1.15;
     function drop() {
+      // (2026-11-23 검토) the skill icon goes with the pet: update() stops at !mesh, so it was left hanging in the air
+      if (ico) ico.visible = false;
       if (mesh) { sc.scene.remove(mesh); mesh.material.dispose(); mesh = null; }
       if (tex) { tex.dispose(); tex = null; }
     }

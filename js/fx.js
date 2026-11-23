@@ -299,7 +299,28 @@
           if (o.recoverEmpty && i === n - 1 && !seen.length) c.recover();
         });
       })(i);
+      // (2026-11-23, 형: 모든 스킬 타격 제대로) a spell on every monster made as many shots as there were monsters at the
+      // cast; the ones that walked in meanwhile took shots from them, so some were left with less or none (별똥별 비: 5 of
+      // 48 standing through it untouched). After the last shot, each one on the field still short of its whole share gets
+      // one more for the rest (index past n: never the big last one)
+      if (c.sk.targets >= 99) after(c.D(o.t0 + o.span + 0.05), function () {
+        var extra = 0;
+        c.pool().forEach(function (m) {
+          var j = seen.indexOf(m), rest = 1 - (j < 0 ? 0 : cnt[j] / k);
+          if (rest > 1e-6) { o.fire(m, rest, n + extra, n); extra++; }
+        });
+      });
       return n;
+    }
+    // (2026-11-23) for spells that put their own piece on each monster (a geyser, a root, a flight of blades): the ones
+    // that come onto the field until `until` s from now get theirs too (have: the ones already given one; it grows)
+    function lateComers(c, have, until, fn) {
+      var t = 0;
+      tick(function (dt) {
+        t += dt;
+        c.pool().forEach(function (m) { if (have.indexOf(m) < 0) { have.push(m); fn(m); } });
+        return t >= until;   // (until: already in the cast's own time, c.D)
+      });
     }
     // A blast front rolling out from a point: fn(mob) runs when it reaches each monster on the field, once each.
     function ringHits(c, center, speed, maxR, fn, done) {
@@ -1332,7 +1353,7 @@
       fieldPt: fieldPt, fieldPops: fieldPops, fieldWave: fieldWave, fieldRain: fieldRain, flare: flare, glow: glow, load: function () { return vx.load(); }, sparks: sparks, embers: embers, smoke: smoke, fire: fire, trailFire: trailFire, shock: shock, ring: ring, gRing: gRing, gGlow: gGlow,
       scorch: scorch, dust: dust, circle: circle, seal: seal, converge: converge, impact: impact, muzzle: muzzle, heavy: heavy, homing: homing, explosion: explosion, toonBall: toonBall, toonBoom: toonBoom, STARC: STARC, starHeads: starHeads, starAt: starAt, starBurst: starBurst, iceRise: iceRise, iceChips: iceChips, iceHitFx: iceHitFx, sharpSpike: sharpSpike, iceCrown: iceCrown, spiralTo: spiralTo, spiralIn: spiralIn,
       paintImpact: paintImpact,
-      P3: P3, liveMobs: liveMobs, gp: gp, near: near, share: share, volley: volley, ringHits: ringHits, passHits: passHits, skyBolt: skyBolt, zapHit: zapHit, beamOf: beamOf, picHead: picHead, picAt: picAt, picFall: picFall,
+      P3: P3, liveMobs: liveMobs, gp: gp, near: near, share: share, volley: volley, lateComers: lateComers, ringHits: ringHits, passHits: passHits, skyBolt: skyBolt, zapHit: zapHit, beamOf: beamOf, picHead: picHead, picAt: picAt, picFall: picFall,
       dustCol: function () { return dustCol; } };
     if (CW.fxMore) CW.fxMore(KIT, S);
     var WOOD = CW.fxWood ? CW.fxWood(KIT, S) : null;   // 10차 나무 (js/fx-wood.js); its painted pieces are cleared with the rest
