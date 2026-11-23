@@ -24,37 +24,44 @@
   // what a cell shows: [icon, name + amount] for each thing the give holds (2026-11-23 다듬기, 형: 가독성 너무 엉망 — 「1시간」
   // 「500」만으로는 무엇인지 몰라서 이름을 붙임)
   // long: the full words for the line under the window (장비 뽑기 10회, 물약 3종 1시간, 영웅 신성력 1개, 골드 … (지금 사냥 1시간치));
-  // short: what fits a cell (뽑기 10회, 물약 1시간, 영웅 신성력)
+  // short: name + amount for a cell with one thing (다이아 300, 뽑기 10회); the third item is the amount alone, for a cell with
+  // two or three things side by side, where the picture says what it is (형: 2·3줄 칸은 너무 작아 — 큼직하게)
   function parts(g, long) {
     var out = [], cnt = function (n) { return long ? ' ' + n + '개' : n > 1 ? ' ×' + n : ''; };
-    if (g.gems) out.push([ico('gem'), '다이아 ' + short(g.gems)]);
-    if (g.pulls) out.push([ico('pull'), (long ? '장비 뽑기 ' : '뽑기 ') + g.pulls + '회']);
-    if (g.goldMin) out.push([ico('gold'), '골드 ' + goldOf(g.goldMin) + (long && goldOf(g.goldMin).indexOf('사냥') < 0 ? ' (지금 사냥 ' + mins(g.goldMin) + '치)' : '')]);
-    if (g.potionMin) out.push([ico('potion'), (long ? '물약 3종 ' : '물약 ') + mins(g.potionMin)]);
-    if (g.mana) out.push([ico('mana'), '마력석 ' + short(g.mana)]);
-    (g.runes || []).forEach(function (x) { out.push([ico('rune', x.grade), gname(x.grade) + ' 룬' + cnt(x.n)]); });
-    if (g.runeStone) out.push([ico('runeStone'), '룬석 ' + short(g.runeStone)]);
-    (g.sigils || []).forEach(function (x) { out.push([ico('sigil', x.grade), gname(x.grade) + ' 신성력' + cnt(x.n)]); });
-    if (g.sigilStone) out.push([ico('sigilStone'), '신성석 ' + short(g.sigilStone)]);
+    if (g.gems) out.push([ico('gem'), '다이아 ' + short(g.gems), short(g.gems)]);
+    if (g.pulls) out.push([ico('pull'), (long ? '장비 뽑기 ' : '뽑기 ') + g.pulls + '회', g.pulls + '회']);
+    if (g.goldMin) out.push([ico('gold'), '골드 ' + goldOf(g.goldMin) + (long && goldOf(g.goldMin).indexOf('사냥') < 0 ? ' (지금 사냥 ' + mins(g.goldMin) + '치)' : ''), goldOf(g.goldMin)]);
+    if (g.potionMin) out.push([ico('potion'), (long ? '물약 3종 ' : '물약 ') + mins(g.potionMin), mins(g.potionMin)]);
+    if (g.mana) out.push([ico('mana'), '마력석 ' + short(g.mana), short(g.mana)]);
+    (g.runes || []).forEach(function (x) { out.push([ico('rune', x.grade), gname(x.grade) + ' 룬' + cnt(x.n), gname(x.grade) + (x.n > 1 ? ' ×' + x.n : '')]); });
+    if (g.runeStone) out.push([ico('runeStone'), '룬석 ' + short(g.runeStone), short(g.runeStone)]);
+    (g.sigils || []).forEach(function (x) { out.push([ico('sigil', x.grade), gname(x.grade) + ' 신성력' + cnt(x.n), gname(x.grade) + (x.n > 1 ? ' ×' + x.n : '')]); });
+    if (g.sigilStone) out.push([ico('sigilStone'), '신성석 ' + short(g.sigilStone), short(g.sigilStone)]);
     return out;
   }
-  // one thing: a big picture with its words under it; two or more: one row each (picture + words), so they fit the cell
-  function rewards(g, max) {
-    var p = parts(g).slice(0, max || 9);
-    return '<span class="evrws ' + (p.length > 1 ? 'rows' : 'one') + '">' + p.map(function (x) { return '<span class="evrw"><i>' + x[0] + '</i><b>' + x[1] + '</b></span>'; }).join('') + '</span>';
+  // one thing: a big picture with its name and amount under it; two or more: big pictures side by side, the amount under each
+  // rows: the box cells (7·14일, 패스 30단계) — one line each from the top left, a big picture and its amount beside it,
+  // filling the cell down to the box drawn in its corner
+  function rewards(g, max, rows) {
+    var p = parts(g).slice(0, max || 9), one = p.length < 2;
+    return '<span class="evrws ' + (one ? 'one' : rows ? 'rows' : 'cols') + '">' + p.map(function (x) { return '<span class="evrw"><i>' + x[0] + '</i><b>' + (one ? x[1] : x[2]) + '</b></span>'; }).join('') + '</span>';
   }
+  // a cell's picture: a nine-slice border image, so the corners and sparkles keep their shape at any cell size
+  function pc(n) { return '--pc:url(' + A() + 'ev-' + n + '.webp)'; }
   function md(day) { var m = /^\d{4}-(\d{2})-(\d{2})$/.exec(day || ''); return m ? (+m[1]) + '.' + m[2] : ''; }
 
   // ---------- 출석 ----------
   var ATT_PIC = { got: 'attendance-claimed', ready: 'attendance-ready', wait: 'attendance-future' };
   var CHEST_PIC = { got: 'attendance-chest-claimed', ready: 'attendance-chest-ready', wait: 'attendance-chest-future' };
   function attHtml(v) {
+    // 칸 크게 (형: 칸을 좀 더 늘리거나 키워서): small cells 214×130 → 226×158, the 7th/14th box 228×280 → 236×330
+    var SW = 226, SH = 158, BW = 236, WH = 330, XS = [62, 304, 546], XB = 788, TOPS = [540, 894];
     var cells = v.att.list.map(function (c, i) {
-      var wk = i < 7 ? 0 : 1, k = i % 7, top = [556, 870][wk], big = k === 6;
-      var x = big ? 780 : [74, 308, 542][k % 3], y = big ? top : top + (k < 3 ? 0 : 150), w = big ? 228 : 214, h = big ? 280 : 130;
-      var pic = img((big ? CHEST_PIC : ATT_PIC)[c.st], 'evpc');
-      return '<button class="evcell ' + (big ? 'big ' : '') + c.st + '" data-evday="' + c.day + '" style="' + box(x, y, w, h) + '">' + pic +
-        '<em class="evday">' + c.day + '일</em>' + rewards(c.give, big ? 4 : 2) + '</button>';
+      var wk = i < 7 ? 0 : 1, k = i % 7, top = TOPS[wk], big = k === 6;
+      var x = big ? XB : XS[k % 3], y = big ? top : top + (k < 3 ? 0 : SH + 14), w = big ? BW : SW, h = big ? WH : SH;
+      var pic = big ? img(CHEST_PIC[c.st], 'evpc') : '';
+      return '<button class="evcell ' + (big ? 'big ' : '') + c.st + '" data-evday="' + c.day + '" style="' + box(x, y, w, h) + (big ? '' : ';' + pc(ATT_PIC[c.st])) + '">' + pic +
+        '<em class="evday">' + c.day + '일</em>' + rewards(c.give, big ? 4 : 3, big) + '</button>';
     }).join('');
     var btn = v.att.today ? img('claim-ready') + '<span>오늘 출석 받기</span>' : img('claim-done') + '<span>' + (v.att.n >= v.att.list.length ? '출석을 모두 받았어요' : '내일 또 만나요') + '</span>';
     return img('attendance-frame', 'evframe') +
@@ -69,17 +76,18 @@
     return pre + (final ? '-final-' : '-') + s;
   }
   function passHtml(v, friend) {
-    // 4 cells fill the strip exactly (4 × 202 + 3 × GAP = 946) and the strip stops cell by cell (형: 오른쪽 끝 칸이 반쯤 잘려 보임)
-    var GAP = 46;
+    // 3 cells fill the strip exactly (3 × 290 + 2 × GAP = 946), bigger than the 4 before (형: 칸 좀 키워서 보기 편하게), and the
+    // strip stops cell by cell. The last (30th) keeps its picture's own shape (the box drawn in its corner).
+    var GAP = 38, CW_ = 290, CH = 210;
     var P = v.pass, cols = '', X = 0;
     P.list.forEach(function (c) {
-      var final = c.step === P.steps, w = final ? 250 : 202;
+      var final = c.step === P.steps, w = final ? 258 : CW_;
       var cell = function (line, cc, y) {
         if (!cc) return '';
-        return '<button class="evpcell ' + line + ' ' + cc.st + (final ? ' final' : '') + '" data-evstep="' + c.step + '" data-evline="' + line + '" style="left:' + X + 'px;top:' + y + '%;width:' + w + 'px;height:' + (202 / 496 * 100).toFixed(3) + '%">' +
-          img(passPic(line, final, cc.st), 'evpc') + '<em class="evday">' + c.step + '</em>' + rewards(cc.give, final ? 3 : 2) + '</button>';
+        return '<button class="evpcell ' + line + ' ' + cc.st + (final ? ' final' : '') + '" data-evstep="' + c.step + '" data-evline="' + line + '" style="left:' + X + 'px;top:' + y + '%;width:' + w + 'px;height:' + (CH / 496 * 100).toFixed(3) + '%' + (final ? '' : ';' + pc(passPic(line, false, cc.st))) + '">' +
+          (final ? img(passPic(line, true, cc.st), 'evpc') : '') + '<em class="evday">' + c.step + '</em>' + rewards(cc.give, 3, final) + '</button>';
       };
-      cols += cell('free', c.free, 0) + cell('pass', c.pass, (278 / 496 * 100).toFixed(3));
+      cols += cell('free', c.free, 0) + cell('pass', c.pass, ((496 - CH) / 496 * 100).toFixed(3));
       X += w + GAP;
     });
     // the strip's inner units are frame units (px inside .evrow, scaled by --u = card width / 1086)
@@ -148,30 +156,39 @@
       '#evFx .evpc{position:absolute;left:-2.5%;top:-4.5%;width:105%;height:109%}',
       '#evFx .evcell,#evFx .evpcell{padding:0;border:0;background:none;color:inherit;display:block}',
       '#evFx .evcell.big .evpc{left:-2.6%;top:-2.1%;width:105.7%;height:104.6%}',
-      '#evFx .evpcell .evpc{left:-3.2%;top:-3%;width:106.4%;height:106%}',
       '#evFx .evpcell.final .evpc{left:-2.6%;top:-3%;width:105.2%;height:106%}',
-      // 칸 안 (2026-11-23 다듬기): 날짜·단계는 왼쪽 위 작은 글자, 그 밑 남은 자리에 보상. 하나면 큰 그림 + 이름, 둘 이상이면 한 줄씩
-      '#evFx .evday{position:absolute;left:7%;top:7%;font:400 2.4cqw/1 var(--display,inherit);font-style:normal;color:#ffe7b8;text-shadow:0 1px 2px #2a1328}',
-      '#evFx .evrws{position:absolute;left:5%;right:5%;top:27%;bottom:5%;display:flex;flex-direction:column;align-items:center;justify-content:center}',
-      '#evFx .evrw{display:flex;align-items:center;max-width:100%}',
+      // nine-slice cell pictures (corners 70px of the piece kept as drawn: the paw stamp, the check, the lock, the sparkles)
+      '#evFx .evcell:not(.big),#evFx .evpcell:not(.final){border-style:solid;border-color:transparent;border-width:0;border-image-source:var(--pc);border-image-slice:70 fill;border-image-repeat:stretch}',
+      '#evFx .evcell:not(.big){border-image-width:6.4cqw;border-image-outset:.5cqw}',
+      '#evFx .evpcell:not(.final){border-image-width:70px;border-image-outset:6px}',
+      // 칸 안 (2026-11-23 2차 다듬기, 형: 큼직큼직하게): 날짜·단계는 왼쪽 위 작은 띠, 그 밑에 보상. 하나면 큰 그림 + 이름과 양,
+      // 둘·셋이면 큰 그림을 나란히 두고 그 밑에 양만 (무엇인지는 그림이, 긴 이름은 누르면 아래 줄에)
+      '#evFx .evday{position:absolute;left:5%;top:6%;padding:.2cqw .9cqw;border-radius:2cqw;background:rgba(42,19,40,.55);font:400 2.6cqw/1.1 var(--display,inherit);font-style:normal;color:#ffe7b8}',
+      '#evFx .evrws{position:absolute;left:4%;right:4%;top:24%;bottom:6%;display:flex;align-items:center;justify-content:center}',
+      '#evFx .evrw{display:flex;flex-direction:column;align-items:center;min-width:0}',
       '#evFx .evrw i{flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-style:normal}',
       '#evFx .evrw i>*{width:100%!important;height:100%!important}',
-      '#evFx .evrw b{font:400 2.7cqw/1.15 var(--display,inherit);color:#fff6e3;text-shadow:0 0 2px #2a1328,0 1px 2px #2a1328;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
-      '#evFx .one .evrw{flex-direction:column;gap:.3cqw}#evFx .one .evrw i{width:5.4cqw;height:5.4cqw}#evFx .one .evrw i>*{font-size:4.6cqw}',
-      '#evFx .rows{gap:.2cqw;align-items:flex-start;left:3%;right:2%}#evFx .rows .evrw{gap:.6cqw}#evFx .rows .evrw i{width:3.8cqw;height:3.8cqw}#evFx .rows .evrw i>*{font-size:3.3cqw}#evFx .rows .evrw b{font-size:2.5cqw}',
-      // 7·14일째 상자 칸: 줄을 위쪽에, 오른쪽 아래 상자 그림 자리는 비워 둠
-      '#evFx .big .evrws{top:15%;bottom:30%;left:5%;right:3%;justify-content:flex-start;gap:1.2cqw}#evFx .big .rows .evrw i{width:4.2cqw;height:4.2cqw}#evFx .big .rows .evrw b{font-size:2.6cqw}',
+      '#evFx .evrw b{max-width:100%;font:400 3cqw/1.1 var(--display,inherit);color:#fff6e3;text-shadow:0 0 2px #2a1328,0 0 2px #2a1328,0 1px 2px #2a1328;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '#evFx .one .evrw{gap:.4cqw}#evFx .one .evrw i{width:7cqw;height:7cqw}#evFx .one .evrw i>*{font-size:6cqw}#evFx .one .evrw b{font-size:3.2cqw}',
+      '#evFx .cols{justify-content:space-evenly}#evFx .cols .evrw{flex:1 1 0;gap:.3cqw}#evFx .cols .evrw i{width:6cqw;height:6cqw}#evFx .cols .evrw i>*{font-size:5.2cqw}#evFx .cols .evrw b{font-size:3cqw}',
+      // 7·14일째 상자 칸: 왼쪽 위부터 한 줄에 하나씩 큰 그림 + 양, 오른쪽 아래 상자 그림까지 칸을 채움
+      '#evFx .big .evrws{top:19%;bottom:22%;left:9%;right:6%}',
+      '#evFx .big .rows{flex-direction:column;align-items:flex-start;justify-content:space-evenly}',
+      '#evFx .big .rows .evrw{flex-direction:row;gap:1.2cqw}#evFx .big .rows .evrw i{width:6.2cqw;height:6.2cqw}#evFx .big .rows .evrw i>*{font-size:5.4cqw}#evFx .big .rows .evrw b{font-size:3.4cqw}',
+      '#evFx .big .one .evrw i{width:8cqw;height:8cqw}',
       // inside the zoomed pass strip sizes are frame units (px, 1cqw ≈ 10.9px), not cqw
-      '#evFx .evpcell .evday{font-size:28px;left:8%;top:7%}',
-      '#evFx .evpcell .evrws{top:24%;bottom:6%;left:6%;right:6%}',
-      '#evFx .evpcell .evrw b{font-size:29px}',
-      '#evFx .evpcell .one .evrw{gap:4px}#evFx .evpcell .one .evrw i{width:66px;height:66px}#evFx .evpcell .one .evrw i>*{font-size:56px}',
-      '#evFx .evpcell .rows{gap:4px}#evFx .evpcell .rows .evrw{gap:6px}#evFx .evpcell .rows .evrw i{width:44px;height:44px}#evFx .evpcell .rows .evrw i>*{font-size:38px}#evFx .evpcell .rows .evrw b{font-size:26px}',
-      // 30단계 칸은 오른쪽 아래에 상자 그림이 있어 글자를 그 위로
-      '#evFx .evpcell.final .evrws{top:20%;bottom:36%;right:8%;justify-content:flex-start}',
+      '#evFx .evpcell .evday{left:5%;top:6%;padding:2px 10px;border-radius:22px;font-size:30px}',
+      '#evFx .evpcell .evrws{top:24%;bottom:6%;left:4%;right:4%}',
+      '#evFx .evpcell .evrw b{font-size:34px}',
+      '#evFx .evpcell .one .evrw{gap:4px}#evFx .evpcell .one .evrw i{width:80px;height:80px}#evFx .evpcell .one .evrw i>*{font-size:68px}#evFx .evpcell .one .evrw b{font-size:36px}',
+      '#evFx .evpcell .cols .evrw{gap:4px}#evFx .evpcell .cols .evrw i{width:68px;height:68px}#evFx .evpcell .cols .evrw i>*{font-size:58px}#evFx .evpcell .cols .evrw b{font-size:32px}',
+      // 30단계 칸 (상자 그림이 오른쪽 아래): 출석 상자 칸과 같이 왼쪽 위부터 한 줄에 하나씩
+      '#evFx .evpcell.final .evrws{top:21%;bottom:27%;left:7%;right:31%}',
+      '#evFx .evpcell.final .rows{flex-direction:column;align-items:flex-start;justify-content:space-evenly}',
+      '#evFx .evpcell.final .rows .evrw{flex-direction:row;gap:12px}#evFx .evpcell.final .rows .evrw i{width:56px;height:56px}#evFx .evpcell.final .rows .evrw i>*{font-size:48px}#evFx .evpcell.final .rows .evrw b{font-size:33px}',
       '#evFx .evpcell.free,#evFx .evpcell.pass{scroll-snap-align:start}',
       '#evFx .got .evrws,#evFx .lock .evrws,#evFx .wait .evrws{opacity:.7}',
-      '#evFx .ready .evpc{animation:evGlow 1.6s ease-in-out infinite}',
+      '#evFx .ready .evpc,#evFx .evcell.ready:not(.big),#evFx .evpcell.ready:not(.final){animation:evGlow 1.6s ease-in-out infinite}',
       '@keyframes evGlow{50%{filter:brightness(1.15) drop-shadow(0 0 1cqw #ffd98a)}}',
       '#evFx .evdate,#evFx .evdleft{display:flex;align-items:center;justify-content:center;font:400 3.2cqw/1 var(--display,inherit);color:#ffe7b8}',
       '#evFx .evbtn{padding:0;border:0;background:none;color:#fff6e3}',
@@ -194,7 +211,7 @@
       '#evFx .evgot.on{opacity:1;transform:none}#evFx .evgot li{list-style:none;display:flex;align-items:center;gap:1cqw;font:400 3cqw/1.2 var(--display,inherit)}',
       '#evFx .evgot .evgt{flex:0 0 100%;justify-content:center;color:#ffd98a}#evFx .evgot .evnote{flex:0 0 100%;justify-content:center;color:#f5dcea;font-size:2.6cqw}',
       '#evFx .evgot .wpi{width:5cqw;height:5cqw;display:flex}#evFx .evgot .wpi>*{width:100%!important;height:100%!important}',
-      '#evFx .stamp .evpc{animation:evStamp .45s cubic-bezier(.2,1.6,.4,1) both}',
+      '#evFx .stamp .evpc,#evFx .evcell.stamp:not(.big),#evFx .evpcell.stamp:not(.final){animation:evStamp .45s cubic-bezier(.2,1.6,.4,1) both}',
       '@keyframes evStamp{0%{transform:scale(1.45);filter:brightness(1.6)}100%{transform:none}}',
       '#evFx .evspark{position:absolute;width:90%;aspect-ratio:1;left:5%;top:50%;transform-origin:center;margin-top:-45%;pointer-events:none;animation:evSpark .8s ease-out both}',
       '@keyframes evSpark{0%{transform:scale(.3) rotate(-30deg);opacity:0}30%{opacity:1}100%{transform:scale(1.5) rotate(20deg);opacity:0}}',

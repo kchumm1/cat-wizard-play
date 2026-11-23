@@ -11,17 +11,32 @@
 
   // ---------- 설정표 (형이 바꿀 수 있게 여기 한 곳에) ----------
   // start: 사이트에 나간 날 (형 결정: 나간 날부터 14일). 올리는 날 고쳐 적는다.
-  var FREE_ROT = [{ goldMin: 30 }, { potionMin: 30 }, { mana: 5000 }, { gems: 100 }];
-  var PAID_ROT = [{ gems: 300 }, { pulls: 10 }, { runeStone: 500 }, { gems: 300 }, { sigilStone: 500 }, { gems: 400 }];
-  function freeStep(s) { return s === 30 ? { gems: 500, goldMin: 120 } : s % 5 === 0 ? { gems: 300 } : FREE_ROT[(s - 1) % FREE_ROT.length]; }
-  function paidStep(s) { return s === 30 ? { gems: 3000, sigils: [{ grade: 4, n: 1 }] } : s % 10 === 0 ? { gems: 300, sigils: [{ grade: 3, n: 1 }] } : PAID_ROT[(s - 1) % PAID_ROT.length]; }
+  // 패스 보상 (2026-11-23 다시 짬, 형: 넉넉하게, 패스 구조랑 잘 맞춰서 — 29단계가 1단계와 같던 것):
+  // 1~10 / 11~20 / 21~30단계 세 구간으로 같은 종류도 뒤로 갈수록 커지고, 5단계마다 큰 칸.
+  //   무료 합계 다이아 4,400 + 뽑기 10 · 패스 줄 다이아 7,600 + 뽑기 120 (3,300원, 1원당 다이아 환산 약 3.3 — 상점 0.33~0.42,
+  //   겨울 패키지 0.49~0.63보다 넉넉: 14일 동안 직접 해야 다 받는 상품)
+  function tier(s) { return s <= 10 ? 0 : s <= 20 ? 1 : 2; }
+  function freeStep(s) {
+    if (s === 30) return { gems: 1000, pulls: 10 };
+    if (s % 5 === 0) return { gems: [300, 400, 500, 600, 700][s / 5 - 1] };
+    var t = tier(s);
+    return [{ goldMin: [60, 120, 240][t] }, { potionMin: [30, 60, 90][t] }, { mana: [5000, 10000, 15000][t] }, { gems: [100, 150, 200][t] }][(s - 1) % 4];
+  }
+  var PAID_BIG = { 5: { gems: 500, sigils: [{ grade: 2, n: 1 }] }, 10: { gems: 700, sigils: [{ grade: 3, n: 1 }] }, 15: { gems: 500, pulls: 30 },
+    20: { gems: 1000, sigils: [{ grade: 3, n: 1 }] }, 25: { gems: 700, pulls: 30 }, 30: { gems: 3000, sigils: [{ grade: 4, n: 1 }] } };
+  function paidStep(s) {
+    if (PAID_BIG[s]) return PAID_BIG[s];
+    var t = tier(s);
+    return [{ gems: [150, 200, 250][t] }, { pulls: 10 }, { runeStone: [300, 500, 800][t] }, { sigilStone: [300, 500, 800][t] }][(s - 1) % 4];
+  }
   var STEPS = []; for (var i = 1; i <= 30; i++) STEPS.push(i);
   var OPEN_EVENT = {
     id: 'open1', start: '2026-11-23', days: 14, price: 3300,
     att: [
-      { gems: 300 }, { pulls: 10 }, { goldMin: 60, potionMin: 60 }, { gems: 300 }, { runes: [{ grade: 2, n: 1 }], runeStone: 500 },
+      // 3일 룬석+물약 · 8일 다이아 400 · 10일 뽑기 20 · 11일 골드 4시간 (2026-11-23: 약하거나 2일과 겹치던 칸)
+      { gems: 300 }, { pulls: 10 }, { runeStone: 1000, potionMin: 60 }, { gems: 300 }, { runes: [{ grade: 2, n: 1 }], runeStone: 500 },
       { mana: 20000 }, { gems: 1000, pulls: 30 },
-      { gems: 300 }, { sigils: [{ grade: 2, n: 1 }], sigilStone: 500 }, { goldMin: 120 }, { pulls: 10 }, { runeStone: 1500 },
+      { gems: 400 }, { sigils: [{ grade: 2, n: 1 }], sigilStone: 500 }, { pulls: 20 }, { goldMin: 240 }, { runeStone: 1500 },
       { gems: 500 }, { gems: 2000, runes: [{ grade: 3, n: 1 }], sigils: [{ grade: 3, n: 1 }] }
     ],
     pass: {
