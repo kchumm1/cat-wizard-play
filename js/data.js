@@ -629,7 +629,13 @@
     // 2026-11-23 measure, dev/testsave.json · dev/ops-max-save.json). share = the part each target takes by family (한 방 all of
     // it, 번개 · 별비 spread over many), shareBig for the legends' big skills. A fresh common pet ≈ +5% of the hero, a top legend ≈ +85%
     petSkill: { every: [12, 11, 10, 9], perStar: 0.4, perLv: 0.02, minSec: 6, n: [2, 3, 4], gold: [3, 5, 8, 15],
-      power: [0.6, 1.0, 1.6, 2.6], powLv: 0.005, powStar: 0.1, share: { flame: 1, bolt: 0.5, star: 0.3 }, shareBig: { flame: 1, bolt: 0.6, star: 0.5 } },
+      power: [0.6, 1.0, 1.6, 2.6], powLv: 0.005, powStar: 0.1, share: { flame: 1, bolt: 0.5, star: 0.3 }, shareBig: { flame: 1, bolt: 0.6, star: 0.5 },
+      // 펫 버프 (2026-11-23, 형: 펫 스킬을 버프 형식으로, 물약 먹으면 나오는 것처럼): what each family raises for buffSecs seconds,
+      // by grade (일반 · 희귀 · 영웅 · 전설), then +0.5% a level and +10% a star like the old 세기 (powLv, powStar)
+      buff: { cheer: { stat: 'surge', label: '폭주 충전', val: [0.4, 0.6, 0.9, 1.5] }, bubble: { stat: 'boss', label: '보스 피해', val: [0.12, 0.18, 0.27, 0.45] },
+        flame: { stat: 'all', label: '모든 피해', val: [0.1, 0.15, 0.22, 0.35] }, bolt: { stat: 'crit', label: '치명타 피해', val: [0.12, 0.18, 0.27, 0.45] },
+        star: { stat: 'gold', label: '골드 획득', val: [0.15, 0.25, 0.4, 0.7] } },
+      buffSecs: [6, 7, 8, 9], buffSecStar: 0.5 },
     petConf: { maxStar: 5, setBonus: 0.05, allBonus: 0.10, dexFood: 20,
       eggEverySec: 900, bossEggChance: 0.10, regionBossEggs: 1, foodPerWave: 1, foodBoss: 30, foodRegionBoss: 120,
       gradeEarly: [70, 25, 5, 0], gradeLate: [45, 30, 18, 7], lateTier: 11,

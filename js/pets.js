@@ -126,7 +126,7 @@
     return { eggs: eggs, food: food };
   }
   function petFoodWave(state) { var b = petBox(state); b.food += C.foodPerWave; return C.foodPerWave; }
-  // 펫 기술 (2026-11-23): the worn pet casts it by itself every petSkillEvery seconds (js/pet-battle.js)
+  // 펫 기술 (2026-11-23): the worn pet casts it by itself every petSkillEvery seconds — since 2026-11-23 a buff (petBuffOf below, js/main.js)
   var SK = DATA.petSkill;
   function petSkillOf(id) {
     var p = BY[id], g = p && petGroupOf(id); if (!p || !g) return null;
@@ -147,22 +147,42 @@
     var sh = (k.big ? SK.shareBig : SK.share)[k.fam] || 0; if (!sh) return 0;
     return SK.power[k.grade] * (1 + SK.powLv * (o.lv - 1)) * (1 + SK.powStar * (o.star - 1)) * sh;
   }
+  // ---- 펫 버프 (2026-11-23, 형: 펫 스킬을 버프 형식으로 바꾸자, 물약 먹으면 나오는 것처럼 — 스킬 모양이 물약처럼 버프로) ----
+  // The worn pet's skill no longer strikes: every petSkillEvery seconds it gives the hero a buff for a few seconds (a new one
+  // starts the clock again), shown in the buff row over the battle like a potion, with the skill's icon. Families keep their
+  // old flavour: 숲 응원 → 폭주 충전, 바다 거품 → 보스 피해, 불꽃 → 모든 피해, 하늘 번개 → 치명타 피해, 별빛 → 골드 획득.
+  // { id, fam, name, icon, big, stat, label, val (0.15 = +15%), secs } or null when the pet is not owned
+  function petBuffOf(state, id) {
+    var k = petSkillOf(id), o = k && petBox(state).owned[id], B = SK.buff && SK.buff[k && k.fam]; if (!o || !B) return null;
+    var val = B.val[k.grade] * (1 + SK.powLv * (o.lv - 1)) * (1 + SK.powStar * (o.star - 1));
+    return { id: id, fam: k.fam, name: k.name, icon: k.icon, big: k.big, stat: B.stat, label: B.label,
+      val: Math.round(val * 10000) / 10000, secs: SK.buffSecs[k.grade] + SK.buffSecStar * (o.star - 1) };
+  }
+  // '+15%' (one decimal under 10%)
+  function petBuffPct(v) { var p = v * 100; return '+' + (p >= 10 ? Math.round(p) : Math.round(p * 10) / 10) + '%'; }
+  // the buff on the hero's numbers (js/main.js after every CW.stats): multiplied on top, like a potion
+  function petBuffApply(st, b) {
+    if (!st || !b || !(b.val > 0)) return st;
+    var m = 1 + b.val;
+    if (b.stat === 'surge') st.surgeRate = (st.surgeRate || 1) * m;
+    else if (b.stat === 'boss') st.bossDmg = (st.bossDmg || 1) * m;
+    else if (b.stat === 'all') st.finalMul = (st.finalMul || 1) * m;
+    else if (b.stat === 'gold') st.goldMul = (st.goldMul || 1) * m;
+    else if (b.stat === 'crit') (DATA.critTiers || []).forEach(function (t) { if (st[t.dmg] > 0) st[t.dmg] *= m; });
+    return st;
+  }
   // the 내 펫 skill line (js/pet-ui.js), in plain words (2026-11-23, 형: 「화면 전체에 낙뢰 + 감전 · 냥법사 1.56초치」 이게 뭔 말이야
   // → 실제 피해 숫자로): { name, every: '8.2초마다', what it does, note: what that brings ('' when nothing), hit: { label, secs } or
   // null, icon }. The page turns hit into 「번개 한 번에 피해 1.2조」 with the hero's boss damage per second now (CW.heroBossDps)
   function petSkillLine(state, id) {
-    var k = petSkillOf(id), t = k && petSkillEvery(state, id); if (!t) return null;
-    var n = k.n, what, note = '', label = '';
-    if (k.fam === 'cheer') { what = k.big ? '폭주 게이지를 꽉 채워요' : '폭주 게이지 +' + n + '칸'; note = k.big ? '다음 공격이 바로 폭주' : '폭주가 더 빨리 와요'; }
-    else if (k.fam === 'bubble') { what = k.big ? '화면의 적을 모두 모아 가둬요' : '가까운 적 ' + n + '마리를 거품에 가둬요'; note = '갇힌 적은 받는 피해 +30%'; }
-    else if (k.fam === 'flame') { what = k.big ? '일직선 불길로 줄 위의 적 모두' : '가장 센 적에게 큰 한 방'; label = k.big ? '한 마리당' : '한 번에'; }
-    else if (k.fam === 'bolt') { what = k.big ? '화면 모든 적에게 낙뢰' : '적 ' + n + '마리를 번개로 이어 쳐요'; note = '감전되면 받는 피해 +25%'; label = '번개 한 번에'; }
-    else { what = k.big ? '성운이 내려앉는 큰 별비' : '모든 적에게 별비'; note = '사냥 골드 ' + k.gold + '초치도 받아요'; label = '별 하나에'; }
-    return { name: k.name, every: String(Math.round(t * 10) / 10) + '초마다', what: what, note: note, hit: label ? { label: label, secs: petSkillPower(state, id) } : null, icon: k.icon };
+    var t = petSkillEvery(state, id), b = t && petBuffOf(state, id); if (!b) return null;
+    // 버프로 바뀐 뒤 (2026-11-23): 무엇이 얼마나 · 몇 초 동안 (피해 숫자 줄은 없음)
+    return { name: b.name, every: String(Math.round(t * 10) / 10) + '초마다', what: b.label + ' ' + petBuffPct(b.val),
+      note: String(Math.round(b.secs * 10) / 10) + '초 동안 버프', hit: null, icon: b.icon };
   }
 
 
-  return { petBox: petBox, petSkillPower: petSkillPower, petSkillLine: petSkillLine, petSkillOf: petSkillOf, petSkillEvery: petSkillEvery, petById: petById, petGroupOf: petGroupOf, petsInGroup: petsInGroup, petAdd: petAdd, petSeen: petSeen,
+  return { petBox: petBox, petBuffOf: petBuffOf, petBuffPct: petBuffPct, petBuffApply: petBuffApply, petSkillPower: petSkillPower, petSkillLine: petSkillLine, petSkillOf: petSkillOf, petSkillEvery: petSkillEvery, petById: petById, petGroupOf: petGroupOf, petsInGroup: petsInGroup, petAdd: petAdd, petSeen: petSeen,
     petHasFresh: petHasFresh, petDex: petDex, petClaimSet: petClaimSet, petClaimAll: petClaimAll, petMul: petMul,
     petLvCap: petLvCap, petLvCost: petLvCost, petLevelUp: petLevelUp, petStarCost: petStarCost, petStarUp: petStarUp, petWear: petWear,
     petEquipBonus: petEquipBonus, petOwnedBonus: petOwnedBonus, petGradeWeights: petGradeWeights, petHatch: petHatch,

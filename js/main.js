@@ -47,6 +47,8 @@
 
   function refreshStats() {
     st = CW.stats(state);
+    // 펫 버프 (2026-11-23): multiplied on top while it lasts, like a potion (petBuff is set further down)
+    if (typeof petBuff !== 'undefined' && petBuff && CW.petBuffApply) CW.petBuffApply(st, petBuff);
     // titles earned along the way (2026-11-14)
     var got = CW.titleCheck ? CW.titleCheck(state) : [];
     if (got.length && typeof ui !== 'undefined' && ui && ui.toast) got.forEach(function (id) { ui.toast('새 칭호 획득 · ' + CW.titleById(id).name + ' — 프로필에서 장착할 수 있어요.'); });
@@ -453,15 +455,17 @@
       .sort(function (a, b) { return (a.gone - b.gone) || (a.d - b.d); }).map(function (o) { return o.m; });
     return list.slice(0, CW.targetCount(skill, !!dun));
   }
-  // ---------- 펫 전투 기술 (2026-11-23, js/pet-battle.js · js/pet-sprite.js; 형: 작은 기술도 쓰기 · 나머지 펫스킬도 작업하자) ----------
-  // The worn pet floats behind the hero and casts by itself every petSkillEvery seconds (with no one to aim at it keeps the
-  // charge). Its hits go through the hero's own onHit — crits, 빙결 · 감전, the little ones, numbers, kills, dungeons — at
-  // seconds of the hero's boss damage (CW.bossDps, so the same share of the hero at any step). 응원 only fills the 폭주 gauge,
-  // 묶기 only traps (the 빙결 boss rule). Not in the offline earnings (js/state.js offlineReward).
-  var petFx = CW.createPetSprite ? CW.createPetSprite(sc) : null, petT = 0, petWorn, petPull = null;
+  // ---------- 펫 버프 (2026-11-23, js/pets.js petBuffOf · js/pet-sprite.js; 형: 펫 스킬을 버프 형식으로 바꾸자, 물약 먹으면
+  // 나오는 것처럼 — 스킬 모양이 물약처럼 버프로) ----------
+  // The worn pet lives around the hero (js/pet-sprite.js) and every petSkillEvery seconds of a fight (with no monster about
+  // it keeps the charge) it casts its skill on the hero: a buff for a few seconds — 폭주 충전 · 보스 피해 · 모든 피해 ·
+  // 치명타 피해 · 골드 획득 by its family — multiplied on the hero's numbers after every CW.stats (refreshStats), shown in
+  // the buff row like a potion with the skill's icon and the seconds left (js/ui.js), and gone when they run out. A new cast
+  // starts the clock again. Not in the offline earnings (js/state.js offlineReward).
+  var petFx = CW.createPetSprite ? CW.createPetSprite(sc) : null, petT = 0, petWorn, petBuff = null;
   var PET_COL = { cheer: 0x8fe07a, bubble: 0x7fd8ff, flame: 0xff7a2a, bolt: 0xbfe0ff, star: 0xc9a2ff };
   var PET_FLASH = { cheer: 'rgba(150,230,120,0.22)', bubble: 'rgba(120,210,255,0.22)', flame: 'rgba(255,120,40,0.26)', bolt: 'rgba(205,230,255,0.3)', star: 'rgba(200,160,255,0.26)' };
-  // 내 펫 기술 줄의 피해 숫자 (js/pet-ui.js): the hero's boss damage per second now, with the stats in use
+  // the hero's boss damage per second now, with the stats in use (and the pet buff, when it is on)
   CW.heroBossDps = function () { return CW.bossDps(state, st); };
   // 오늘의 할 일 · 업적 (2026-11-23, js/goals.js): counts, and what the to-dos need to know now
   function goalCount(k, n) { if (CW.goalCount) CW.goalCount(state, k, n); }
@@ -475,61 +479,28 @@
   function petTick(dt) {
     var b = CW.petBox ? CW.petBox(state) : null, id = b ? b.worn : null;
     if (petFx) { if (id !== petWorn) { petWorn = id; petT = 0; petFx.set(id ? CW.petById(id) : null); } petFx.update(dt); }
-    if (petPull) { petPull.t -= dt; if (petPull.t <= 0) { petPull.list.forEach(function (m) { m.pull = undefined; m.pullZ = undefined; }); petPull = null; } }
-    if (!id || !CW.petBattlePlan || preview || restT > 0 || (!dun && !boss && state.bossTry)) return;
+    // the buff runs out (or the pet that gave it was let go)
+    if (petBuff) { petBuff.left -= dt; petBuff.age += dt; if (petBuff.left <= 0 || petBuff.id !== id) { petBuff = null; refreshStats(); } }
+    if (!id || !CW.petBuffOf || preview || restT > 0 || (!dun && !boss && state.bossTry)) return;
     var every = CW.petSkillEvery(state, id); if (!every) return;
     petT = Math.min(petT + dt, every); if (petT < every) return;
-    var H = sc.heroState(), p = CW.petBattlePlan(state, aliveMobs().filter(aimable), { x: H.x, z: H.z });
-    if (!p) return;
-    petT = 0; petCast(p);
+    if (!aliveMobs().filter(aimable).length) return;
+    petT = 0; petCast(id);
   }
-  function petCast(p) {
-    var T3 = sc.THREE.Vector3, col = PET_COL[p.fam] || 0xffffff, from = petFx && petFx.shown() ? petFx.center() : sc.heroCenter(), vx = fx.vfx;
-    var E = function (o) { if (vx) vx.emit(o); }, top = function (m) { return sc.mobTop(m); }, rnd = function (a) { return (Math.random() - 0.5) * a; };
-    // 펫이 뛰고(전설은 부풀고), 머리 위에 계열 아이콘이 잠깐 (GPT 그림 art/sk-pet-*), 그 위에 기술 이름
-    if (petFx) { petFx.pop(); petFx.icon((CW.ART_BASE || 'art/') + 'sk-pet-' + p.fam + '.webp', p.big); }
-    sc.damageText((petFx && petFx.shown() ? petFx.top() : from.clone()).add(new T3(0, p.big ? 0.75 : 0.6, 0)), p.name, 0, hexCss(col));
-    if (p.big) { sc.shake(0.28); sc.flash(PET_FLASH[p.fam], 0.16); }
-    if (p.fam === 'cheer') {
-      var C = DATA.surgeConf.charge, hc = sc.heroCenter();
-      state.surge = p.surge === Infinity ? C : Math.min(C, (state.surge || 0) + p.surge);
-      ui.surgeGauge(state.surge, C);
-      for (var i = 0; i < (p.big ? 14 : 6); i++) E({ pos: from.clone(), vel: hc.clone().sub(from).multiplyScalar(2.2).add(new T3(rnd(1.2), Math.random() * 1.2, 0)), frame: i % 2 ? 'star' : 'glow', color: [0xffffff, col], size: [0.24, 0.05], life: 0.5, delay: i * 0.03 });
-      if (sc.castPulse) sc.castPulse();
-      return;
-    }
-    if (p.fam === 'bubble') {
-      p.targets.forEach(function (m) {
-        if (!m.boss) m.frozen = Math.max(m.frozen || 0, 2); else if (!(m.frzCd > 0)) { m.frozen = Math.max(m.frozen || 0, 0.7); m.frzCd = 2.8; }
-        var q = sc.mobPos(m);
-        E({ pos: q.clone().add(new T3(0, 0.35, 0.2)), frame: 'circle', color: [0xffffff, col], size: [0.3, 1.1], life: 0.9, alpha: 0.75 });
-        E({ pos: q.clone().add(new T3(0, 0.2, 0.2)), frame: 'ring', color: col, size: [0.2, 1.2], life: 0.35, alpha: 0.8 });
-      });
-      // 심연의 소용돌이: everyone drawn to the middle for a moment (the 블랙홀 way: m.pull, cleared in petTick)
-      if (p.pull && p.targets.length > 1) {
-        var cx = 0, cz = 0; p.targets.forEach(function (m) { cx += m.x; cz += m.z; }); cx /= p.targets.length; cz /= p.targets.length;
-        p.targets.forEach(function (m) { if (!m.boss) { m.pull = cx; m.pullZ = cz; } }); petPull = { list: p.targets.slice(), t: 1.1 };
-      }
-      return;
-    }
-    var base = { id: 'pet', mult: CW.petHeroMult(state) }, one = CW.hitDamage(st, base, { boss: true, critTier: 0 }) * CW.critFactor(st);
-    var rate = one > 0 ? CW.bossDps(state, st) / one : 0;
-    var sk = { id: 'pet-' + p.fam, mult: base.mult, color: col, el: 'pet', status: p.shock ? 'shock' : null, targets: p.targets.length > 3 ? 99 : 1 };
-    var hit = onHit(sk, p.mul * rate), tops = p.targets.map(top);
-    if (vx && p.fam === 'flame') {
-      if (p.big) { var far = tops.reduce(function (a, q) { return q.distanceTo(from) > a.distanceTo(from) ? q : a; }, tops[0]); vx.lightning(from, far, { color: col, w: 0.45, amp: 0.03, branches: 0, life: 0.35 }); }
-      else vx.lightning(from, tops[0], { color: col, w: 0.2, amp: 0.04, branches: 0, life: 0.3 });
-    } else if (vx && p.fam === 'bolt') {
-      var prev = from; tops.forEach(function (q) { vx.lightning(p.big ? q.clone().add(new T3(rnd(0.6), 4, 0)) : prev, q, { color: col, w: 0.12, life: 0.3 }); prev = q; });
-    } else if (p.fam === 'star') {
-      tops.forEach(function (q) { for (var j = 0; j < (p.big ? 3 : 1); j++) E({ pos: q.clone().add(new T3(rnd(0.5), 2.2 + j * 0.4, 0)), vel: new T3(0, -5, 0), frame: 'star', color: [0xffffff, col], size: [0.35, 0.2], life: 0.42, delay: j * 0.06 }); });
-    }
-    p.targets.forEach(function (m, k) { if (p.fam !== 'star') fx.impact(tops[k].clone(), col, p.big ? 1.2 : 1.0); hit(m, 1, p.big ? 1.4 : 1.1); });
-    // 별비: a little of the hunting gold (seconds of it), not in a dungeon (it pays no field gold)
-    if (p.gold && !dun && CW.goldPerSecond) {
-      var g = CW.goldPerSecond(state) * p.gold;
-      if (g > 0) { state.gold += g; gained.gold += g; if (CW.idleNote) CW.idleNote({ gold: g }); fx.coinPop(from, p.big ? 6 : 3); flyCoins(from, p.big ? 4 : 2); }
-    }
+  function petCast(id) {
+    var B = CW.petBuffOf(state, id); if (!B) return;
+    petBuff = Object.assign({ left: B.secs, age: 0 }, B); refreshStats();
+    var T3 = sc.THREE.Vector3, col = PET_COL[B.fam] || 0xffffff, hc = sc.heroCenter(), from = petFx && petFx.shown() ? petFx.center() : hc, vx = fx.vfx;
+    var E = function (o) { if (vx) vx.emit(o); }, rnd = function (a) { return (Math.random() - 0.5) * a; };
+    // 펫이 뛰고(전설은 포효하며 부풀고), 머리 위에 기술 아이콘이 잠깐 (GPT 그림 art/sk-pet-*), 그 위에 기술 이름
+    if (petFx) { petFx.pop(); petFx.icon((CW.ART_BASE || 'art/') + B.icon + '.webp', B.big); }
+    sc.damageText((petFx && petFx.shown() ? petFx.top() : from.clone()).add(new T3(0, B.big ? 0.75 : 0.6, 0)), B.name, 0, hexCss(col));
+    // 버프가 냥법사에게 날아감: 반짝이 줄기, 냥법사가 빛나고, 머리 위에 「모든 피해 +15%」
+    for (var i = 0; i < (B.big ? 16 : 9); i++) E({ pos: from.clone(), vel: hc.clone().sub(from).multiplyScalar(2.2).add(new T3(rnd(1.2), Math.random() * 1.2, 0)), frame: i % 2 ? 'star' : 'glow', color: [0xffffff, col], size: [0.26, 0.05], life: 0.5, delay: i * 0.03 });
+    for (var j = 0; j < 10; j++) { var an = j / 10 * Math.PI * 2; E({ pos: hc.clone().add(new T3(Math.cos(an) * 0.55, -0.35, Math.sin(an) * 0.55)), vel: new T3(0, 1.6 + Math.random(), 0), frame: j % 2 ? 'star' : 'glow', color: [0xffffff, col], size: [0.2, 0.04], life: 0.7, delay: 0.25 + j * 0.02 }); }
+    if (sc.castPulse) sc.castPulse();
+    setTimeout(function () { sc.damageText(sc.heroCenter().add(new T3(0, 0.95, 0)), B.label + ' ' + CW.petBuffPct(B.val), 0, hexCss(col)); }, 260);
+    if (B.big) sc.flash(PET_FLASH[B.fam], 0.12);
   }
   function castNext() {
     var peek = aliveMobs().filter(aimable);
@@ -898,6 +869,8 @@
     merge: function (k) { var ok = CW.merge(state, k); if (ok) { refreshStats(); snd.play('win'); save(); } return ok; },
     transcend: function (k) { var ok = CW.transcend(state, k); if (ok) { refreshStats(); snd.play('tier'); fx.levelUp(state.tier, 0xffd84a, true); save(); } return ok; },
     brew: function (id) { var ok = CW.brew(state, id, Date.now()); if (ok) { goalCount('potion', 1); refreshStats(); buffKey = CW.buffKey(state); snd.play('win'); save(); } return ok; },
+    // the pet buff for the buff row (js/ui.js): { icon, left, age, label, val } or null
+    petBuff: function () { return petBuff; },
     runeGradeUp: function (id) { var ok = CW.runeGradeUp(state, id); if (ok) { refreshStats(); snd.play('tier'); fx.levelUp(state.tier, 0xb58cff, true); save(); } return ok; },
     // 가방 (2026-11-17, js/chest.js): 산 패키지는 가방에 상자로 — 열 때 지급
     buyPack: function (id) { if (CW.FRIEND) return false; if (G.wallet) return walletDo('buyPack', { id: id }, function () { snd.play('win'); }); var box = CW.chestBuyPack(state, id); if (box) { snd.play('win'); save(); } return box; },

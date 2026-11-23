@@ -62,6 +62,8 @@
         '<button class="pplink" data-pp="odds">확률 보기</button></div>' +
       '<div class="pplisth"><h4>내 펫</h4><span><img src="' + A() + 'pet-food.webp" alt="" draggable="false">펫 간식 ' + fmt(b.food) + '</span></div>' +
       (list.length ? '<div class="ppgrid">' + grid + '</div>' : '<p class="ppnone">아직 펫이 없어요. 알을 부화해 보세요.</p>');
+    // 살아 있는 펫 (2026-11-23, js/pet-live.js): the same canvas moves into the new stage, so the pet carries on where it was
+    if (CW.petLive && p) CW.petLive.stage(page.querySelector('.ppstage'), p);
   }
   // 펫 기술 줄 (2026-11-23): 이름 · 몇 초마다 · 하는 일과 세기 (js/pets.js petSkillLine); 데리고 다니는 펫이 전투에서 씀
   function skillRow(s) {
@@ -101,7 +103,12 @@
     box.innerHTML = '<div class="phfx"><i class="phglow"></i><img class="phbot" src="' + A() + 'pet-egg-bottom.webp" alt="" draggable="false">' +
       '<img class="phtop" src="' + A() + 'pet-egg-top.webp" alt="" draggable="false"><img class="phegg" src="' + A() + 'pet-egg.webp" alt="" draggable="false"></div>';
     setTimeout(function () { box.classList.add('crack'); }, 750);
-    setTimeout(function () { box.classList.add('show'); box.insertAdjacentHTML('beforeend', resultHtml(res, all)); busy = false; render(); }, 1150);
+    setTimeout(function () {
+      box.classList.add('show'); box.insertAdjacentHTML('beforeend', resultHtml(res, all));
+      // the one that hatched comes alive (js/pet-live.js)
+      if (CW.petLive && res.length === 1) CW.petLive.hatch(box.querySelector('.phres.one'), CW.petById(res[0].id));
+      busy = false; render();
+    }, 1150);
     return true;
   }
   function resultHtml(res, all) {

@@ -1405,7 +1405,8 @@
       $('lastBossResult').hidden = !pastResult || tab !== 'battle';
       if (bossSkillReturn && bossSkillReturn !== pastResult) { bossSkillReturn = null; $('bossResultReturn').hidden = true; }
       dunHud(G.dunState());
-      var now = Date.now(), bt = DATA.potions.map(function (p) { var l = CW.buffLeft(s, p.id, now); return l ? '<span>' + mi('potion', p) + mmss(l) + '</span>' : ''; }).join('');
+      var now = Date.now(), bt = DATA.potions.map(function (p) { var l = CW.buffLeft(s, p.id, now); return l ? '<span>' + mi('potion', p) + mmss(l) + '</span>' : ''; }).join(''); // 펫 버프 (2026-11-23, 형: 물약 먹으면 나오는 것처럼): the worn pet's skill icon and its seconds, after the potions
+      var pb = G.petBuff && G.petBuff(); if (pb && pb.left > 0) bt += '<span class="petbuff' + (pb.age < 0.9 ? ' pop' : '') + '" title="' + pb.label + ' ' + CW.petBuffPct(pb.val) + '"><img class="ico" src="' + (CW.ART_BASE || 'art/') + pb.icon + '.webp" alt="" draggable="false">' + mmss(pb.left) + '</span>';
       if (bt !== lastBuffs) { lastBuffs = bt; $('buffs').innerHTML = bt; }
       var tier = DATA.tiers[s.tier - 1];
       var lastT = CW.FRIEND ? CW.FRIEND_MAX_TIER : DATA.tiers.length; // 체험판 ends at the 9th job
