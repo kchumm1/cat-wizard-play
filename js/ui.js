@@ -1594,7 +1594,7 @@
       // 시안 순서: 성운 판(칸 4개 + 차례 안내·모두 빼기) → 도구 줄 → 차수 칩. 시안의 걸터앉은 냥법사는 뺌 (형 2026-11-23 「애 빼자」)
       var tools = '<div class="sktools"><div class="pp"><span>프리셋</span>' + [0, 1, 2].map(function (i) { return '<button class="pb' + ((s.preset || 0) === i ? ' on' : '') + '" data-preset="' + i + '" aria-pressed="' + ((s.preset || 0) === i) + '">' + (i + 1) + '</button>'; }).join('') + '</div>' +
         '<button class="auto" data-act="autoskill">자동 배치</button><button class="bulk" data-act="skillall">일괄 강화</button></div>';
-      var pin = '<div class="skpin"><div class="skbox"><div class="skslots3">' + cells + '</div><div class="skfoot"><span class="skord">1 › 2 › 3 › 4 ↻ 차례로 써요</span>' + allOut + '</div></div>' +
+      var pin = '<div class="skpin"><div class="skbox"><div class="skslots3">' + cells + '</div>' + (allOut ? '<div class="skfoot">' + allOut + '</div>' : '') + '</div>' +   // 「1 › 2 › 3 › 4 ↻ 차례로 써요」 뺌 (형 2026-11-23 「1234 다시 돌아가는 표시, 설명표시도 없애 → 전부 다 지워」)
         tools + '<div class="skchips">' + chips + '</div></div>';
       tools = '<div class="skown2"><span>보유 효과 · 모든 스킬 피해</span><b data-opv="skown">+' + pct(CW.skillOwnedStats(s).skillDmg) + '</b></div>';
       if (pk) {   // 고른 카드: 아래 고정 자리 서랍 (룬·신성력 고른 물건 칸과 같은 자리)

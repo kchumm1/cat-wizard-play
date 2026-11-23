@@ -1332,8 +1332,7 @@
     '#sheet.opal#sheet.opal .skx3::after{content:"";position:absolute;left:50%;top:50%;width:9px;height:9px;transform:translate(-50%,-50%);background:linear-gradient(45deg,transparent 42%,#fff 42%,#fff 58%,transparent 58%),linear-gradient(-45deg,transparent 42%,#fff 42%,#fff 58%,transparent 58%)}',
     '#sheet.opal#sheet.opal .skx3:active{transform:scale(.9)}',
     // 판 아래 한 줄: 차례 안내 · 모두 빼기
-    '#sheet.opal#sheet.opal .skfoot{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px;padding:0 4px}',
-    '#sheet.opal#sheet.opal .skord{font:700 11.5px/1 var(--body);color:rgba(240,234,252,.86);white-space:nowrap}',
+    '#sheet.opal#sheet.opal .skfoot{position:relative;z-index:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:9px;padding:0 4px}',
     '#sheet.opal#sheet.opal .skallout2{height:30px;padding:0 13px!important;border-radius:999px!important;background:rgba(255,255,255,.09)!important;box-shadow:inset 0 0 0 1px rgba(220,205,255,.4)!important;font:700 12px/1 var(--body)!important;color:#efe9fb!important;white-space:nowrap}',
     '#sheet.opal#sheet.opal .skallout2:active{transform:scale(.96)}',
     // 도구 줄 (어두운 유리 알약, 고른 프리셋은 연보라) — 프리셋 묶음 | 자동 배치 · 일괄 강화
