@@ -1811,6 +1811,7 @@
           }).join('') + '</div></div>' +
         (CW.FRIEND || (root.__cwFit && document.documentElement.classList.contains('under')) ? '<div class="row"><div class="info"><div class="name">하단 메뉴 위치</div><div class="desc">메뉴가 잘리면 ‘안쪽’을 선택해 주세요.</div></div><button class="btn" data-set="bottomFit">' + (bottomInside() ? '안쪽' : '맨 아래') + '</button></div>' : '') +
         '<div class="row"><div class="info"><div class="name">화면 표현</div><div class="desc">기본 3D 또는 픽셀 스타일</div></div><button class="btn" data-set="pixel">' + (st.pixel ? '픽셀 스타일' : '기본 3D') + '</button></div>' +
+        '<div class="row"><div class="info"><div class="name">화면 흔들림</div><div class="desc">어지러우면 꺼 주세요.</div></div><button class="btn" data-set="shake">' + (st.shake === false ? '꺼짐' : '켜짐') + '</button></div>' +
         // 가로 시점 (2026-11-17): only while the phone is sideways (upright the screen is as it was)
         (CW.isLand && CW.isLand() ? '<div class="row"><div class="info"><div class="name">가로 화면 시점</div><div class="desc">세로처럼 보면 냥법사 주변에서 몬스터가 사방으로 움직여요.</div></div>' +
           '<div class="sbtns"><button class="btn' + (st.landView === 'side' || st.landView === 'far' ? '' : ' on') + '" data-set="landCenter">세로처럼</button><button class="btn' + (st.landView === 'side' ? ' on' : '') + '" data-set="landSide">옆에서</button><button class="btn' + (st.landView === 'far' ? ' on' : '') + '" data-set="landFar">멀리서</button></div></div>' : '') +
@@ -2695,6 +2696,7 @@
         if (d.set === 'sound') G.setSetting('sound', !st.sound);
         if (d.set === 'pixel') G.setSetting('pixel', !st.pixel);
         if (d.set === 'autoBoss') G.setSetting('autoBoss', st.autoBoss === false);
+        if (d.set === 'shake') G.setSetting('shake', st.shake === false);
         if (d.set === 'bottomFit') {
           try { if (bottomInside()) localStorage.removeItem(bottomKey()); else localStorage.setItem(bottomKey(), 'inside'); } catch (e) {}
           if (CW.FRIEND) document.documentElement.classList.toggle('friend-bottom-inside', bottomInside());

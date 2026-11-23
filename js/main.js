@@ -1009,7 +1009,7 @@
   var drawing;
   function applySettings() {
     var s = state.settings;
-    snd.setEnabled(s.sound); sc.setPixel(s.pixel);
+    snd.setEnabled(s.sound); sc.setPixel(s.pixel); if (sc.setShake) sc.setShake(s.shake !== false);
     if (sc.setLandView) sc.setLandView(s.landView);   // 가로 시점 (sideways only; upright unchanged)
     sc.setDamageStyle((s.dmgSize === undefined ? 60 : s.dmgSize) / 100, (s.dmgAlpha === undefined ? 85 : s.dmgAlpha) / 100);
     drawing = CW.drawPlan(s.quality, CW.PHONE, autoQ);

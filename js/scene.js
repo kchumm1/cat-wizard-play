@@ -1167,8 +1167,12 @@
     function flash(color, amount) { flashEl.style.background = color; flashA = Math.max(flashA, Math.min(0.42, amount)); }
     function dim(amount, dur) { dimTarget = Math.max(dimTarget, Math.min(0.32, amount)); dimT = Math.max(dimT, dur || 0.5); }
     var trauma = 0, punchV = 0, punch = 0, kick = new T.Vector3(), pan = { x: 0, z: 0 };
-    function shake(a) { trauma = Math.min(1, trauma + a * 1.8); if (a >= 0.5) heroBeat(); }
-    function camPunch(a, dir) { punchV += a * 14; if (dir) kick.add(dir.clone().multiplyScalar(a * 0.3)); }
+    // 화면 떨림 끄기 (2026-11-23, the user: 어지러운 사람도 있으니 설정에서 끄고 켜게): off, the camera neither shakes nor
+    // jolts in and out; the hero's own beat, hit stops and slow motion stay
+    var shakeOn = true;
+    function setShake(on) { shakeOn = !!on; if (!shakeOn) { trauma = 0; punch = 0; punchV = 0; kick.set(0, 0, 0); } }
+    function shake(a) { if (shakeOn) trauma = Math.min(1, trauma + a * 1.8); if (a >= 0.5) heroBeat(); }
+    function camPunch(a, dir) { if (!shakeOn) return; punchV += a * 14; if (dir) kick.add(dir.clone().multiplyScalar(a * 0.3)); }
 
     // ---------- lights from spells (tint the billboards) ----------
     var lights = [];
@@ -1815,7 +1819,7 @@
       // a step u across the screen (+ right) and w toward the camera, as a step on the field
       fromScreen: function (u, w) { return { x: u * cY + w * sY, z: -u * sY + w * cY }; },
       camView: function () { return { yaw: orb.yaw, zoom: orb.zoom, fit: fitK, idle: orb.idle, fingers: orb.n }; },
-      setPixel: setPixel, setDamageStyle: setDamageStyle, setQuality: setQuality, getQuality: function () { return quality; }
+      setPixel: setPixel, setShake: setShake, setDamageStyle: setDamageStyle, setQuality: setQuality, getQuality: function () { return quality; }
     };
   }
   CW.createScene = createScene;
