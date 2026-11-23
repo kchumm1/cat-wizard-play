@@ -186,6 +186,10 @@
     // 펫의 힘 (2026-11-23, 형 결정: 따로 곱해): js/pets.js, multiplied apart in hitDamage like a potion so it never drowns
     // in the big added sums; the server wallet has no pets.js and stays at 1
     var PT = dep('pets'); st.petMul = PT && PT.petMul ? PT.petMul(state) : 1;
+    // 업적 (2026-11-23, js/goals.js): 업적 배율은 모든 피해에, 골드·보스 피해는 그 값에 — 셋 다 따로 곱함 (형 결정 6-0). On the
+    // server there is no goals.js (dep → null): 1
+    var GL = dep('goals'), ab = GL && GL.achBonus ? GL.achBonus(state) : null;
+    st.achMul = ab ? ab.mul : 1; if (ab) { st.goldMul *= ab.gold; st.bossDmg *= ab.boss; }
     return st;
   }
   // the stat bonus 한계 돌파 gives a row right now: { stat, pct } (for the 성장 list)
@@ -231,6 +235,7 @@
     if (o.boss) d *= st.bossDmg; else d *= st.normalDmg || 1;
     d *= st.finalMul || 1;
     d *= st.petMul || 1;
+    d *= st.achMul || 1;
     var ct = o.critTier !== undefined ? o.critTier : (o.crit ? 1 : 0), dm = tierDmgs(st);
     d *= critMul(dm, ct);   // o.even: 2026-11-17 부터 합 방식이라 고른 크리(눌러 펴기)가 필요 없어 같은 값
     if (o.frozen) d *= B.freezeTaken;

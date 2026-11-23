@@ -248,7 +248,7 @@
         var lv = mlv(m), cost = CW.markCost(lv), full = false, ov = lv - cap, rate = ({ critRate: '치명타 피해', superRate: '테라 피해' })[m.stat];   // 한계 돌파 (2026-11-15)
         var ico = '<span class="rkr-ico" data-opfx="mk:' + m.id + '" data-opdur=".26"><i class="rkv-dome"></i><img src="art/rk-' + m.id + '.webp" alt=""></span>';
         if (!CW.markOpen(s, m.id)) return '<div class="row lockrow rkrow">' + ico + '<div class="info"><div class="name">' + m.name + '</div><div class="desc need">' + RC.names[m.openRank] + ' 달성 시 해금 · ' + STAT_KO[m.stat] + '</div></div><span class="lockic"></span></div>';
-        return '<div class="row rkrow' + (m.extra ? ' mkextra' : '') + '">' + ico.replace('<span class="rkr-ico"', '<span class="rkr-ico" data-mkhold="' + m.id + '"') + '<div class="info"><div class="name">' + m.name + ' <span class="lv" data-opv="mk:' + m.id + '">' + (ov > 0 ? 'Lv.' + lv : lv + '/' + cap) + '</span></div><div class="desc">' + STAT_KO[m.stat] + ' ' + CW.bonusAmount(m.stat, (rate && ov > 0 ? cap : lv) * m.per) + (rate && ov > 0 ? '<br>' + rate + ' +' + ov + '%' : '') + '</div></div>' +
+        return '<div class="row rkrow' + (m.extra ? ' mkextra' : '') + '">' + ico.replace('<span class="rkr-ico"', '<span class="rkr-ico" data-mkhold="' + m.id + '"') + '<div class="info"><div class="name"><span class="nm">' + m.name + '</span> <span class="lv" data-opv="mk:' + m.id + '">' + (ov > 0 ? 'Lv.' + lv : lv + '/' + cap) + '</span></div><div class="desc">' + STAT_KO[m.stat] + ' ' + CW.bonusAmount(m.stat, (rate && ov > 0 ? cap : lv) * m.per) + (rate && ov > 0 ? '<br>' + rate + ' +' + ov + '%' : '') + '</div></div>' +
           '<button class="buy rkbuy' + (full || (s.mana || 0) < cost ? ' off' : '') + '" data-mark="' + m.id + '"><i class="rkgem"></i>' + (full ? '최대' : fmt(cost)) + '</button></div>';
       }).join('');
       return head + cond + '<div class="list rkl">' + list + '</div>';
@@ -1306,6 +1306,20 @@
     // 펫 버튼 (2026-11-23): the worn pet's picture (an egg while there is none) and a red dot while an egg waits or a new pet
     // is unseen; the DOM is touched only when one of those changes
     var petKey = '';
+    // 할 일 버튼 (2026-11-23, js/goals.js): a new day rolls the five, and a red dot while anything can be taken (checked once a second)
+    var goalsKey = '', goalsT = 0;
+    function goalsBtnHud(s) {
+      if (!CW.goalsHasClaim || !s) return;
+      var now = Date.now(); if (now - goalsT < 1000) return; goalsT = now;
+      var day = G.dayKey ? G.dayKey() : ''; if (CW.goalCtx && (!s.goals || s.goals.day !== day)) CW.goalsToday(s, day, CW.goalCtx());
+      if (CW.goalCtx && CW.weekKey && (!s.goals || !s.goals.week || s.goals.week.key !== CW.weekKey())) CW.goalsWeek(s, CW.weekKey(), CW.goalCtx());   // 주간 미션 (월요일 0시)
+      var dot = CW.goalsHasClaim(s, { friend: !!CW.FRIEND }), key = 'g:' + dot; if (key === goalsKey) return; goalsKey = key;
+      var btn = document.querySelector('#quick [data-quick="goals"]'); if (!btn) return;
+      var i = btn.querySelector('i'); if (!i.firstChild) i.innerHTML = '<img class="ico" src="' + (CW.ART_BASE || 'art/') + 'ic-goals.webp" alt="" draggable="false">';
+      var d = btn.querySelector('.qdot');
+      if (dot && !d) { d = document.createElement('b'); d.className = 'qdot'; btn.appendChild(d); }
+      if (!dot && d) d.remove();
+    }
     function petBtnHud(s) {
       if (!CW.petBox || !s) return;
       var b = CW.petBox(s), dot = b.eggs > 0 || CW.petHasFresh(s);
@@ -1399,6 +1413,7 @@
       var nk = G.nickName(); if ($('nick').textContent !== nk) { $('nick').textContent = nk; fitNick(); } if ($('questTxt').textContent !== next) $('questTxt').textContent = next;
       powerHud(s);
       petBtnHud(s);
+      goalsBtnHud(s);
     }
     // 2026-11-18 형: 운영자 상단도 내 핸드폰처럼 — a long nickname (귤귤귤귤귤, up to 8 letters) made the Lv box run under the
     // place tag and the stage plate in the middle. The box now ends before the place tag: the name gets smaller (down to
@@ -2327,6 +2342,12 @@
     // 배치를 한 번 더 계산했음(훈련 탭 열 때 81ms+, CPU 4배 느리게 실측) → 새 화면을 넣은 뒤에 맨 위로
     var topNext = false;
     function renderTop() { topNext = true; renderPanel(true); }
+    // 고른 차수 칩은 늘 보이게 (칩 줄은 옆으로 넘김: 오른쪽 끝 「1차 견습」을 고른 뒤 칩이 화면 밖에 있으면 그만큼만 밀어 줌)
+    function skChipInView() {
+      var row = panel.querySelector('.skchips'), on = row && row.querySelector('.skchip.on'); if (!on) return;
+      var rl = row.getBoundingClientRect(), r = on.getBoundingClientRect();
+      if (r.left < rl.left + 4) row.scrollLeft -= rl.left + 4 - r.left; else if (r.right > rl.right - 4) row.scrollLeft += r.right - (rl.right - 4);
+    }
     var panelInputs, nextPanelClock = 0;
     function renderPanel(force) {
       var top0 = topNext; topNext = false;
@@ -2348,10 +2369,10 @@
       // 통째로 다시 만들면 아래 탭이 새로 붙어 고른 탭 반짝임이 계속 다시 나오고(깜빡깜빡), 연금술 등은 누를 때마다 스크롤이 살짝 밀렸음
       // 0.3초마다 저절로 다시 그릴 때(!force)는 모든 화면(스킬·더보기 포함)에서 글자·속성만 고침 — 모양이 달라졌을 때만 통째로
       var soft = (softRender || !force || (opTabs && !opTabs.hidden && opTabs.querySelector(':scope > .subtabs'))) && panel.firstChild && softPrep(html);
-      // 룬·신성력 종류 버튼 줄(옆으로 밀림)은 다시 그려도 밀어 둔 자리 그대로 (2026-11-18)
-      var rkx = {}; Array.prototype.forEach.call(panel.querySelectorAll('.rkchips'), function (e) { rkx[e.className] = e.scrollLeft; });
+      // 룬·신성력 종류 버튼 줄(옆으로 밀림)은 다시 그려도 밀어 둔 자리 그대로 (2026-11-18) — 스킬 차수 칩 줄도 (2026-11-23, 형: 1차 누르면 전체·11차로 돌아가)
+      var rkx = {}; Array.prototype.forEach.call(panel.querySelectorAll('.rkchips, .skchips'), function (e) { rkx[e.className] = e.scrollLeft; });
       var y = top0 ? 0 : panel.scrollTop; if (soft) morphKids(panel, soft); else panel.innerHTML = html; if (panel.scrollTop !== y) panel.scrollTop = y; lastPanel = key;
-      Array.prototype.forEach.call(panel.querySelectorAll('.rkchips'), function (e) { if (rkx[e.className] && e.scrollLeft !== rkx[e.className]) e.scrollLeft = rkx[e.className]; });
+      Array.prototype.forEach.call(panel.querySelectorAll('.rkchips, .skchips'), function (e) { if (rkx[e.className] && e.scrollLeft !== rkx[e.className]) e.scrollLeft = rkx[e.className]; });
       var phv = (-(Date.now() % 60000) / 1000).toFixed(2) + 's';   // 계속 도는 움직임(마나서클·연금술)은 시계에 맞춰 이어서
       // 룬·신성력 보관함(최대 300칸, 2026-11-18): 칸을 누를 때 남아 있는 격자에 새 시간값을 넣으면 칸 전체 스타일을 다시 계산해 폰에서 느려짐
       // → 그대로 남은 격자는 처음 값을 다시 씀(같은 값이면 다시 계산 안 함), 새로 만든 격자만 지금 시간값
@@ -2478,7 +2499,7 @@
         if (selSlot >= 0) { var was2 = G.state.slots[selSlot], from2 = G.state.slots.indexOf(d.skpick); if (G.equipSkill(selSlot, d.skpick)) toast(skPlaced(d.skpick, selSlot, was2, was2 ? from2 : -1)); selSlot = -1; pickSkill = null; renderPanel(true); slots(); }
         else { pickSkill = pickSkill === d.skpick ? null : d.skpick; renderPanel(true); }
       }
-      else if (d.sktf !== undefined) { skTierF = +d.sktf; renderTop(); }
+      else if (d.sktf !== undefined) { skTierF = +d.sktf; renderTop(); skChipInView(); }
       else if (d.eq) { var at = G.placeSkill(d.eq, selSlot); if (at >= 0) toast(CW.skillById(d.eq).name + ' · ' + (at + 1) + '번 슬롯에 배치했어요.'); selSlot = -1; renderPanel(true); slots(); }
       else if (d.out !== undefined || d.unslot !== undefined) { G.unequipSkill(+(d.out !== undefined ? d.out : d.unslot)); if (selSlot === +(d.out !== undefined ? d.out : d.unslot)) selSlot = -1; renderPanel(true); slots(); }
       else if (d.act === 'unslotall') { G.state.slots.forEach(function (id, i) { if (id) G.unequipSkill(i); }); selSlot = 0; pickSkill = null; toast('스킬을 모두 뺐어요. 1번 칸에 넣을 스킬을 누르세요.'); renderPanel(true); slots(); }
@@ -2720,6 +2741,7 @@
       var b = e.target.closest('[data-quick]'); if (!b) return; var q = b.dataset.quick; G.sound('click');
       if (q === 'map') { selDiff = selRegion = -1; openTab(tab === 'stage' ? 'battle' : 'stage'); }
       else if (q === 'alch') { trainSub = 'alch'; openTab('up'); }
+      else if (q === 'goals') { if (CW.goalsOpen) CW.goalsOpen(function () { goalsT = 0; goalsKey = ''; hud(); }); }   // 할 일 · 업적 (2026-11-23, js/goals-ui.js)
       else if (q === 'pet') { if (CW.petPageOpen) CW.petPageOpen(function () { petKey = ''; hud(); }); }   // 펫 (2026-11-23, js/pet-ui.js)
       else if (q === 'dex') { if (CW.dexOpen) CW.dexOpen(); }
       else if (q === 'chest') { openChest(); }
@@ -2829,7 +2851,7 @@
         // 차례: 장비를 열면 처음 보이는 지팡이 목록 → 모든 메뉴 틀(CSS) → 룬·신성력·삼신기 그림 → 훈련·스킬·유물·코스튬 등 그림 → 마스크 → 나머지 장비 종류
         warmImgs(gearKindPics(bagKind).concat([A + 'ui-paw.webp', A + 'ui-chest-closed.webp', A + 'ui-chest-open.webp']));
         // 펫 (2026-11-23): the small pictures of the shortcut tile, the 내 펫 list and the 펫도감 cards, the egg and snack icons
-        warmImgs((DATA.pets || []).map(function (p) { return A + p.art + '-s.webp'; }).concat([A + 'pet-egg.webp', A + 'pet-food.webp', A + 'ic-petbook.webp', A + 'ic-pet-fox.webp'], ['cheer', 'bubble', 'flame', 'bolt', 'star'].map(function (f) { return A + 'sk-pet-' + f + '.webp'; })), { decode: false });
+        warmImgs((DATA.pets || []).map(function (p) { return A + p.art + '-s.webp'; }).concat([A + 'pet-egg.webp', A + 'pet-food.webp', A + 'ic-petbook.webp', A + 'ic-pet-fox.webp', A + 'ic-goals.webp', A + 'ic-trophy.webp'], ['ms-daily', 'ms-weekly', 'ms-star', 'ms-box-d', 'ms-box-w', 'ms-box-d-open', 'ms-box-w-open', 'ms-ic-kills', 'ms-ic-bossTry', 'ms-ic-dungeon', 'ms-ic-upgrades', 'ms-ic-skillUp', 'ms-ic-potion', 'ms-ic-petLv', 'ms-ic-hatch', 'ms-rw-gold', 'ms-rw-food', 'ms-rw-mana', 'ms-rw-runeStone', 'ms-ach-trophy', 'ms-firefly', 'ms-ach-growth', 'ms-ach-tier', 'ms-ach-collector', 'ms-ach-petfriend', 'ms-ach-petstar', 'ms-ach-diligent'].map(function (n) { return A + n + '.webp'; }), ['cheer', 'bubble', 'flame', 'bolt', 'star'].map(function (f) { return A + 'sk-pet-' + f + '.webp'; })), { decode: false });
         warmImgs(css.all, { decode: false });
         warmImgs(items.filter(isC), { cors: true });
         warmImgs(items.filter(function (u) { return !isC(u); }));

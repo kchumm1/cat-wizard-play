@@ -195,6 +195,7 @@
   var mins = sc.minions;
   var pendingBossEntry = null;
   function startBoss(manual) {
+    goalCount('bossTry', 1);
     var stage = state.stage, diff = state.diff || 0;
     if (manual === undefined) manual = !!(pendingBossEntry && pendingBossEntry.stage === stage && pendingBossEntry.diff === diff);
     var info = CW.stageInfo(stage), R = CW.regionAt(diff, info.region);
@@ -304,6 +305,7 @@
     if (CW.dexRegion(state, r).done) { refreshStats(); ui.toast(CW.dexRegionData(r).name + ' 도감 완성! ' + CW.dexBonusText()); }
   }
   function onDeath(mob, skill) {
+    goalCount('kills', 1);
     sc.killMob(mob, skill.color, mob.boss);
     var pos = sc.mobPos(mob);
     if (dun && dun.library) { dun.kills++; dun.magic.death(mob); return; }
@@ -461,6 +463,15 @@
   var PET_FLASH = { cheer: 'rgba(150,230,120,0.22)', bubble: 'rgba(120,210,255,0.22)', flame: 'rgba(255,120,40,0.26)', bolt: 'rgba(205,230,255,0.3)', star: 'rgba(200,160,255,0.26)' };
   // 내 펫 기술 줄의 피해 숫자 (js/pet-ui.js): the hero's boss damage per second now, with the stats in use
   CW.heroBossDps = function () { return CW.bossDps(state, st); };
+  // 오늘의 할 일 · 업적 (2026-11-23, js/goals.js): counts, and what the to-dos need to know now
+  function goalCount(k, n) { if (CW.goalCount) CW.goalCount(state, k, n); }
+  CW.goalCtx = function () {
+    return { tier: state.tier || 1, friend: !!CW.FRIEND, goldPerSec: CW.goldPerSecond ? CW.goldPerSecond(state) : 0, killsPerSec: CW.killsPerSecond ? CW.killsPerSecond(state, st) : 0.3,
+      dungeonOpen: !!(CW.kindOpen && (DATA.dungeons || []).some(function (d) { return CW.kindOpen(state, d.id); })), potionOpen: (state.tier || 1) >= 2,
+      // 미션 보상 기준 (js/goals.js rewardOf): 지금 보스 한 번의 마력석, 룬 던전 한 마리당 룬석 (js/dungeon.js 와 같은 식)
+      manaUnit: CW.manaForBoss ? CW.manaForBoss(Math.max(0, state.best || 0), false) : 10,
+      runeUnit: DATA.runeConf.dungeonPerKill * (1 + Math.floor(Math.max(0, state.best || 0) / 31) * 0.4) * (1 + (state.diff || 0)) };
+  };
   function petTick(dt) {
     var b = CW.petBox ? CW.petBox(state) : null, id = b ? b.worn : null;
     if (petFx) { if (id !== petWorn) { petWorn = id; petT = 0; petFx.set(id ? CW.petById(id) : null); } petFx.update(dt); }
@@ -582,6 +593,7 @@
     var def = dunDef(kind); if (!def) return 'none';
     if (dun || boss || state.bossTry) return 'busy';
     if (!CW.useTicket(state, kind, Date.now())) return 'ticket';
+    goalCount('dungeon', 1);
     clearField(true); restT = 0;
     dun = { kind: kind, t: def.time, kills: 0, dmg: 0, golem: null, sp: 0.3, def: def };
     var R0 = CW.regionAt(state.diff, CW.stageInfo(Math.max(0, state.best)).region);
@@ -853,13 +865,13 @@
     canRetry: function () { return retryBossStage() >= 0; },
     retryStage: retryBossStage,   // 보스 앞 판단 (2026-11-23): which boss the line is about
     bossResult: bossResult,
-    upgradeN: function (k, n) { var c = CW.tryUpgradeN(state, k, n); if (c) { refreshStats(); snd.play('click'); save(); } return c; },
-    upgrade: function (k) { var ok = CW.tryUpgrade(state, k); if (ok) { refreshStats(); snd.play('click'); } return ok; },
+    upgradeN: function (k, n) { var c = CW.tryUpgradeN(state, k, n); if (c) { goalCount('upgrades', c); refreshStats(); snd.play('click'); save(); } return c; },
+    upgrade: function (k) { var ok = CW.tryUpgrade(state, k); if (ok) { goalCount('upgrades', 1); refreshStats(); snd.play('click'); } return ok; },
     equipSkill: function (slot, id) { var ok = CW.equipSkill(state, slot, id); save(); return ok; },
     placeSkill: function (id, slot) { var at = CW.placeSkill(state, id, slot); if (at >= 0) { snd.play('click'); save(); } return at; },
     unequipSkill: function (slot) { var ok = CW.unequipSkill(state, slot); if (ok) save(); return ok; },
     autoSkills: function () { CW.autoFillSkills(state); snd.play('click'); save(); },
-    skillUp: function (id) { var ok = CW.trySkillUp(state, id); if (ok) { refreshStats(); snd.play('click'); var sk = CW.skillById(id); fx.levelUp(state.tier, sk.color, true); save(); } return ok; },
+    skillUp: function (id) { var ok = CW.trySkillUp(state, id); if (ok) { goalCount('skillUp', 1); refreshStats(); snd.play('click'); var sk = CW.skillById(id); fx.levelUp(state.tier, sk.color, true); save(); } return ok; },
     summonRelics: function (n) { if (G.wallet) return walletDo('summonRelics', { n: n }, function () { snd.play('pull'); }); var r = CW.summonRelics(state, n); if (r) { refreshStats(); snd.play('pull'); save(); } return r; },
     buyCostume: function (id) { if (G.wallet) return walletDo('buyCostume', { id: id }, function () { snd.play('win'); }); var ok = CW.buyCostume(state, id); if (ok) { refreshStats(); snd.play('win'); save(); } return ok; },
     upCostume: function (id) { if (G.wallet) return walletDo('upCostume', { id: id }, function () { snd.play('click'); }); var ok = CW.upCostume(state, id); if (ok) { refreshStats(); snd.play('click'); save(); } return ok; },
@@ -877,7 +889,7 @@
     divineUp: function (id) { var ok = CW.divineUp(state, id); if (ok) { refreshStats(); snd.play('click'); save(); } return ok; },
     starUp: function (id) { var ok = CW.starUp(state, id); if (ok) { refreshStats(); snd.play('win'); fx.levelUp(state.tier, 0xffd84a, true); save(); } return ok; },
     switchPreset: function (i) { var ok = CW.switchPreset(state, i); if (ok) { snd.play('click'); save(); } return ok; },
-    skillUpAll: function () { var n = CW.skillUpAll(state); if (n) { refreshStats(); snd.play('click'); fx.levelUp(state.tier, 0x9fd8ff, true); save(); } return n; },
+    skillUpAll: function () { var n = CW.skillUpAll(state); if (n) { goalCount('skillUp', n); refreshStats(); snd.play('click'); fx.levelUp(state.tier, 0x9fd8ff, true); save(); } return n; },
     killProgress: function () { return { n: state.kills * CROWD + smallKills, max: DATA.balance.killsPerStage * CROWD }; },
     equipBest: function () { CW.equipBest(state); refreshStats(); save(); },
     mergeAll: function () { var n = CW.mergeAll(state); if (n) { refreshStats(); snd.play('win'); save(); } return n; },
@@ -885,7 +897,7 @@
     levelUp: function (k) { var ok = CW.levelUp(state, k); if (ok) { refreshStats(); snd.play('click'); } return ok; },
     merge: function (k) { var ok = CW.merge(state, k); if (ok) { refreshStats(); snd.play('win'); save(); } return ok; },
     transcend: function (k) { var ok = CW.transcend(state, k); if (ok) { refreshStats(); snd.play('tier'); fx.levelUp(state.tier, 0xffd84a, true); save(); } return ok; },
-    brew: function (id) { var ok = CW.brew(state, id, Date.now()); if (ok) { refreshStats(); buffKey = CW.buffKey(state); snd.play('win'); save(); } return ok; },
+    brew: function (id) { var ok = CW.brew(state, id, Date.now()); if (ok) { goalCount('potion', 1); refreshStats(); buffKey = CW.buffKey(state); snd.play('win'); save(); } return ok; },
     runeGradeUp: function (id) { var ok = CW.runeGradeUp(state, id); if (ok) { refreshStats(); snd.play('tier'); fx.levelUp(state.tier, 0xb58cff, true); save(); } return ok; },
     // 가방 (2026-11-17, js/chest.js): 산 패키지는 가방에 상자로 — 열 때 지급
     buyPack: function (id) { if (CW.FRIEND) return false; if (G.wallet) return walletDo('buyPack', { id: id }, function () { snd.play('win'); }); var box = CW.chestBuyPack(state, id); if (box) { snd.play('win'); save(); } return box; },
@@ -943,7 +955,7 @@
     enterLibrary: enterLibrary,
     dungeon: enterExpedition,
     cancelExpedition: function(){pendingExpedition++;},
-    sweep: function (kind) { var best = state.dungeon && state.dungeon.best && state.dungeon.best[kind]; var r = dun || boss ? null : CW.sweep(state,kind,Date.now()); if (r && G.wallet) { G.wallet.queueDungeon({ kind: kind, kills: (best && best.kills) || 0, sweep: true }); walletFlush(); } if (r) { refreshStats(); snd.play('win'); save(); } return r; },
+    sweep: function (kind) { var best = state.dungeon && state.dungeon.best && state.dungeon.best[kind]; var r = dun || boss ? null : CW.sweep(state,kind,Date.now()); if (r && G.wallet) { G.wallet.queueDungeon({ kind: kind, kills: (best && best.kills) || 0, sweep: true }); walletFlush(); } if (r) { goalCount('dungeon', 1); refreshStats(); snd.play('win'); save(); } return r; },
     expeditionRune: function(id) { if(!dun && CW.expeditions.selectRune(state,id)) save(); },
     expeditionChest: function(kind) { if(dun)return null;var msg=CW.expeditions.treasure(state,kind);if(msg)save();return msg; },
     expeditionWear: function() { var j=CW.expeditions.journal(state);if(!j.maps)return;j.wearing=!j.wearing;applyLook(false);save(); },

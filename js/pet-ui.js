@@ -75,7 +75,7 @@
   function changed() { if (CW.petChanged) CW.petChanged(); }
   function act(what) {
     var s = st(); if (!s || busy) return false;
-    if (what === 'lv') { if (CW.petLevelUp(s, sel)) { if (!holding) changed(); render(); return true; } return false; }
+    if (what === 'lv') { if (CW.petLevelUp(s, sel)) { if (CW.goalCount) CW.goalCount(s, 'petLv', 1); if (!holding) changed(); render(); return true; } return false; }
     if (what === 'star') {
       if (CW.petStarUp(s, sel)) { changed(); render(); return true; }
       var o = s.pets.owned[sel];
@@ -92,6 +92,7 @@
   function hatch(all) {
     var s = st(); if (!s || s.pets.eggs < 1) return false;
     var res = all ? CW.petHatchAll(s, Math.random, Date.now()) : [CW.petHatch(s, Math.random, Date.now())];
+    if (CW.goalCount) CW.goalCount(s, 'hatch', res.filter(Boolean).length);   // 오늘의 할 일 (js/goals.js)
     res = res.filter(Boolean); if (!res.length) return false;
     changed(); busy = true;
     var top = res.reduce(function (m, r) { return r.grade > m ? r.grade : m; }, 0);

@@ -2375,6 +2375,67 @@ html.fullh #prof{position:absolute;bottom:auto;height:var(--apph)}
 /* 내 펫 (2026-11-23, js/pet-ui.js): the user's GPT 시안 내-펫.png (786×1704 → px ÷ 2). The galaxy picture under a dark violet veil,
    dark glass boxes with a thin gold edge, cream buttons; the 펫도감 page (z 20) opens over it */
 #petpage{position:fixed;inset:0;z-index:19;display:none;color:#fff;font-family:var(--body)}
+/* 미션 창 (2026-11-23, js/goals-ui.js) — 형 GPT 시안 「미션」 두 장: 일일은 보라(달 그네), 주간은 빨강(꽃 속 고양이), 업적은 금빛.
+   그림은 GPT 조각 art/ms-*.webp. 움직임: 그네 흔들림 · 숨쉬기 · 별 반짝임 · 반딧불 · 줄이 차례로 올라옴 · 막대 차오름 · 받기 통통 · 보상 날아감 · 상자 흔들림/열림 */
+#goalpage{position:fixed;inset:0;z-index:19;display:none;color:#fff;font-family:var(--body)}#goalpage.on{display:block}
+#goalpage .gpcol{position:absolute;inset:0;max-width:520px;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;--row:rgba(72,48,118,.62);--rowb:rgba(190,165,240,.22);--fill:#b9a3ef;--tab:#a68be4;--tabb:#cdbbf7;--tabt:#fff;
+  background:radial-gradient(70% 40% at 50% 26%,rgba(140,100,220,.35),rgba(140,100,220,0) 70%),linear-gradient(180deg,#2a1a47 0,#251640 60%,#21133a 100%)}
+#goalpage .gpcol.week{--row:rgba(96,34,58,.66);--rowb:rgba(240,170,170,.2);--fill:#f2c14b;--tab:#d85c5a;--tabb:#f1c87a;--tabt:#fff;
+  background:radial-gradient(70% 40% at 50% 26%,rgba(200,70,80,.3),rgba(200,70,80,0) 70%),linear-gradient(180deg,#3d1527 0,#36122a 60%,#2e1024 100%)}
+#goalpage .gpcol.ach{--row:rgba(70,48,105,.62);--rowb:rgba(240,200,120,.22);--fill:#f0c14a;--tab:#e7b958;--tabb:#ffe2a0;--tabt:#3a2410;
+  background:radial-gradient(70% 40% at 50% 26%,rgba(240,190,90,.22),rgba(240,190,90,0) 70%),linear-gradient(180deg,#2a1a47 0,#251640 60%,#21133a 100%)}
+#goalpage .gphead{position:relative;flex:none;height:calc(78px + env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px)}
+#goalpage .gphead h3{position:absolute;left:0;right:0;top:calc(22px + env(safe-area-inset-top,0px));margin:0;text-align:center;font:800 38px/44px var(--body);color:#fff;letter-spacing:1px;text-shadow:0 3px 8px rgba(10,4,30,.55)}
+#goalpage .gpclose{position:absolute;right:8px;top:calc(22px + env(safe-area-inset-top,0px));min-width:56px;height:44px;padding:0 8px;border:0;background:none;font:800 20px/1 var(--body);color:#fde4a8}
+#goalpage .gptabs{flex:none;display:flex;gap:8px;margin:0 14px 6px}
+#goalpage .gptabs button{flex:1;height:46px;border-radius:16px;border:1.5px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);color:#efe6ff;font:800 15.5px/1 var(--body);transition:background .25s,color .25s}
+#goalpage .gptabs button.on{background:var(--tab);border-color:var(--tabb);color:var(--tabt);box-shadow:0 4px 12px rgba(0,0,0,.25)}
+#goalpage .gpbody{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 12px calc(16px + env(safe-area-inset-bottom,0px))}
+#goalpage .gphero{position:relative;height:210px;margin:0 auto 6px;max-width:330px;pointer-events:none}
+#goalpage .gpart{position:absolute;left:50%;top:0;width:230px;height:230px;margin-left:-115px;object-fit:contain}
+#goalpage .gpart.swing{top:-14px;transform-origin:50% 3%;animation:gpSwing 2.6s ease-in-out infinite alternate}
+#goalpage .gpart.breath{top:-6px;transform-origin:50% 82%;animation:gpBreath 4.2s ease-in-out infinite}
+#goalpage .gpart.trophy{top:-2px;width:212px;height:212px;margin-left:-106px;transform-origin:50% 90%;animation:gpBreath 3.4s ease-in-out infinite;filter:drop-shadow(0 6px 14px rgba(240,190,90,.3))}
+#goalpage .gpstar{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;animation:gpTwinkle 2.2s ease-in-out var(--d) infinite}#goalpage .gpstar img{width:100%;height:100%}
+#goalpage .gpfly{position:absolute;width:14px;height:14px;border-radius:50%;box-shadow:0 0 12px 3px rgba(255,213,74,.45);animation:gpFloat 3.4s ease-in-out var(--d) infinite alternate}#goalpage .gpfly img{display:block;width:100%;height:100%}
+#goalpage .gprow,#goalpage .gpbox,#goalpage .gpsum{position:relative;display:flex;align-items:center;gap:10px;min-height:84px;margin-bottom:9px;padding:9px 10px;border-radius:18px;background:var(--row);border:1.5px solid var(--rowb);box-sizing:border-box}
+#goalpage .gpic{flex:none;width:56px;height:56px;display:flex;align-items:center;justify-content:center}#goalpage .gpic img{width:54px;height:54px;object-fit:contain}
+#goalpage .gptxt{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
+#goalpage .gptxt b{font:800 16px/1.2 var(--body);color:#fff;word-break:keep-all}#goalpage .gptxt b span{font:700 12px/1 var(--body);color:#ffd98a}
+#goalpage .gptxt small{font:700 12.5px/1 var(--body);color:#f3ecff;font-variant-numeric:tabular-nums}
+#goalpage .gpprog{display:flex;align-items:center;gap:7px}#goalpage .gpprog small{flex:none}
+#goalpage .gpbar{flex:1;min-width:30px;height:12px;border-radius:7px;background:rgba(255,255,255,.13);overflow:hidden}
+#goalpage .gpbar i{display:block;width:var(--p);height:100%;border-radius:7px;background:var(--fill);box-shadow:inset 0 -2px 0 rgba(0,0,0,.12)}
+#goalpage .gpdiv{flex:none;width:1.5px;align-self:stretch;margin:4px 0;background:rgba(255,255,255,.16);border-radius:1px}
+#goalpage .gprw{flex:none;width:84px;display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center}#goalpage .gprwl{display:flex;flex-direction:column;align-items:center;gap:3px}#goalpage .gprwic img{width:36px;height:36px;object-fit:contain}
+#goalpage .gprw.has .gprwl{flex-direction:row;gap:4px}#goalpage .gprw.has .gprwic img{width:26px;height:26px}
+#goalpage .gprw em{font:800 12px/1.15 var(--body);font-style:normal;color:#fff;word-break:keep-all}#goalpage .gprw.wide{width:92px}#goalpage .gprw.wide em{font-size:11.5px;color:#ffe2a6}
+#goalpage .gpget{flex:none;min-width:76px;height:38px;padding:0 12px;border-radius:19px;border:1.5px solid #e9cf94;background:#fdf1cc;color:#3a2a33;font:800 16px/1 var(--body)}#goalpage .gprow.owed .gpget{min-width:70px;height:42px}
+#goalpage .gprow.done{border-color:rgba(255,226,150,.6)}#goalpage .gprow.done .gpget{animation:gpBounce 1.15s ease-in-out infinite;box-shadow:0 0 14px rgba(255,226,150,.65)}
+#goalpage .gprow.got{opacity:.5}#goalpage .gpdone{flex:none;min-width:40px;text-align:center;font:800 13px/1 var(--body);color:#c9f0cf}
+#goalpage .gprow.owed{min-height:68px;border-color:#ffd98a}#goalpage .gprow.owed .gptxt small{color:#ffe2a6}
+#goalpage .gpbox{min-height:104px;margin-top:6px;gap:14px;padding-left:14px}#goalpage .gpboxic{flex:none;width:86px;height:86px;display:flex;align-items:center;justify-content:center}#goalpage .gpboxic img{width:84px;height:84px;object-fit:contain}
+#goalpage .gpboxt{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}#goalpage .gpboxt b{font:800 26px/1.1 var(--body);color:#fff}#goalpage .gpboxt small{font:700 13px/1.2 var(--body);color:#e0d0f6;word-break:keep-all}
+#goalpage .gpbox.ready{border-color:#ffd98a;box-shadow:0 0 18px rgba(255,217,138,.45);cursor:pointer}#goalpage .gpbox.ready .gpboxic img{animation:gpShake 1.25s ease-in-out infinite}#goalpage .gpbox.ready .gpboxt small{color:#ffe2a6}
+#goalpage .gpbox.got{opacity:.6}#goalpage .gpbox.opening .gpboxic img{animation:gpPop .5s ease-out both}
+#goalpage .gpsum{flex-direction:column;justify-content:center;gap:5px;min-height:64px;border-color:rgba(255,217,138,.5)}#goalpage .gpsum b{font:800 21px/1.1 var(--body);color:#ffe2a6}#goalpage .gpsum small{font:700 12.5px/1.2 var(--body);color:#eadff9}
+#goalpage .gpbody.enter .gprow,#goalpage .gpbody.enter .gpbox,#goalpage .gpbody.enter .gpsum{animation:gpRise .45s cubic-bezier(.2,.8,.3,1) both;animation-delay:calc(var(--i,0) * 70ms)}
+#goalpage .gpbody.enter .gpbar i{animation:gpFill .9s ease-out both;animation-delay:calc(var(--i,0) * 70ms + .2s)}
+.gpflyrw{position:fixed;z-index:40;width:44px;height:44px;object-fit:contain;pointer-events:none;animation:gpFly .85s cubic-bezier(.3,.1,.3,1) forwards}
+.gpburst{position:fixed;z-index:40;width:24px;height:24px;pointer-events:none;animation:gpBurst .8s ease-out forwards}
+@keyframes gpSwing{from{transform:rotate(-4.5deg)}to{transform:rotate(4.5deg)}}
+@keyframes gpBreath{0%,100%{transform:scale(1) rotate(-.6deg)}50%{transform:scale(1.035) rotate(.6deg)}}
+@keyframes gpTwinkle{0%,100%{opacity:.2;transform:scale(.55)}50%{opacity:1;transform:scale(var(--s,1))}}
+@keyframes gpFloat{from{transform:translate(0,0);opacity:.55}to{transform:translate(9px,-15px);opacity:1}}
+@keyframes gpRise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes gpFill{from{width:0}}
+@keyframes gpBounce{0%,100%{transform:translateY(0)}35%{transform:translateY(-4px) scale(1.05)}60%{transform:translateY(0)}}
+@keyframes gpFly{0%{opacity:1;transform:translateY(0) scale(1.1)}100%{opacity:0;transform:translateY(var(--dy,-200px)) scale(.55)}}
+@keyframes gpShake{0%,100%{transform:rotate(0)}15%{transform:rotate(-8deg)}30%{transform:rotate(7deg)}45%{transform:rotate(-5deg)}60%{transform:rotate(3deg)}75%{transform:rotate(0)}}
+@keyframes gpPop{0%{transform:scale(.8)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
+@keyframes gpBurst{to{transform:translate(var(--bx),var(--by)) scale(.4);opacity:0}}
+@media (prefers-reduced-motion:reduce){#goalpage *,#goalpage *::before{animation:none!important;transition:none!important}.gpflyrw,.gpburst{display:none}}
+@media (max-width:359px){#goalpage .gpic{width:46px;height:46px}#goalpage .gpic img{width:44px;height:44px}#goalpage .gptxt b{font-size:14.5px}#goalpage .gprw{width:72px}#goalpage .gprw.wide{width:80px}#goalpage .gpget{min-width:66px;padding:0 9px;font-size:14.5px}#goalpage .gpboxt b{font-size:22px}#goalpage .gptabs button{font-size:14px}}
 #petpage.on{display:block}
 #petpage .ppcol{position:absolute;inset:0;max-width:520px;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;
   background:linear-gradient(180deg,rgba(22,12,48,.18) 0,rgba(26,14,56,.42) 300px,rgba(26,14,56,.5) 100%),url(art/bg-galaxy.webp) center top/cover no-repeat,#2a1c58;box-shadow:0 0 30px rgba(10,5,30,.5)}
@@ -3532,6 +3593,8 @@ html.cw-calm #killBar.loop + #killBarFx,html.cw-calm #surgeGauge.full i::after,h
 #app #quick button:active{filter:brightness(1.2)}
 #app #quick i,#app #quick i .ico,#app #quick i img{width:24px;height:24px}
 #app #quick [data-quick="pet"] i{width:30px;height:30px;margin:1px 0 -2px}#app #quick [data-quick="pet"] i img{width:30px;height:30px;margin:0;object-fit:contain;filter:drop-shadow(0 1px 1px rgba(10,4,30,.6))}
+/* 미션 (2026-11-23, js/goals-ui.js): 펫 바로 아래, 같은 모양 */
+#app #quick [data-quick="goals"] i{width:30px;height:30px;margin:1px 0 -2px}#app #quick [data-quick="goals"] i img{width:30px;height:30px;margin:0;object-fit:contain;filter:drop-shadow(0 1px 1px rgba(10,4,30,.6))}
 #app #quick span{font-size:10.5px;line-height:1.15;color:#fffaf2;text-shadow:0 0 2px #140838,0 1px 2px rgba(10,4,30,.8)}
 #app #quick i .ico{filter:drop-shadow(0 1px 2px rgba(10,4,30,.6))}
 /* short phones (iPhone SE 667, Galaxy 740 tall): seven bigger boxes ran into the preset row, so they shrink back a little there */
@@ -3806,7 +3869,7 @@ html.cw-calm #killBar.loop + #killBarFx,html.cw-calm #surgeGauge.full i::after,h
       <div id="bossbox"><div class="boss-top"><span id="bossName">보스</span><span id="bossTime">30.0초</span></div><div class="bossrow"><div class="bar"><i id="bossHp"></i></div><b id="bossPct">100%</b></div></div>
       <div id="bossActions" hidden><small id="bossHint" hidden></small><button id="retry">보스 도전</button><button id="lastBossResult" hidden>지난 결과</button></div>
     </div>
-    <div id="quick" aria-label="바로가기"><button data-quick="pet"><i></i><span>펫</span></button><button data-quick="rune"><i></i><span>룬</span></button><button data-quick="sigil"><i></i><span>신성력</span></button><button data-quick="dex"><i></i><span>도감</span></button><button data-quick="chest"><i></i><span>가방</span></button><button data-quick="mail"><i></i><span>우편함</span></button><button data-quick="notice"><i></i><span>공지</span></button><button data-quick="idle"><i></i><span>방치</span></button></div>
+    <div id="quick" aria-label="바로가기"><button data-quick="pet"><i></i><span>펫</span></button><button data-quick="goals"><i></i><span>미션</span></button><button data-quick="rune"><i></i><span>룬</span></button><button data-quick="sigil"><i></i><span>신성력</span></button><button data-quick="dex"><i></i><span>도감</span></button><button data-quick="chest"><i></i><span>가방</span></button><button data-quick="mail"><i></i><span>우편함</span></button><button data-quick="notice"><i></i><span>공지</span></button><button data-quick="idle"><i></i><span>방치</span></button></div>
     <div id="banner"></div>
     <div id="dunHud"></div>
     <div id="gainlog" aria-live="off"></div>
@@ -3884,6 +3947,7 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script src="js/dex.js"></script>
 <script src="js/pets.js"></script>
 <script src="js/pet-battle.js"></script>
+<script src="js/goals.js"></script>
 <script src="js/dex-text.js"></script>
 <script src="js/sigil.js"></script>
 <script src="js/alchemy.js"></script>
@@ -3934,6 +3998,7 @@ html.shortv #sheet,html.shortv #sheet.tall{height:calc(100% - var(--tabh) - 108p
 <script src="js/pet-dex-ui.js"></script>
 <script src="js/pet-ui.js"></script>
 <script src="js/pet-sprite.js"></script>
+<script src="js/goals-ui.js"></script>
 <script src="js/mail-gift.js"></script>
 <script src="js/mail.js"></script>
 <script src="js/chest.js"></script>
