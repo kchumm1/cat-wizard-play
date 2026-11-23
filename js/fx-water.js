@@ -568,13 +568,20 @@
       c.plain = true;
       sc.heroPose('raise', c.D(0.14), c.col);
       if (!(CW.fxOff && CW.fxOff.dim)) sc.dim(0.2, c.D(1.3));
-      var B = spread(list);
-      // Land on an occupied spot even when two groups leave a gap in the middle.
-      function distanceToCentre(m) {
-        var screenX = V(m.x, 0, m.z).project(sc.camera).x;
-        return Math.hypot(m.x - B.cx, (m.z - B.cz) / 0.8) + 15 * Math.max(0, Math.abs(screenX) - 0.20);
+      // Where it falls (2026-11-23, 형: 하늘폭포 타격범위가 아직도 상단에서만 떠서 이상하게 타격): on the monster with the most
+      // others round it — the thick of the crowd. It was the monster nearest the middle of the box round them all, so one
+      // monster just walking in at the top stretched the box up and the fall came down up there, over one or two, while
+      // the crowd stood round the wizard below and waited for the wall to spread down to them. Monsters still walking in
+      // are struck all the same but are not landed on while any has arrived; away from the middle of the picture a spot
+      // counts for less, the more the further (under the top bar, by the side buttons the fall and its cloud sat up in
+      // the corner) — with a few monsters spread round the wizard it is the one nearest the middle.
+      var REACH = 2.4, arrived = list.filter(function (m) { return m.arrived; }), cand = arrived.length ? arrived : list;
+      function crowdScore(m) {
+        var n = 0, p = V(m.x, 0.6, m.z).project(sc.camera), off = Math.hypot(p.x / 0.55, (p.y - 0.05) / 0.45);
+        list.forEach(function (o) { if (Math.hypot(o.x - m.x, (o.z - m.z) / 0.8) <= REACH) n += o.arrived ? 1 : 0.5; });
+        return n - 1.6 * off * off;
       }
-      var centreMob = list.reduce(function (best, m) { return distanceToCentre(m) < distanceToCentre(best) ? m : best; });
+      var centreMob = cand.reduce(function (best, m) { return crowdScore(m) > crowdScore(best) ? m : best; });
       var G = V(centreMob.x, 0, centreMob.z), s = cap(c, 2.6, 3.4);
       // Place the spillway below the top HUD in either orientation, over the same impact point.
       var camera = sc.camera, floorY = G.clone().project(camera).y, maxY = V(G.x, 5.4, G.z).project(camera).y;
@@ -639,8 +646,11 @@
           wall.set(V(G.x, 0.08 + 0.22 * fill * (1 - drain), G.z), yawQ(0),
             V(R, (0.18 * fill + 2.65 * crest) * s / 3, R * 0.8), (0.22 * fill + 0.42 * crest) * (1 - drain), 1);
           now.forEach(function (m) {
-            // (9th) as the wall's outer face reaches it, while it still shows — it was hit once it was inside the water
-            if (surge <= 0 || hit.indexOf(m) >= 0 || Math.hypot(m.x - G.x, (m.z - G.z) / 0.8) > R + SKYLEAD) return;
+            // (9th) as the wall's outer face reaches it, while it still shows — it was hit once it was inside the water.
+            // (2026-11-23) from the moment the fall strikes the ground: the ones under it and those the pool spreads over
+            // are struck as the water reaches them — they waited for the pool to fill (0.3 s) with the fall pouring on them
+            // and no number showing, and were then struck all at once with the wall
+            if (hit.indexOf(m) >= 0 || Math.hypot(m.x - G.x, (m.z - G.z) / 0.8) > R + SKYLEAD) return;
             hit.push(m); var g = gp(m);
             whiteSpray(g, N(m.boss ? 5 : 2, c), 2.4);
             spray(V(g.x, 0.37, g.z), N(2, c), 2.75, 0.68); whiteSpray(V(g.x, 0.5, g.z), N(4, c), 3, V(g.x - G.x, 0.18, g.z - G.z).normalize());

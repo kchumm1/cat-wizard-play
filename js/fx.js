@@ -166,10 +166,14 @@
       if (P >= 0.9) E({ sys: 'gadd', pos: V(pos.x, 0.035, pos.z), frame: 'shock', color: col, size: [0.1, 1.3 * P], ease: 1, life: 0.35, alpha: 0.75 });
       sc.light(pos, col, 0.6 * P, 0.25);
     }
-    // where the crowd is: average of the targets on the ground, or just in front of the wizard
+    // where the crowd is: average of the targets on the ground, or just in front of the wizard.
+    // (2026-11-23, 형: 하늘폭포가 상단에서만 떠서 이상하게 타격 → 나머지 스킬도 점검) the ones still walking in at the edge
+    // count only when none has arrived: one coming in at the top pulled a wide spell's big picture off the crowd (in a real
+    // hunt up to 60~120 px for 불의 회오리·달빛 레이저·홍염 고리·원소 폭풍·대해일); they are struck all the same
     function crowdCenter(targets) {
       if (!targets.length) { var h = sc.heroCenter(); return V(h.x + 1.2, 0, h.z - 0.6); }
-      var c = V(); targets.forEach(function (m) { c.x += m.x; c.z += m.z; }); c.multiplyScalar(1 / targets.length); return c;
+      var here = targets.filter(function (m) { return m.arrived; }); if (!here.length) here = targets;
+      var c = V(); here.forEach(function (m) { c.x += m.x; c.z += m.z; }); c.multiplyScalar(1 / here.length); return c;
     }
     // muzzle burst where a spell leaves the paw, pointing at the target
     function muzzle(at, toward, col, size) {
