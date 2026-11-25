@@ -520,8 +520,9 @@
     petBuff = Object.assign({ left: B.secs, age: 0 }, B); refreshStats();
     var T3 = sc.THREE.Vector3, col = PET_COL[B.fam] || 0xffffff, hc = sc.heroCenter(), from = petFx && petFx.shown() ? petFx.center() : hc, vx = fx.vfx;
     var E = function (o) { if (vx) vx.emit(o); }, rnd = function (a) { return (Math.random() - 0.5) * a; };
-    // 펫이 뛰고(전설은 포효하며 부풀고), 머리 위에 기술 아이콘이 잠깐 (GPT 그림 art/sk-pet-*), 그 위에 기술 이름
-    if (petFx) { petFx.pop(); petFx.icon((CW.ART_BASE || 'art/') + B.icon + '.webp', B.big); }
+    // 펫이 뛰고(전설은 포효하며 부풀고), 머리 위에 기술 아이콘이 빛으로 피어났다가 냥법사 쪽으로 녹아듦 (GPT 그림 art/sk-pet-*,
+    // 「빛 녹임」 js/pet-emblem.js, 2026-11-25), 그 위에 기술 이름
+    if (petFx) { petFx.pop(); petFx.icon((CW.ART_BASE || 'art/') + B.icon + '.webp', B.big, B.fam, sc.heroCenter); }
     sc.damageText((petFx && petFx.shown() ? petFx.top() : from.clone()).add(new T3(0, B.big ? 0.75 : 0.6, 0)), B.name, 0, hexCss(col));
     // 버프가 냥법사에게 날아감: 반짝이 줄기, 냥법사가 빛나고, 머리 위에 「모든 피해 +15%」
     for (var i = 0; i < (B.big ? 16 : 9); i++) E({ pos: from.clone(), vel: hc.clone().sub(from).multiplyScalar(2.2).add(new T3(rnd(1.2), Math.random() * 1.2, 0)), frame: i % 2 ? 'star' : 'glow', color: [0xffffff, col], size: [0.26, 0.05], life: 0.5, delay: i * 0.03 });

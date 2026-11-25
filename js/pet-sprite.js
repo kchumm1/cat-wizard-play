@@ -7,14 +7,10 @@
 // blink, their ears, tails, wings and trinkets move on their own (js/pet-rig.js), nothing spins the picture round, and
 // a soft shadow under each keeps it standing in the scene. A legend is nearly as tall as the hero (1.1×), the others about
 // half. Tapping it opens the 내 펫 page. js/main.js: CW.createPetSprite(sc) once, then set(pet or null) when the worn pet
-// changes, update(dt) every frame, pop() and icon(url, big) on a cast, top() / center() for effects.
+// changes, update(dt) every frame, pop() and icon(url, big, fam, toFn) on a cast, top() / center() for effects.
 (function (root) {
   var CW = root.CW = root.CW || {};
   var TILT = 0.6, HERO_H = 1.02, COS_T = Math.cos(TILT);
-  var VS = 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';
-  // the skill icon over the pet (GPT 그림 art/sk-pet-*.webp): fades by uA
-  var FS_ICON = 'uniform sampler2D map; uniform float uA; varying vec2 vUv;' +
-    'void main() { vec4 t = texture2D(map, vUv); if (t.a * uA < 0.02) discard; gl_FragColor = vec4(t.rgb, t.a * uA); }';
   function rnd(a, b) { return a + Math.random() * (b - a); }
   function clamp(x, a, b) { return x < a ? a : x > b ? b : x; }
 
@@ -26,11 +22,11 @@
     // the brain: where it wants to be (b: how far behind the hero, w: how far back from the camera), what it is doing
     var mode = 'idle', modeT = 1, goal = { b: 0.7, w: -0.3 }, vel = { x: 0, z: 0 }, face = -1, turnCd = 0, lastVx = 0;
     var play = null, roll = 0, flyH = 0;
-    // 기술 아이콘: one plane reused, the five pictures loaded once each (kept: they are small and come back every few seconds)
-    var ico = null, icoTex = {}, icoT = 0, icoBig = false, ICO_LIFE = 1.15;
+    // 기술 아이콘 「빛 녹임」 (2026-11-25, js/pet-emblem.js): drawn as light over its head, melting toward the hero
+    var em = CW.createPetEmblem ? CW.createPetEmblem(sc) : null, topV = new T.Vector3();
     function drop() {
       // (2026-11-23 검토) the skill icon goes with the pet: update() stops at !mesh, so it was left hanging in the air
-      if (ico) ico.visible = false;
+      if (em) em.hide();
       if (mesh) { sc.scene.remove(mesh); mesh.material.dispose(); mesh = null; }
       if (shadow) shadow.visible = false;
       if (tex) { tex.dispose(); tex = null; }
@@ -127,7 +123,7 @@
     }
     function endPlay() { if (play && play.kind === 'doze') { pose.doze(false); pose.shake(); } play = null; }
     function update(dt) {
-      if (!mesh || !pose) return;
+      if (!mesh || !pose) { if (em) em.update(Math.min(dt, 0.05), null); return; }
       dt = Math.min(dt, 0.05);
       var H = sc.heroState(), hf = H.faceT || 1, ex = sc.fromScreen(1, 0), ew = sc.fromScreen(0, 1);
       if (!at) { var o0 = sc.fromScreen(-hf * (big ? 0.8 : 0.55), big ? -0.75 : -0.35); at = { x: H.x + o0.x, z: H.z + o0.z }; side = -hf; lastHf = hf; }
@@ -204,7 +200,7 @@
         shadow.visible = true; shadow.position.set(at.x, 0.014, at.z); shadow.scale.set(w, w * 0.62, 1);
         shadow.rotation.set(-Math.PI / 2, sc.camView().yaw, 0); shadow.material.opacity = 0.32 * (1 - Math.min(0.7, up * 0.8));
       }
-      if (ico && ico.visible) { icoT -= dt; if (icoT <= 0) ico.visible = false; else placeIcon(); }
+      if (em) em.update(dt, topV.set(at.x, y + h * 1.02, at.z));
     }
     function center() { return new T.Vector3(at ? at.x : 0, y + h * 0.5, at ? at.z : 0); }
     function top() { return new T.Vector3(at ? at.x : 0, y + h * 1.02, at ? at.z : 0); }
@@ -217,22 +213,8 @@
       turnCd = 0.6; mode = 'cast'; modeT = 0.75;
       if (big) { pose.roar(1); pose.jump(0.04, 0.5); } else { pose.jump(0.26, 0.5); pose.cheer(0.9); }
     }
-    function icon(url, isBig) {
-      var show = function (t) {
-        if (!ico) { ico = new T.Mesh(new T.PlaneGeometry(1, 1).translate(0, 0.5, 0), new T.ShaderMaterial({ uniforms: { map: { value: t }, uA: { value: 0 } }, vertexShader: VS, fragmentShader: FS_ICON, transparent: true, depthWrite: false, depthTest: false })); ico.rotation.order = 'YXZ'; ico.renderOrder = 6; sc.scene.add(ico); }
-        ico.material.uniforms.map.value = t; ico.visible = true; icoT = ICO_LIFE; icoBig = !!isBig; placeIcon();
-      };
-      if (icoTex[url]) { if (icoTex[url].image) show(icoTex[url]); return; }
-      icoTex[url] = new T.TextureLoader().load(url, show);
-    }
-    // just over the pet's head: pops up big, settles, fades out (an iPhone held upright and the side views alike: it turns to the camera)
-    function placeIcon() {
-      if (!ico || !at) return;
-      var k = 1 - icoT / ICO_LIFE, grow = k < 0.18 ? 0.6 + 0.6 * (k / 0.18) : 1.2 - 0.2 * Math.min(1, (k - 0.18) / 0.2), sz = (icoBig ? 0.72 : 0.58) * grow;
-      ico.position.set(at.x, y + h * 1.0 + 0.05 + k * 0.12, at.z); ico.scale.set(sz, sz, 1);
-      ico.rotation.set(-TILT, sc.camView().yaw, 0);
-      ico.material.uniforms.uA.value = k > 0.72 ? Math.max(0, 1 - (k - 0.72) / 0.28) : 1;
-    }
+    // the skill icon (url: art/sk-pet-<계열>.webp) over its head, of family fam (its light), melting toward toFn() (the hero)
+    function icon(url, isBig, fam, toFn) { if (em) em.show(url, fam, isBig, toFn); }
     // 탭하면 내 펫 화면 (no hover needed): a short tap that lands on the pet, not a drag that turns the camera
     var down = null, el = sc.renderer && sc.renderer.domElement;
     if (el && el.addEventListener) {
