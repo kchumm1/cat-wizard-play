@@ -1867,6 +1867,13 @@
             var selected = (root.CWDisplay ? root.CWDisplay.get() : 'portrait') === mode;
             return '<button class="btn' + (selected ? ' on' : '') + '" aria-pressed="' + selected + '" data-set="' + mode + '">' + (mode === 'portrait' ? '세로모드' : '가로모드') + '</button>';
           }).join('') + '</div></div>' +
+        // 테마 (2026-11-25, js/theme.js): 성운 밤하늘 또는 눈 내리는 겨울, 플레이어마다
+        (function () {
+          var w = CW.theme.themeOf(st) === 'winter';
+          return '<div class="row"><div class="info"><div class="name">테마</div><div class="desc">성운 밤하늘 또는 눈 내리는 겨울</div></div><div class="sbtns">' +
+            '<button class="btn' + (w ? '' : ' on') + '" aria-pressed="' + !w + '" data-set="themeNeb">성운</button>' +
+            '<button class="btn' + (w ? ' on' : '') + '" aria-pressed="' + w + '" data-set="themeWinter">겨울</button></div></div>';
+        })() +
         (CW.FRIEND || (root.__cwFit && document.documentElement.classList.contains('under')) ? '<div class="row"><div class="info"><div class="name">하단 메뉴 위치</div><div class="desc">메뉴가 잘리면 ‘안쪽’을 선택해 주세요.</div></div><button class="btn" data-set="bottomFit">' + (bottomInside() ? '안쪽' : '맨 아래') + '</button></div>' : '') +
         '<div class="row"><div class="info"><div class="name">화면 표현</div><div class="desc">기본 3D 또는 픽셀 스타일</div></div><button class="btn" data-set="pixel">' + (st.pixel ? '픽셀 스타일' : '기본 3D') + '</button></div>' +
         '<div class="row"><div class="info"><div class="name">화면 흔들림</div><div class="desc">어지러우면 꺼 주세요.</div></div><button class="btn" data-set="shake">' + (st.shake === false ? '꺼짐' : '켜짐') + '</button></div>' +
@@ -2797,6 +2804,8 @@
         if (d.set === 'pixel') G.setSetting('pixel', !st.pixel);
         if (d.set === 'autoBoss') G.setSetting('autoBoss', st.autoBoss === false);
         if (d.set === 'shake') G.setSetting('shake', st.shake === false);
+        if (d.set === 'themeNeb') G.setSetting('theme', 'neb');
+        if (d.set === 'themeWinter') G.setSetting('theme', 'winter');
         if (d.set === 'bottomFit') {
           try { if (bottomInside()) localStorage.removeItem(bottomKey()); else localStorage.setItem(bottomKey(), 'inside'); } catch (e) {}
           if (CW.FRIEND) document.documentElement.classList.toggle('friend-bottom-inside', bottomInside());
@@ -2912,6 +2921,8 @@
         while ((m = re.exec(v))) {
           if (!/(^|\/)art\/[^\/]+\.(webp|png|jpg)$/.test(m[1])) continue;
           var u = new URL(m[1], document.baseURI).href;
+          // 겨울 테마 (2026-11-25, js/theme.js): 성운 그림·겨울판 중 지금 테마 쪽만 받음 (CSS 변수로 둘 다 적혀 있음)
+          if (CW.theme && CW.theme.warmSkip(u, document.documentElement.classList.contains('tw'))) continue;
           if (!seen[u]) { seen[u] = 1; all.push(u); }
           if (isMask && !mseen[u]) { mseen[u] = 1; mask.push(u); }
         }
@@ -2926,6 +2937,8 @@
       [].forEach.call(document.styleSheets, function (sh) { try { walk(sh.cssRules || []); } catch (e) {} });
       return { all: all, mask: mask };
     }
+    // 테마를 바꾸면 (main.js applySettings) 그 테마의 메뉴 그림을 받아 둠 — 이미 받은 것은 warmHas 가 거름
+    function rewarm() { var css = cssArtPics(); warmImgs(css.all, { decode: false }); warmImgs(css.mask, { decode: false, cors: true }); }
     function gearKindPics(kind) {   // 장비 목록 한 종류에 나오는 그림 전부 (등급 0~9, 혼돈·멸망은 단계 I~IV마다)
       var out = []; if (!CW.ICO.gearSrc) return out;
       for (var g = 0; g < DATA.grades.length; g++) for (var sb = 1; sb <= 4; sb++) out.push(CW.ICO.gearSrc(kind, g, sb));
@@ -3318,7 +3331,7 @@
     }
     document.querySelector('#hud .nh-prof').addEventListener('click', function () { G.sound('click'); openStats(); });
     $('powerChip').addEventListener('click', function () { G.sound('click'); openStats(); });   // 전투력 칸도 냥법사 기록 (2026-11-23)
-    return { petDot: function () { petKey = ''; petBtnHud(G.state); }, surgeGauge: surgeGauge, dunHud: dunHud, gainLog: gainLog, fieldPickup: fieldPickup, fieldSummary: fieldSummary, openTab: openTab, hud: hud, slots: slots, renderPanel: renderPanel, toast: toast, banner: banner, showOffline: showOffline, showDaily: showDaily, showTierUp: showTierUp, showGacha: showGacha, modal: modal, showBossResult: showBossResult, libraryCards: libraryCards, currentTab: function () { return tab; } };
+    return { rewarm: rewarm, petDot: function () { petKey = ''; petBtnHud(G.state); }, surgeGauge: surgeGauge, dunHud: dunHud, gainLog: gainLog, fieldPickup: fieldPickup, fieldSummary: fieldSummary, openTab: openTab, hud: hud, slots: slots, renderPanel: renderPanel, toast: toast, banner: banner, showOffline: showOffline, showDaily: showDaily, showTierUp: showTierUp, showGacha: showGacha, modal: modal, showBossResult: showBossResult, libraryCards: libraryCards, currentTab: function () { return tab; } };
   }
   CW.createUI = createUI;
 })(this);

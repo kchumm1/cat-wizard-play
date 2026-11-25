@@ -1103,6 +1103,9 @@
     }
   };
   var ui = CW.createUI(G);
+  // 겨울 메뉴 눈 판 (2026-11-25, js/theme.js·js/winter-css.js): 메뉴 창·아래 탭 줄, 성운이면 숨어 있음
+  CW.theme.mountSnow(document.getElementById('sheet')); CW.theme.mountSnow(document.getElementById('tabs'));
+  CW.theme.mountCap(document.getElementById('tabs'));   // 탭 줄 윗변 눈 더미 (형이 그려 준 그림)
   // monster codex page (js/dex-ui.js) reads the live state; the 더보기 tab shows a dot while something new is unseen
   CW.dexState = function () { return state; };
   if (CW.dexDot) CW.dexDot(CW.dexHasNew(state));
@@ -1111,14 +1114,21 @@
   CW.petChanged = function (quiet) { if (!quiet) refreshStats(); save(); if (ui.petDot) ui.petDot(); };
   if (!CW.toast) CW.toast = function (m) { ui.toast(m); };
 
-  var drawing;
+  var drawing, lastTheme = null;
   function applySettings() {
     var s = state.settings;
+    // 테마 (2026-11-25, js/theme.js): <html> 의 tw 클래스 + 저장 읽기 전에 쓸 거울 값. 바뀌면 그 테마 메뉴 그림을 미리 받음
+    var theme = CW.theme.themeOf(s);
+    CW.theme.apply(document, theme, storage);   // 맨 위에서 확인한 storage (사이트 데이터가 막힌 브라우저면 null, 거기서는 localStorage 를 읽기만 해도 오류)
+    if (lastTheme && theme !== lastTheme && ui.rewarm) ui.rewarm();
+    lastTheme = theme;
     snd.setEnabled(s.sound); sc.setPixel(s.pixel); if (sc.setShake) sc.setShake(s.shake !== false);
     if (sc.setLandView) sc.setLandView(s.landView);   // 가로 시점 (sideways only; upright unchanged)
     sc.setDamageStyle((s.dmgSize === undefined ? 60 : s.dmgSize) / 100, (s.dmgAlpha === undefined ? 85 : s.dmgAlpha) / 100);
     drawing = CW.drawPlan(s.quality, CW.PHONE, autoQ);
     sc.setQuality(drawing.quality, drawing.phoneLite);
+    // 겨울 전투 눈: 화질 따라 500/300/끔. 폰 자동 화질(phoneLite: 다른 효과도 가볍게)은 300
+    if (sc.setSnow) sc.setSnow(CW.theme.snowCount(CW.theme.themeOf(s), drawing.phoneLite ? 'mid' : drawing.quality));
     fx.setQuality(drawing.fxKey);
     pace.setCap(s.fpsCap || 60);
   }

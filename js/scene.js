@@ -302,10 +302,14 @@
       function castle(R) { for (var i = 0; i < 7; i++) { var x = -6 + i * 2, z = -6 - (i % 2) * 2, h = 2 + R() * 3; add(new T.CylinderGeometry(0.5, 0.6, h, 8), lambert(0x2a2038), x, h / 2, z); add(new T.ConeGeometry(0.7, 1.2, 8), lambert(0x4a1f3a), x, h + 0.6, z); add(new T.SphereGeometry(0.08, 6, 4), new T.MeshBasicMaterial({ color: 0xff3b5c }), x, h * 0.7, z + 0.6); } }
     ];
     var painted = null;
+    // 겨울 전투 눈 (2026-11-25, js/snow3d.js): 개수는 설정(main.js applySettings → setSnow), 실내·얼음 지역은 setRegion 이 숨김
+    var snow = CW.createSnow3D ? CW.createSnow3D(T, scene) : null;
+    function setSnow(n) { if (snow) snow.setCount(n); }
     // the region's picture (data.js bg, the user's art) stretched to fill the screen behind the see-through canvas: nothing
     // cut off, no empty band. Fetched when the region is reached; until then (or without one: 화산) the drawn ground shows.
     renderer.setClearColor(0x000000, 0);
     var bgEl = document.createElement('div'); bgEl.className = 'stagebg'; canvas.parentNode.insertBefore(bgEl, canvas);
+    bgEl.innerHTML = '<i class="wfrost" aria-hidden="true"></i>';   // 겨울 전투 바닥 서리 (2026-11-25, js/winter-css.js: 겨울에만 보임)
     var bgReady = {}, desertLight = {value:0};
     function showBackdrop(id) {
       bgEl.classList.toggle('expedition-bg',!!id && id.indexOf('expedition-')===0);
@@ -324,6 +328,7 @@
     }
     function setRegion(r, regionData) {
       if (r === region) return; region = r;
+      if (snow) snow.setBlocked(CW.theme.snowBlocked(regionData.bg));
       if (!painted) painted = CW.createWorld(scene, { tilt: TILT, halfX: halfX, field: FIELD });
       var id = regionData.bg;
       desertLight.value = id === 'bg-desert' ? 1 : 0;
@@ -1663,6 +1668,7 @@
       if (minions) minions.update(dt);
       lights.forEach(function (L) { L.t += dt; }); while (lights.length && lights[0].t >= lights[0].life) lights.shift();
       if (painted) painted.update(dt, vh * renderer.getPixelRatio());
+      if (snow) snow.update(time, vh * renderer.getPixelRatio());
       // numbers
       pool.forEach(function (s) {
         if (!s.live) return; s.t += rdt; var dur = s.crit ? 1.05 + 0.15 * (s.tier || 0) : 0.8, k = s.t / dur;
@@ -1819,7 +1825,8 @@
       // a step u across the screen (+ right) and w toward the camera, as a step on the field
       fromScreen: function (u, w) { return { x: u * cY + w * sY, z: -u * sY + w * cY }; },
       camView: function () { return { yaw: orb.yaw, zoom: orb.zoom, fit: fitK, idle: orb.idle, fingers: orb.n }; },
-      setPixel: setPixel, setShake: setShake, setDamageStyle: setDamageStyle, setQuality: setQuality, getQuality: function () { return quality; }
+      setPixel: setPixel, setShake: setShake, setDamageStyle: setDamageStyle, setQuality: setQuality, getQuality: function () { return quality; },
+      setSnow: setSnow, snowCount: function () { return snow ? snow.count() : 0; }
     };
   }
   CW.createScene = createScene;

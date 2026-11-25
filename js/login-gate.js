@@ -217,7 +217,7 @@
   }
 
   // ---------- the screen ----------
-  var CSS = '#cwLogin{position:fixed;inset:0;z-index:100000;overflow:auto;-webkit-overflow-scrolling:touch;background:#16213a url("art/ui-up-bg.webp") center/cover no-repeat;color:#fff7e6;font-family:"Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;'
+  var CSS = '#cwLogin{position:fixed;inset:0;z-index:100000;overflow:auto;-webkit-overflow-scrolling:touch;background:#16213a var(--nb-ui-up-bg) center/cover no-repeat;color:#fff7e6;font-family:"Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;'
     + 'padding:calc(env(safe-area-inset-top,0px) + 16px) calc(env(safe-area-inset-right,0px) + 16px) calc(env(safe-area-inset-bottom,0px) + 16px) calc(env(safe-area-inset-left,0px) + 16px);-webkit-tap-highlight-color:transparent;overscroll-behavior:contain}'
     + '/* 2026-11-18 형: 로그인할 때 위로 밀리고 아래로 당겨져 → the card sits near the top instead of the middle (the iPhone keyboard changes the height, and a centred card jumped with it), and the message line keeps two lines of room so a new message does not move the buttons */'
     + '#cwLogin *{box-sizing:border-box}#cwLogin .lg-wrap{display:flex;align-items:flex-start;justify-content:center;padding-top:clamp(0px,4vh,28px)}'

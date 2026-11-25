@@ -10,7 +10,7 @@
     S + '.ruv{position:absolute;left:0;top:0;width:359px;height:227px;isolation:isolate}' + S + '.ruv>*{position:absolute}',
     // 창 = 부품 마스크(ru-win)로 자른 룬 성운(ru-neb) + 유리 테두리(ru-winrim). 시안 창 안쪽 x22~455·위 끝 y45 → 무대 -1.7~362.5, 0
     S + '.ruv-neb{left:-18.95px;top:-15.56px;width:396.9px;height:283.5px;overflow:hidden;pointer-events:none;-webkit-mask:url(art/ru-win.webp) 0 0/100% 100% no-repeat;mask:url(art/ru-win.webp) 0 0/100% 100% no-repeat}',
-    S + '.ruv-neb::before{content:"";position:absolute;inset:0;background:url(art/ru-neb.webp) 0 0/100% 100% no-repeat;animation:rsNeb 30s ease-in-out infinite alternate}',
+    S + '.ruv-neb::before{content:"";position:absolute;inset:0;background:var(--nb-ru-neb) 0 0/100% 100% no-repeat;animation:rsNeb 30s ease-in-out infinite alternate}',
     // 돔 겉 둘레: 창 바깥으로 은은하게 번진 성운 (사용자 「돔 겉 부분 살짝 미러처리」, art/ru-halo·si-halo), 성운처럼 천천히 숨 쉼
     S + '.ruv-halo{left:-18.95px;top:-15.56px;width:396.9px;height:283.5px;pointer-events:none;background:url(art/ru-halo.webp) 0 0/100% 100% no-repeat;animation:rsHalo 30s ease-in-out infinite alternate}',
     S + '.ruv-rim{left:-18.95px;top:-15.56px;width:396.9px;height:283.5px;background:url(art/ru-winrim.webp) 0 0/100% 100% no-repeat;pointer-events:none}',
@@ -104,7 +104,7 @@
     S + '.sgw{position:relative;width:359px;height:155px;margin:0 auto!important;zoom:var(--opz,1)}',
     S + '.sgv{position:absolute;left:0;top:0;width:359px;height:155px;isolation:isolate}' + S + '.sgv>*{position:absolute}',
     S + '.sgv-neb{left:-6.8px;top:-17.1px;width:374.7px;height:267.7px;overflow:hidden;pointer-events:none;-webkit-mask:url(art/si-win.webp) 0 0/100% 100% no-repeat;mask:url(art/si-win.webp) 0 0/100% 100% no-repeat}',
-    S + '.sgv-neb::before{content:"";position:absolute;inset:0;background:url(art/si-neb.webp) 0 0/100% 100% no-repeat;animation:rsNeb 30s ease-in-out infinite alternate}',
+    S + '.sgv-neb::before{content:"";position:absolute;inset:0;background:var(--nb-si-neb) 0 0/100% 100% no-repeat;animation:rsNeb 30s ease-in-out infinite alternate}',
     S + '.sgv-halo{left:-6.8px;top:-17.1px;width:374.7px;height:267.7px;pointer-events:none;background:url(art/si-halo.webp) 0 0/100% 100% no-repeat;animation:rsHalo 30s ease-in-out infinite alternate}',
     S + '.sgv-rim{left:-6.8px;top:-17.1px;width:374.7px;height:267.7px;background:url(art/si-winrim.webp) 0 0/100% 100% no-repeat;pointer-events:none}',
     S + '.sgv-ped{left:35.5px;top:111px;width:288px;height:45px;background:url(art/si-ped.webp) 0 0/100% 100% no-repeat;pointer-events:none}',

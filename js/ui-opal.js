@@ -516,7 +516,7 @@
     '#sheet.opal .bdetail,#sheet.opal .opbag .gpot,#sheet.opal .cs-eff2,#sheet.opal .row.grow,#sheet.opal .codexbar{background:rgba(255,255,255,.72)!important}',
     '#sheet.opal .subtabs,#sheet.opal .kindtabs{background:rgba(255,255,255,.7)!important}',
     // ==== 시안 대조 5차: 승인 이미지에서 잘라 만든 성운·받침대 그림 사용 (tools/cut-opal-ui.py → art/opal-neb.webp, art/opal-ped.webp) ====
-    '#sheet.opal .ns-neb{background:url(art/opal-neb.webp) 50% 100%/100% 100% no-repeat!important;-webkit-mask:none!important;mask:none!important;border-radius:0!important}',
+    '#sheet.opal .ns-neb{background:var(--nb-opal-neb) 50% 100%/100% 100% no-repeat!important;-webkit-mask:none!important;mask:none!important;border-radius:0!important}',
     '#sheet.opal .ns-neb::after{content:none!important}',
     '#sheet.opal .opstage>.ns-neb{inset:-2% -6% 26px -6%!important;-webkit-mask:none!important;mask:none!important}',
     '#sheet.opal div>.ns-neb{-webkit-mask:none!important;mask:none!important}',
@@ -526,7 +526,7 @@
     // 코스튬 전시 = 시안 실측 (2026-11-16): 돔 폭 패널의 0.88·높이 150 넓은 타원, 받침 윗면 = 돔 꼭대기 + 160, 캐릭터 약 175px
     '#sheet.opal#sheet.opal .cstage{height:194px!important;padding:0 8px 0!important}',   // 시안: 받침대가 얇아서 이름 줄이 18px 위
     // 코스튬 성운 = 시안 윤곽(넓은 아치, 어깨가 둥근)에 줄마다 맞춘 art/opal-neb-cos2.webp (385.8×193.5, 시트 기준 (2.6, 38.4))
-    '#sheet.opal#sheet.opal .cstage>.ns-neb{inset:auto!important;top:-12.6px!important;left:-13.4px!important;width:385.8px!important;height:193.5px!important;background:url(art/opal-neb-cos2.webp) 0 0/100% 100% no-repeat!important}',
+    '#sheet.opal#sheet.opal .cstage>.ns-neb{inset:auto!important;top:-12.6px!important;left:-13.4px!important;width:385.8px!important;height:193.5px!important;background:var(--nb-opal-neb-cos2) 0 0/100% 100% no-repeat!important}',
     '#sheet.opal .cstage>.ns-neb::before,#sheet.opal .cstage>.ns-neb::after{-webkit-mask:url(art/opal-neb-cos2.webp) 0 0/100% 100% no-repeat;mask:url(art/opal-neb-cos2.webp) 0 0/100% 100% no-repeat}',
     '#sheet.opal#sheet.opal .cstage .ns-ped{left:50%!important;right:auto!important;width:336.3px!important;margin-left:-168.2px;bottom:-18.1px!important;aspect-ratio:951/141.2!important;background-image:url(art/opal-ped-w.webp)!important}',   // 시안 받침대: 하얀 진주빛·청록 고리·금색 ✦·빛무리 (art/opal-ped-w.webp, 받침 290px), 세로 0.66   // 시안 받침대: 윗면·옆면 모두 납작 (세로 0.66)
     // 코스튬 새 원화 (2026-11-16): 캔버스 그대로 192px (시안 「오색 별빛 마녀」 겹침 실측: 배율 0.235, 발이 받침대 윗면 앞쪽 y 233),
@@ -736,7 +736,7 @@
     // 가로 224px (왼쪽은 패널 테두리에서 잘리고 오른쪽은 반투명 정보 상자 뒤로). 비율 그대로, 받침대 아래는 그림에서 잘라 냄
     // → 시안 아치는 좌우 대칭이 아님(왼쪽은 아래로 벌어져 패널 밖, 오른쪽은 정보 상자 앞에서 끝). 같은 질감을 시안 윤곽에 줄마다 맞춰 편
     //   art/opal-neb-gear.webp (tools/import-opal-parts.py make_gear_neb). 그림 = 212.4×196.8, 시트 기준 (-13, 41.7)
-    '#sheet.opal .gstage>.ns-neb{background:url(art/opal-neb-gear.webp) 0 0/100% 100% no-repeat!important;inset:auto!important;top:-9.3px!important;left:-29px!important;width:212.4px!important;height:196.8px!important;aspect-ratio:auto!important}',
+    '#sheet.opal .gstage>.ns-neb{background:var(--nb-opal-neb-gear) 0 0/100% 100% no-repeat!important;inset:auto!important;top:-9.3px!important;left:-29px!important;width:212.4px!important;height:196.8px!important;aspect-ratio:auto!important}',
     // 반짝이 점은 아치 안에서만 (아치 밖 투명 모서리에 점이 뜨지 않게)
     '#sheet.opal .gstage>.ns-neb::before,#sheet.opal .gstage>.ns-neb::after{-webkit-mask:url(art/opal-neb-gear.webp) 0 0/100% 100% no-repeat;mask:url(art/opal-neb-gear.webp) 0 0/100% 100% no-repeat}',
     // 별자리 세 별(그림 안 위치 38%·20.7% / 28.3%·27.1% / 24.4%·36.9%)이 숨쉬듯 반짝 + 흩어진 작은 별
@@ -757,7 +757,7 @@
     '#sheet.opal .ophead .mulpick .btn.on{border-image-source:url(art/opal-teal.webp)!important;border-image-slice:27 27 27 27 fill!important;border-image-width:50% 24px!important;color:#fff!important;text-shadow:0 1px 2px rgba(10,60,60,.55)!important}',
     '#sheet.opal .ophead .mulpick .btn.on::after{content:none!important}#sheet.opal .ophead .mulpick .btn.on::before{content:"✦";font-size:12px;margin-right:6px;opacity:.9}',
     '#sheet.opal .row.grow{display:grid!important;grid-template-columns:72px minmax(0,1fr) auto!important;align-items:center;gap:8px!important;padding:10px 10px 10px 8px!important;margin-bottom:8px!important}',
-    '#sheet.opal .row.grow .gorb{width:70px!important;height:70px!important;border-radius:50%!important;position:relative;display:grid;place-items:center;background:url(art/opal-neb.webp) 50% 40%/180% 140% no-repeat!important;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.7),0 0 0 1px rgba(160,170,220,.35)!important;overflow:visible}',
+    '#sheet.opal .row.grow .gorb{width:70px!important;height:70px!important;border-radius:50%!important;position:relative;display:grid;place-items:center;background:var(--nb-opal-neb) 50% 40%/180% 140% no-repeat!important;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.7),0 0 0 1px rgba(160,170,220,.35)!important;overflow:visible}',
     '#sheet.opal .row.grow .gorb::after{content:"";position:absolute;left:8%;right:8%;bottom:-4px;aspect-ratio:820/188;background:url(art/opal-ped.webp) 50% 50%/100% 100% no-repeat;z-index:0}',
     '#sheet.opal .row.grow .gorb>*{position:relative;z-index:1;width:72%!important;height:72%!important;margin-bottom:12%;filter:drop-shadow(0 3px 3px rgba(30,40,90,.35))}',
     '#sheet.opal .row.grow{grid-template-areas:none!important;row-gap:0!important}',
@@ -840,7 +840,7 @@
     // ---- 성장 = 사용자 성장 부품 + 시안 실측 (2026-11-16, 시안 패널 936px = 화면 391px) ----
     // 부품 PNG 는 바깥에 투명 그림자 여백(논리 옆 3.3 · 위 3.7 · 아래 5.3)이 있어 border-image-outset 으로 상자 밖에 그림 → 상자 크기 = 보이는 크기
     // 바탕: 위쪽 성운 띠 (nebula-background). 성장 화면일 때만
-    '#sheet.opal:has(#panel .row.grow){background:url(art/gp-neb.webp) 50% 0/100% auto no-repeat,linear-gradient(180deg,#ebe5f4,#efe9f6)!important}',
+    '#sheet.opal:has(#panel .row.grow){background:var(--nb-gp-neb) 50% 0/100% auto no-repeat,linear-gradient(180deg,#ebe5f4,#efe9f6)!important}',
     // ×1·×10·×100: 가운데 모은 알약 셋 (보이는 88×29, 간격 7), 고른 것 청록 + ✦
     '#sheet.opal#sheet.opal .ophead{margin:11px 0 5px!important;justify-content:center!important}',   // 알약 아래 → 첫 카드 17px (패널 사이 12 포함)
     '#sheet.opal#sheet.opal .ophead .mulpick{display:flex!important;justify-content:center;gap:7px!important;border-image:none!important;background:none!important;padding:0!important;width:auto!important}',
@@ -904,7 +904,7 @@
     '#sheet.opal#sheet.opal .tpoints.tnw .treset{width:71px!important;min-height:0!important;height:24px!important;padding:0 0 1px!important;font:700 13px/1 var(--body)!important;color:var(--navy)!important;border:0 solid transparent!important;border-image:url(art/tp-reset.webp) 51 fill / 13.2px / 2.9px 2.6px 4.1px 2.6px stretch!important;background:none!important;box-shadow:none!important}',
     '#sheet.opal#sheet.opal .tpoints.tnw .treset:active{border-image:url(art/tp-reset-press.webp) 51 fill / 13.2px / 2.9px 2.6px 4.1px 2.6px stretch!important}',
     // 나무 판: 성운 바탕 (패널 폭 가득, 가장자리는 부드럽게), 천천히 흐름
-    '#sheet.opal#sheet.opal .ttree.tnw{position:relative;display:flex!important;flex-direction:column;align-items:stretch;gap:0!important;margin:-24px -12px 0!important;padding:34px 12px 14px!important;border:0!important;border-radius:26px!important;box-shadow:none!important;background:linear-gradient(rgba(238,232,252,.3),rgba(240,228,250,.22)),url(art/tp-neb.webp) 50% 0/cover no-repeat!important;-webkit-mask:linear-gradient(180deg,transparent 0,#000 34px,#000 calc(100% - 22px),transparent 100%),linear-gradient(90deg,transparent 0,#000 12px,#000 calc(100% - 12px),transparent 100%);-webkit-mask-composite:source-in;mask:linear-gradient(180deg,transparent 0,#000 34px,#000 calc(100% - 22px),transparent 100%) intersect,linear-gradient(90deg,transparent 0,#000 12px,#000 calc(100% - 12px),transparent 100%);animation:opNebDrift 46s ease-in-out infinite alternate}',
+    '#sheet.opal#sheet.opal .ttree.tnw{position:relative;display:flex!important;flex-direction:column;align-items:stretch;gap:0!important;margin:-24px -12px 0!important;padding:34px 12px 14px!important;border:0!important;border-radius:26px!important;box-shadow:none!important;background:linear-gradient(rgba(238,232,252,.3),rgba(240,228,250,.22)),var(--nb-tp-neb) 50% 0/cover no-repeat!important;-webkit-mask:linear-gradient(180deg,transparent 0,#000 34px,#000 calc(100% - 22px),transparent 100%),linear-gradient(90deg,transparent 0,#000 12px,#000 calc(100% - 12px),transparent 100%);-webkit-mask-composite:source-in;mask:linear-gradient(180deg,transparent 0,#000 34px,#000 calc(100% - 22px),transparent 100%) intersect,linear-gradient(90deg,transparent 0,#000 12px,#000 calc(100% - 12px),transparent 100%);animation:opNebDrift 46s ease-in-out infinite alternate}',
     '@keyframes opNebDrift{from{background-position:50% 0}to{background-position:50% 100%}}',
     '#sheet.opal#sheet.opal .ttree.tnw>.trow{display:flex!important;justify-content:center;align-items:flex-start;gap:13px!important;margin:0!important}',
     // 노드 92×88: 돔(지름 77) 뒤판 → 아이콘(70) → 앞 유리 반짝임 → 이름판(86×28) → 레벨 알약(40×14)
@@ -969,7 +969,7 @@
     '#sheet.opal#sheet.opal .alchhead.anw{position:relative;display:block!important;height:175px;margin:0!important;padding:0!important;background:none!important;border:0!important;box-shadow:none!important;border-radius:0!important;overflow:visible}',
     '#sheet.opal#sheet.opal .alchhead.anw .acaul{position:absolute;left:0;top:0;width:200px;height:175px;z-index:0;margin:0!important;padding:0!important;background:none!important;border:0!important;box-shadow:none!important;overflow:visible}',
     '#sheet.opal#sheet.opal .alchhead.anw .acaul>*{position:absolute;pointer-events:none}',
-    '#sheet.opal#sheet.opal .alchhead.anw .aneb{left:-13.4px;top:-8px;width:385.8px;height:214px;background:url(art/al-neb-fill.webp) 40% 55%/cover no-repeat;-webkit-mask:url(art/al-win.webp) 0 0/100% 100% no-repeat;mask:url(art/al-win.webp) 0 0/100% 100% no-repeat;animation:opAlNeb 30s ease-in-out calc(var(--ph,0s) + 0s) infinite alternate}',
+    '#sheet.opal#sheet.opal .alchhead.anw .aneb{left:-13.4px;top:-8px;width:385.8px;height:214px;background:var(--nb-al-neb-fill) 40% 55%/cover no-repeat;-webkit-mask:url(art/al-win.webp) 0 0/100% 100% no-repeat;mask:url(art/al-win.webp) 0 0/100% 100% no-repeat;animation:opAlNeb 30s ease-in-out calc(var(--ph,0s) + 0s) infinite alternate}',
     '@keyframes opAlNeb{from{transform:scale(1);filter:brightness(1)}to{transform:scale(1.025);filter:brightness(1.05) saturate(1.08)}}',
     '#sheet.opal#sheet.opal .alchhead.anw .aped{left:-19.4px;top:106px;width:264.6px;height:88.3px;background:url(art/al-ped.webp) 50% 50%/100% 100% no-repeat}',
     '#sheet.opal#sheet.opal .alchhead.anw .acimg{left:9.8px;top:27.4px;width:206.8px!important;height:138px!important;max-width:none!important;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(60,40,120,.18))}',
@@ -1052,7 +1052,7 @@
     '#sheet.opal#sheet.opal .rkv>*{position:absolute;pointer-events:none}',
     '#sheet.opal#sheet.opal .rkv-neb{left:-15px;top:-19.3px;width:392px;height:266px;overflow:hidden}',
     // 성운 그림은 예전처럼 426px(시안 크기)로 그리되, 상자는 패널 안(화면 1~393)까지만 — 넘치면 승급 화면이 옆으로 밀림 (사용자 2026-11-16). 숨쉬기도 상자 안에서만
-    '#sheet.opal#sheet.opal .rkv-neb::before{content:"";position:absolute;left:-14px;top:0;width:426px;height:266px;background:url(art/rk-neb.webp) 50% 50%/100% 100% no-repeat;animation:opAlNeb 30s ease-in-out infinite alternate}',
+    '#sheet.opal#sheet.opal .rkv-neb::before{content:"";position:absolute;left:-14px;top:0;width:426px;height:266px;background:var(--nb-rk-neb) 50% 50%/100% 100% no-repeat;animation:opAlNeb 30s ease-in-out infinite alternate}',
     // 빛줄기: 훈장 가운데(179.5,111)에서 각 징표 쪽으로 (길이·각도는 ui.js 가 계산)
     '#sheet.opal#sheet.opal .rkv-ray{left:179.5px;top:111px;width:var(--l);height:24px;margin-top:-12px;transform-origin:0 50%;transform:rotate(var(--a));background:url(art/rk-ray.webp) 50% 50%/100% 100% no-repeat;opacity:.45}',
     '#sheet.opal#sheet.opal .rkv-ray.on{opacity:1;filter:brightness(1.25) drop-shadow(0 0 2px #fff) drop-shadow(0 0 5px rgba(150,220,255,.85));animation:opRay 3s ease-in-out infinite}',
@@ -1139,7 +1139,7 @@
     // 시안(05-mana) 성운 경계 38점에 맞춘 자리: 시안 화면 x-0.5 y41.5, 390.6×279 (.mcv 기준 -16.5, 1.5). 만드는 곳 tools/import-skill-parts.py make_window
     '#sheet.opal#sheet.opal .mcv-neb{z-index:0;left:-16.5px;top:1.5px;width:390.6px;height:279px;-webkit-mask:url(art/mc-win.webp) 0 0/100% 100% no-repeat;mask:url(art/mc-win.webp) 0 0/100% 100% no-repeat}',
     // 창 모양은 그대로, 안의 성운만 천천히 숨쉬듯 (마스크까지 커지면 테두리와 어긋남)
-    '#sheet.opal#sheet.opal .mcv-neb::before{content:"";position:absolute;inset:0;background:url(art/mc-neb.webp) 0 0/100% 100% no-repeat;animation:opAlNeb 30s ease-in-out infinite alternate}',
+    '#sheet.opal#sheet.opal .mcv-neb::before{content:"";position:absolute;inset:0;background:var(--nb-mc-neb) 0 0/100% 100% no-repeat;animation:opAlNeb 30s ease-in-out infinite alternate}',
     '#sheet.opal#sheet.opal .mcv-rim{z-index:0;left:-16.5px;top:1.5px;width:390.6px;height:279px;background:url(art/mc-winrim.webp) 0 0/100% 100% no-repeat}',
     '#sheet.opal#sheet.opal .mcv-cst{z-index:0;left:0;top:0;width:359px;height:245px;overflow:visible}',
     '#sheet.opal#sheet.opal .mcv-cst .ln{fill:none;stroke:rgba(255,255,255,.82);stroke-width:.9;filter:drop-shadow(0 0 1.5px rgba(255,255,255,.75))}',
@@ -1428,7 +1428,7 @@
     '#sheet.opal#sheet.opal .skd-v{left:0;top:0;width:359px;height:195px;pointer-events:none}#sheet.opal#sheet.opal .skd-v>*{position:absolute}',
     // 성운 아치 창 (화면 x10~382, 위 끝 y46) — 목록 창과 같은 모양을 조금 크게
     '#sheet.opal#sheet.opal .skd-neb{left:-15px;top:-6px;width:386.4px;height:276px;overflow:hidden;-webkit-mask:url(art/sk-dwin.webp) 0 0/100% 100% no-repeat;mask:url(art/sk-dwin.webp) 0 0/100% 100% no-repeat}',   // 목록과 같은 부품 창, 시안 상세 경계에 맞춤 (시안 화면 x1 y34, ×0.92)
-    '#sheet.opal#sheet.opal .skd-neb::before{content:"";position:absolute;inset:0;background:url(art/sk-dneb.webp) 0 0/100% 100% no-repeat;animation:opAlNeb 30s ease-in-out infinite alternate}',
+    '#sheet.opal#sheet.opal .skd-neb::before{content:"";position:absolute;inset:0;background:var(--nb-sk-dneb) 0 0/100% 100% no-repeat;animation:opAlNeb 30s ease-in-out infinite alternate}',
     '#sheet.opal#sheet.opal .skd-rim{left:-15px;top:-6px;width:386.4px;height:276px;background:url(art/sk-dwinrim.webp) 0 0/100% 100% no-repeat}',
     '#sheet.opal#sheet.opal .skd-cst{left:0;top:0;width:359px;height:200px;overflow:visible}',
     // 긴 전시대 (보이는 357×25, 윗면 y207) — 부품보다 납작해서 세로만 0.6배

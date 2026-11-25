@@ -16,7 +16,7 @@
     S + '.dvv-halo,' + S + '.dvv-neb,' + S + '.dvv-rim{left:-11px;top:0;width:380px;height:271.4px;pointer-events:none}',
     S + '.dvv-halo{background:url(art/dv-halo.webp) 0 0/100% 100% no-repeat;z-index:-3}',
     S + '.dvv-neb{overflow:hidden;z-index:-2;-webkit-mask:url(art/dv-win.webp) 0 0/100% 100% no-repeat;mask:url(art/dv-win.webp) 0 0/100% 100% no-repeat}',
-    S + '.dvv-neb::before{content:"";position:absolute;inset:0;background:url(art/dv-neb.webp) 0 0/100% 100% no-repeat;animation:dvNeb 26s ease-in-out infinite alternate;transform-origin:50% 30%}',
+    S + '.dvv-neb::before{content:"";position:absolute;inset:0;background:var(--nb-dv-neb) 0 0/100% 100% no-repeat;animation:dvNeb 26s ease-in-out infinite alternate;transform-origin:50% 30%}',
     // 반짝이는 별 몇 개 (창 안, 성운 그림 별 위에 살짝)
     S + '.dvv-neb::after{content:"";position:absolute;inset:0;background:radial-gradient(1.6px 1.6px at 17% 14%,#fff,transparent),radial-gradient(2px 2px at 44% 9%,#fff,transparent),radial-gradient(1.5px 1.5px at 72% 20%,#fff,transparent),radial-gradient(1.8px 1.8px at 88% 33%,#fff,transparent),radial-gradient(1.4px 1.4px at 30% 30%,#fff,transparent),radial-gradient(1.6px 1.6px at 60% 36%,#fff,transparent);animation:dvTw 3.2s ease-in-out infinite}',
     S + '.dvv-rim{background:url(art/dv-winrim.webp) 0 0/100% 100% no-repeat;z-index:-1}',
