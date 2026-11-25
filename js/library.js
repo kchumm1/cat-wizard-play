@@ -3,6 +3,10 @@
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CW.library = api;
 })(this, function () {
+  // 숨김 스위치 (형 2026-11-25: 「뒤틀린 마법도서관 당분간 안 보이게, 다시 열라고 하면 그때 열게」)
+  // true  → 던전 탭 카드·입장 버튼이 형꺼·친구꺼 모두에서 사라지고 들어갈 수 없어요. 저장된 진행·보상 기록은 그대로 둬요.
+  // false → 다시 열려요 (이 값 하나만 바꾸면 됨). 로컬 개발 서버의 ?library-preview 미리보기는 숨김과 상관없이 열려요.
+  var hidden = true;
   var name = '뒤틀린 마법 도서관', floors = 10, seconds = 24;
   var spells = {
     ember: ['잿불 각주', '맞힌 적에게 불씨가 쌓여 조금씩 피해를 줘요.', 'fireball', '깊게 타는 글자', '불씨 피해가 커져요.', '번지는 불씨', '적이 쓰러지면 옆 적에게 불씨가 옮겨가요.'],
@@ -248,6 +252,6 @@
       }
     };
   }
-  return { dayKey: dayKey, whole: whole, combat: combat, name: name, floors: floors, seconds: seconds, labels: labels, fusions: fusions, canReward: canReward,
+  return { hidden: hidden, dayKey: dayKey, whole: whole, combat: combat, name: name, floors: floors, seconds: seconds, labels: labels, fusions: fusions, canReward: canReward,
     newRun: newRun, clearFloor: clearFloor, choose: choose, rewardRates: rewardRates, rewardTotal: rewardTotal };
 });

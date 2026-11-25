@@ -357,14 +357,27 @@
       var T=G.towerStatus && G.towerStatus(); if(!T) return '';
       var A=CW.ART_BASE || 'art/', next=T.best+1, k=CW.tower.kind(next);
       var line=(T.best?'최고 '+T.best+'층':'아직 기록 없음')+(T.bless?' · 탑의 가호 모든 피해 +'+Math.round(T.bless*100)+'%':'');
-      // the floors ahead: what kind each one is (형 2026-11-25: 일반·정예·저주·보스, 10층마다 큰 보스)
-      var ahead=[0,1,2,3,4].map(function(i){var f=next+i,kk=CW.tower.kind(f);return '<span class="tw-fl tw-'+kk.id+(i?'':' now')+'"><b>'+f+'층</b>'+kk.label+'</span>';}).join('');
+      // 층별 보상 (형 2026-11-25: 「몇 층인데 보상이 이거다」를 들어가기 전에 층수와 보상까지 보기 좋게) — 다음 5층을 한 줄씩
+      // (층·종류 | 처음 깨면 받는 골드·마력석·룬석·탑의 가호), 그 안에 10층마다 오는 탑의 가호 층이 없으면 그 층도 맨 밑에
+      var TW=CW.tower, every=TW.conf.blessEvery, ico=CW.giveIco||function(){return '';}, run=TW.runs(G.state);   // 던전 한 판 값은 한 번만 계산
+      function rewardRow(f,cls){
+        var kk=TW.kind(f), r=TW.reward(G.state,f,run), items=[];
+        if(r.gold) items.push('<span class="tw-rc">'+ico('gold')+'<em>골드</em>'+fmtG(r.gold)+'</span>');
+        if(r.mana) items.push('<span class="tw-rc">'+ico('mana')+'<em>마력석</em>'+fmt(r.mana)+'</span>');
+        if(r.runeStone) items.push('<span class="tw-rc">'+ico('runeStone')+'<em>룬석</em>'+fmt(r.runeStone)+'</span>');
+        if(f%every===0) items.push('<span class="tw-rc tw-bless"><em>탑의 가호</em>모든 피해 +'+Math.round(TW.conf.bless*100)+'%</span>');
+        return '<li class="tw-r tw-'+kk.id+(cls?' '+cls:'')+'"><span class="tw-rf"><b>'+f+'층</b><em>'+kk.label+'</em></span><span class="tw-rg">'+items.join('')+'</span></li>';
+      }
+      var goal=Math.ceil(next/every)*every;
+      var ahead=[0,1,2,3,4].map(function(i){return rewardRow(next+i,i?'':'now');}).join('')+
+        (goal>next+4?'<li class="tw-gap" aria-hidden="true"><span>다음 탑의 가호</span></li>'+rewardRow(goal,'goal'):'');
       // 형 (2026-11-25): 도전 버튼 밑 「골드」 글자 빼, 「빠른 등반」은 무슨 말인지 모르겠어 → 「N층까지 바로 깨기」
       // 탑 그림 (2026-11-25, GPT A1 카드·A2 아이콘): the tower over the card's top, its icon and name on it
       return '<section class="ex-map ex-tower"><div class="tw-hero"><img class="tw-bg" src="'+A+'tower-card.webp" alt="무한의 탑" draggable="false">'+
         '<img class="tw-ic" src="'+A+'tower-icon.webp" alt="" draggable="false"><div class="tw-title"><small>끝없는 마법 탑</small><strong>무한의 탑</strong><span>'+line+'</span></div></div>'+
-        '<p class="tw-rule">시간 안에 몬스터를 모두 잡으면 다음 층 · 처음 깬 층만 보상</p>'+
-        '<div class="tw-ahead" aria-label="다음 층들">'+ahead+'</div><p class="tw-next">'+next+'층 '+k.label+' · '+k.help+' · '+k.sec+'초</p>'+
+        '<p class="tw-rule">시간 안에 몬스터를 모두 잡으면 다음 층으로 올라가요</p>'+
+        '<div class="tw-rw"><div class="tw-rwh"><strong>층별 보상</strong><small>처음 깰 때 한 번 받아요</small></div>'+
+        '<ol class="tw-ahead" aria-label="층별 보상">'+ahead+'</ol></div><p class="tw-next">'+next+'층 '+k.label+' · '+k.help+(k.curse?'':' · '+k.sec+'초')+'</p>'+
         '<div class="ex-tower-btns">'+(T.quick>0?btn('data-tower-quick="1"','<b>'+(T.best+T.quick)+'층까지 바로 깨기</b>',T.busy):'')+
         btn('data-tower="1"','<b>'+next+'층 도전</b>',T.busy,'ex-primary')+'</div></section>';
     }

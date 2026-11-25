@@ -6,12 +6,19 @@
 // every 10 floors give 탑의 가호, 모든 피해 +1% for good. No diamonds here: the server wallet owns those.
 // 층 종류 (2026-11-25, 형: 탑 안 진행 방식 바꾸기): every ten floors go 일반 · 정예 · 일반 · 저주 · 보스 · 일반 · 정예 ·
 // 저주 · 일반 · 큰 보스. hp is a share of one stage monster (a normal tower monster = 1/DUN_CROWD of it).
+// 더 세게·보상 크게 (2026-11-25, 형: 「무한의 탑이 너무 약하던데」 → 몬스터·보상 둘 다). 형 저장(435층)으로 재 보니
+// 436~476층이 한 층에 3~10초라 41층을 막힘 없이 올라감 → 층마다 C.hard(2.5%)씩 더 단단하게 쌓임(1층 1.03배, 100층
+// 12배, 200층 140배, 435층 4.6만 배): 형은 436층부터 실제로 싸우고 445층 근처에서 막힘. 보상은 그 사람이 지금 던전 한 판에서
+// 받는 양(골드·룬석은 300마리 기준, 마력석은 마력의 탑 기록)의 몫(C.share)이라 진행이 올라가도 계속 쓸 만함.
 (function (root, f) { var m = f(root); if (typeof module !== 'undefined' && module.exports) module.exports = m; else { root.CW = root.CW || {}; root.CW.tower = m; root.CW.towerStats = m.towerStats; } })(this, function (root) {
   var isNode = typeof module !== 'undefined' && module.exports;
   function dep(file) { return isNode ? require('./' + file + '.js') : root.CW; }
   var DATA = dep('data').DATA;
   var name = '무한의 탑';
-  var C = { step: 3, span: 310, goldKills: 10, runeKills: 40, blessEvery: 10, bless: 0.01, quickMax: 300 };
+  // hard: each floor's monsters are this much tougher again on top of the place they stand at (piles up floor after floor)
+  // runKills: 「던전 한 판」 for gold·룬석; share: how much of one run a first clear pays, by kind of floor
+  var C = { step: 3, span: 310, hard: 1.025, runKills: 300, blessEvery: 10, bless: 0.01, quickMax: 300,
+    share: { normal: { gold: 0.3 }, curse: { gold: 0.4 }, elite: { gold: 0.5 }, boss: { gold: 0.5, mana: 0.3 }, big: { gold: 1, mana: 0.6, runeStone: 1 } } };
   // count: monsters on the floor; hp: each one's health in normal tower monsters; sec: the time; quick: how many ordinary
   // hits of the player one may take and still count as an easy floor for 바로 깨기
   var KINDS = {
@@ -60,22 +67,33 @@
   function kind(floor) { return KINDS[PATTERN[floor % 10]]; }
   function isBoss(floor) { return !!kind(floor).boss; }
   // one normal tower monster of this floor, and one monster of the floor as it really is (정예·보스 are tougher)
-  function mobHp(floor) { var at = place(floor), E = dep('economy'); return E.stageMonsterHp(at, at.stage) / (dep('stage-rewards').DUN_CROWD || 3); }
+  function mobHp(floor) {
+    var at = place(floor), E = dep('economy');
+    return E.stageMonsterHp(at, at.stage) / (dep('stage-rewards').DUN_CROWD || 3) * Math.pow(C.hard, Math.max(1, floor));
+  }
   function unitHp(floor) { return mobHp(floor) * kind(floor).hp; }
-  function reward(state, floor) {
-    var at = place(floor), E = dep('economy'), r = {}, k = kind(floor);
-    r.gold = Math.round(E.stageGold({ diff: at.diff, up: state.up }, at.stage, 1) * C.goldKills * (k.elite ? 1.5 : 1));
-    if (k.boss) r.mana = Math.round(dep('training').manaForBoss(Math.min(at.stage, C.span - 1), false) * (1 + at.diff) * (k.big ? 2 : 1));
-    if (floor % C.blessEvery === 0) r.runeStone = Math.round(DATA.runeConf.dungeonPerKill * C.runeKills * (1 + Math.floor(Math.min(at.stage, C.span - 1) / 31) * 0.4) * (1 + at.diff));
+  // 던전 한 판: what this player gets from one run of each dungeon right now (gold·룬석 for runKills monsters, 마력석 from
+  // their 마력의 탑 record, or its first level when there is none). Worked out once and handed to reward() for many floors.
+  function runs(state) {
+    var D = dep('dungeon'), b = (state.dungeon && state.dungeon.best) || {};
+    return { gold: D.dungeonReward(state, 'gold', { kills: C.runKills }).gold || 0,
+      mana: D.dungeonReward(state, 'mana', b.mana || { dmg: D.golemHp(state, 0) }).mana || 0,
+      runeStone: D.dungeonReward(state, 'rune', { kills: C.runKills }).runeStone || 0 };
+  }
+  // a floor's first-clear reward: its kind's share of one run (일반 0.3 · 저주 0.4 · 정예 0.5 판 골드, 보스는 마력석 0.3 판도,
+  // 10층마다 큰 보스는 골드·룬석 한 판 + 마력석 0.6 판)
+  function reward(state, floor, run) {
+    var s = C.share[kind(floor).id], r = {}; run = run || runs(state);
+    Object.keys(s).forEach(function (k) { var v = Math.round(run[k] * s[k]); if (v > 0) r[k] = v; });
     return r;
   }
   function addTo(total, r) { Object.keys(r).forEach(function (k) { total[k] = (total[k] || 0) + r[k]; }); return total; }
   function give(state, r) { state.gold = (state.gold || 0) + (r.gold || 0); state.mana = (state.mana || 0) + (r.mana || 0); state.runeStone = (state.runeStone || 0) + (r.runeStone || 0); }
   // the next floor was won: it becomes the record and pays its first-clear reward (an old floor pays nothing)
-  function clear(state, floor) {
+  function clear(state, floor, run) {
     var t = data(state);
     if (floor !== t.best + 1) return null;
-    var r = reward(state, floor); give(state, r); t.best = floor;
+    var r = reward(state, floor, run); give(state, r); t.best = floor;
     if (floor % C.blessEvery === 0) r.bless = true;
     return r;
   }
@@ -87,12 +105,12 @@
     return f;
   }
   function quickClimb(state, hit) {
-    var from = best(state), to = quickTo(state, hit), total = {}, bless = 0;
-    for (var f = from + 1; f <= to; f++) { var r = clear(state, f); if (!r) break; if (r.bless) bless++; delete r.bless; addTo(total, r); }
+    var from = best(state), to = quickTo(state, hit), total = {}, bless = 0, run = to > from ? runs(state) : null;
+    for (var f = from + 1; f <= to; f++) { var r = clear(state, f, run); if (!r) break; if (r.bless) bless++; delete r.bless; addTo(total, r); }
     return to > from ? { from: from, to: best(state), reward: total, bless: bless } : null;
   }
   function blessPct(state) { return Math.floor(best(state) / C.blessEvery) * C.bless; }
   function towerStats(state) { var b = state && state.tower ? blessPct(state) : 0; return b ? { finalPct: b } : {}; }
   return { name: name, conf: C, kinds: KINDS, data: data, best: best, open: open, place: place, regionOf: regionOf, kind: kind, isBoss: isBoss, monstersOf: monstersOf,
-    mobHp: mobHp, unitHp: unitHp, reward: reward, clear: clear, quickTo: quickTo, quickClimb: quickClimb, blessPct: blessPct, towerStats: towerStats };
+    mobHp: mobHp, unitHp: unitHp, runs: runs, reward: reward, clear: clear, quickTo: quickTo, quickClimb: quickClimb, blessPct: blessPct, towerStats: towerStats };
 });

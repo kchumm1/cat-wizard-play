@@ -610,7 +610,8 @@
   var library = CW.library, libraryRegion = DATA.skyRegions[4];
   var libraryMobs = libraryRegion.monsters.slice(0, 5);
   var rewardDaySeen = state.library.lastRewardDay;
-  function libraryOpen() { return !CW.FRIEND && (CW.dungeonOpen(state) || root.CW_LIBRARY_PREVIEW === true); }
+  // 숨김 스위치는 js/library.js의 hidden 하나 (형 2026-11-25: 당분간 안 보이게). 카드·입장·클릭 모두 이 함수만 거쳐요.
+  function libraryOpen() { return !CW.FRIEND && (root.CW_LIBRARY_PREVIEW === true || !library.hidden && CW.dungeonOpen(state)); }
   function libraryDay() { return library.dayKey(Date.now()); }
   function initLibrarySave(s) {
     if (!s.library || typeof s.library !== 'object' || Array.isArray(s.library)) s.library = {};
