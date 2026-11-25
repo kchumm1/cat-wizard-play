@@ -1150,7 +1150,7 @@
     CW.theme.apply(document, theme, storage);   // 맨 위에서 확인한 storage (사이트 데이터가 막힌 브라우저면 null, 거기서는 localStorage 를 읽기만 해도 오류)
     if (lastTheme && theme !== lastTheme && ui.rewarm) ui.rewarm();
     lastTheme = theme;
-    snd.setEnabled(s.sound); sc.setPixel(s.pixel); if (sc.setShake) sc.setShake(s.shake !== false);
+    snd.setEnabled(s.sound); sc.setPixel(false); /* 픽셀 스타일은 아직 안 만듦 (2026-11-25 형: 도트 빼버려) — 예전에 켠 사람도 3D로 */ if (sc.setShake) sc.setShake(s.shake !== false);
     if (sc.setLandView) sc.setLandView(s.landView);   // 가로 시점 (sideways only; upright unchanged)
     sc.setDamageStyle((s.dmgSize === undefined ? 60 : s.dmgSize) / 100, (s.dmgAlpha === undefined ? 85 : s.dmgAlpha) / 100);
     drawing = CW.drawPlan(s.quality, CW.PHONE, autoQ);

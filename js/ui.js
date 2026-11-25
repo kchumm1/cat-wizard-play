@@ -1883,12 +1883,17 @@
         // 테마 (2026-11-25, js/theme.js): 성운 밤하늘 또는 눈 내리는 겨울, 플레이어마다
         (function () {
           var w = CW.theme.themeOf(st) === 'winter';
-          return '<div class="row"><div class="info"><div class="name">테마</div><div class="desc">성운 밤하늘 또는 눈 내리는 겨울</div></div><div class="sbtns">' +
-            '<button class="btn' + (w ? '' : ' on') + '" aria-pressed="' + !w + '" data-set="themeNeb">성운</button>' +
-            '<button class="btn' + (w ? ' on' : '') + '" aria-pressed="' + w + '" data-set="themeWinter">겨울</button></div></div>';
+          // 2026-11-25 형: 가독성 좋게 보기 좋게 → 글자 버튼 두 개 대신 그림 카드 두 장(고른 쪽에 ✓ 사용 중)
+          var card = function (key, on, name, sub) {
+            return '<button class="thc ' + key + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-set="' + (key === 'neb' ? 'themeNeb' : 'themeWinter') + '">' +
+              '<i class="thimg" aria-hidden="true" style="background-image:url(' + (CW.ART_BASE || 'art/') + (key === 'neb' ? 'ui-stage-bg' : 'w-ui-stage-bg') + '.webp)"></i><span class="thtx"><b>' + name + '</b><small>' + sub + '</small></span>' +
+              (on ? '<em class="thon">✓ 사용 중</em>' : '') + '</button>';
+          };
+          return '<div class="row throw"><div class="info"><div class="name">테마</div><div class="desc">메뉴와 전투 화면의 분위기가 바뀌어요.</div></div>' +
+            '<div class="thpick">' + card('neb', !w, '성운', '별빛 흐르는 밤하늘') + card('win', w, '겨울', '눈 내리는 풍경') + '</div></div>';
         })() +
-        (CW.FRIEND || (root.__cwFit && document.documentElement.classList.contains('under')) ? '<div class="row"><div class="info"><div class="name">하단 메뉴 위치</div><div class="desc">메뉴가 잘리면 ‘안쪽’을 선택해 주세요.</div></div><button class="btn" data-set="bottomFit">' + (bottomInside() ? '안쪽' : '맨 아래') + '</button></div>' : '') +
-        '<div class="row"><div class="info"><div class="name">화면 표현</div><div class="desc">기본 3D 또는 픽셀 스타일</div></div><button class="btn" data-set="pixel">' + (st.pixel ? '픽셀 스타일' : '기본 3D') + '</button></div>' +
+        // 하단 메뉴 위치 줄은 뺌 (2026-11-25 형: 더보기 하단메뉴위치 빼버리고)
+        // 화면 표현(픽셀 스타일) 줄은 뺌 (2026-11-25 형: 도트는 아직 제작 안 됐으니 빼버려) — 설정 값은 main.js 에서 꺼 둠
         '<div class="row"><div class="info"><div class="name">화면 흔들림</div><div class="desc">어지러우면 꺼 주세요.</div></div><button class="btn" data-set="shake">' + (st.shake === false ? '꺼짐' : '켜짐') + '</button></div>' +
         // 가로 시점 (2026-11-17): only while the phone is sideways (upright the screen is as it was)
         (CW.isLand && CW.isLand() ? '<div class="row"><div class="info"><div class="name">가로 화면 시점</div><div class="desc">세로처럼 보면 냥법사 주변에서 몬스터가 사방으로 움직여요.</div></div>' +

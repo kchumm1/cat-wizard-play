@@ -94,6 +94,9 @@
     'html.tw #petpage .ppstage{background:rgba(14,40,90,.3)}',
     'html.tw #petpage .ppeff div,html.tw #petpage .ppskill,html.tw #petpage .ppegg{background:rgba(14,40,90,.42)}',
     'html.tw #noticebox .nzhead{background:linear-gradient(100deg,#d4ecff 0%,#dfe8ff 55%,#b8e4ff 100%)}',
+    // 설정 › 테마 그림 카드: 겨울에선 고른 쪽 테두리·알약을 얼음빛으로
+    'html.tw #sheet#sheet #panel .thpick .thc.on::after{box-shadow:inset 0 0 0 2.5px #bfe9ff,inset 0 0 16px rgba(170,225,255,.4)}',
+    'html.tw #sheet#sheet #panel .thpick .thon{background:linear-gradient(180deg,#ffffff,#c6ecff);color:#0e2e5a}',
 
     // ---- 전투 바닥 서리 (형 "바닥 서리 효과", tools/make-frost-frame.py): 지역 그림 위·캐릭터 아래, 움직이지 않음, 실내는 없음 ----
     'html.tw .stagebg>.wfrost{display:block;position:absolute;inset:0;background:url(art/frost-frame.webp) 50% 50%/100% 100% no-repeat;pointer-events:none}',
