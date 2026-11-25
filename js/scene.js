@@ -654,6 +654,80 @@
       views = { list: list, cur: 0, want: 0, wantT: 0, hold: 0, face: 1, staff: staff };
       hero.userData.body.visible = false;
       viewAuras();
+      frameMeshes();
+    }
+    // ---------- 프레임 애니메이션 (2026-11-25, 형: 캐릭터도 프레임으로 — GPT가 장마다 그린 걷기 8장·마법 6장) ----------
+    // frames = { view index: { walk|cast: { tex, n, cols, rows, cw, ch, ax, stand } } } (js/hero-frames.js + the textures
+    // main.js made, painted with the look's hat and cape colours). Each view gets one flat mesh per act, standing where the
+    // view's picture stands: feet on the ground, the head point (ax) over the middle, as tall as the picture when standing.
+    // While the wizard walks the walk frames step with the distance it covers (the same stride clock as its legs had), and
+    // while a spell pose runs the cast frames follow it; otherwise the jointed picture shows as before. A view or a look
+    // without frames keeps the jointed picture.
+    var heroFrames = null;
+    function setHeroFrames(fr) { heroFrames = fr || null; frameMeshes(); }
+    // how much of a standing picture's height is the figure itself (from the first row drawn wide — helmet, hood, plume — to
+    // the feet): a costume's picture has its staff held up over the head, so the whole picture is taller than the figure,
+    // and the frames (measured the same way by tools/cut-hero-frames.py) would otherwise show it bigger than when it stands.
+    // The plain wizard's views have the staff cut out: the whole picture.
+    function figureFrac(art, plain) {
+      if (plain || !art || !art.canvas) return 1;
+      if (art.figFrac) return art.figFrac;
+      var cv = art.canvas, w = cv.width, h = cv.height, px = cv.getContext('2d').getImageData(0, 0, w, h).data, wid = [], top = 0, mx = 0, y, x;
+      for (y = 0; y < h; y++) { var a = -1, b = -1; for (x = 0; x < w; x++) if (px[(y * w + x) * 4 + 3] > 24) { if (a < 0) a = x; b = x; } wid.push(a < 0 ? 0 : b - a + 1); if (wid[y] > mx) mx = wid[y]; }
+      for (y = 0; y < h; y++) if (wid[y] > 0.3 * mx) { top = y; break; }
+      return (art.figFrac = (h - top) / h);
+    }
+    function frameMeshes() {
+      if (!views) return;
+      views.list.forEach(function (g, i) {
+        var d = g.userData;
+        if (d.fm) Object.keys(d.fm).forEach(function (k) { d.body.parent.remove(d.fm[k].mesh); d.fm[k].mesh.material.dispose(); d.fm[k].mesh.geometry.dispose(); });
+        d.fm = null; d.fmAct = null; d.body.visible = true;
+        var vf = heroFrames && heroFrames[i]; if (!vf) return;
+        d.fm = {};
+        Object.keys(vf).forEach(function (act) {
+          var L = vf[act], aspect = L.cw / L.ch, geo = new T.PlaneGeometry(aspect, 1, 6, 10);
+          geo.translate((0.5 - L.ax) * aspect, 0.5, 0);
+          var n = geo.attributes.position.count;
+          geo.setAttribute('aW0', new T.BufferAttribute(new Float32Array(n * 4), 4)); geo.setAttribute('aW1', new T.BufferAttribute(new Float32Array(n * 4), 4));
+          var mat = bbMaterial(L.tex); mat.uniforms.uArtRole.value = 1; mat.uniforms.uH.value = 1;
+          var mesh = new T.Mesh(geo, mat); mesh.scale.setScalar(HERO_H * figureFrac(d.art, !!views.staff) / L.stand); mesh.rotation.x = -TILT; mesh.renderOrder = 3; mesh.visible = false;
+          d.body.parent.add(mesh);
+          d.fm[act] = { mesh: mesh, L: L, uv0: Float32Array.from(geo.attributes.uv.array), cur: -1 };
+        });
+      });
+    }
+    function showFrame(F, idx) {
+      if (F.cur === idx) return; F.cur = idx;
+      var L = F.L, col = idx % L.cols, row = Math.floor(idx / L.cols), uv = F.mesh.geometry.attributes.uv, a = uv.array, b = F.uv0;
+      for (var k = 0; k < a.length; k += 2) { a[k] = (col + b[k]) / L.cols; a[k + 1] = 1 - (row + 1 - b[k + 1]) / L.rows; }
+      uv.needsUpdate = true;
+    }
+    // which cast frame for where the spell pose is: 1-2 while it winds up, 3-4 the shot, 5 the recoil, 6 back to rest
+    function castFrame(n) {
+      var P = pose.P, t = pose.t, a = pose.a, hold = P.hold || 0, k;
+      if (t < a) k = t / a < 0.5 ? 0 : 1;
+      else { var u = (t - a) / (hold + 0.6); k = u < 0.12 ? 2 : u < 0.32 ? 3 : u < 0.58 ? 4 : 5; }
+      return Math.min(n - 1, Math.round(k * (n - 1) / 5));
+    }
+    // returns the act shown (or null); called by viewsTick after the view and its uniforms are set
+    function framesTick(g, d, u, hd) {
+      if (!d.fm) return null;
+      var act = null, idx = 0;
+      if (pose && d.fm.cast) { act = 'cast'; idx = castFrame(d.fm.cast.L.n); }
+      else if (d.fm.walk && hd.anim.walk > 0.3 && HB.y <= 0.08) { act = 'walk'; var ph = hd.anim.ph / (Math.PI * 2); idx = Math.floor((ph - Math.floor(ph)) * d.fm.walk.L.n) % d.fm.walk.L.n; }
+      d.body.visible = !act;
+      d.fmAct = act ? { F: d.fm[act], idx: idx } : null;
+      Object.keys(d.fm).forEach(function (k) {
+        var F = d.fm[k], on = k === act; F.mesh.visible = on; if (!on) return;
+        showFrame(F, idx);
+        var fu = F.mesh.material.uniforms;
+        // the drawn frames carry their own swing and bob: only a little of the jelly lean is kept
+        fu.uBend.value = u.uBend.value * 0.3; fu.uScale.value.copy(u.uScale.value);
+        fu.uLight.value.copy(u.uLight.value); fu.uFlash.value = u.uFlash.value; fu.uFlashCol.value.copy(u.uFlashCol.value);
+        fu.uFreeze.value = u.uFreeze.value; fu.uOpacity.value = u.uOpacity.value; fu.uDissolve.value = u.uDissolve.value; fu.uTint.value.copy(u.uTint.value);
+      });
+      return act;
     }
     // ---------- a costume's drawn moment (js/doom-costumes.js, 2026-11-23) ----------
     // Up to two flat pictures stand in for the wizard — same spot, size and facing, and they squash with it — so one can
@@ -743,6 +817,9 @@
       u.uFreeze.value = hu.uFreeze.value; u.uOpacity.value = hu.uOpacity.value; u.uDissolve.value = hu.uDissolve.value; u.uTint.value.copy(hu.uTint.value);
       animRig(g, dt, arms, true);
       g.position.copy(hero.position);
+      // drawn frames (프레임 애니메이션): the walk frames rise and sink by themselves, so the stride bounce is taken back out
+      var fAct = framesTick(g, d, u, hd);
+      if (fAct === 'walk' && HB.y <= 0.01) g.position.y -= Math.abs(Math.sin(hd.anim.ph)) * (0.025 + 0.035 * Math.min(1, HB.sp / 2.2)) * hd.anim.walk;
       var st = d.staff; if (!st) return;
       var gr = d.rig.armL.grip, c = d.crop, p = pointOn(g, (gr[0] - c.x0) / c.cw, 1 - (gr[1] - c.y0) / c.ch);
       var s = VIEW_STAFF[V.cur] * V.face;
@@ -752,6 +829,13 @@
     }
     var tipV = new T.Vector3();
     function viewTip() {
+      // 프레임 애니메이션: while a drawn frame shows, spells leave from the star of the staff drawn in it (tips, js/hero-frames.js)
+      var fa = views.list[views.cur].userData.fmAct, ft = fa && fa.F.L.tips && fa.F.L.tips[fa.idx];
+      if (ft) {
+        var FL = fa.F.L, fm = fa.F.mesh, fu = fm.material.uniforms, asp = FL.cw / FL.ch;
+        fm.updateMatrixWorld(true);
+        return fm.localToWorld(tipV.set((ft[0] - FL.ax) * asp * fu.uScale.value.x, ft[1] * fu.uScale.value.y, 0.02)).clone();
+      }
       if (!views.staff) { var vg = views.list[views.cur], vd = vg.userData, q = vd.rig.armL.tip, c = vd.crop, p = pointOn(vg, (q[0] - c.x0) / c.cw, 1 - (q[1] - c.y0) / c.ch), o = bbPt(p.x, p.y, 0.1); return new T.Vector3(heroGroup.position.x + vg.position.x + o.x, heroGroup.position.y + vg.position.y + o.y, heroGroup.position.z + vg.position.z + o.z); }
       var st = views.list[views.cur].userData.staff, S = views.staff;
       st.updateMatrixWorld(true); return tipV.set(S.tx - S.gx, S.ty - S.gy, 0).applyMatrix4(st.matrixWorld).clone();
@@ -1030,13 +1114,24 @@
       if (!mob.boss && p >= 1.6 && mob.y <= 0.01) mob.vy = Math.max(mob.vy, 2 + p);
       if (crit) shake(0.18 * p);
     }
+    // 쓰러지기 (2026-11-25, 형: 몬스터 죽을 때 그림처럼 사라지는 거 자연스럽게 → 더 자연스럽게). It used to fly off spinning like
+    // a flat card and burn away at the edges; lying flat on its side still looked like a cardboard cut-out. Now it is a faint:
+    // the hit jolts it (a white flash, a jump of the body, a little shove back from the hero), it shudders, its strength goes —
+    // knees give, the body sags and slumps a little to the side away from the hit, head and arms hang — and while the sparkles
+    // of js/fx.js rise from it the body goes soft and see-through, sinking into the ground. A boss trembles on its knees first,
+    // then slumps with a thud. A flyer drops from where it was.
     function killMob(mob, edge, big) {
       if (!mob.alive) return;
-      mob.alive = false; mobs.splice(mobs.indexOf(mob), 1); mob.deadT = 0; mob.deadLife = big ? 1.15 : 0.85;
-      var d = mob.group.userData; d.u.uEdge.value.setHex(edge || 0xffd84a); d.sq.v += 3; d.bend.v += 2;
+      mob.alive = false; mobs.splice(mobs.indexOf(mob), 1); mob.deadT = 0; mob.deadLife = big ? 1.6 : 0.9;
+      var d = mob.group.userData; d.u.uEdge.value.setHex(edge || 0xffd84a); d.sq.v += big ? 1.5 : 2.6;
       if (d.glow) d.glow.visible = false;
-      // knocked flying away from the hero, spinning
-      mob.fvx = big ? 0.3 : rr(1.6, 3.6); mob.fvy = big ? 1.2 : rr(3, 5.5); mob.fspin = big ? 0 : (Math.random() < 0.5 ? -1 : 1) * rr(5, 11); mob.bounced = false;
+      var dx = mob.x - HB.x, dz = mob.z - HB.z, dl = Math.sqrt(dx * dx + dz * dz) || 1, push = big ? 0.2 : rr(0.7, 1.0);
+      mob.fvx = dx / dl * push; mob.fvz = dz / dl * push;
+      mob.y = Math.max(0, mob.group.position.y); mob.fvy = big ? 0 : mob.y > 0.1 ? 0.3 : rr(0.9, 1.3);
+      var away = scrX(dx, dz) >= 0 ? 1 : -1;
+      mob.away = away; mob.lean = -away * (big ? rr(0.3, 0.38) : rr(0.36, 0.5));
+      mob.slumpAt = big ? 0.4 : 0.1; mob.slumpDur = big ? 0.45 : 0.28; mob.fadeAt = big ? 0.85 : 0.3;
+      mob.rot0 = mob.group.rotation.z; mob.bounced = false; mob.big = !!big; mob.thud = false;
       dying.push(mob);
       if (hooks.die) hooks.die(mob, mobPos(mob), big);
     }
@@ -1654,15 +1749,28 @@
         if (d.glow) d.glow.material.opacity = (m.regionBoss ? 0.6 : 0.35) + Math.sin(time * 3) * 0.15;
       });
       for (var i = dying.length - 1; i >= 0; i--) {
-        var m = dying[i], g = m.group, dd = g.userData; m.deadT += dt; var k2 = m.deadT / m.deadLife;
-        driveBillboard(g, dt, { bend: 0, sq: 0 }, dd.face);
-        if (!dd.puppet) animRig(g, dt, { hurt: 1, cheer: 0.6, air: true });
-        m.x += m.fvx * dt; m.y += m.fvy * dt; m.fvy -= 15 * dt;
-        if (m.y < 0) { m.y = 0; if (!m.bounced && m.fvy < -2) { m.bounced = true; m.fvy = -m.fvy * 0.35; m.fvx *= 0.5; m.fspin *= 0.4; } else m.fvy = 0; }
-        g.position.set(m.x, m.y, m.z); g.rotation.z += m.fspin * dt;
-        dd.u.uDissolve.value = Math.min(1.05, Math.max(0, k2 - 0.15) * 1.25);
-        dd.u.uFlash.value = Math.max(0, 0.6 - k2 * 2);
-        dd.shadow.position.y = 0.012 - m.y; dd.shadow.material.opacity = 0.2 * (1 - k2);
+        var m = dying[i], g = m.group, dd = g.userData; m.deadT += dt; var k2 = m.deadT / m.deadLife, t = m.deadT;
+        var sp = Math.max(0, Math.min(1, (t - m.slumpAt) / m.slumpDur)), slump = 1 - Math.pow(1 - sp, 3), done = sp >= 1;
+        var fq = Math.max(0, Math.min(1, (t - m.fadeAt) / (m.deadLife - m.fadeAt))), fade = fq * fq * (3 - 2 * fq);
+        // the jolt, then the strength goes: knees give, the body sags toward the side it slumps to, head and arms hang
+        var rest = t < m.slumpAt ? (m.big ? { bend: Math.sin(t * 40) * 0.05, sq: -0.2 } : { bend: m.away * 0.16, sq: 0.06 })
+          : { bend: m.lean * 0.45 * slump, sq: done ? -0.26 : -0.2 * slump };
+        driveBillboard(g, dt, rest, dd.face);
+        if (!dd.puppet) animRig(g, dt, { hurt: 1, cheer: 0, air: m.y > 0.05, walk: 0 });
+        // a step back, not a flight: the shove dies away over the ground
+        var fr = Math.max(0, 1 - dt * 7); m.fvx *= fr; m.fvz *= fr;
+        m.x += m.fvx * dt; m.z += m.fvz * dt; m.y += m.fvy * dt; m.fvy -= 15 * dt;
+        if (m.y < 0) { m.y = 0; if (!m.bounced && m.fvy < -1.5) { m.bounced = true; m.fvy = -m.fvy * 0.2; } else m.fvy = 0; }
+        // a shudder right after the hit (a boss trembles on its knees), then it slumps over a little, easing to a stop
+        var shud = t < m.slumpAt ? Math.sin(t * (m.big ? 46 : 58)) * (m.big ? 0.045 : 0.05) * (1 - t / m.slumpAt) : 0;
+        g.position.set(m.x, m.y, m.z); g.rotation.z = m.rot0 + m.lean * slump + shud;
+        if (done && !m.thud) { m.thud = true; dd.sq.v -= m.big ? 1.4 : 0.8; if (m.big) shake(0.12); }
+        // fading while the sparkles rise: soft and see-through, sinking a little into the ground (no burnt edge)
+        g.scale.set(1 + slump * 0.05 + fade * 0.05, 1 - slump * 0.12 - fade * 0.2, 1);
+        dd.u.uDissolve.value = 0;
+        dd.u.uOpacity.value = 1 - fade;
+        dd.u.uFlash.value = Math.max(0, 0.8 - t * 6);
+        dd.shadow.position.y = 0.012 - m.y; dd.shadow.material.opacity = 0.2 * (1 - fade);
         if (k2 >= 1) { mobGroup.remove(g); disposeGroup(g); dying.splice(i, 1); }
       }
       if (minions) minions.update(dt);
@@ -1816,7 +1924,7 @@
     size();
     return {
       THREE: T, scene: scene, camera: camera, renderer: renderer, fxGroup: fxGroup, desertLight: desertLight, glow: GLOW, hooks: hooks,
-      size: size, setRegion: setRegion, setHero: setHero, setHeroTexture: setHeroTexture, setHeroViews: setHeroViews, setCostumeFx: setCostumeFx, heroTip: heroTip, heroActPic: heroActPic, heroPart: function (u, v, staff, toward) { return hero ? heroPart(u, v, staff, toward) : heroCenter(); }, heroFront: function (sec) { frontT = Math.max(0, sec || 0); if (hero) hero.userData.sq.v -= 0.5; }, heroShadow: function (on) { if (hero) hero.userData.shadow.visible = !!on; }, heroPaw: heroPaw, heroCenter: heroCenter, heroPose: heroPose, heroBeatAt: function () { return beatT; }, heroGlow: heroGlowPulse, ghost: ghost,
+      size: size, setRegion: setRegion, setHero: setHero, setHeroTexture: setHeroTexture, setHeroViews: setHeroViews, setHeroFrames: setHeroFrames, setCostumeFx: setCostumeFx, heroTip: heroTip, heroActPic: heroActPic, heroPart: function (u, v, staff, toward) { return hero ? heroPart(u, v, staff, toward) : heroCenter(); }, heroFront: function (sec) { frontT = Math.max(0, sec || 0); if (hero) hero.userData.sq.v -= 0.5; }, heroShadow: function (on) { if (hero) hero.userData.shadow.visible = !!on; }, heroPaw: heroPaw, heroCenter: heroCenter, heroPose: heroPose, heroBeatAt: function () { return beatT; }, heroGlow: heroGlowPulse, ghost: ghost,
       castPulse: function () { heroGlow = 1; }, heroState: function () { return HB; }, heroFaceTo: heroFaceTo, heroCheer: heroCheer, setViewShift: setViewShift, setLandView: setLandView, landView: function () { return landView; },
       minions: minions, spawnMob: spawnMob, hitMob: hitMob, killMob: killMob, dismissMob: dismissMob, clearMobs: clearMobs, mobs: function () { return mobs; }, mobPos: mobPos, mobTop: mobTop, inView: inView,
       setTierAura: setTierAura, setDamageHidden: setDamageHidden, damageText: damageText, screenPos: screenPos, flash: flash, dim: dim, shake: shake, punch: camPunch, light: light,

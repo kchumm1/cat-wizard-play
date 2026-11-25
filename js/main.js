@@ -98,6 +98,32 @@
     var g = at(A.p), t = at(A.tip);
     return { tex: mk(c), w: bw / H, h: bh / H, gx: g[0], gy: g[1], tx: t[0], ty: t[1] };
   }
+  // 프레임 애니메이션 (2026-11-25, js/hero-frames.js): the worn look's drawn walk and cast frames, fetched the first time the
+  // look is worn (only that look's — all 29 would be tens of MB) and, for the plain wizard, painted with the hat and cape
+  // colours like its pictures. A look without frames keeps its jointed pictures.
+  var frameImgs = {};
+  function frameImg(pic) {
+    return frameImgs[pic] || (frameImgs[pic] = new Promise(function (res) {
+      var im = new Image(); im.onload = function () { res(im); }; im.onerror = function () { delete frameImgs[pic]; res(null); };
+      im.src = (CW.ART_BASE || 'art/') + pic + '.webp';
+    }));
+  }
+  function applyFrames(id, l, key, mk) {
+    var F = id && CW.HERO_FRAMES && CW.HERO_FRAMES[id];
+    if (!F) { sc.setHeroFrames(null); return; }
+    var jobs = [];
+    Object.keys(F).forEach(function (v) { Object.keys(F[v]).forEach(function (act) { jobs.push(frameImg(F[v][act].pic).then(function (im) { return { v: v, act: act, im: im }; })); }); });
+    Promise.all(jobs).then(function (list) {
+      if (lastLook !== key) return;
+      var out = {};
+      list.forEach(function (j) {
+        if (!j.im) return;
+        var L = F[j.v][j.act], cv = id === 'hero' ? CW.paintFrames(j.im, L, l) : j.im;
+        (out[j.v] = out[j.v] || {})[j.act] = Object.assign({ tex: mk(cv) }, L);
+      });
+      sc.setHeroFrames(out);
+    }).catch(noteError);
+  }
   function applyLook(silent) {
     var l = CW.lookOf(state), cl = DOOM_PREVIEW || CW.costumeLook(state), key = CW.lookKey(l) + '|' + cl.id + '|' + (art[cl.art] ? cl.art : 'hero') + '|' + (VIEW_SETS[cl.art] || []).filter(function (id) { return art[id]; }).length;
     if (key === lastLook || !art.hero) return;
@@ -127,6 +153,7 @@
     useViews=useViews && vset.every(function (id) { if (!art[id]) needArt(id); return art[id]; });
     if (!useViews) sc.setHeroViews(null);
     else if (base.id !== 'hero') sc.setHeroViews(vset.map(function (id) { return art[id]; }), vset.map(function (id) { return art[id].tex; }), null);
+    if (sc.setHeroFrames) applyFrames(useViews ? base.id : null, l, key, mk);
     if (cl.id !== lastCos) { lastCos = cl.id; sc.setCostumeFx(cl.fx); fx.setCostume(cl.fx); }
     if (DOOM_PREVIEW && !doomLoop) doomLoop = setInterval(function () { if (!document.hidden) fx.costumeAct(DOOM_PREVIEW.act); }, 5200);
     if (!first && !silent) { fx.levelUp(state.tier, CW.staffColor(l), true); ui.toast('캐릭터 모습이 변경됐어요.'); }

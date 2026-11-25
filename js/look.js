@@ -155,5 +155,29 @@
     g.globalCompositeOperation = 'source-over';
     return c;
   }
-  return { lookOf: lookOf, lookKey: lookKey, paintHero: paintHero, staffColor: staffColor, LOOK_GRADE: GRADE, costumePreview: costumePreview };
+  // 프레임 애니메이션 (2026-11-25): the plain wizard's drawn frames (an atlas, js/hero-frames.js layout L) get the same hat
+  // and cape colours as its pictures. In every cell the purple above the middle of the standing figure is the hat, below it
+  // the cape (the face lies between them in every view).
+  function paintFrames(img, L, look) {
+    var W = img.naturalWidth || img.width, H = img.naturalHeight || img.height;
+    var c = document.createElement('canvas'); c.width = W; c.height = H; var g = c.getContext('2d'); g.drawImage(img, 0, 0);
+    var OUT = look.outfit;
+    if (!OUT && !(look.hat >= 0 || look.robe >= 0)) return c;
+    var px = g.getImageData(0, 0, W, H), d = px.data, ch = H / L.rows;
+    for (var y = 0; y < H; y++) {
+      var fromFoot = (ch - (y % ch)) / (ch * L.stand), part = OUT ? 'all' : fromFoot > 0.47 ? 'hat' : 'robe';
+      if (!OUT && look[part] < 0) continue;
+      var T = OUT || GRADE[look[part]], shine = OUT ? 1.04 : look[part] >= 4 ? 1.12 : 1;
+      for (var x = 0; x < W; x++) {
+        var o = (y * W + x) * 4; if (d[o + 3] < 20) continue;
+        var hsv = rgb2hsv(d[o], d[o + 1], d[o + 2]);
+        if (hsv[0] < 250 || hsv[0] > 325 || hsv[1] < 0.22 || hsv[2] < 0.12) continue;
+        var out = hsv2rgb(T.h, Math.min(1, hsv[1] * (T.s / 0.6)), Math.min(1, hsv[2] * shine * (T.v || 1)));
+        d[o] = out[0]; d[o + 1] = out[1]; d[o + 2] = out[2];
+      }
+    }
+    g.putImageData(px, 0, 0);
+    return c;
+  }
+  return { lookOf: lookOf, lookKey: lookKey, paintHero: paintHero, paintFrames: paintFrames, staffColor: staffColor, LOOK_GRADE: GRADE, costumePreview: costumePreview };
 });
