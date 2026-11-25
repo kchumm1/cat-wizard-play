@@ -17,6 +17,7 @@
     rune:[['exmob-tablet','봉인 석판 정령','hop'],['exmob-fox','문양 꼬리 여우','walk']]
   };
   const ids = Object.keys(places);
+  const MAP_SHOWN = false;   // 유적 보물 지도 (2026-11-25 잠깐 뺌, 형: 무한의 탑 대신) — true 로 바꾸고 js/ui.js expeditionPanel 칸을 되살리면 다시 보임
   function journal(state) {
     if (!state.dungeon) state.dungeon = {day:'',used:{},best:{},bonus:{}};
     return state.dungeon.explore || (state.dungeon.explore = {progress:{}, cleared:{}, maps:0, wearing:false, target:''});
@@ -55,7 +56,8 @@
       if(id==='rune') { const r=target(state);runes.runeAdd(state,r.id,0,true);note=r.name+' 획득'; }
       else note=t.label;
       if(id==='gold'||id==='mana') {const add=Math.ceil((reward[id]||0)*.25);reward[id]=(reward[id]||0)+add;}
-      if(t.round===j.maps+1)note+=' · 지도 조각 발견';
+      // 보물 지도 칸을 잠깐 뺀 동안(2026-11-25)은 「지도 조각 발견」도 말하지 않음 — 조각 기록은 그대로 쌓임
+      if(t.round===j.maps+1 && MAP_SHOWN)note+=' · 지도 조각 발견';
     }
     reward.discovery=note;
     return reward;

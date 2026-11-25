@@ -162,7 +162,17 @@
     m125: ['분홍 바다돼지', 'waddle', 'quadF'], m126: ['녹슨왕관 까마귀', 'hop', 'birdL'], m127: ['은빛 날치', 'float', 'fish'], m128: ['구름방울 친칠라', 'hop', 'sitTail'],
     m129: ['유성가루 두루미', 'walk', 'birdL'], m130: ['구름뿔 들소', 'stomp', 'quadF'], m131: ['바늘실 봉제인형', 'walk', 'stand'], m132: ['마력먹는 책벌레', 'hop', 'cobra'],
     m133: ['밀랍등 아기와이번', 'float', 'fly'], m134: ['거울껍질 앵무조개', 'float', 'octo'], m135: ['유리열쇠 정령', 'float', 'ghost'], m136: ['붉은실 사마귀', 'skitter', 'spider'],
-    m137: ['자주수정 해삼', 'waddle', 'quadF'], m138: ['달걀갑옷 오리너구리', 'waddle', 'quadL'], m139: ['오로라 스컹크', 'walk', 'quadL'], m140: ['종소리 두꺼비', 'hop', 'quadF']
+    m137: ['자주수정 해삼', 'waddle', 'quadF'], m138: ['달걀갑옷 오리너구리', 'waddle', 'quadL'], m139: ['오로라 스컹크', 'walk', 'quadL'], m140: ['종소리 두꺼비', 'hop', 'quadF'],
+    // 무한의 탑 (2026-11-25, GPT 시트 art-src/ai-review/2026-11-25-tower C1·C2, tools/cut-monsters.py): 일반 10 · 정예 5 · 저주 5.
+    // Their bones are measured on each picture (js/rig-bodies.js TOWER), like the pets'.
+    tn01: ['돌벽돌 슬라임', 'hop', null], tn02: ['횃불 도깨비불', 'float', 'ghost'], tn03: ['책갈피 박쥐', 'float', 'fly'],
+    tn04: ['열쇠 쥐', 'walk', 'standTailL'], tn05: ['계단 달팽이', 'waddle', 'snail'], tn06: ['갑옷 고양이 병사', 'walk', 'stand'],
+    tn07: ['촛불 유령', 'float', 'ghost'], tn08: ['모래시계 꼬마 악마', 'hop', 'flyArms'], tn09: ['마법진 거미', 'skitter', 'spider'],
+    tn10: ['눈알 램프', 'float', 'jelly'],
+    te01: ['방패 골렘 기사', 'stomp', 'stand'], te02: ['갑옷 늑대 창병', 'walk', 'standTailR'], te03: ['마도서 갑옷 곰', 'stomp', 'stand'],
+    te04: ['쇠사슬 수문장 고양이', 'stomp', 'sitTail'], te05: ['수정 등껍질 거북', 'stomp', 'quadF'],
+    tc01: ['저주 인형', 'waddle', 'stand'], tc02: ['보랏빛 해골 고양이', 'hop', 'sitTail'], tc03: ['사슬 유령', 'float', 'ghost'],
+    tc04: ['깨진 모래시계 마녀 모자', 'float', 'ghost'], tc05: ['독 안개 슬라임', 'hop', null]
   };
   // bosses: name, body, flies?
   var BOSSES = {
@@ -245,7 +255,12 @@
     b137: ['왕관 슬라임 국왕', 'stand', 0, 'waddle'],
     b138: ['구름갈기 사자왕', 'quadF', 0, 'stomp'],
     b139: ['여섯 날개 천사 고양이', 'stand', 1, 'float'],
-    b140: ['황금 용', 'dragonL', 0, 'stomp']
+    b140: ['황금 용', 'dragonL', 0, 'stomp'],
+    // 무한의 탑 (2026-11-25, GPT 시트 C3): 보스 5 (5·15·25…층) · 큰 보스 5 (10·20·30…층)
+    tb01: ['탑지기 거대 골렘', 'stand', 0, 'stomp'], tb02: ['화염 도깨비 왕', 'stand', 0, 'walk'], tb03: ['부엉이 대마법사', 'stand', 0, 'walk'],
+    tb04: ['쌍검 기사 고양이', 'stand', 0, 'walk'], tb05: ['시간 거미 여왕', 'spider', 0, 'skitter'],
+    tg01: ['별을 삼킨 탑의 용', 'fly', 1, 'float'], tg02: ['그림자 마왕 고양이', 'sitTail', 0, 'float'], tg03: ['달빛 날개 대천사 기사', 'stand', 1, 'float'],
+    tg04: ['수정 몸 고대 거인', 'stand', 0, 'stomp'], tg05: ['천 개의 눈 문지기', 'octo', 0, 'float']
   };
   var info = {};
   Object.keys(MOBS).forEach(function (id) { var m = MOBS[id]; info[id] = { name: m[0], gait: m[1], body: m[2] }; });

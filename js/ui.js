@@ -344,15 +344,29 @@
       var estimate=best && CW.dungeonReward(s,id,best);var expected=estimate && (estimate.gold || estimate.gems || estimate.mana || estimate.runeStone || 0);
       var row=(best?'<small class="ex-est">소탕 예상 · '+site.reward.split(' · ')[0]+' +'+(id==='gold'?fmtG(expected):fmt(expected))+'</small>':'')+'<div class="ex-actions">'+btn('data-dgo="'+id+'"','입장',!open||!left||busy,'ex-primary')+btn('data-dsw="'+id+'"','소탕',!open||!left||!best||busy)+'</div>';
       var pick=id==='rune' && open?btn('data-ex-runes="1"','새길 문양 · '+exp.target(s).name,busy,'ex-pick'):'';
-      var mapLine=j.maps?'완성 보물 · 원하는 전리품':'첫 완성 보물 · 유적 탐험가 냥이';
-      var mapBtn=pieces.length===4?btn('data-ex-chest="1"','보물방 열기',busy,'ex-primary'):'';
-      var dots=exp.ids.map(function(k){return '<span class="'+(pieces.includes(k)?'found':'')+'" title="'+labels[k]+'">'+expeditionIcon(k)+'</span>';}).join('');
+      // 유적 보물 지도 칸은 잠깐 뺌 (2026-11-25, 형: 보물 지도 잠깐 빼고 무한의 탑) — 그 자리에 무한의 탑 카드.
+      // 조각·보물방 기록(js/expeditions.js)은 그대로 쌓여서 다시 켜면 이어짐
       return '<section class="expedition"><nav class="ex-nav" aria-label="탐험할 던전">'+nav+'</nav><article class="ex-card ex-'+id+'">'+
         '<div class="ex-art"><img src="'+A+'expedition-'+id+'.webp" alt="'+site.goal+'" draggable="false"><div><small>'+site.theme+'</small><h3>'+def.name+'</h3></div></div>'+
         '<div class="ex-copy"><div class="ex-meta"><span>'+site.reward+'</span><span>'+ticket+'</span></div><p>'+site.story+'</p>'+
         '<div class="ex-goal"><strong>'+t.round+'차 탐험 · '+t.label+'</strong><b>'+t.points+'%</b></div><progress aria-label="탐험 진척" max="100" value="'+t.points+'"></progress>'+pick+row+'</div></article>'+
-        '<section class="ex-map"><div><strong>유적 보물 지도</strong><p>'+mapLine+'</p></div><div class="ex-pieces" aria-label="지도 조각 '+pieces.length+'개">'+dots+'</div>'+mapBtn+
-        (j.maps?btn('data-ex-wear="1"',j.wearing?'탐험복 벗기':'탐험복 입기',busy):'')+'</section></section>';
+        towerCard(btn)+'</section>';
+    }
+    // 무한의 탑 (js/tower.js, 2026-11-25): 입장권 없이 한 층씩, 처음 깬 층만 보상, 10층마다 탑의 가호
+    function towerCard(btn) {
+      var T=G.towerStatus && G.towerStatus(); if(!T) return '';
+      var A=CW.ART_BASE || 'art/', next=T.best+1, k=CW.tower.kind(next);
+      var line=(T.best?'최고 '+T.best+'층':'아직 기록 없음')+(T.bless?' · 탑의 가호 모든 피해 +'+Math.round(T.bless*100)+'%':'');
+      // the floors ahead: what kind each one is (형 2026-11-25: 일반·정예·저주·보스, 10층마다 큰 보스)
+      var ahead=[0,1,2,3,4].map(function(i){var f=next+i,kk=CW.tower.kind(f);return '<span class="tw-fl tw-'+kk.id+(i?'':' now')+'"><b>'+f+'층</b>'+kk.label+'</span>';}).join('');
+      // 형 (2026-11-25): 도전 버튼 밑 「골드」 글자 빼, 「빠른 등반」은 무슨 말인지 모르겠어 → 「N층까지 바로 깨기」
+      // 탑 그림 (2026-11-25, GPT A1 카드·A2 아이콘): the tower over the card's top, its icon and name on it
+      return '<section class="ex-map ex-tower"><div class="tw-hero"><img class="tw-bg" src="'+A+'tower-card.webp" alt="무한의 탑" draggable="false">'+
+        '<img class="tw-ic" src="'+A+'tower-icon.webp" alt="" draggable="false"><div class="tw-title"><small>끝없는 마법 탑</small><strong>무한의 탑</strong><span>'+line+'</span></div></div>'+
+        '<p class="tw-rule">시간 안에 몬스터를 모두 잡으면 다음 층 · 처음 깬 층만 보상</p>'+
+        '<div class="tw-ahead" aria-label="다음 층들">'+ahead+'</div><p class="tw-next">'+next+'층 '+k.label+' · '+k.help+' · '+k.sec+'초</p>'+
+        '<div class="ex-tower-btns">'+(T.quick>0?btn('data-tower-quick="1"','<b>'+(T.best+T.quick)+'층까지 바로 깨기</b>',T.busy):'')+
+        btn('data-tower="1"','<b>'+next+'층 도전</b>',T.busy,'ex-primary')+'</div></section>';
     }
     function dungeonPanel() {
       return expeditionPanel() + libraryDungeonCard();
@@ -383,6 +397,19 @@
         }
         el.children[1].textContent=t.label;el.children[2].textContent=Math.ceil(Math.max(0,run.t))+'초';
         el.children[3].value=t.points;return;
+      }
+      // 무한의 탑: built once so the 나가기 button stays under the finger; only the words change
+      if (run.tower) {
+        if (!el.classList.contains('tower-hud')) {
+          el.className = 'on tower-hud'; el.dataset.site = 'tower';
+          el.innerHTML = '<img class="tw-hic" alt="" src="' + (CW.ART_BASE || 'art/') + 'tower-icon.webp"><b></b><span></span><span></span><button type="button" class="tw-quit">나가기</button>';
+          el.lastChild.addEventListener('click', function () { if (G.dunState() && G.dunState().tower) G.leaveTower(); });
+        }
+        var kc = 'on tower-hud twk-' + run.towerKind; if (el.className !== kc) el.className = kc;
+        el.children[1].textContent = run.name;
+        el.children[2].textContent = run.pause > 0 ? '돌파!' : Math.max(0, run.t).toFixed(1) + '초';
+        el.children[3].textContent = '처치 ' + Math.min(run.kills, run.goal) + ' / ' + run.goal;
+        return;
       }
       el.className = 'on';
       el.innerHTML = '<b>' + run.name + '</b><span>' + Math.max(0, run.t).toFixed(1) + '초</span><span>' + (run.kind === 'mana' ? '피해 ' + fmt(run.dmg) + ' · 골렘 Lv.' + run.level : '처치 ' + run.kills + (run.goal ? ' / ' + run.goal : '')) + '</span>';
@@ -2586,6 +2613,17 @@
         modal('<h2>유적 보물방</h2><p>'+(first?'네 조각이 한 장의 지도가 됐어요. 탐험가의 옷을 발견했어요!':'이번에 가져갈 전리품을 하나 골라요.')+'</p>',
           (first?[{label:'탐험복 받기',pri:true,fn:function(){claimExpedition('');}}]:[['gold','골드'],['mana','마력석'],['rune','룬석']].map(function(o){return {label:o[1],fn:function(){claimExpedition(o[0]);}};})).concat([{label:'나중에'}]));
       }
+      else if (d.tower) { var rt = G.enterTower(); if (rt === 'busy') toast('진행 중인 보스전이나 던전을 먼저 마쳐 주세요.'); }
+      else if (d.towerQuick) {
+        var q = G.towerQuick();
+        if (!q) toast('지금은 빠르게 오를 층이 없어요.');
+        else {
+          var qr = q.reward, parts = [];
+          if (qr.gold) parts.push('골드 +' + fmtG(qr.gold)); if (qr.mana) parts.push('마력석 +' + fmt(qr.mana)); if (qr.runeStone) parts.push('룬석 +' + fmt(qr.runeStone));
+          toast(q.from + 1 + '층 → ' + q.to + '층 등반 · ' + parts.join(' · ') + (q.bless ? ' · 탑의 가호 모든 피해 +' + Math.round(CW.tower.blessPct(G.state) * 100) + '%' : ''));
+        }
+        renderPanel(true); hud();
+      }
       else if (d.dgo) { var r3 = G.dungeon(d.dgo); if (r3 === 'busy') toast('진행 중인 보스전이나 던전을 먼저 마쳐 주세요.'); else if (r3 === 'ticket') toast('오늘 입장권을 모두 사용했어요.'); }
       else if (d.dsw) { var r4 = G.sweep(d.dsw); if (!r4) toast('소탕할 수 없어요. 입장권과 클리어 기록을 확인해 주세요.'); else toast((r4.discovery ? r4.discovery+' · ' : '')+'소탕 완료 · ' + (r4.gold ? '골드 +' + fmtG(r4.gold) : r4.gems ? '다이아 +' + fmt(r4.gems) : r4.runeStone ? '룬석 +' + fmt(r4.runeStone) + (r4.got && r4.got.length ? ' · 룬 ' + r4.got.length + '개' : '') + (r4.overflow ? ' · 가방 초과 보상 룬석 +' + fmt(r4.overflow) : '') : '마력석 +' + fmt(r4.mana))); renderPanel(true); hud(); }
       else if (d.jump !== undefined) { moreSub = +d.jump; tierAnim = moreSub === 0; renderTop(); }
@@ -3164,7 +3202,7 @@
       $('gainlog').innerHTML = logLines.map(function (l, i) { return '<div style="opacity:' + Math.max(0.4, 1 - i * 0.15) + '">' + l + '</div>'; }).join('');
     }
     // ---------- stat window (2026-11-14): tap the profile; final stats in groups, each opens to where it comes from; titles ----------
-    var SRC_KO = { growth: '성장(초월)', gear: '장비', relics: '유물', costume: '코스튬', divine: '삼신기', skills: '스킬 모음', training: '훈련', runes: '룬', sigil: '신성력', alchemy: '물약', titles: '타이틀', dex: '도감' };
+    var SRC_KO = { growth: '성장(초월)', gear: '장비', relics: '유물', costume: '코스튬', divine: '삼신기', skills: '스킬 모음', training: '훈련', runes: '룬', sigil: '신성력', alchemy: '물약', titles: '타이틀', dex: '도감', tower: '무한의 탑' };
     // 냥법사 기록 (2026-11-15, the user's picture art-src/prof/mockup.webp): a full page. The top is the picture itself
     // (art/prof-top.webp, the example name and numbers wiped) with the real ones written in the same places; under it the
     // boxes of the picture: 공격 효과 (open), 크리티컬, 특수 효과 and 타이틀. A line opens to where its bonus comes from.

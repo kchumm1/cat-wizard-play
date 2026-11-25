@@ -311,6 +311,7 @@
     sc.killMob(mob, skill.color, mob.boss);
     var pos = sc.mobPos(mob);
     if (dun && dun.library) { dun.kills++; dun.magic.death(mob); return; }
+    if (dun && dun.tower) { dun.kills++; fx.coinPop(pos, mob.boss ? 4 : 2); snd.play('kill'); return; }
     dexKill(mob.id);
     if (mob.boss && boss && boss.mob === mob) { bossWin(pos); return; }
     if (dun) { dun.kills++; if(mob.expeditionTarget){dun.finds++;fx.coinPop(pos,3);} if (CW.idleNote) CW.idleNote({ kill: 1 }); if (dun.kind === 'gold') { fx.coinPop(pos, 4); flyCoins(pos, 2); } else fx.coinPop(pos, 2); snd.play('kill'); return; }
@@ -719,8 +720,104 @@
     work.catch(noteError).finally(function () { librarySettling = false; });
   }
 
+  // ---------- 무한의 탑 (js/tower.js, 2026-11-25) ----------
+  // One run climbs floor after floor: every monster of a floor beaten in time → the next floor after a short breath;
+  // the time running out (or 나가기) ends the run and shows what it brought. Nothing of a run is saved but the record.
+  var tower = CW.tower;
+  // the hit 빠른 등반 measures by: the strongest equipped skill's ordinary hit with the average crit
+  function towerHit() {
+    var top = 0;
+    (state.slots || []).forEach(function (id) {
+      var sk = CW.skillById(id); if (!sk) return;
+      var d = CW.hitDamage(st, sk, { boss: false, critTier: 0 }) * CW.critFactor(st);
+      if (d > top) top = d;
+    });
+    return top;
+  }
+  function towerStatus() {
+    if (!tower.open(state)) return null;
+    var b = tower.best(state);
+    return { name: tower.name, best: b, bless: tower.blessPct(state), quick: tower.quickTo(state, towerHit()) - b, busy: !!dun };
+  }
+  function enterTower() {
+    if (!tower.open(state)) return 'locked';
+    if (dun || boss || state.bossTry) return 'busy';
+    clearField(true); restT = 0;
+    var b = tower.best(state);
+    dun = { kind: 'tower', tower: true, def: { name: tower.name }, floor: b + 1, start: b, t: tower.conf.seconds, sp: 0, kills: 0, goal: 0, total: {}, bless: 0, pause: 0, sceneKey: -1 };
+    ui.openTab('battle'); snd.play('boss');
+    startTowerFloor();
+    return 'ok';
+  }
+  function startTowerFloor() {
+    var d = dun, f = d.floor, at = tower.regionOf(f), R = CW.regionAt(at.diff, at.region), k = tower.kind(f);
+    // the room of this kind of floor (GPT 탑 안 그림), keeping the region's weakness so elements still matter
+    var key = 40 + ['normal', 'elite', 'curse', 'boss', 'big'].indexOf(k.id), decor = Object.assign({}, R, { bg: k.bg, sky: k.sky });
+    if (key !== d.sceneKey) { d.sceneKey = key; sc.setRegion(key, decor); fx.setRegion(decor); fx.setBright(isBright(decor)); }
+    d.R = R; d.k = k; d.mobs = tower.monstersOf(f);
+    d.mobs.forEach(needArt);
+    d.goal = k.count; d.kills = 0; d.spawned = 0; d.t = k.sec; d.sp = 0.2;
+    d.hp = tower.unitHp(f);
+    ui.banner(f + '층');   // 형 (2026-11-25): 「정예 · 보스」 같은 말 없이 층수만
+  }
+  function spawnTowerMob() {
+    var d = dun, k = d.k, id = d.mobs[(d.spawned * 3 + d.floor) % d.mobs.length];
+    var pic = mobArt(id, DATA.regions[0].monsters[0]);
+    if (!pic) return false;   // still loading: try again in a moment
+    var who = (CW.BESTIARY || {})[id];
+    sc.spawnMob(k.boss ? { art: pic, id: id, hp: d.hp, boss: true, name: who ? who.name : tower.name, height: fitHeight(pic, k.big ? 2.6 : 2.1), entry: 'run' }
+      : { art: pic, id: id, hp: d.hp, height: fitHeight(pic, k.elite ? 1.4 : 1.0), entry: 'run' });
+    d.spawned++;
+    return true;
+  }
+  function towerTick(dt) {
+    var d = dun;
+    if (d.pause > 0) { d.pause -= dt; if (d.pause <= 0) { d.floor++; startTowerFloor(); } return; }
+    if (d.kills >= d.goal) { towerFloorWon(); return; }
+    d.t -= dt;
+    if (d.t <= 0) { towerEnd(false); return; }
+    d.sp -= dt;
+    if (d.spawned < d.goal && d.sp <= 0) d.sp = spawnTowerMob() ? (d.k.elite ? 0.45 : 0.22) : 0.1;
+  }
+  function addAll(total, r) { ['gold', 'mana', 'runeStone'].forEach(function (k) { if (r[k]) total[k] = (total[k] || 0) + r[k]; }); }
+  function towerFloorWon() {
+    var d = dun, r = tower.clear(state, d.floor);
+    if (r) { addAll(d.total, r); if (r.bless) { d.bless++; refreshStats(); ui.toast('탑의 가호 · 모든 피해 +' + Math.round(tower.blessPct(state) * 100) + '%'); } }
+    save(); ui.hud();
+    fx.clear(); d.pause = 1.1;   // the floor number goes up when the next floor starts, so the HUD keeps 「N층 · 돌파!」 meanwhile
+  }
+  function towerReward(total) {
+    var fG = function (v) { return '+' + CW.fmtGold(v); }, fN = function (v) { return '+' + CW.fmt(v); }, rw = [];
+    if (total.gold) rw.push({ ico: 'gold', label: '골드', value: total.gold, fmt: fG });
+    if (total.mana) rw.push({ ico: 'mana', label: '마력석', value: total.mana, fmt: fN });
+    if (total.runeStone) rw.push({ ico: 'runeStone', label: '룬석', value: total.runeStone, fmt: fN });
+    return rw;
+  }
+  function towerEnd(quit) {
+    var d = dun; if (!d || !d.tower) return;
+    dun = null; clearField(true); region = -1; syncRegion(); restT = 0.6; ui.dunHud(null);
+    var b = tower.best(state), up = b - d.start;
+    save(); ui.hud();
+    snd.play(up ? 'win' : 'click');
+    var help = (up ? up + '층 올라 최고 ' + b + '층' : (quit ? '오늘은 여기까지' : d.floor + '층에서 멈췄어요') + ' · 최고 ' + b + '층') +
+      (d.bless ? ' · 탑의 가호 모든 피해 +' + Math.round(tower.blessPct(state) * 100) + '%' : '');
+    if (CW.dungeonBook) {
+      CW.dungeonBook({ kind: 'tower', photo: 'tower-card', name: tower.name, stat: ['최고 기록', b, '층'], rewards: towerReward(d.total), help: help,
+        onClose: function () { snd.play('click'); ui.openTab('dungeon'); } });
+    } else ui.modal('<h2>' + tower.name + '</h2><p>' + help + '</p>', [{ label: '확인', pri: true }]);
+  }
+  function towerQuick() {
+    if (dun || boss || state.bossTry || !tower.open(state)) return null;
+    var r = tower.quickClimb(state, towerHit());
+    if (!r) return null;
+    if (r.bless) refreshStats();
+    save(); ui.hud(); snd.play('win');
+    return r;
+  }
+
   function dunTick(dt) {
     if (dun.library) { libraryTick(dt); return; }
+    if (dun.tower) { towerTick(dt); return; }
     if(dun.kind==='mana' && dun.guardianIndex===0 && CW.expeditions.track(state,'mana',dun).step>=2){
       sc.dismissMob(dun.golem);towerGuardian(1);
     }
@@ -930,13 +1027,17 @@
     circleUp: function () { var t = CW.circleTier(state), ok = CW.circleUp(state); if (ok) { refreshStats(); snd.play('click'); if (CW.circleTier(state) > t) { fx.levelUp(state.tier, 0x6fb8ff); ui.banner((CW.circleTier(state) + 1) + '서클 달성!'); save(); } } return ok; },
     libraryStatus: libraryStatus,
     enterLibrary: enterLibrary,
+    towerStatus: towerStatus,
+    enterTower: enterTower,
+    leaveTower: function () { towerEnd(true); },
+    towerQuick: towerQuick,
     dungeon: enterExpedition,
     cancelExpedition: function(){pendingExpedition++;},
     sweep: function (kind) { var best = state.dungeon && state.dungeon.best && state.dungeon.best[kind]; var r = dun || boss ? null : CW.sweep(state,kind,Date.now()); if (r && G.wallet) { G.wallet.queueDungeon({ kind: kind, kills: (best && best.kills) || 0, sweep: true }); walletFlush(); } if (r) { goalCount('dungeon', 1); refreshStats(); snd.play('win'); save(); } return r; },
     expeditionRune: function(id) { if(!dun && CW.expeditions.selectRune(state,id)) save(); },
     expeditionChest: function(kind) { if(dun)return null;var msg=CW.expeditions.treasure(state,kind);if(msg)save();return msg; },
     expeditionWear: function() { var j=CW.expeditions.journal(state);if(!j.maps)return;j.wearing=!j.wearing;applyLook(false);save(); },
-    dunState: function () { return dun ? { kind: dun.kind, t: dun.t, kills: dun.kills, dmg: dun.dmg, finds:dun.finds, name: dun.library ? '도서관 ' + dun.library.floor + '층' : dun.def.name, goal: dun.goal, level: dun.kind === 'mana' ? CW.golemLevel(state, dun.dmg) : 0 } : null; },
+    dunState: function () { return dun ? { kind: dun.kind, t: dun.t, kills: dun.kills, dmg: dun.dmg, finds:dun.finds, name: dun.library ? '도서관 ' + dun.library.floor + '층' : dun.tower ? dun.floor + '층' : dun.def.name, tower: !!dun.tower, pause: dun.pause || 0, towerKind: dun.tower ? dun.k.id : '', goal: dun.goal, level: dun.kind === 'mana' ? CW.golemLevel(state, dun.dmg) : 0 } : null; },
     pull: function (n) { if (G.wallet) return walletDo('pull', { n: n }); var items = CW.pull(state, n); if (items) { refreshStats(); save(); } return items; },
     buy: function (i) { if (CW.FRIEND) return 0; if (G.wallet) return walletDo('buyShop', { i: i }); var g = CW.buy(state, i); save(); return g; },
     goStage: function (i) {
@@ -945,7 +1046,7 @@
       clearField(true); syncRegion(); if (state.bossTry) startBoss(true); save(); return true;
     },
     setDifficulty: function (d) {
-      if (dun && dun.library) return false;
+      if (dun && (dun.library || dun.tower)) return false;
       if (!CW.setDifficulty(state, d)) return false;
       clearField(true); region = -1; syncRegion(); refreshStats(); smallKills = 0; save(); ui.banner(CW.diffOf(state).name); return true;
     },

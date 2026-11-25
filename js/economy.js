@@ -138,7 +138,7 @@
   // every crit tier: its rate, its '배' damage and its '%' damage (key + 'Pct')
   TIERS.forEach(function (t) { BONUS_KEYS.push(t.rate, t.dmg, t.dmg + 'Pct'); });
   // every source of bonuses (gear, relics, costumes, star items, skill collection) adds into one object
-  var SOURCES = [['gear', 'gearStats'], ['relics', 'relicStats'], ['costume', 'costumeStats'], ['divine', 'divineStats'], ['skills', 'skillOwnedStats'], ['training', 'trainingStats'], ['runes', 'runeStats'], ['sigil', 'sigilStats'], ['alchemy', 'alchemyStats'], ['titles', 'titleStats'], ['dex', 'dexStats']];
+  var SOURCES = [['gear', 'gearStats'], ['relics', 'relicStats'], ['costume', 'costumeStats'], ['divine', 'divineStats'], ['skills', 'skillOwnedStats'], ['training', 'trainingStats'], ['runes', 'runeStats'], ['sigil', 'sigilStats'], ['alchemy', 'alchemyStats'], ['titles', 'titleStats'], ['dex', 'dexStats'], ['tower', 'towerStats']];
   // the bonus of every source on its own (for the stat window); growth = the 초월 lines; total = what stats() uses
   function bonusBySource(state) {
     var parts = {}, total = {}; BONUS_KEYS.forEach(function (k) { total[k] = 0; });
