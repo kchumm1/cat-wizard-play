@@ -2871,7 +2871,7 @@
       var b = e.target.closest('[data-quick]'); if (!b) return; var q = b.dataset.quick; G.sound('click');
       if (q === 'map') { selDiff = selRegion = -1; openTab(tab === 'stage' ? 'battle' : 'stage'); }
       else if (q === 'alch') { trainSub = 'alch'; openTab('up'); }
-      else if (q === 'event') { if (CW.eventOpen) { var ev = G.evView(); CW.eventOpen(!ev.att.today && ev.pass.claim ? 'pass' : 'att', function () { evKey = ''; hud(); }); } }   // 오픈 기념 이벤트 (2026-11-23, js/event-ui.js)
+      else if (q === 'event') { if (CW.eventOpen) { var evDone = function () { evKey = ''; hud(); }; CW.eventOpen('att', function () { setTimeout(function () { if (!CW.eventOpen('pass', evDone)) evDone(); }, 250); }); } }   // 오픈 기념 이벤트 (2026-11-23, js/event-ui.js)
       else if (q === 'goals') { if (CW.goalsOpen) CW.goalsOpen(function () { goalsT = 0; goalsKey = ''; hud(); }); }   // 할 일 · 업적 (2026-11-23, js/goals-ui.js)
       else if (q === 'pet') { if (CW.petPageOpen) CW.petPageOpen(function () { petKey = ''; hud(); }); }   // 펫 (2026-11-23, js/pet-ui.js)
       else if (q === 'dex') { if (CW.dexOpen) CW.dexOpen(); }

@@ -231,9 +231,9 @@
     var v = view();
     if (!v.on) { eventClose(); return; }
     var friend = !!CWo().FRIEND;
+    // 2026-11-25 형: 출석이랑 패스 둘이 같이 묶지 말고 하나씩 따로 → 위의 「출석|패스」 탭을 빼고 닫기만. 한 창에 한 가지,
+    // 들어올 때는 main.js 가 출석 창 → 닫으면 패스 창 차례로, 왼쪽 이벤트 바로가기도 ui.js 에서 같은 차례
     fx.innerHTML = '<div class="evtop">' +
-      '<button class="evtab' + (tab === 'att' ? ' on' : '') + '" data-evtab="att">출석' + (v.att.today ? '<i></i>' : '') + '</button>' +
-      '<button class="evtab' + (tab === 'pass' ? ' on' : '') + '" data-evtab="pass">패스' + (v.pass.claim ? '<i></i>' : '') + '</button>' +
       '<button class="evx" data-evclose="1" aria-label="닫기">×</button></div>' +
       '<div class="evwrap">' + eventHtml(v, tab, friend) + '</div>';
     var row = fitRow();
