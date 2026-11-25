@@ -100,10 +100,12 @@
     '@media (orientation:landscape) and (min-aspect-ratio:6/5){html.tw .stagebg>.wfrost{background-image:url(art/frost-frame-land.webp)}}',
     'html.tw .stagebg:is(' + INDOOR_SEL + ')>.wfrost{display:none}',
     // ---- 아래 탭 줄 윗변에 얹은 눈 더미 (형이 그려 준 그림 art/snow-cap.webp, 세 덩이) ----
-    // 탭 줄은 옆으로 흐르는 성운 판 때문에 넘치는 것을 자름 → 세로 화면 겨울에서만 위쪽 28px 만 보이게 열어 눈 더미가 윗변 위로 올라옴
-    'html.tw #tabs{overflow:visible;clip-path:inset(-28px 0 0 0)}',
-    'html.tw #tabs>.wcap{display:block;position:absolute;left:0;right:0;top:-18px;height:23px;z-index:3;pointer-events:none;' +
-      'background:url(art/snow-cap.webp) 2% 100%/118px auto no-repeat,url(art/snow-cap.webp) 50% 100%/132px auto no-repeat,url(art/snow-cap.webp) 98% 100%/118px auto no-repeat}',
+    // 탭 줄은 옆으로 흐르는 성운 판 때문에 넘치는 것을 자름 → 세로 화면 겨울에서만 위쪽 12px 만 보이게 열어 눈 더미가 윗변 위로 살짝 올라옴
+    // 형 실제 아이폰 (2026-11-25 "눈쌓인거 스킬에 살짝 가려서"): 스킬 칸과 탭 줄 사이 틈이 10px(390×844 실측)이라 위로는 8px 까지만,
+    // 눈 더미는 조금 납작하게(가로 104~116px·세로 13~14px) 해서 탭 줄 윗변에 얹힘
+    'html.tw #tabs{overflow:visible;clip-path:inset(-12px 0 0 0)}',
+    'html.tw #tabs>.wcap{display:block;position:absolute;left:0;right:0;top:-8px;height:15px;z-index:3;pointer-events:none;' +
+      'background:url(art/snow-cap.webp) 3% 100%/104px 13px no-repeat,url(art/snow-cap.webp) 50% 100%/116px 14px no-repeat,url(art/snow-cap.webp) 97% 100%/104px 13px no-repeat}',
     // 가로 화면은 탭 줄이 오른쪽 세로 기둥이라 눈 더미 없음, 자르기도 원래대로
     '@media (orientation:landscape) and (min-aspect-ratio:6/5){html.tw #tabs{overflow:hidden;clip-path:none}html.tw #tabs>.wcap{display:none}}',
 
