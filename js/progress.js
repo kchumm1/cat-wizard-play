@@ -43,23 +43,40 @@
   var TIER10 = { diff: 2, region: 4 };
   // the 11th job, water (2026-11-17): the boss of 10-31 on 루나틱
   var TIER11 = { diff: 2, region: 9 };
-  var LATE = { 10: TIER10, 11: TIER11 };
+  // the 12th job, wind (2026-11-25): the boss of 10-31 on 어드밴스
+  var TIER12 = { diff: 3, region: 9 };
+  var LATE = { 10: TIER10, 11: TIER11, 12: TIER12 };
   function trialTier(i, diff) {
     var info = stageInfo(i); if (!info.isRegionBoss) return 0;
     if ((diff || 0) === TIER10.diff && info.region === TIER10.region) return root.CW && root.CW.FRIEND ? 0 : 10; // 체험판: no 10th job (js/friend.js)
     if ((diff || 0) === TIER11.diff && info.region === TIER11.region) return root.CW && root.CW.FRIEND ? 0 : 11;
+    if ((diff || 0) === TIER12.diff && info.region === TIER12.region) return root.CW && root.CW.FRIEND ? 0 : 12;
     return info.region < 8 ? info.region + 2 : 0;
   }
-  // a save on the 10th job that already beat the boss leading to the 11th (2026-11-17, the user: 불러올 때 11차 주기):
-  // that boss is the last stage of its difficulty and cannot be fought again, so the job comes when the save is loaded.
+  // a save that already beat the boss leading to its next job (2026-11-17, the user: 불러올 때 11차 주기; the 12th the same
+  // way, 2026-11-25): those bosses are the last stage of their difficulty and cannot be fought again, so the job comes when
+  // the save is loaded — one after the other (a 10th-job save that beat both goes straight to the 12th, one celebration).
   // Returns the new tier (and sets it) or null. friend: the 체험판 never gets it (js/friend.js)
+  var LATE_STEPS = [[10, TIER11, 11], [11, TIER12, 12]];
   function lateTier(state, friend) {
-    if (friend || !state || state.tier !== 10) return null;
-    var boss = TIER11.region * 31 + 30, d = TIER11.diff;
-    var best = (state.diff || 0) === d ? state.best : (state.diffBest && state.diffBest[d] && state.diffBest[d].best);
-    if (!(best >= boss)) return null;
+    if (friend || !state) return null;
+    var got = null;
+    LATE_STEPS.forEach(function (st) {
+      if (state.tier !== st[0]) return;
+      var T = st[1], boss = T.region * 31 + 30;
+      var best = (state.diff || 0) === T.diff ? state.best : (state.diffBest && state.diffBest[T.diff] && state.diffBest[T.diff].best);
+      if (best >= boss) { state.tier = st[2]; got = st[2]; }
+    });
     // tierShow: the celebration is owed (kept in the save until it has played — js/main.js doTierUp clears it)
-    state.tier = 11; state.tierShow = 11; return 11;
+    if (got) state.tierShow = got;
+    return got;
+  }
+  // a region's weak elements as the boss result names them (2026-11-26): the 체험판 (maxTier 9) only names elements it has a
+  // skill of — 나무·물·바람 come with the 10th job and later and are not shown there; maxTier null: all of them
+  function weakShown(weak, maxTier) {
+    weak = weak || [];
+    if (maxTier == null) return weak.slice();
+    return weak.filter(function (el) { return DATA.skills.some(function (k) { return k.el === el && k.tier <= maxTier; }); });
   }
   // a job trial: beating this boss would still raise the tier (shown as "전직 시험"; once the job is reached it is a
   // plain region boss). diff: the difficulty asked about (the map shows others than the one being played)
@@ -143,5 +160,5 @@
     state.farming = state.stage <= state.best;
     return true;
   }
-  return { worldOf: worldOf, regionsOf: regionsOf, regionAt: regionAt, sceneRegion: sceneRegion, clearKey: clearKey, setDifficulty: setDifficulty, stageLabel: stageLabel, stageInfo: stageInfo, stageBoss: stageBoss, isTierTrial: isTierTrial, lateTier: lateTier, tierNeed: tierNeed, tierGoal: tierGoal, onKill: onKill, onBossResult: onBossResult, retryBoss: retryBoss, retryNeed: retryNeed, autoRetryReady: autoRetryReady, RETRY_MARGIN: RETRY_MARGIN, onHidden: onHidden, goStage: goStage, LAST_STAGE: LAST };
+  return { worldOf: worldOf, regionsOf: regionsOf, regionAt: regionAt, sceneRegion: sceneRegion, clearKey: clearKey, setDifficulty: setDifficulty, stageLabel: stageLabel, stageInfo: stageInfo, stageBoss: stageBoss, isTierTrial: isTierTrial, lateTier: lateTier, weakShown: weakShown, tierNeed: tierNeed, tierGoal: tierGoal, onKill: onKill, onBossResult: onBossResult, retryBoss: retryBoss, retryNeed: retryNeed, autoRetryReady: autoRetryReady, RETRY_MARGIN: RETRY_MARGIN, onHidden: onHidden, goStage: goStage, LAST_STAGE: LAST };
 });

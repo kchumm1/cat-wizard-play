@@ -20,6 +20,8 @@
   function friendCap(s) {
     if (!CW.FRIEND || !s) return s;
     if (s.tier > CW.FRIEND_MAX_TIER) s.tier = CW.FRIEND_MAX_TIER;
+    // a celebration still owed for a job past the 9th (the full game's save on the same phone) never plays here (2026-11-26)
+    if (s.tierShow > CW.FRIEND_MAX_TIER) delete s.tierShow;
     var ok = function (id) { var k = id && CW.skillById(id); return !!(k && k.tier <= CW.FRIEND_MAX_TIER); };
     var spare = DATA.skills.filter(function (k) { return k.tier <= s.tier; }).map(function (k) { return k.id; });
     var fix = function (arr) { if (!Array.isArray(arr)) return arr; var out = arr.map(function (id) { return id === null || ok(id) ? id : null; }); out.forEach(function (id, i) { if (id === null && arr[i] !== null) { var f = spare.filter(function (x) { return out.indexOf(x) < 0; })[0]; out[i] = f || null; } }); return out; };

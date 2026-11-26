@@ -703,18 +703,13 @@
       for (var k = 0; k < a.length; k += 2) { a[k] = (col + b[k]) / L.cols; a[k + 1] = 1 - (row + 1 - b[k + 1]) / L.rows; }
       uv.needsUpdate = true;
     }
-    // which cast frame for where the spell pose is: 1-2 while it winds up, 3-4 the shot, 5 the recoil, 6 back to rest
-    function castFrame(n) {
-      var P = pose.P, t = pose.t, a = pose.a, hold = P.hold || 0, k;
-      if (t < a) k = t / a < 0.5 ? 0 : 1;
-      else { var u = (t - a) / (hold + 0.6); k = u < 0.12 ? 2 : u < 0.32 ? 3 : u < 0.58 ? 4 : 5; }
-      return Math.min(n - 1, Math.round(k * (n - 1) / 5));
-    }
-    // returns the act shown (or null); called by viewsTick after the view and its uniforms are set
+    // returns the act shown (or null); called by viewsTick after the view and its uniforms are set.
+    // A spell pose plays its own drawn act when this look and view has it (12차 바람: 'gale' swings, 'bow' draws — js/hero-acts.js),
+    // else the six spell frames; the frame for where the pose is comes from CW.actFrame
     function framesTick(g, d, u, hd) {
       if (!d.fm) return null;
-      var act = null, idx = 0;
-      if (pose && d.fm.cast) { act = 'cast'; idx = castFrame(d.fm.cast.L.n); }
+      var act = null, idx = 0, pa = pose ? CW.heroAct(pose.type, d.fm) : null;
+      if (pa) { act = pa; idx = CW.actFrame(pa, pose.P, pose.t, pose.a, d.fm[pa].L.n); }
       else if (d.fm.walk && hd.anim.walk > 0.3 && HB.y <= 0.08) { act = 'walk'; var ph = hd.anim.ph / (Math.PI * 2); idx = Math.floor((ph - Math.floor(ph)) * d.fm.walk.L.n) % d.fm.walk.L.n; }
       d.body.visible = !act;
       d.fmAct = act ? { F: d.fm[act], idx: idx } : null;
@@ -888,11 +883,15 @@
       // the big moment of a spell (2026-11-15): the staff comes down hard as it bursts, the body ducks into it
       // 검은 종의 파수꾼 (2026-11-23): 종추를 머리 위로 들었다가 발밑에 내려친다
       toll: { ab: -0.1, as: 0.07, ax: -0.02, rb: 3.2, rs: -3.2, rl: -0.6, rx: 0.6, hb: 0.1, hs: -0.09, aR: 0.35, rR: -0.5, aL: -1.4, rL: 2.0, kick: 0.3 },
-      slam: { ab: 0.04, as: 0.05, ax: 0, rb: 3.0, rs: -2.6, rl: -0.6, rx: 1.0, hb: 0.08, hs: -0.06, aR: 0.2, rR: -0.9, aL: -0.15, rL: 1.15, kick: 0.3 }
+      slam: { ab: 0.04, as: 0.05, ax: 0, rb: 3.0, rs: -2.6, rl: -0.6, rx: 1.0, hb: 0.08, hs: -0.06, aR: 0.2, rR: -0.9, aL: -0.15, rL: 1.15, kick: 0.3 },
+      // 12차 바람 (2026-11-25): 칼바람 일섬 swings the staff sideways (drawn frames 'swing' when the look has them, else this
+      // swipe), 소닉붐 화살 holds it out like a bow and pulls the paw arm back, then lets go (frames 'bow')
+      gale: { ab: -0.17, as: -0.05, ax: -0.05, rb: 3.6, rs: 1.4, rl: 0.8, rx: 2.0, hb: 0.12, hs: 0, aR: 1.0, rR: -1.35, aL: -0.45, rL: 0.8, kick: -0.9 },
+      bow: { ab: -0.12, as: -0.05, ax: -0.04, rb: 2.2, rs: 1.6, rl: 0.5, rx: 1.2, hb: 0.08, hs: 0, aR: 1.25, rR: -1.2, aL: 0.25, rL: 0.3, kick: 0.5 }
     };
     var pose = null, heroGlow = 0, heroGlowCol = new T.Color();
     function heroPose(type, antic, color) {
-      pose = { P: POSES[type] || POSES.thrust, t: 0, a: Math.max(0.03, antic || 0.12), rel: false };
+      pose = { type: type, P: POSES[type] || POSES.thrust, t: 0, a: Math.max(0.03, antic || 0.12), rel: false };
       if (color !== undefined) { heroGlowCol.setHex(color); }
       HB.lock = Math.max(HB.lock, (antic || 0.12) + 0.14);
     }
@@ -1150,7 +1149,7 @@
     function mobTop(mob) { var g = mob.group, o = bbPt(0, g.userData.h * 0.92, 0.15); return new T.Vector3(g.position.x + o.x, o.y + g.position.y, g.position.z + o.z); }
 
     // ---------- tier aura ----------
-    var AURA = [null, 0xff6a2b, 0x9fd8ff, 0xbfefff, 0xffe14a, 0xe6e6ff, 0xffd84a, 0xb04bff, 0xffffff, 0xff8a3a, 0x3fb8e8];   // (11th: water)
+    var AURA = [null, 0xff6a2b, 0x9fd8ff, 0xbfefff, 0xffe14a, 0xe6e6ff, 0xffd84a, 0xb04bff, 0xffffff, 0xff8a3a, 0x3fb8e8, 0x4fe3b8];   // (11th: water, 12th: wind)
     var aura = { ring: null, orbs: [], wings: [] };
     function setTierAura(tier) {
       while (auraGroup.children.length) auraGroup.remove(auraGroup.children[0]);

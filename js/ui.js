@@ -1280,7 +1280,7 @@
       choices.sort(function (a, b) { return b.mult / CW.castTime(b, 1) - a.mult / CW.castTime(a, 1); });
       var skill = choices[0];
       var advice = skill ? '<div class="br-hint">' + CW.ICO.skill(skill.id) + '<p>약점 · ' +
-        esc(weak.map(function (el) { return DATA.elements[el].name; }).join(' / ')) +
+        esc(CW.weakShown(weak, CW.FRIEND ? CW.FRIEND_MAX_TIER : null).map(function (el) { return DATA.elements[el].name; }).join(' / ')) +
         '<small>다음 도전 추천 · ' + esc(skill.name) + '</small></p></div>' : '';
       var html = '<h2 id="bossResultTitle" class="br-title" tabindex="-1">보스 도전 결과</h2>' +
         '<header class="br-hero" style="--br-field:url(&quot;' + esc(base + region.bg + '.webp') + '&quot;)">' +
@@ -1616,7 +1616,7 @@
     // docs/superpowers/specs/2026-11-23-skill-card-layout-design.md). 모양은 코덱스 시안 「1-달빛 은백」 + 칸 판 「새벽 노을」·칸 틀 「진주 유리」(형이 고름)
     // 위(목록을 내려도 붙어 있음): 칸 판 위 칸 4개 · 도구 줄 · 차수 칩(최신부터) / 아래: 보유 효과 · 차수별 카드 4열
     // 넣기 = 카드 → 칸, 또는 칸 → 카드 (두 번). 이미 다른 칸에 있던 스킬이면 서로 자리 바꿈(equipSkill). 고른 카드는 아래 고정 자리(#dock) 서랍
-    var SK_EC = { paw: '#ff8fd8', fire: '#ff6a2b', bolt: '#5fb4f5', ice: '#6fd3f0', star: '#f2c21a', moon: '#9d8cf0', sun: '#ffa21e', void: '#9b3cf0', wood: '#4fae2f', water: '#2f7df0', all: '#c08af0' };   // 원소(9차): 시안처럼 연보라
+    var SK_EC = { paw: '#ff8fd8', fire: '#ff6a2b', bolt: '#5fb4f5', ice: '#6fd3f0', star: '#f2c21a', moon: '#9d8cf0', sun: '#ffa21e', void: '#9b3cf0', wood: '#4fae2f', water: '#2f7df0', wind: '#4fe3b8', all: '#c08af0' };   // 원소(9차): 시안처럼 연보라
     function skTint(hex, t) { var n = parseInt(hex.slice(1), 16), c = [n >> 16, n >> 8 & 255, n & 255].map(function (v) { return Math.round(v + (255 - v) * t); }); return 'rgb(' + c.join(',') + ')'; }
     function skVars(sk) { var c = SK_EC[sk.el] || SK_EC.moon; return '--ec:' + c + ';--ecb:' + skTint(c, 0.5); }   // 속성 색 · 카드 테두리(시안: 연한 속성 색)
     // 칩 글자 = 시안 「10차 나무 · 9차 모든 원소 · 8차 어둠」: 그 차수 속성 이름 (1차는 냥냥·별이 섞여 「견습」)

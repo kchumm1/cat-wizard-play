@@ -124,7 +124,7 @@
     { id: 'hunter', name: '사냥꾼', what: '몬스터 처치', val: function (s) { return goalsBox(s).count.kills; }, steps: [1000, 10000, 100000, 1000000], rw: { gold: 0.03 } },
     { id: 'boss', name: '보스 사냥', what: '보스 처치', val: function (s) { return whole(s.bossWins); }, steps: [10, 50, 100, 500, 1000], rw: { boss: 0.02 } },
     { id: 'growth', name: '성장', what: '계정 레벨', val: function (s) { return whole(s.level); }, steps: [50, 100, 200, 400, 800], rw: { mul: 0.02 } },
-    { id: 'tier', name: '전직', what: '전직', val: function (s) { return whole(s.tier); }, steps: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11], friendMax: 9, rw: { mul: 0.02, egg: 1 } },
+    { id: 'tier', name: '전직', what: '전직', val: function (s) { return whole(s.tier); }, steps: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], friendMax: 9, rw: { mul: 0.02, egg: 1 } },
     { id: 'collector', name: '수집가', what: '몬스터 도감', val: function (s) { return obj(s.dex) ? Object.keys(s.dex).length : 0; }, steps: [50, 100, 200, 380], rw: { gold: 0.03 } },
     { id: 'petfriend', name: '펫 친구', what: '펫 모으기', val: function (s) { var P = pets(); return P ? Object.keys(P.petBox(s).owned).length : 0; }, steps: [5, 10, 15, 20], rw: { mul: 0.02 } },
     { id: 'petstar', name: '별빛 조련사', what: '펫 별 합계', val: function (s) { var P = pets(); if (!P) return 0; var o = P.petBox(s).owned, n = 0; for (var k in o) n += o[k].star || 1; return n; }, steps: [10, 30, 100], rw: { mul: 0.02 } },

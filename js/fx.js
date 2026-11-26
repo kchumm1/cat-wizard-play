@@ -1373,6 +1373,7 @@
     var DOOMCOS = CW.fxDoomCos ? CW.fxDoomCos(KIT) : null;   // 멸망 코스튬 2차의 한 번 터지는 순간 (js/doom-costumes.js)
     var WOOD = CW.fxWood ? CW.fxWood(KIT, S) : null;   // 10차 나무 (js/fx-wood.js); its painted pieces are cleared with the rest
     var WATER = CW.fxWater ? CW.fxWater(KIT, S) : null;   // 11차 물 (js/fx-water.js)
+    var WIND = CW.fxWind ? CW.fxWind(KIT, S) : null;   // 12차 바람 (js/fx-wind.js)
     // 1차 스킬 7개는 3D 몸으로 (js/fx-tier1.js)
     if (CW.fxTier1) CW.fxTier1(KIT, S);
     // the legendary beasts (js/fx-beasts.js): their own flights, updated and cleared with the rest
@@ -1697,8 +1698,8 @@
     // the safety valve (js/fxload.js): a factor on how many small pieces new effects spawn while frames run late
     function setLoad(k) { vx.setLoad(k); }
     function setBright(v) { vx.setBright(v); P3.setBright(v); }
-    function setRegion(regionData) { dustCol = new T.Color(regionData.ground).lerp(new T.Color(0xffffff), 0.45).getHex(); P3.warm(); warmPics(); }
-    function clear() { epoch++; carry = []; timers.length = 0; ticks.length = 0; meteorLive = 0; scorchAt.length = 0; vx.clear(); P3.clear(); picClear(); if (DOOMCOS) DOOMCOS.stop(); if (WOOD && WOOD.clear) WOOD.clear(); if (WATER) WATER.clear(); if (BEASTS) BEASTS.clear(); sc.mobs().forEach(function (m) { m.pull = undefined; m.pullZ = undefined; m.lift = undefined; }); }
+    function setRegion(regionData) { dustCol = new T.Color(regionData.ground).lerp(new T.Color(0xffffff), 0.45).getHex(); P3.warm(); warmPics(); if (WIND && WIND.warm) WIND.warm(); }
+    function clear() { epoch++; carry = []; timers.length = 0; ticks.length = 0; meteorLive = 0; scorchAt.length = 0; vx.clear(); P3.clear(); picClear(); if (DOOMCOS) DOOMCOS.stop(); if (WOOD && WOOD.clear) WOOD.clear(); if (WATER) WATER.clear(); if (WIND) WIND.clear(); if (BEASTS) BEASTS.clear(); sc.mobs().forEach(function (m) { m.pull = undefined; m.pullZ = undefined; m.lift = undefined; }); }
     return { setStaffColor: function (c) { staffCol = c; }, setCostume: function (f) { cosFx = f; cosAcc = 0; if (DOOMCOS) { DOOMCOS.stop(); DOOMCOS.prepare(f); } }, costumeAct: function (kind) { return DOOMCOS ? DOOMCOS.act(kind, cosFx) : false; }, cast: cast, canAim: canAim, update: update, setQuality: setQuality, setLoad: setLoad, load: function () { return vx.load(); }, setBright: setBright, setRegion: setRegion, clear: clear, count: vx.count, minionBurst: minionBurst,
       impact: impact, levelUp: levelUp, bossEnter: bossEnter, coinPop: coinPop, burst: function (pos, col) { impact(pos, col, 0.8); }, vfx: vx,
       // for checks: 3D parts alive, and painted heads alive (only those of the given pictures when names are given)
